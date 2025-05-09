@@ -96,6 +96,12 @@ export default function Dashboard() {
   const { data: recommendations, isLoading: isLoadingRecommendations } = useQuery<Recommendation[]>({
     queryKey: ["/api/recommendations"],
   });
+  
+  // Get real cloud resources from all providers (especially AWS)
+  const { data: cloudResources, isLoading: isLoadingCloudResources } = useQuery<any[]>({
+    queryKey: ["/api/cloud-resources"],
+    enabled: !!cloudProviders && cloudProviders.some(p => p.isConnected),
+  });
 
   // Last scan time
   const lastScanTime = new Date();
@@ -227,29 +233,31 @@ export default function Dashboard() {
             <StatusCard
               title="Security Status"
               value="Warning"
-              description="3 security drifts detected"
+              description={`${securityDrifts?.length || 0} security drifts detected`}
               icon="security"
               status="warning"
             />
             <StatusCard
               title="Cost Status"
-              value="Critical"
-              description="Cost spike of 43% detected"
+              value="Active"
+              description="AWS cost data available"
               icon="cost"
-              status="critical"
+              status="healthy"
             />
             <StatusCard
               title="Resources Monitored"
-              value="268"
-              description="Across 3 cloud providers"
+              value={`${cloudResources?.length || 0}`}
+              description={`AWS S3 Buckets`}
               icon="resources"
+              isLoading={isLoadingCloudResources}
             />
             <StatusCard
               title="Active Alerts"
-              value="12"
-              description="4 high, 8 medium priority"
+              value={`${alerts?.length || 0}`}
+              description="Active notifications"
               icon="alerts"
-              status="warning"
+              status={alerts && alerts.length > 0 ? "warning" : "healthy"}
+              isLoading={isLoadingAlerts}
             />
           </div>
 
@@ -275,10 +283,15 @@ export default function Dashboard() {
                       <Layers className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Resource Efficiency</h3>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">12 underutilized EC2 instances could be downsized to save $432/month</p>
+                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">S3 Bucket Insights</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        {cloudResources && cloudResources.length > 0 
+                          ? `${cloudResources.length} S3 buckets detected in your AWS account`
+                          : 'No S3 buckets detected yet'
+                        }
+                      </p>
                       <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
-                        View recommendations
+                        View buckets
                         <ChevronRight className="h-3 w-3 ml-1" />
                       </Button>
                     </div>
@@ -291,10 +304,15 @@ export default function Dashboard() {
                       <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Security Vulnerability</h3>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Public S3 bucket detected with sensitive data - immediate action required</p>
+                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Security Check</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        {cloudResources && cloudResources.length > 0 
+                          ? 'Checking S3 bucket permissions for public access risks'
+                          : 'No resources to check for security issues'
+                        }
+                      </p>
                       <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
-                        View details
+                        View security status
                         <ChevronRight className="h-3 w-3 ml-1" />
                       </Button>
                     </div>
@@ -307,10 +325,15 @@ export default function Dashboard() {
                       <RefreshCw className="h-4 w-4 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Auto-Scaling</h3>
-                      <p className="text-xs text-slate-600 dark:text-slate-400">Implement auto-scaling for web app cluster to handle 38% traffic increase</p>
+                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Cost Optimization</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        {cloudResources && cloudResources.length > 0
+                          ? 'Analyzing S3 bucket usage patterns for potential savings'
+                          : 'Connect more services to see cost optimization tips'
+                        }
+                      </p>
                       <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
-                        View suggestion
+                        View cost details
                         <ChevronRight className="h-3 w-3 ml-1" />
                       </Button>
                     </div>
