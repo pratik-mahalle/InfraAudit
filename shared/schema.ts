@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // User schema
 export const users = pgTable("users", {
@@ -124,6 +125,35 @@ export const insertRecommendationSchema = createInsertSchema(recommendations).pi
   resourcesAffected: true,
   status: true,
 });
+
+// Define relations
+export const resourcesRelations = relations(resources, ({ many }) => ({
+  securityDrifts: many(securityDrifts),
+  costAnomalies: many(costAnomalies),
+  alerts: many(alerts)
+}));
+
+export const securityDriftsRelations = relations(securityDrifts, ({ one }) => ({
+  resource: one(resources, {
+    fields: [securityDrifts.resourceId],
+    references: [resources.id]
+  })
+}));
+
+export const costAnomaliesRelations = relations(costAnomalies, ({ one }) => ({
+  resource: one(resources, {
+    fields: [costAnomalies.resourceId],
+    references: [resources.id]
+  })
+}));
+
+export const alertsRelations = relations(alerts, ({ one }) => ({
+  resource: one(resources, {
+    fields: [alerts.resourceId],
+    references: [resources.id],
+    relationName: "resourceAlerts"
+  })
+}));
 
 // Export types
 export type User = typeof users.$inferSelect;
