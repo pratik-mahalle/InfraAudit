@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { StatusCard } from "@/components/dashboard/StatusCard";
@@ -11,6 +11,7 @@ import { ResourceUtilization } from "@/components/dashboard/ResourceUtilization"
 import { CostRecommendations } from "@/components/dashboard/CostRecommendations";
 import { PersonalizedWidgets } from "@/components/dashboard/PersonalizedWidgets";
 import { CloudProviderIntegration } from "@/components/dashboard/CloudProviderIntegration";
+import { WelcomeOnboarding } from "@/components/dashboard/WelcomeOnboarding";
 import { 
   CornerLeftDown, 
   Play, 
@@ -48,6 +49,27 @@ import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
   const [dashboardTab, setDashboardTab] = useState("overview");
+  const [hasConnectedProviders, setHasConnectedProviders] = useState(false);
+  const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(true);
+  
+  // Check for cloud providers
+  const { data: cloudProviders, isLoading: isLoadingProviders } = useQuery<any[]>({
+    queryKey: ["/api/cloud-providers"],
+  });
+  
+  // Effect to check for connected providers on load
+  useEffect(() => {
+    if (cloudProviders && cloudProviders.length > 0) {
+      setHasConnectedProviders(true);
+      setShowFirstTimeSetup(false);
+    }
+  }, [cloudProviders]);
+  
+  // Handle connecting first provider
+  const handleConnectProvider = () => {
+    setDashboardTab("providers");
+    setShowFirstTimeSetup(false);
+  };
 
   // Fetch security drifts
   const { data: securityDrifts, isLoading: isLoadingDrifts } = useQuery<SecurityDrift[]>({
@@ -178,8 +200,12 @@ export default function Dashboard() {
       </div>
 
       {/* Dashboard Content */}
-      <div className={dashboardTab === "overview" ? "block" : "hidden"}>
-        {/* Status Summary Cards */}
+      {showFirstTimeSetup ? (
+        <WelcomeOnboarding onCloudIntegrationClick={handleConnectProvider} />
+      ) : (
+        <>
+          <div className={dashboardTab === "overview" ? "block" : "hidden"}>
+            {/* Status Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           <StatusCard
             title="Security Status"
@@ -344,6 +370,8 @@ export default function Dashboard() {
       <div className={dashboardTab === "widgets" ? "block" : "hidden"}>
         <PersonalizedWidgets />
       </div>
+        </>
+      )}
     </DashboardLayout>
   );
 }
