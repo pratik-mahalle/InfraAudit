@@ -1,30 +1,45 @@
-import { db, pool } from '../db';
+import crypto from 'crypto';
+import { db } from '../db';
 import { 
+  cloudCredentials, 
+  InsertCloudCredential, 
+  CloudCredential 
+} from '../../shared/schema';
+import { 
+  CloudProvider, 
   AllCloudCredentials, 
-  CloudProvider,
-  AWSCredentials,
-  GCPCredentials,
-  AzureCredentials
+  AWSCredentials, 
+  GCPCredentials, 
+  AzureCredentials 
 } from '../../shared/cloud-providers';
 import { eq } from 'drizzle-orm';
-import { cloudCredentials } from '../../shared/schema';
-import crypto from 'crypto';
 
-// Simple encryption class for credentials
+/**
+ * Service to handle cloud provider credential encryption/decryption and storage
+ */
 class CredentialEncryption {
   private encryptionKey: string;
   private algorithm = 'aes-256-cbc';
-  
+
   constructor() {
-    // In a real-world application, this should be a secure environment variable
-    this.encryptionKey = process.env.ENCRYPTION_KEY || 'default-encryption-key-for-development-only';
+    // In a real app, this would be a secure environment variable
+    this.encryptionKey = process.env.ENCRYPTION_KEY || 'a-secure-encryption-key-would-go-here-in-prod';
   }
 
+  /**
+   * Encrypt credential data
+   */
   encrypt(text: string): { encryptedData: string, iv: string } {
+    // Create an initialization vector
     const iv = crypto.randomBytes(16);
-    const key = crypto.scryptSync(this.encryptionKey, 'salt', 32);
-    const cipher = crypto.createCipheriv(this.algorithm, key, iv);
+    // Create a cipher
+    const cipher = crypto.createCipheriv(
+      this.algorithm, 
+      Buffer.from(this.encryptionKey.padEnd(32).slice(0, 32)), 
+      iv
+    );
     
+    // Encrypt the text
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     
@@ -34,11 +49,13 @@ class CredentialEncryption {
     };
   }
 
+  /**
+   * Decrypt credential data
+   */
   decrypt(encryptedData: string, iv: string): string {
-    const key = crypto.scryptSync(this.encryptionKey, 'salt', 32);
     const decipher = crypto.createDecipheriv(
       this.algorithm, 
-      key, 
+      Buffer.from(this.encryptionKey.padEnd(32).slice(0, 32)), 
       Buffer.from(iv, 'hex')
     );
     
@@ -49,40 +66,66 @@ class CredentialEncryption {
   }
 }
 
+/**
+ * Service to handle cloud provider credentials 
+ */
 export class CredentialsService {
   private encryption: CredentialEncryption;
-  
+
   constructor() {
     this.encryption = new CredentialEncryption();
   }
 
-  // Save credentials to the database
+  /**
+   * Store credentials for a cloud provider
+   */
   async saveCredentials(userId: number, credentials: AllCloudCredentials): Promise<number> {
-    const credentialsString = JSON.stringify(credentials);
-    const { encryptedData, iv } = this.encryption.encrypt(credentialsString);
+    const { encryptedData, iv } = this.encryption.encrypt(JSON.stringify(credentials));
+
+    // Check if there are existing credentials for this provider and user
+    const existingCredsResult = await db.select({ id: cloudCredentials.id })
+      .from(cloudCredentials)
+      .where(
+        eq(cloudCredentials.userId, userId) && 
+        eq(cloudCredentials.provider, credentials.provider)
+      );
     
-    const [result] = await db.insert(cloudCredentials)
-      .values({
+    if (existingCredsResult.length > 0) {
+      const existingCredId = existingCredsResult[0].id;
+      // Update existing credentials
+      await db.update(cloudCredentials)
+        .set({ 
+          encryptedCredentials: encryptedData,
+          encryptionIv: iv,
+          updatedAt: new Date()
+        })
+        .where(eq(cloudCredentials.id, existingCredId));
+        
+      return existingCredId;
+    } else {
+      // Insert new credentials
+      const insertData: InsertCloudCredential = {
         userId,
         provider: credentials.provider,
+        name: this.getDefaultName(credentials),
         encryptedCredentials: encryptedData,
         encryptionIv: iv,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning({ id: cloudCredentials.id });
-    
-    return result.id;
+        isActive: true
+      };
+      
+      const [result] = await db.insert(cloudCredentials).values(insertData).returning({ id: cloudCredentials.id });
+      return result.id;
+    }
   }
 
-  // Update existing credentials
+  /**
+   * Update existing credentials
+   */
   async updateCredentials(credentialId: number, credentials: AllCloudCredentials): Promise<void> {
-    const credentialsString = JSON.stringify(credentials);
-    const { encryptedData, iv } = this.encryption.encrypt(credentialsString);
+    const { encryptedData, iv } = this.encryption.encrypt(JSON.stringify(credentials));
     
     await db.update(cloudCredentials)
-      .set({
-        provider: credentials.provider,
+      .set({ 
         encryptedCredentials: encryptedData,
         encryptionIv: iv,
         updatedAt: new Date()
@@ -90,67 +133,59 @@ export class CredentialsService {
       .where(eq(cloudCredentials.id, credentialId));
   }
 
-  // Get credentials by ID
+  /**
+   * Get credentials by ID
+   */
   async getCredentialsById(credentialId: number): Promise<AllCloudCredentials | null> {
-    const [result] = await db.select()
-      .from(cloudCredentials)
-      .where(eq(cloudCredentials.id, credentialId));
+    const result = await db.select().from(cloudCredentials).where(eq(cloudCredentials.id, credentialId));
     
-    if (!result) {
+    if (result.length === 0) {
       return null;
     }
     
-    const decrypted = this.encryption.decrypt(
-      result.encryptedCredentials,
-      result.encryptionIv
-    );
-    
-    return JSON.parse(decrypted) as AllCloudCredentials;
+    return this.decryptCredentials(result[0]);
   }
 
-  // Get all credentials for a user
+  /**
+   * Get all credentials for a user
+   */
   async getCredentialsByUser(userId: number): Promise<AllCloudCredentials[]> {
+    const results = await db.select().from(cloudCredentials).where(eq(cloudCredentials.userId, userId));
+    
+    return results.map(cred => this.decryptCredentials(cred)).filter(Boolean) as AllCloudCredentials[];
+  }
+
+  /**
+   * Get credentials for a specific provider
+   */
+  async getCredentialsByProvider(userId: number, provider: CloudProvider): Promise<AllCloudCredentials | null> {
     const results = await db.select()
       .from(cloudCredentials)
-      .where(eq(cloudCredentials.userId, userId));
-    
-    return results.map(result => {
-      const decrypted = this.encryption.decrypt(
-        result.encryptedCredentials,
-        result.encryptionIv
+      .where(
+        eq(cloudCredentials.userId, userId) && 
+        eq(cloudCredentials.provider, provider)
       );
-      return JSON.parse(decrypted) as AllCloudCredentials;
-    });
-  }
-
-  // Get credentials by provider for a user
-  async getCredentialsByProvider(userId: number, provider: CloudProvider): Promise<AllCloudCredentials | null> {
-    const [result] = await db.select()
-      .from(cloudCredentials)
-      .where(eq(cloudCredentials.userId, userId))
-      .where(eq(cloudCredentials.provider, provider));
     
-    if (!result) {
+    if (results.length === 0) {
       return null;
     }
     
-    const decrypted = this.encryption.decrypt(
-      result.encryptedCredentials,
-      result.encryptionIv
-    );
-    
-    return JSON.parse(decrypted) as AllCloudCredentials;
+    return this.decryptCredentials(results[0]);
   }
 
-  // Delete credentials
+  /**
+   * Delete credentials
+   */
   async deleteCredentials(credentialId: number): Promise<void> {
-    await db.delete(cloudCredentials)
-      .where(eq(cloudCredentials.id, credentialId));
+    await db.delete(cloudCredentials).where(eq(cloudCredentials.id, credentialId));
   }
 
-  // Test if credentials are valid by attempting to connect to the provider
+  /**
+   * Test if the credentials are valid by attempting to connect to the cloud provider
+   */
   async testCredentials(credentials: AllCloudCredentials): Promise<boolean> {
     try {
+      // In a real app, we would use the cloud provider SDK to test the credentials
       switch (credentials.provider) {
         case CloudProvider.AWS:
           return await this.testAwsCredentials(credentials as AWSCredentials);
@@ -162,27 +197,90 @@ export class CredentialsService {
           return false;
       }
     } catch (error) {
-      console.error(`Error testing credentials: ${error}`);
+      console.error('Error testing credentials:', error);
       return false;
     }
   }
 
+  /**
+   * Helper methods to test credentials for each cloud provider
+   * In a real app, these would use the actual cloud SDKs
+   */
   private async testAwsCredentials(credentials: AWSCredentials): Promise<boolean> {
-    // Here you would use AWS SDK to verify credentials
-    // For example, try to call a simple API like listing S3 buckets
-    console.log("Testing AWS credentials");
-    return true; // Mock implementation
+    // Validate required credentials
+    if (!credentials.accessKeyId || !credentials.secretAccessKey) {
+      return false;
+    }
+
+    // In a real app: Call AWS SDK to verify credentials
+    // For demo purposes - return true if they have the expected structure
+    return credentials.accessKeyId.length >= 16 && credentials.secretAccessKey.length >= 16;
   }
 
   private async testGcpCredentials(credentials: GCPCredentials): Promise<boolean> {
-    // Here you would use GCP SDK to verify credentials
-    console.log("Testing GCP credentials");
-    return true; // Mock implementation
+    // Validate required credentials
+    if (!credentials.serviceAccountKey) {
+      return false;
+    }
+
+    try {
+      // Ensure service account key can be parsed as JSON
+      JSON.parse(credentials.serviceAccountKey);
+      
+      // In a real app: Verify the service account key with GCP API
+      // For demo purposes - return true if it's valid JSON
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   private async testAzureCredentials(credentials: AzureCredentials): Promise<boolean> {
-    // Here you would use Azure SDK to verify credentials
-    console.log("Testing Azure credentials");
-    return true; // Mock implementation
+    // Validate required credentials
+    if (!credentials.clientId || !credentials.clientSecret || 
+        !credentials.tenantId || !credentials.subscriptionId) {
+      return false;
+    }
+
+    // In a real app: Call Azure SDK to verify credentials
+    // For demo purposes - return true if they have the expected structure
+    return credentials.clientId.length >= 10 && 
+           credentials.clientSecret.length >= 10 &&
+           credentials.tenantId.length >= 10 &&
+           credentials.subscriptionId.length >= 10;
+  }
+
+  /**
+   * Helper method to decrypt a credential record from the database
+   */
+  private decryptCredentials(credential: CloudCredential): AllCloudCredentials | null {
+    try {
+      const decrypted = this.encryption.decrypt(
+        credential.encryptedCredentials,
+        credential.encryptionIv
+      );
+      
+      const parsed = JSON.parse(decrypted) as AllCloudCredentials;
+      return parsed;
+    } catch (error) {
+      console.error('Error decrypting credentials:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate a default name for credentials if none provided
+   */
+  private getDefaultName(credentials: AllCloudCredentials): string {
+    switch (credentials.provider) {
+      case CloudProvider.AWS:
+        return 'AWS Account';
+      case CloudProvider.GCP:
+        return 'GCP Account';
+      case CloudProvider.AZURE:
+        return 'Azure Account';
+      default:
+        return 'Cloud Account';
+    }
   }
 }

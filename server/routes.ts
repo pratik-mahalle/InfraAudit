@@ -11,10 +11,14 @@ import {
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { setupAuth } from "./auth";
+import { registerCloudProviderRoutes } from "./routes/cloud-providers";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes and middleware
   setupAuth(app);
+  
+  // Setup cloud provider routes
+  registerCloudProviderRoutes(app);
   
   // Error handler helper for Zod validation errors
   const handleZodError = (err: ZodError, res: Response) => {
