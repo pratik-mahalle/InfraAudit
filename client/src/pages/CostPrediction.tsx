@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Resource } from "@shared/schema";
-import { ArrowRight, Percent, DollarSign, TrendingUp, Calendar, Loader2 } from "lucide-react";
+import { 
+  ArrowRight, Percent, DollarSign, TrendingUp, Calendar, Loader2, 
+  ShieldAlert, Database, AlertTriangle, HardDrive, User, Clock,
+  ShieldCheck, DollarSign as Dollar
+} from "lucide-react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -175,6 +179,199 @@ export default function CostPrediction() {
                   <span className="text-sm font-medium">Optimize</span>
                 </div>
               </RadioGroup>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Recommendations Section */}
+        <div className="w-full space-y-5">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight mb-4">AI RECOMMENDATIONS</h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-white dark:bg-gray-900 border-border/50 shadow-sm overflow-hidden">
+                <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b border-border/40 pb-3 px-6">
+                  <CardTitle className="text-base text-gray-800 dark:text-gray-200 font-semibold tracking-tight">
+                    SECURITY & MISCONFIGURATION INSIGHTS
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 px-5">
+                  <div className="space-y-5">
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        <ShieldAlert className="h-5 w-5 text-blue-600 dark:text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                          S3 bucket 'logs-backup' became public on 3 occasions
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Consider setting policy to prevent public ACLs
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                          IAM Role 'admin-devops' has wildcard '*' permissions across 12 services
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Use least-privilege policy
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        <Database className="h-5 w-5 text-blue-600 dark:text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                          Unattached EBS volumes: Attach to instances or delete
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          5 volumes consuming unnecessary resources
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white dark:bg-gray-900 border-border/50 shadow-sm overflow-hidden">
+                <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b border-border/40 pb-3 px-6">
+                  <CardTitle className="text-base text-gray-800 dark:text-gray-200 font-semibold tracking-tight">
+                    COST OPTIMIZATION RECOMMENDATIONS
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 px-5">
+                  <div className="space-y-5">
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        <Dollar className="h-5 w-5 text-green-600 dark:text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                          EC2 instance i-xyz123 at 5% utilized for 7 days
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Downsizing or stopping to save costs
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        <Dollar className="h-5 w-5 text-green-600 dark:text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                          Switch to a Reserved instance for EC2 (linux-prod)
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Savings {">"}$90/mo with 1-year commitment
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                          RDS 'mysql-prod' backup retention at 35 days
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Reduce to 14 days to save storage costs
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white dark:bg-gray-900 border-border/50 shadow-sm overflow-hidden">
+                <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b border-border/40 pb-3 px-6">
+                  <CardTitle className="text-base text-gray-800 dark:text-gray-200 font-semibold tracking-tight">
+                    ANOMALY DETECTION
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 px-5">
+                  <div className="space-y-5">
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                          VPC 'prod-vpc' 300% Ingress traffic in past 24 hours
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Unusual compared to baseline levels
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                          Sudden IAM policy change without staging
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Suspect privilege escalation attempt
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-white dark:bg-gray-900 border-border/50 shadow-sm overflow-hidden">
+                <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b border-border/40 pb-3 px-6">
+                  <CardTitle className="text-base text-gray-800 dark:text-gray-200 font-semibold tracking-tight">
+                    INFRASTRUCTURE HYGIENE SUGGESTIONS
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 px-5">
+                  <div className="space-y-5">
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        <HardDrive className="h-5 w-5 text-purple-600 dark:text-purple-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                          3 orphaned Load Balancers with 0 backend instances
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Delete to avoid unnecessary costs
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <div className="mt-0.5">
+                        <User className="h-5 w-5 text-purple-600 dark:text-purple-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                          4 IAM users haven{"'"}t logged in for {">"}90 days
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Deactivate or remove unused accounts
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
