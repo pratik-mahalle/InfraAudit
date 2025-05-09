@@ -1,0 +1,448 @@
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { CostTrendChart } from "@/components/dashboard/CostTrendChart";
+import { CostRecommendations } from "@/components/dashboard/CostRecommendations";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { 
+  DollarSign, 
+  ArrowUpRight, 
+  TrendingDown, 
+  AlertCircle, 
+  ArrowDownRight,
+  Download
+} from "lucide-react";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { formatCurrency, formatDate, formatTimeAgo } from "@/lib/utils";
+import { CostAnomaly, Recommendation, Resource } from "@/types";
+
+export default function CostOptimization() {
+  const [resourceFilter, setResourceFilter] = useState("all");
+  const [timeframeFilter, setTimeframeFilter] = useState("7d");
+
+  // Fetch cost anomalies
+  const { data: costAnomalies, isLoading: isLoadingAnomalies } = useQuery<CostAnomaly[]>({
+    queryKey: ["/api/cost-anomalies"],
+  });
+
+  // Fetch recommendations
+  const { data: recommendations, isLoading: isLoadingRecommendations } = useQuery<Recommendation[]>({
+    queryKey: ["/api/recommendations"],
+  });
+
+  // Fetch resources
+  const { data: resources } = useQuery<Resource[]>({
+    queryKey: ["/api/resources"],
+  });
+
+  const getResourceName = (id: number) => {
+    const resource = resources?.find((r) => r.id === id);
+    return resource ? resource.name : `Resource ID: ${id}`;
+  };
+
+  // Calculate total costs and savings
+  const totalCurrentSpend = resources?.reduce((sum, resource) => sum + resource.cost, 0) || 0;
+  const totalProjectedSpend = Math.round(totalCurrentSpend * 1.25); // 25% increase projection
+  const totalPotentialSavings = recommendations?.reduce(
+    (sum, rec) => sum + rec.potentialSavings,
+    0
+  ) || 0;
+
+  return (
+    <DashboardLayout>
+      <PageHeader
+        title="Cost Optimization"
+        description="Monitor and optimize cloud spending across your infrastructure"
+        actions={
+          <Button className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export Cost Report
+          </Button>
+        }
+      />
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-danger bg-opacity-10 p-3 rounded-full">
+                <DollarSign className="h-6 w-6 text-danger" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Current Month Spend</p>
+                <p className="text-2xl font-bold">{formatCurrency(totalCurrentSpend)}</p>
+              </div>
+            </div>
+            <div className="text-danger flex items-center">
+              <ArrowUpRight className="h-4 w-4 mr-1" />
+              <span>+32%</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-warning bg-opacity-10 p-3 rounded-full">
+                <AlertCircle className="h-6 w-6 text-warning" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Cost Anomalies</p>
+                <p className="text-2xl font-bold">{costAnomalies?.length || 0}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-gray-400">Last 30 days</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-secondary bg-opacity-10 p-3 rounded-full">
+                <TrendingDown className="h-6 w-6 text-secondary" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Potential Savings</p>
+                <p className="text-2xl font-bold">{formatCurrency(totalPotentialSavings)}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-gray-400">{recommendations?.length || 0} recommendations</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cost Trend Chart */}
+      <div className="mb-6">
+        <CostTrendChart
+          currentSpend={totalCurrentSpend}
+          projectedSpend={totalProjectedSpend}
+          potentialSavings={totalPotentialSavings}
+          optimizationCount={recommendations?.length || 0}
+          spendChange={32}
+          projectionChange={25}
+          isLoading={isLoadingAnomalies}
+        />
+      </div>
+
+      {/* Tabs for different views */}
+      <Tabs defaultValue="anomalies" className="mb-6">
+        <TabsList>
+          <TabsTrigger value="anomalies">Cost Anomalies</TabsTrigger>
+          <TabsTrigger value="by-service">Costs by Service</TabsTrigger>
+          <TabsTrigger value="by-region">Costs by Region</TabsTrigger>
+        </TabsList>
+
+        {/* Cost Anomalies Tab */}
+        <TabsContent value="anomalies" className="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Cost Anomalies</CardTitle>
+              <CardDescription>
+                Unexpected cost increases detected in your infrastructure
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-end mb-4">
+                <Select
+                  value={timeframeFilter}
+                  onValueChange={setTimeframeFilter}
+                >
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Last 7 days" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7d">Last 7 days</SelectItem>
+                    <SelectItem value="30d">Last 30 days</SelectItem>
+                    <SelectItem value="90d">Last 90 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Resource</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Increase</TableHead>
+                    <TableHead>Previous Cost</TableHead>
+                    <TableHead>Current Cost</TableHead>
+                    <TableHead>Detected</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoadingAnomalies ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center">
+                        Loading cost anomalies...
+                      </TableCell>
+                    </TableRow>
+                  ) : costAnomalies && costAnomalies.length > 0 ? (
+                    costAnomalies.map((anomaly) => (
+                      <TableRow key={anomaly.id}>
+                        <TableCell className="font-medium">
+                          {getResourceName(anomaly.resourceId)}
+                        </TableCell>
+                        <TableCell>{anomaly.anomalyType}</TableCell>
+                        <TableCell className="text-danger">
+                          <div className="flex items-center">
+                            <ArrowUpRight className="h-4 w-4 mr-1" />
+                            {anomaly.percentage}%
+                          </div>
+                        </TableCell>
+                        <TableCell>{formatCurrency(anomaly.previousCost)}</TableCell>
+                        <TableCell>{formatCurrency(anomaly.currentCost)}</TableCell>
+                        <TableCell>{formatTimeAgo(anomaly.detectedAt)}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            anomaly.status === "open"
+                              ? "bg-warning bg-opacity-10 text-warning"
+                              : anomaly.status === "investigated"
+                              ? "bg-primary bg-opacity-10 text-primary"
+                              : "bg-secondary bg-opacity-10 text-secondary"
+                          }`}>
+                            {anomaly.status.charAt(0).toUpperCase() + anomaly.status.slice(1)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-primary hover:text-primary/80"
+                            disabled={anomaly.status !== "open"}
+                          >
+                            {anomaly.status === "open" ? "Investigate" : "View"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center">
+                        No cost anomalies detected.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Costs by Service Tab */}
+        <TabsContent value="by-service" className="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Costs by Service</CardTitle>
+              <CardDescription>
+                Breakdown of costs across different cloud services
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px] flex items-center justify-center bg-gray-100 rounded-lg mb-4">
+                <div className="text-center text-gray-500">
+                  <DollarSign className="h-12 w-12 mx-auto mb-2" />
+                  <p>Service cost distribution visualization</p>
+                </div>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Current Cost</TableHead>
+                    <TableHead>Previous Period</TableHead>
+                    <TableHead>Change</TableHead>
+                    <TableHead>% of Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {resources ? (
+                    <>
+                      <TableRow>
+                        <TableCell className="font-medium">EC2 Instances</TableCell>
+                        <TableCell>{formatCurrency(146000)}</TableCell>
+                        <TableCell>{formatCurrency(122000)}</TableCell>
+                        <TableCell className="text-danger">
+                          <div className="flex items-center">
+                            <ArrowUpRight className="h-4 w-4 mr-1" />
+                            19.7%
+                          </div>
+                        </TableCell>
+                        <TableCell>42%</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">RDS Databases</TableCell>
+                        <TableCell>{formatCurrency(120000)}</TableCell>
+                        <TableCell>{formatCurrency(115000)}</TableCell>
+                        <TableCell className="text-danger">
+                          <div className="flex items-center">
+                            <ArrowUpRight className="h-4 w-4 mr-1" />
+                            4.3%
+                          </div>
+                        </TableCell>
+                        <TableCell>35%</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">S3 Storage</TableCell>
+                        <TableCell>{formatCurrency(45000)}</TableCell>
+                        <TableCell>{formatCurrency(48000)}</TableCell>
+                        <TableCell className="text-secondary">
+                          <div className="flex items-center">
+                            <ArrowDownRight className="h-4 w-4 mr-1" />
+                            6.3%
+                          </div>
+                        </TableCell>
+                        <TableCell>13%</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">Other Services</TableCell>
+                        <TableCell>{formatCurrency(34000)}</TableCell>
+                        <TableCell>{formatCurrency(30000)}</TableCell>
+                        <TableCell className="text-danger">
+                          <div className="flex items-center">
+                            <ArrowUpRight className="h-4 w-4 mr-1" />
+                            13.3%
+                          </div>
+                        </TableCell>
+                        <TableCell>10%</TableCell>
+                      </TableRow>
+                    </>
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        Loading cost data...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Costs by Region Tab */}
+        <TabsContent value="by-region" className="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Costs by Region</CardTitle>
+              <CardDescription>
+                Geographic distribution of cloud resource costs
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px] flex items-center justify-center bg-gray-100 rounded-lg mb-4">
+                <div className="text-center text-gray-500">
+                  <TrendingDown className="h-12 w-12 mx-auto mb-2" />
+                  <p>Regional cost distribution visualization</p>
+                </div>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Region</TableHead>
+                    <TableHead>Current Cost</TableHead>
+                    <TableHead>Previous Period</TableHead>
+                    <TableHead>Change</TableHead>
+                    <TableHead>% of Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {resources ? (
+                    <>
+                      <TableRow>
+                        <TableCell className="font-medium">US East (N. Virginia)</TableCell>
+                        <TableCell>{formatCurrency(215000)}</TableCell>
+                        <TableCell>{formatCurrency(180000)}</TableCell>
+                        <TableCell className="text-danger">
+                          <div className="flex items-center">
+                            <ArrowUpRight className="h-4 w-4 mr-1" />
+                            19.4%
+                          </div>
+                        </TableCell>
+                        <TableCell>62%</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">US West (Oregon)</TableCell>
+                        <TableCell>{formatCurrency(80000)}</TableCell>
+                        <TableCell>{formatCurrency(90000)}</TableCell>
+                        <TableCell className="text-secondary">
+                          <div className="flex items-center">
+                            <ArrowDownRight className="h-4 w-4 mr-1" />
+                            11.1%
+                          </div>
+                        </TableCell>
+                        <TableCell>23%</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="font-medium">EU (Ireland)</TableCell>
+                        <TableCell>{formatCurrency(50000)}</TableCell>
+                        <TableCell>{formatCurrency(45000)}</TableCell>
+                        <TableCell className="text-danger">
+                          <div className="flex items-center">
+                            <ArrowUpRight className="h-4 w-4 mr-1" />
+                            11.1%
+                          </div>
+                        </TableCell>
+                        <TableCell>15%</TableCell>
+                      </TableRow>
+                    </>
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-24 text-center">
+                        Loading regional cost data...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Cost Optimization Recommendations */}
+      <div className="mb-6">
+        <CostRecommendations
+          recommendations={recommendations || []}
+          isLoading={isLoadingRecommendations}
+        />
+      </div>
+    </DashboardLayout>
+  );
+}
