@@ -3,6 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { CostTrendChart } from "@/components/dashboard/CostTrendChart";
 import { CostRecommendations } from "@/components/dashboard/CostRecommendations";
+import { CostForecasting } from "@/components/cost/CostForecasting";
+import { UnusedResourceRecommender } from "@/components/recommendations/UnusedResourceRecommender";
+import { SavingsPlansOptimizer } from "@/components/cost/SavingsPlansOptimizer";
 import {
   Card,
   CardContent,
@@ -43,10 +46,12 @@ import {
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { formatCurrency, formatDate, formatTimeAgo } from "@/lib/utils";
 import { CostAnomaly, Recommendation, Resource } from "@/types";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CostOptimization() {
   const [resourceFilter, setResourceFilter] = useState("all");
   const [timeframeFilter, setTimeframeFilter] = useState("7d");
+  const { toast } = useToast();
 
   // Fetch cost anomalies
   const { data: costAnomalies, isLoading: isLoadingAnomalies } = useQuery<CostAnomaly[]>({
@@ -435,6 +440,237 @@ export default function CostOptimization() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Cost Forecasting */}
+      <div className="mb-6">
+        <CostForecasting
+          historicalData={[
+            { date: "Jan", actual: 4200, forecast: 0 },
+            { date: "Feb", actual: 4800, forecast: 0 },
+            { date: "Mar", actual: 5100, forecast: 0 },
+            { date: "Apr", actual: 4900, forecast: 0 },
+            { date: "May", actual: 5300, forecast: 0 },
+            { date: "Jun", actual: 5600, forecast: 0 },
+            { date: "Jul", actual: 5800, forecast: 0 },
+            { date: "Aug", actual: 5900, forecast: 0 },
+            { date: "Sep", actual: 6200, forecast: 0 },
+            { date: "Oct", actual: 5500, forecast: 0 },
+            { date: "Nov", actual: 0, forecast: 6100 },
+            { date: "Dec", actual: 0, forecast: 6500 }
+          ]}
+          monthlyBudget={6000}
+          forecastTotal={6500}
+          isLoading={false}
+          onUpdateBudget={(newBudget) => {
+            // In a real app, this would update the budget via API
+            toast({
+              title: "Budget Updated",
+              description: `Monthly budget has been updated to ${formatCurrency(newBudget)}.`
+            });
+          }}
+        />
+      </div>
+      
+      {/* Unused Resource Recommender */}
+      <div className="mb-6">
+        <UnusedResourceRecommender
+          resources={[
+            {
+              id: "res1",
+              name: "ebs-vol-1234",
+              type: "EBS Volume",
+              region: "us-east-1",
+              lastUsed: "2023-10-01",
+              costPerMonth: 15,
+              provider: "AWS",
+              status: "available",
+              utilization: 0
+            },
+            {
+              id: "res2",
+              name: "idle-instance-5678",
+              type: "EC2 Instance",
+              region: "us-east-1",
+              lastUsed: "2023-11-15",
+              costPerMonth: 95,
+              provider: "AWS",
+              status: "running",
+              utilization: 8
+            },
+            {
+              id: "res3",
+              name: "lb-web-9012",
+              type: "Load Balancer",
+              region: "us-west-2", 
+              lastUsed: "2023-10-20",
+              costPerMonth: 25,
+              provider: "AWS",
+              status: "active",
+              utilization: 2
+            },
+            {
+              id: "res4",
+              name: "eip-unused-3456",
+              type: "Elastic IP",
+              region: "us-east-2",
+              lastUsed: "2023-09-05",
+              costPerMonth: 3,
+              provider: "AWS",
+              status: "allocated",
+              utilization: 0
+            },
+            {
+              id: "res5",
+              name: "rds-dev-7890",
+              type: "RDS Instance",
+              region: "us-west-1",
+              lastUsed: "2023-11-10",
+              costPerMonth: 120,
+              provider: "AWS",
+              status: "available",
+              utilization: 15
+            }
+          ]}
+          isLoading={false}
+          onCleanup={(resources) => {
+            // In a real app, this would clean up resources via API
+            toast({
+              title: "Resources Scheduled for Cleanup",
+              description: `${resources.length} resources scheduled for removal.`
+            });
+          }}
+        />
+      </div>
+      
+      {/* Savings Plans Optimizer */}
+      <div className="mb-6">
+        <SavingsPlansOptimizer
+          savingsPlans={[
+            {
+              id: "sp1",
+              type: "Compute",
+              term: 12,
+              upfrontPayment: 0,
+              monthlyCommitment: 2000,
+              estimatedCoverage: 85,
+              estimatedSavings: 24,
+              totalSavingsAmount: 7680,
+              resourceTypes: ["EC2", "Fargate", "Lambda"],
+              regions: ["us-east-1", "us-west-2"],
+              provider: "AWS"
+            },
+            {
+              id: "sp2",
+              type: "EC2 Instance",
+              term: 36,
+              upfrontPayment: 15000,
+              monthlyCommitment: 1500,
+              estimatedCoverage: 90,
+              estimatedSavings: 42,
+              totalSavingsAmount: 22680,
+              resourceTypes: ["EC2"],
+              regions: ["us-east-1", "us-east-2", "us-west-1"],
+              provider: "AWS"
+            },
+            {
+              id: "sp3",
+              type: "SageMaker",
+              term: 12,
+              upfrontPayment: 0,
+              monthlyCommitment: 500,
+              estimatedCoverage: 75,
+              estimatedSavings: 20,
+              totalSavingsAmount: 1500,
+              resourceTypes: ["SageMaker"],
+              regions: ["us-east-1"],
+              provider: "AWS"
+            }
+          ]}
+          reservedInstances={[
+            {
+              id: "ri1",
+              instanceType: "t3.xlarge",
+              region: "us-east-1",
+              term: 12,
+              paymentOption: "no_upfront",
+              upfrontPayment: 0,
+              monthlyPayment: 110,
+              onDemandCost: 150,
+              savingsPercentage: 27,
+              totalSavingsAmount: 480,
+              provider: "AWS"
+            },
+            {
+              id: "ri2",
+              instanceType: "m5.2xlarge",
+              region: "us-west-2",
+              term: 36,
+              paymentOption: "partial_upfront",
+              upfrontPayment: 1500,
+              monthlyPayment: 160,
+              onDemandCost: 280,
+              savingsPercentage: 40,
+              totalSavingsAmount: 4320,
+              provider: "AWS"
+            },
+            {
+              id: "ri3",
+              instanceType: "r5.large",
+              region: "us-east-2",
+              term: 12,
+              paymentOption: "all_upfront",
+              upfrontPayment: 1800,
+              monthlyPayment: 0,
+              onDemandCost: 180,
+              savingsPercentage: 25,
+              totalSavingsAmount: 360,
+              provider: "AWS"
+            }
+          ]}
+          usagePatterns={[
+            {
+              resourceType: "EC2 - t3.xlarge",
+              region: "us-east-1",
+              monthlyHours: 720,
+              averageUtilization: 85,
+              onDemandCost: 150,
+              provider: "AWS"
+            },
+            {
+              resourceType: "EC2 - m5.2xlarge",
+              region: "us-west-2",
+              monthlyHours: 720,
+              averageUtilization: 90,
+              onDemandCost: 280,
+              provider: "AWS"
+            },
+            {
+              resourceType: "SageMaker - ml.c5.xlarge",
+              region: "us-east-1",
+              monthlyHours: 600,
+              averageUtilization: 60,
+              onDemandCost: 120,
+              provider: "AWS"
+            },
+            {
+              resourceType: "RDS - db.m5.large",
+              region: "us-east-2",
+              monthlyHours: 720,
+              averageUtilization: 95,
+              onDemandCost: 220,
+              provider: "AWS"
+            }
+          ]}
+          isLoading={false}
+          onPurchase={(items, type) => {
+            // In a real app, this would initiate purchase via API
+            toast({
+              title: `${type === 'savings_plan' ? 'Savings Plans' : 'Reserved Instances'} Purchase`,
+              description: `${items.length} ${type === 'savings_plan' ? 'savings plans' : 'reserved instances'} purchase initiated.`
+            });
+          }}
+        />
+      </div>
 
       {/* Cost Optimization Recommendations */}
       <div className="mb-6">
