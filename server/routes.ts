@@ -12,6 +12,7 @@ import {
 import { ZodError } from "zod";
 import { setupAuth } from "./auth";
 import { registerCloudProviderRoutes } from "./routes/cloud-providers";
+import { notificationsRouter } from "./routes/notifications";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes and middleware
@@ -19,6 +20,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup cloud provider routes
   registerCloudProviderRoutes(app);
+  
+  // Setup notifications routes
+  app.use('/api/notifications', notificationsRouter);
   
   // Error handler helper for Zod validation errors
   const handleZodError = (err: ZodError, res: Response) => {
