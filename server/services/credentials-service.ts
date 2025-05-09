@@ -12,6 +12,7 @@ import {
   GCPCredentials, 
   AzureCredentials 
 } from '../../shared/cloud-providers';
+import { IAMClient, ListAccessKeysCommand } from "@aws-sdk/client-iam";
 import { eq } from 'drizzle-orm';
 
 /**
@@ -212,9 +213,28 @@ export class CredentialsService {
       return false;
     }
 
-    // In a real app: Call AWS SDK to verify credentials
-    // For demo purposes - return true if they have the expected structure
-    return credentials.accessKeyId.length >= 16 && credentials.secretAccessKey.length >= 16;
+    try {
+      // Use IAM client to test if credentials are valid by making a simple API call
+      const region = credentials.region || 'us-east-1';
+      const iamClient = new IAMClient({
+        region,
+        credentials: {
+          accessKeyId: credentials.accessKeyId,
+          secretAccessKey: credentials.secretAccessKey
+        }
+      });
+      
+      // Make a simple call to list access keys
+      // This will fail if credentials are invalid
+      const command = new ListAccessKeysCommand({});
+      await iamClient.send(command);
+      
+      console.log('AWS credentials validation successful');
+      return true;
+    } catch (error) {
+      console.error('AWS credentials validation failed:', error);
+      return false;
+    }
   }
 
   private async testGcpCredentials(credentials: GCPCredentials): Promise<boolean> {
