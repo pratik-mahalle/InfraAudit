@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { CostTrendChart } from "@/components/dashboard/CostTrendChart";
 import { CostRecommendations } from "@/components/dashboard/CostRecommendations";
@@ -87,10 +88,18 @@ export default function CostOptimization() {
         title="Cost Optimization"
         description="Monitor and optimize cloud spending across your infrastructure"
         actions={
-          <Button className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Export Cost Report
-          </Button>
+          <div className="flex space-x-2">
+            <Button variant="outline" className="flex items-center gap-2" asChild>
+              <Link href="/cost-prediction">
+                <TrendingUp className="h-4 w-4" />
+                AI Cost Prediction
+              </Link>
+            </Button>
+            <Button className="flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Export Cost Report
+            </Button>
+          </div>
         }
       />
 
