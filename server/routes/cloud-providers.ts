@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CloudProvider, AllCloudCredentials } from '../../shared/cloud-providers';
 import { CredentialsService } from '../services/credentials-service';
 import { CloudProviderService } from '../services/cloud-provider-service';
+import { storage } from '../storage';
 
 const credentialsService = new CredentialsService();
 
