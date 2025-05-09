@@ -145,28 +145,43 @@ export default function CostPrediction() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8 space-y-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">AI Cost Prediction & Optimization</h1>
-            <p className="text-muted-foreground mt-1">Leverage AI to forecast future costs and identify saving opportunities</p>
+      <div className="w-full max-w-full py-3 md:py-5 space-y-6">
+        {/* Header section with gradient background */}
+        <div className="bg-gradient-to-r from-blue-50/80 to-cyan-50/80 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl p-5 mb-6 shadow-sm border border-blue-100/50 dark:border-blue-800/20">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+                AI Cost Intelligence
+              </h1>
+              <p className="text-muted-foreground mt-1 max-w-2xl">
+                Leverage advanced AI to forecast future cloud costs and identify optimization opportunities across your infrastructure
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <RadioGroup defaultValue="standard" className="grid grid-cols-2 h-9 items-center justify-center rounded-lg bg-white/80 dark:bg-gray-900/50 p-1 text-muted-foreground shadow-sm border border-blue-100/70 dark:border-blue-800/30">
+                <div 
+                  className={`px-4 ${activeTab === 'prediction' ? 'bg-blue-100/80 dark:bg-blue-900/30 shadow-sm rounded-md text-blue-700 dark:text-blue-300' : ''} cursor-pointer flex items-center justify-center h-7`} 
+                  onClick={() => setActiveTab('prediction')}
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">Forecast</span>
+                </div>
+                <div 
+                  className={`px-4 ${activeTab === 'optimization' ? 'bg-green-100/80 dark:bg-green-900/30 shadow-sm rounded-md text-green-700 dark:text-green-300' : ''} cursor-pointer flex items-center justify-center h-7`} 
+                  onClick={() => setActiveTab('optimization')}
+                >
+                  <Percent className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">Optimize</span>
+                </div>
+              </RadioGroup>
+            </div>
           </div>
-          
-          <RadioGroup defaultValue="standard" className="grid grid-cols-2 h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground w-auto">
-            <div className={`px-3 ${activeTab === 'prediction' ? 'bg-background shadow-sm rounded-md text-foreground' : ''} cursor-pointer flex items-center justify-center h-7`} onClick={() => setActiveTab('prediction')}>
-              <TrendingUp className="h-4 w-4 mr-2" />
-              <span className="text-sm font-medium">Forecast</span>
-            </div>
-            <div className={`px-3 ${activeTab === 'optimization' ? 'bg-background shadow-sm rounded-md text-foreground' : ''} cursor-pointer flex items-center justify-center h-7`} onClick={() => setActiveTab('optimization')}>
-              <Percent className="h-4 w-4 mr-2" />
-              <span className="text-sm font-medium">Optimize</span>
-            </div>
-          </RadioGroup>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-5">
           {/* Configuration Card */}
-          <Card className="md:col-span-1 bg-card/50 backdrop-blur-sm border border-border/50">
+          <Card className="md:col-span-1 lg:col-span-3 bg-card/50 backdrop-blur-sm border border-border/50 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center text-lg">
                 <span className="bg-primary/10 p-1.5 rounded-md mr-2">
@@ -179,46 +194,48 @@ export default function CostPrediction() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="resource" className="text-sm font-medium">Resource</Label>
-                <Select 
-                  value={selectedResourceId || "all"} 
-                  onValueChange={value => setSelectedResourceId(value)}
-                >
-                  <SelectTrigger id="resource" className="bg-background">
-                    <SelectValue placeholder="All Resources" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Resources</SelectItem>
-                    {resources?.map((resource: Resource) => (
-                      <SelectItem key={resource.id} value={resource.id.toString()}>
-                        {resource.name} ({resource.type})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">Select specific resource or analyze all</p>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="resource" className="text-sm font-medium">Resource</Label>
+                  <Select 
+                    value={selectedResourceId || "all"} 
+                    onValueChange={value => setSelectedResourceId(value)}
+                  >
+                    <SelectTrigger id="resource" className="bg-background">
+                      <SelectValue placeholder="All Resources" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Resources</SelectItem>
+                      {resources?.map((resource: Resource) => (
+                        <SelectItem key={resource.id} value={resource.id.toString()}>
+                          {resource.name} ({resource.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">Select specific resource or analyze all</p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="period" className="text-sm font-medium">Prediction Period</Label>
-                <Select value={monthsToPredict} onValueChange={setMonthsToPredict}>
-                  <SelectTrigger id="period" className="bg-background">
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {predictionPeriods.map(period => (
-                      <SelectItem key={period.value} value={period.value}>
-                        {period.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">How far into the future to predict</p>
+                <div className="space-y-2">
+                  <Label htmlFor="period" className="text-sm font-medium">Prediction Period</Label>
+                  <Select value={monthsToPredict} onValueChange={setMonthsToPredict}>
+                    <SelectTrigger id="period" className="bg-background">
+                      <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {predictionPeriods.map(period => (
+                        <SelectItem key={period.value} value={period.value}>
+                          {period.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">How far into the future to predict</p>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="pt-2">
-              <div className="space-y-2 w-full">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
                 <Button 
                   onClick={handleRunPrediction} 
                   disabled={isPredictionLoading}
@@ -249,7 +266,7 @@ export default function CostPrediction() {
           </Card>
 
           {/* Results Area */}
-          <div className="md:col-span-2 lg:col-span-3">
+          <div className="md:col-span-3 lg:col-span-9">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="prediction">Cost Prediction</TabsTrigger>
