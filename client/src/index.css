@@ -2,6 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 40% 98%;
+    
+    --secondary: 215 27% 16.9%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    
+    --radius: 0.5rem;
+  }
+}
+
+body {
+  background-color: #050508;
+  color: #f8f8f8;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.hero-gradient {
+  background: radial-gradient(ellipse at center, rgba(33, 72, 192, 0.15) 0%, rgba(10, 10, 25, 0) 70%),
+              radial-gradient(ellipse at bottom right, rgba(103, 76, 192, 0.15) 0%, rgba(10, 10, 25, 0) 70%);
+  background-color: #050508;
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #4a8fff, #9e77ed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.header-blur {
+  backdrop-filter: blur(8px);
+  background-color: rgba(5, 5, 8, 0.8);
+}
+
+.btn-gradient {
+  background: linear-gradient(to right, #4a8fff, #6c5dd3);
+  transition: all 0.3s ease;
+}
+
+.btn-gradient:hover {
+  background: linear-gradient(to right, #3a7ff0, #5c4dc3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 143, 255, 0.25);
+}
+
 :root {
       --background: 0 0% 100%;
 --foreground: 20 14.3% 4.1%;
