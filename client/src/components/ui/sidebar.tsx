@@ -63,9 +63,9 @@ export function Sidebar() {
           {links.map((link) => (
             <li key={link.href} className="mb-1">
               <Link href={link.href}>
-                <a
+                <div
                   className={cn(
-                    "flex items-center px-4 py-3 text-sm font-medium rounded-r-lg",
+                    "flex items-center px-4 py-3 text-sm font-medium rounded-r-lg cursor-pointer",
                     location === link.href
                       ? "bg-primary bg-opacity-10 text-primary border-l-4 border-primary"
                       : "text-gray-700 hover:bg-gray-100"
@@ -73,7 +73,7 @@ export function Sidebar() {
                 >
                   <link.icon className="mr-3 h-5 w-5" />
                   {link.name}
-                </a>
+                </div>
               </Link>
             </li>
           ))}
@@ -226,9 +226,9 @@ export function MobileSidebar() {
             {links.map((link) => (
               <li key={link.href} className="mb-1">
                 <Link href={link.href}>
-                  <a
+                  <div
                     className={cn(
-                      "flex items-center px-4 py-3 text-sm font-medium rounded-r-lg",
+                      "flex items-center px-4 py-3 text-sm font-medium rounded-r-lg cursor-pointer",
                       location === link.href
                         ? "bg-primary bg-opacity-10 text-primary border-l-4 border-primary"
                         : "text-gray-700 hover:bg-gray-100"
@@ -237,7 +237,7 @@ export function MobileSidebar() {
                   >
                     <link.icon className="mr-3 h-5 w-5" />
                     {link.name}
-                  </a>
+                  </div>
                 </Link>
               </li>
             ))}
