@@ -74,26 +74,42 @@ export function StatusCard({
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-col">
           <span className="text-gray-500 text-sm">{title}</span>
-          <span 
-            className={cn(
-              "font-semibold text-xl mt-1 font-inter",
-              status === "critical" && "text-danger",
-              status === "warning" && "text-warning"
-            )}
-          >
-            {value}
-          </span>
+          {isLoading ? (
+            <Skeleton className="h-8 w-20 mt-1" />
+          ) : (
+            <span 
+              className={cn(
+                "font-semibold text-xl mt-1 font-inter",
+                status === "critical" && "text-danger",
+                status === "warning" && "text-warning"
+              )}
+            >
+              {value}
+            </span>
+          )}
         </div>
         <div className={cn("rounded-full p-2", getBgColor(status))}>
-          {getIcon()}
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+          ) : (
+            getIcon()
+          )}
         </div>
       </div>
-      <p className="text-sm text-gray-500 mb-3">{description}</p>
+      {isLoading ? (
+        <Skeleton className="h-4 w-full mb-3" />
+      ) : (
+        <p className="text-sm text-gray-500 mb-3">{description}</p>
+      )}
       <div className="flex justify-between items-center">
         <span className="text-xs text-gray-500">{timeframe}</span>
-        <a href={actionLink} className="text-primary text-sm font-medium hover:underline">
-          {actionText}
-        </a>
+        {isLoading ? (
+          <Skeleton className="h-4 w-20" />
+        ) : (
+          <a href={actionLink} className="text-primary text-sm font-medium hover:underline">
+            {actionText}
+          </a>
+        )}
       </div>
     </div>
   );
