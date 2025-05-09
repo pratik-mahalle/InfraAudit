@@ -86,13 +86,20 @@ export default function CostOptimization() {
   
   // Generate AWS optimizations based on real S3 buckets
   useEffect(() => {
-    if (awsResources && awsResources.length > 0 && !isGeneratingAwsOptimizations) {
-      setIsGeneratingAwsOptimizations(true);
+    console.log("AWS Resources:", awsResources);
+    
+    // Clear existing AWS optimizations when the component loads or awsResources changes
+    setAwsOptimizations([]);
+    
+    if (awsResources && awsResources.length > 0) {
+      console.log("Found AWS resources, generating recommendations");
       
       // Create optimizations based on AWS S3 buckets
       const s3Buckets = awsResources.filter(r => r.type === "S3");
+      console.log("S3 Buckets found:", s3Buckets.length);
       
       if (s3Buckets.length > 0) {
+        // Create a new array for our optimizations
         const newAwsOptimizations: Recommendation[] = s3Buckets.map((bucket, index) => {
           // Generate different recommendation types for variety
           const recTypes = ["right-sizing", "idle-resources", "reservations"];
@@ -155,7 +162,11 @@ export default function CostOptimization() {
   };
 
   // Combine regular recommendations with AWS optimizations
+  console.log("Regular recommendations:", recommendations);
+  console.log("AWS optimizations:", awsOptimizations);
+  
   const allRecommendations = [...(recommendations || []), ...awsOptimizations];
+  console.log("All recommendations:", allRecommendations);
 
   // Calculate total costs and savings using both standard resources and AWS resources
   const totalStandardSpend = resources?.reduce((sum, resource) => sum + resource.cost, 0) || 0;
