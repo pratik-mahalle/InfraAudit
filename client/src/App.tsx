@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import SecurityMonitoring from "@/pages/SecurityMonitoring";
 import CostOptimization from "@/pages/CostOptimization";
+import CostPrediction from "@/pages/CostPrediction";
 import ResourceUtilization from "@/pages/ResourceUtilization";
 import Alerts from "@/pages/Alerts";
 import Settings from "@/pages/Settings";
@@ -23,6 +24,7 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/security" component={SecurityMonitoring} />
       <ProtectedRoute path="/cost" component={CostOptimization} />
+      <ProtectedRoute path="/cost-prediction" component={CostPrediction} />
       <ProtectedRoute path="/resources" component={ResourceUtilization} />
       <ProtectedRoute path="/alerts" component={Alerts} />
       <ProtectedRoute path="/settings" component={Settings} />
