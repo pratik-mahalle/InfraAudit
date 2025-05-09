@@ -288,16 +288,45 @@ export async function registerCloudProviderRoutes(app: Express) {
 
     try {
       const provider = req.params.provider as CloudProvider;
+      const userId = req.user!.id;
       
       if (!cloudProviderService.isProviderConfigured(provider)) {
         return res.status(404).json({ message: 'Cloud provider not configured' });
       }
       
+      // Fetch real resources from the cloud provider
       const resources = await cloudProviderService.syncProvider(provider);
+      console.log(`Fetched ${resources.length} real resources from ${provider}`);
+      
+      // Store these resources in the database
+      const savedResources = [];
+      for (const resource of resources) {
+        try {
+          // Convert CloudResource to InsertResource format for database
+          const resourceData: any = {
+            name: resource.name,
+            type: resource.type,
+            provider: resource.provider,
+            region: resource.region,
+            status: resource.status,
+            tags: resource.tags,
+            cost: Math.round(resource.costPerMonth || resource.cost || 0),
+            createdAt: resource.createdAt,
+          };
+          
+          // Save to database
+          const savedResource = await storage.createResource(resourceData);
+          savedResources.push(savedResource);
+        } catch (err) {
+          console.error(`Error saving resource ${resource.name}:`, err);
+        }
+      }
+      
       res.json({ 
         success: true, 
         provider,
         resourceCount: resources.length,
+        savedCount: savedResources.length,
         lastSynced: new Date().toISOString()
       });
     } catch (error) {
