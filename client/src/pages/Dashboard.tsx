@@ -133,47 +133,47 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       {/* Enhanced Header with Tabs */}
-      <div className="mb-6 bg-gray-900/70 p-6 rounded-xl border border-gray-800 shadow-sm">
+      <div className="mb-6 bg-gradient-to-r from-slate-50 to-blue-50/80 dark:from-slate-900/70 dark:to-blue-950/30 p-6 rounded-xl border border-blue-100/50 dark:border-blue-900/20 shadow-sm">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gradient">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
               Cloud Infrastructure Dashboard
             </h1>
-            <p className="text-gray-400">
-              Last scan completed on <span className="font-medium text-gray-300">{formatDate(lastScanTime)}</span>
+            <p className="text-slate-600 dark:text-slate-400">
+              Last scan completed on <span className="font-medium">{formatDate(lastScanTime)}</span>
             </p>
           </div>
           <div className="flex space-x-3 mt-4 lg:mt-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2 border-gray-700 bg-gray-800/80">
+                <Button variant="outline" className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
                   Dashboard Actions
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[200px] bg-gray-900 border-gray-800">
+              <DropdownMenuContent align="end" className="w-[200px]">
                 <DropdownMenuLabel>Dashboard Options</DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-gray-800" />
-                <DropdownMenuItem className="cursor-pointer hover:bg-gray-800">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh All Data
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer hover:bg-gray-800">
+                <DropdownMenuItem className="cursor-pointer">
                   <CornerLeftDown className="h-4 w-4 mr-2" />
                   Export Dashboard
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer hover:bg-gray-800">
+                <DropdownMenuItem className="cursor-pointer">
                   <PlusSquare className="h-4 w-4 mr-2" />
                   Add New Widget
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-gray-800" />
-                <DropdownMenuItem className="cursor-pointer hover:bg-gray-800">
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer">
                   <CloudIcon className="h-4 w-4 mr-2" />
                   Configure Cloud Providers
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button className="flex items-center gap-2 btn-gradient">
+            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
               <Play className="h-4 w-4" />
               Run New Scan
             </Button>
@@ -182,24 +182,24 @@ export default function Dashboard() {
 
         {/* Dashboard Tabs */}
         <Tabs value={dashboardTab} onValueChange={setDashboardTab} className="mt-4">
-          <TabsList className="bg-gray-800 border border-gray-700 p-1">
+          <TabsList className="bg-white/80 dark:bg-slate-900/50 border border-blue-100/50 dark:border-blue-800/30 p-1">
             <TabsTrigger 
               value="overview" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
+              className="data-[state=active]:bg-blue-100/80 data-[state=active]:text-blue-700 dark:data-[state=active]:bg-blue-900/30 dark:data-[state=active]:text-blue-300"
             >
               <LayoutDashboard className="h-4 w-4 mr-2" />
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="providers" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
+              className="data-[state=active]:bg-green-100/80 data-[state=active]:text-green-700 dark:data-[state=active]:bg-green-900/30 dark:data-[state=active]:text-green-300"
             >
               <CloudIcon className="h-4 w-4 mr-2" />
               Cloud Providers
             </TabsTrigger>
             <TabsTrigger 
               value="widgets" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white"
+              className="data-[state=active]:bg-purple-100/80 data-[state=active]:text-purple-700 dark:data-[state=active]:bg-purple-900/30 dark:data-[state=active]:text-purple-300"
             >
               <Sparkles className="h-4 w-4 mr-2" />
               Custom Widgets
@@ -243,30 +243,30 @@ export default function Dashboard() {
           </div>
 
           {/* Featured Insights Card */}
-          <Card className="bg-gray-900/70 border-gray-800 mb-8">
+          <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 border-indigo-100 dark:border-indigo-900/20 mb-8">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
-                <CardTitle className="text-lg font-medium text-gradient">Featured Insights</CardTitle>
-                <Badge variant="outline" className="bg-blue-600/20 text-blue-400 border-blue-700/50 font-normal">
+                <CardTitle className="text-lg font-medium text-indigo-900 dark:text-indigo-300">Featured Insights</CardTitle>
+                <Badge variant="outline" className="bg-indigo-100 text-indigo-800 border-indigo-200 font-normal dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700/50">
                   <Sparkles className="h-3 w-3 mr-1" />
                   AI-Generated
                 </Badge>
               </div>
-              <CardDescription className="text-gray-400">
+              <CardDescription className="text-indigo-700/80 dark:text-indigo-400/80">
                 Personalized insights based on your infrastructure
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-4 shadow-sm">
+                <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
                   <div className="flex items-start gap-3">
-                    <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-md">
-                      <Layers className="h-4 w-4 text-white" />
+                    <div className="bg-indigo-100 dark:bg-indigo-800/40 p-2 rounded-md">
+                      <Layers className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-sm mb-1 text-white">Resource Efficiency</h3>
-                      <p className="text-xs text-gray-400">12 underutilized EC2 instances could be downsized to save $432/month</p>
-                      <Button variant="link" size="sm" className="text-xs text-blue-400 px-0 mt-1">
+                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Resource Efficiency</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">12 underutilized EC2 instances could be downsized to save $432/month</p>
+                      <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
                         View recommendations
                         <ChevronRight className="h-3 w-3 ml-1" />
                       </Button>
@@ -274,15 +274,15 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
-                <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-4 shadow-sm">
+                <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
                   <div className="flex items-start gap-3">
-                    <div className="bg-gradient-to-br from-red-600 to-red-700 p-2 rounded-md">
-                      <AlertTriangle className="h-4 w-4 text-white" />
+                    <div className="bg-red-100 dark:bg-red-900/40 p-2 rounded-md">
+                      <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-sm mb-1 text-white">Security Vulnerability</h3>
-                      <p className="text-xs text-gray-400">Public S3 bucket detected with sensitive data - immediate action required</p>
-                      <Button variant="link" size="sm" className="text-xs text-blue-400 px-0 mt-1">
+                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Security Vulnerability</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Public S3 bucket detected with sensitive data - immediate action required</p>
+                      <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
                         View details
                         <ChevronRight className="h-3 w-3 ml-1" />
                       </Button>
@@ -290,15 +290,15 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
-                <div className="bg-gray-900/50 rounded-lg border border-gray-800 p-4 shadow-sm">
+                <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
                   <div className="flex items-start gap-3">
-                    <div className="bg-gradient-to-br from-green-600 to-green-700 p-2 rounded-md">
-                      <RefreshCw className="h-4 w-4 text-white" />
+                    <div className="bg-green-100 dark:bg-green-900/40 p-2 rounded-md">
+                      <RefreshCw className="h-4 w-4 text-green-600 dark:text-green-400" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-sm mb-1 text-white">Auto-Scaling</h3>
-                      <p className="text-xs text-gray-400">Implement auto-scaling for web app cluster to handle 38% traffic increase</p>
-                      <Button variant="link" size="sm" className="text-xs text-blue-400 px-0 mt-1">
+                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Auto-Scaling</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Implement auto-scaling for web app cluster to handle 38% traffic increase</p>
+                      <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
                         View suggestion
                         <ChevronRight className="h-3 w-3 ml-1" />
                       </Button>
