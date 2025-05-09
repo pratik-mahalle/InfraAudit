@@ -19,11 +19,13 @@ import { UtilizationMetric } from "@/types";
 interface ResourceUtilizationProps {
   metrics: UtilizationMetric[];
   isLoading?: boolean;
+  awsResources?: any[]; // Real AWS resources
 }
 
 export function ResourceUtilization({
   metrics,
   isLoading = false,
+  awsResources = [],
 }: ResourceUtilizationProps) {
   const [resourceType, setResourceType] = useState("all");
   const [timeframe, setTimeframe] = useState("7d");
@@ -134,6 +136,48 @@ export function ResourceUtilization({
                 </div>
               ))}
         </div>
+        
+        {/* AWS Resources */}
+        {awsResources && awsResources.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-base font-medium mb-3">Real-time AWS Resources ({awsResources.length})</h3>
+            <div className="border rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {awsResources.slice(0, 5).map((resource, index) => (
+                    <tr key={index}>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{resource.name}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{resource.type}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{resource.region}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          resource.status === 'running' || resource.status === 'active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {resource.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {awsResources.length > 5 && (
+                <div className="px-4 py-2 bg-gray-50 text-right text-xs text-blue-600">
+                  + {awsResources.length - 5} more resources
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

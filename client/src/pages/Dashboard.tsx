@@ -57,13 +57,24 @@ export default function Dashboard() {
     queryKey: ["/api/cloud-providers"],
   });
   
+  // Fetch real AWS resources
+  const { data: awsResources, isLoading: isLoadingAwsResources } = useQuery<any[]>({
+    queryKey: ["/api/aws-resources"],
+    enabled: !!cloudProviders && cloudProviders.some(p => p.id === "AWS"),
+  });
+  
   // Effect to check for connected providers on load
   useEffect(() => {
     if (cloudProviders && cloudProviders.length > 0) {
       setHasConnectedProviders(true);
       setShowFirstTimeSetup(false);
+      
+      // Log real AWS resources for debugging
+      if (awsResources && awsResources.length > 0) {
+        console.log("Real AWS resources:", awsResources);
+      }
     }
-  }, [cloudProviders]);
+  }, [cloudProviders, awsResources]);
   
   // Handle connecting first provider
   const handleConnectProvider = () => {
@@ -354,7 +365,8 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 gap-6 mb-8">
             <ResourceUtilization 
               metrics={utilizationMetrics} 
-              isLoading={false} 
+              isLoading={isLoadingAwsResources}
+              awsResources={awsResources || []}
             />
           </div>
 
