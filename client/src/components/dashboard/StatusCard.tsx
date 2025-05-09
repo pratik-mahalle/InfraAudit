@@ -4,8 +4,10 @@ import {
   ShieldX, 
   TriangleAlert, 
   Server, 
-  Bell 
+  Bell, 
+  Loader2
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface StatusCardProps {
   title: string;
@@ -16,6 +18,7 @@ interface StatusCardProps {
   timeframe?: string;
   actionLink?: string;
   actionText?: string;
+  isLoading?: boolean;
 }
 
 export function StatusCard({
@@ -27,6 +30,7 @@ export function StatusCard({
   timeframe = "Last 24 hours",
   actionLink = "#",
   actionText = "View details",
+  isLoading = false,
 }: StatusCardProps) {
   const getIconColor = (status: string) => {
     switch (status) {
