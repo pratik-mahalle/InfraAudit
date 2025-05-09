@@ -1,7 +1,5 @@
 import { WebClient, ChatPostMessageArguments } from "@slack/web-api";
-import { Alert } from "@shared/schema";
-import { SecurityDrift } from "@shared/schema";
-import { CostAnomaly } from "@shared/schema";
+import { Alert, SecurityDrift, CostAnomaly } from "@shared/schema";
 
 // Initialize Slack Web Client
 if (!process.env.SLACK_BOT_TOKEN) {
@@ -12,8 +10,8 @@ if (!process.env.SLACK_CHANNEL_ID) {
   console.warn("SLACK_CHANNEL_ID environment variable is not set. Slack notifications will be disabled.");
 }
 
-const slack = new WebClient(process.env.SLACK_BOT_TOKEN);
-const defaultChannel = process.env.SLACK_CHANNEL_ID;
+const slack = new WebClient(process.env.SLACK_BOT_TOKEN || "");
+const defaultChannel = process.env.SLACK_CHANNEL_ID || "";
 
 /**
  * Service for sending notifications to Slack
@@ -39,7 +37,7 @@ export class SlackService {
 
     try {
       const response = await slack.chat.postMessage({
-        channel: channel || defaultChannel,
+        channel: channel || defaultChannel || "",
         text
       });
       
@@ -68,7 +66,7 @@ export class SlackService {
 
     try {
       const response = await slack.chat.postMessage({
-        channel: channel || defaultChannel,
+        channel: channel || defaultChannel || "",
         blocks,
         text
       });
@@ -101,7 +99,7 @@ export class SlackService {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: alert.description
+          text: alert.message
         }
       },
       {
@@ -156,6 +154,13 @@ export class SlackService {
     const severity = this.getSeverityEmoji(drift.severity);
     const fallbackText = `${severity} Security Drift Detected: ${drift.driftType}`;
     
+    // Extract relevant details from the drift details JSON field
+    const details = drift.details as Record<string, any> || {};
+    const description = details.description || "No description provided";
+    const currentValue = details.currentValue || "N/A";
+    const expectedValue = details.expectedValue || "N/A";
+    const remediationSteps = details.remediationSteps || "No remediation steps provided";
+    
     const blocks = [
       {
         type: "header",
@@ -169,7 +174,7 @@ export class SlackService {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `*Drift Type:* ${drift.driftType}\n*Resource:* ${drift.resourceId}\n\n${drift.description}`
+          text: `*Drift Type:* ${drift.driftType}\n*Resource:* ${drift.resourceId}\n\n${description}`
         }
       },
       {
@@ -185,11 +190,11 @@ export class SlackService {
           },
           {
             type: "mrkdwn",
-            text: `*Current Value:*\n\`${drift.currentValue}\``
+            text: `*Current Value:*\n\`${currentValue}\``
           },
           {
             type: "mrkdwn",
-            text: `*Expected Value:*\n\`${drift.expectedValue}\``
+            text: `*Expected Value:*\n\`${expectedValue}\``
           }
         ]
       },
@@ -197,7 +202,7 @@ export class SlackService {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "*Remediation Recommendation:*\n" + drift.remediationSteps
+          text: "*Remediation Recommendation:*\n" + remediationSteps
         }
       },
       {
@@ -229,7 +234,14 @@ export class SlackService {
    */
   async sendCostAnomalyNotification(anomaly: CostAnomaly): Promise<string | undefined> {
     const emoji = this.getSeverityEmoji(anomaly.severity);
-    const fallbackText = `${emoji} Cost Anomaly Detected: ${anomaly.description}`;
+    
+    // Calculate cost impact from previous and current cost
+    const costImpact = anomaly.currentCost - anomaly.previousCost;
+    const costImpactFormatted = (costImpact / 100).toFixed(2); // Convert from cents to dollars
+    
+    // Generate description based on anomaly details
+    const description = `${anomaly.anomalyType} anomaly detected for resource. Cost increased by ${anomaly.percentage}% (${costImpactFormatted} USD).`;
+    const fallbackText = `${emoji} Cost Anomaly Detected: ${description}`;
     
     const blocks = [
       {
@@ -244,7 +256,7 @@ export class SlackService {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: anomaly.description
+          text: description
         }
       },
       {
@@ -260,7 +272,7 @@ export class SlackService {
           },
           {
             type: "mrkdwn",
-            text: `*Cost Impact:*\n$${anomaly.costImpact.toFixed(2)}`
+            text: `*Cost Impact:*\n$${costImpactFormatted}`
           },
           {
             type: "mrkdwn",
@@ -272,7 +284,7 @@ export class SlackService {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "*Remediation Recommendation:*\n" + anomaly.remediationSteps
+          text: "*Recommended Action:*\nReview resource usage and consider rightsizing or reserved instances if this is a recurring pattern."
         }
       },
       {
