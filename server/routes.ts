@@ -13,6 +13,7 @@ import { ZodError } from "zod";
 import { setupAuth } from "./auth";
 import { registerCloudProviderRoutes } from "./routes/cloud-providers";
 import { notificationsRouter } from "./routes/notifications";
+import { aiCostRouter } from "./routes/ai-cost";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes and middleware
@@ -23,6 +24,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup notifications routes
   app.use('/api/notifications', notificationsRouter);
+  
+  // Setup AI cost prediction and optimization routes
+  app.use('/api/ai-cost', aiCostRouter);
   
   // Error handler helper for Zod validation errors
   const handleZodError = (err: ZodError, res: Response) => {
