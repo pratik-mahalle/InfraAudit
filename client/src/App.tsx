@@ -10,17 +10,24 @@ import CostOptimization from "@/pages/CostOptimization";
 import ResourceUtilization from "@/pages/ResourceUtilization";
 import Alerts from "@/pages/Alerts";
 import Settings from "@/pages/Settings";
+import AuthPage from "@/pages/auth-page";
+import { AuthProvider } from "./hooks/use-auth";
+import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
   return (
     <Switch>
-      {/* Dashboard is the home page */}
-      <Route path="/" component={Dashboard} />
-      <Route path="/security" component={SecurityMonitoring} />
-      <Route path="/cost" component={CostOptimization} />
-      <Route path="/resources" component={ResourceUtilization} />
-      <Route path="/alerts" component={Alerts} />
-      <Route path="/settings" component={Settings} />
+      {/* Protected routes */}
+      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/security" component={SecurityMonitoring} />
+      <ProtectedRoute path="/cost" component={CostOptimization} />
+      <ProtectedRoute path="/resources" component={ResourceUtilization} />
+      <ProtectedRoute path="/alerts" component={Alerts} />
+      <ProtectedRoute path="/settings" component={Settings} />
+      
+      {/* Public routes */}
+      <Route path="/auth" component={AuthPage} />
+      
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>
@@ -30,10 +37,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

@@ -4,7 +4,7 @@ import { Redirect, Route } from "wouter";
 
 interface ProtectedRouteProps {
   path: string;
-  component: React.ComponentType;
+  component: React.ComponentType<any>;
 }
 
 export function ProtectedRoute({ path, component: Component }: ProtectedRouteProps) {
@@ -13,7 +13,7 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
   return (
     <Route
       path={path}
-      component={(props) => {
+      component={() => {
         if (isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
@@ -26,7 +26,7 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
           return <Redirect to="/auth" />;
         }
 
-        return <Component {...props} />;
+        return <Component />;
       }}
     />
   );
