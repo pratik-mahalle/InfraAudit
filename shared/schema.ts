@@ -173,3 +173,37 @@ export type InsertAlert = z.infer<typeof insertAlertSchema>;
 
 export type Recommendation = typeof recommendations.$inferSelect;
 export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
+
+// Cloud Credentials schema
+export const cloudCredentials = pgTable("cloud_credentials", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(), // AWS, GCP, AZURE
+  name: text("name"),
+  encryptedCredentials: text("encrypted_credentials").notNull(),
+  encryptionIv: text("encryption_iv").notNull(),
+  isActive: boolean("is_active").default(true),
+  lastSynced: timestamp("last_synced"),
+  lastSyncStatus: text("last_sync_status"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCloudCredentialsSchema = createInsertSchema(cloudCredentials).pick({
+  userId: true,
+  provider: true,
+  name: true,
+  encryptedCredentials: true,
+  encryptionIv: true,
+  isActive: true,
+});
+
+export const cloudCredentialsRelations = relations(cloudCredentials, ({ one }) => ({
+  user: one(users, {
+    fields: [cloudCredentials.userId],
+    references: [users.id]
+  })
+}));
+
+export type CloudCredential = typeof cloudCredentials.$inferSelect;
+export type InsertCloudCredential = z.infer<typeof insertCloudCredentialsSchema>;
