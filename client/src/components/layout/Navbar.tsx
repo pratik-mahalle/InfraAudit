@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { 
@@ -44,57 +44,64 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2">
-          <Link href="/">
-            <a className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-blue-600" />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hidden md:block">
-                CloudGuard
-              </span>
-            </a>
-          </Link>
+          <div 
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => window.location.href = "/"}
+          >
+            <Shield className="h-6 w-6 text-blue-600" />
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hidden md:block">
+              CloudGuard
+            </span>
+          </div>
         </div>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-6">
           {user && (
             <>
-              <Link href="/dashboard">
-                <a className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
-                </a>
-              </Link>
-              <Link href="/cost-optimization">
-                <a className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <BarChart3 className="h-4 w-4" />
-                  Cost Optimization
-                </a>
-              </Link>
-              <Link href="/security-monitoring">
-                <a className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <Shield className="h-4 w-4" />
-                  Security
-                </a>
-              </Link>
-              <Link href="/alerts">
-                <a className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <AlertTriangle className="h-4 w-4" />
-                  Alerts
-                </a>
-              </Link>
-              <Link href="/cloud-providers">
-                <a className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <Cloud className="h-4 w-4" />
-                  Cloud Providers
-                </a>
-              </Link>
+              <div 
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => window.location.href = "/dashboard"}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </div>
+              <div 
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => window.location.href = "/cost-optimization"}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Cost Optimization
+              </div>
+              <div 
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => window.location.href = "/security-monitoring"}
+              >
+                <Shield className="h-4 w-4" />
+                Security
+              </div>
+              <div 
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => window.location.href = "/alerts"}
+              >
+                <AlertTriangle className="h-4 w-4" />
+                Alerts
+              </div>
+              <div 
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => window.location.href = "/cloud-providers"}
+              >
+                <Cloud className="h-4 w-4" />
+                Cloud Providers
+              </div>
             </>
           )}
-          <Link href="/documentation">
-            <a className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-              Documentation
-            </a>
-          </Link>
+          <div 
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            onClick={() => window.location.href = "/documentation"}
+          >
+            Documentation
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -150,43 +157,49 @@ export function Navbar() {
         <div className="md:hidden px-4 py-4 pb-6 border-t border-border/40 space-y-4 bg-background">
           {user && (
             <>
-              <Link href="/dashboard">
-                <a className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
-                </a>
-              </Link>
-              <Link href="/cost-optimization">
-                <a className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <BarChart3 className="h-4 w-4" />
-                  Cost Optimization
-                </a>
-              </Link>
-              <Link href="/security-monitoring">
-                <a className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <Shield className="h-4 w-4" />
-                  Security
-                </a>
-              </Link>
-              <Link href="/alerts">
-                <a className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <AlertTriangle className="h-4 w-4" />
-                  Alerts
-                </a>
-              </Link>
-              <Link href="/cloud-providers">
-                <a className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors">
-                  <Cloud className="h-4 w-4" />
-                  Cloud Providers
-                </a>
-              </Link>
+              <div 
+                className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => window.location.href = "/dashboard"}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </div>
+              <div 
+                className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => window.location.href = "/cost-optimization"}
+              >
+                <BarChart3 className="h-4 w-4" />
+                Cost Optimization
+              </div>
+              <div 
+                className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => window.location.href = "/security-monitoring"}
+              >
+                <Shield className="h-4 w-4" />
+                Security
+              </div>
+              <div 
+                className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => window.location.href = "/alerts"}
+              >
+                <AlertTriangle className="h-4 w-4" />
+                Alerts
+              </div>
+              <div 
+                className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => window.location.href = "/cloud-providers"}
+              >
+                <Cloud className="h-4 w-4" />
+                Cloud Providers
+              </div>
             </>
           )}
-          <Link href="/documentation">
-            <a className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors">
-              Documentation
-            </a>
-          </Link>
+          <div 
+            className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            onClick={() => window.location.href = "/documentation"}
+          >
+            Documentation
+          </div>
         </div>
       )}
     </nav>
