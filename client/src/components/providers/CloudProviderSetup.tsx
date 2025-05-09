@@ -25,7 +25,8 @@ import {
   Trash2, 
   ServerCog, 
   CloudCog,
-  Database
+  Database,
+  Cloud
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
@@ -374,7 +375,7 @@ export function CloudProviderSetup() {
               </TabsTrigger>
               <TabsTrigger value="azure" disabled={isAzureConnected}>
                 <div className="flex items-center">
-                  <SiMicrosoft className="h-4 w-4 mr-2 text-blue-700" />
+                  <Cloud className="h-4 w-4 mr-2 text-blue-700" />
                   Azure
                 </div>
               </TabsTrigger>
@@ -494,11 +495,10 @@ export function CloudProviderSetup() {
                         <FormItem>
                           <FormLabel>Service Account Key (JSON)</FormLabel>
                           <FormControl>
-                            <Input
-                              as="textarea"
-                              rows={8}
+                            <textarea
                               placeholder='Paste your GCP service account key JSON here'
-                              className="min-h-[120px] font-mono text-xs"
+                              className="min-h-[120px] font-mono text-xs w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                              rows={8}
                               {...field}
                             />
                           </FormControl>
@@ -686,7 +686,7 @@ export function CloudProviderSetup() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <h3 className="font-medium flex items-center mb-2">
-                <SiAmazonaws className="h-4 w-4 mr-2 text-orange-500" />
+                <SiAmazon className="h-4 w-4 mr-2 text-orange-500" />
                 AWS IAM Permissions
               </h3>
               <ul className="text-sm space-y-1 list-disc pl-5">
@@ -717,7 +717,7 @@ export function CloudProviderSetup() {
             </div>
             <div>
               <h3 className="font-medium flex items-center mb-2">
-                <SiMicrosoftazure className="h-4 w-4 mr-2 text-blue-700" />
+                <Cloud className="h-4 w-4 mr-2 text-blue-700" />
                 Azure RBAC Roles
               </h3>
               <ul className="text-sm space-y-1 list-disc pl-5">
