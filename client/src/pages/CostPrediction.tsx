@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Resource } from "@shared/schema";
 import { ArrowRight, Percent, DollarSign, TrendingUp, Calendar, Loader2 } from "lucide-react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +42,7 @@ export default function CostPrediction() {
   const [activeTab, setActiveTab] = useState("prediction");
 
   // Fetch resources for the dropdown
-  const { data: resources = [] } = useQuery({
+  const { data: resources = [] } = useQuery<Resource[]>({
     queryKey: ["/api/resources"],
     enabled: true,
   });
@@ -164,7 +165,7 @@ export default function CostPrediction() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">All Resources</SelectItem>
-                    {resources?.map((resource: any) => (
+                    {resources?.map((resource: Resource) => (
                       <SelectItem key={resource.id} value={resource.id.toString()}>
                         {resource.name} ({resource.type})
                       </SelectItem>
