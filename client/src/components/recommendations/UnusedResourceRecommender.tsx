@@ -488,7 +488,7 @@ export function UnusedResourceRecommender({
                                 );
                               } else {
                                 setSelectedResources(prev => 
-                                  [...new Set([...prev, ...computeResources])]
+                                  Array.from(new Set([...prev, ...computeResources]))
                                 );
                               }
                             }}
@@ -614,7 +614,7 @@ export function UnusedResourceRecommender({
                                 );
                               } else {
                                 setSelectedResources(prev => 
-                                  [...new Set([...prev, ...networkResources])]
+                                  Array.from(new Set([...prev, ...networkResources]))
                                 );
                               }
                             }}
