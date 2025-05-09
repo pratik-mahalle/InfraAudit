@@ -10,8 +10,12 @@ import {
   insertRecommendationSchema,
 } from "@shared/schema";
 import { ZodError } from "zod";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup auth routes and middleware
+  setupAuth(app);
+  
   // Error handler helper for Zod validation errors
   const handleZodError = (err: ZodError, res: Response) => {
     return res.status(400).json({
