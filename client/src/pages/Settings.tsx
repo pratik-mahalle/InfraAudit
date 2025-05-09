@@ -33,6 +33,7 @@ import {
   Save,
   CirclePlus,
 } from "lucide-react";
+import SlackNotificationSettings from "@/components/settings/SlackNotificationSettings";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -235,6 +236,11 @@ export default function Settings() {
               </div>
 
               <Separator />
+              
+              {/* Slack Integration Section */}
+              <SlackNotificationSettings />
+              
+              <Separator className="my-6" />
 
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Alert Types</h3>
