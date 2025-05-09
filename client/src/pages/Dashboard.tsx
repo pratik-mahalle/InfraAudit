@@ -121,6 +121,15 @@ export default function Dashboard() {
     },
   ];
 
+  // If first-time setup, show welcome onboarding screen
+  if (showFirstTimeSetup) {
+    return (
+      <DashboardLayout>
+        <WelcomeOnboarding onCloudIntegrationClick={handleConnectProvider} />
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       {/* Enhanced Header with Tabs */}
@@ -199,178 +208,174 @@ export default function Dashboard() {
         </Tabs>
       </div>
 
-      {/* Dashboard Content */}
-      {showFirstTimeSetup ? (
-        <WelcomeOnboarding onCloudIntegrationClick={handleConnectProvider} />
-      ) : (
-        <>
-          <div className={dashboardTab === "overview" ? "block" : "hidden"}>
-            {/* Status Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-          <StatusCard
-            title="Security Status"
-            value="Warning"
-            description="3 security drifts detected"
-            icon="security"
-            status="warning"
-          />
-          <StatusCard
-            title="Cost Status"
-            value="Critical"
-            description="Cost spike of 43% detected"
-            icon="cost"
-            status="critical"
-          />
-          <StatusCard
-            title="Resources Monitored"
-            value="268"
-            description="Across 3 cloud providers"
-            icon="resources"
-          />
-          <StatusCard
-            title="Active Alerts"
-            value="12"
-            description="4 high, 8 medium priority"
-            icon="alerts"
-            status="warning"
-          />
-        </div>
-
-        {/* Featured Insights Card */}
-        <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 border-indigo-100 dark:border-indigo-900/20 mb-8">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg font-medium text-indigo-900 dark:text-indigo-300">Featured Insights</CardTitle>
-              <Badge variant="outline" className="bg-indigo-100 text-indigo-800 border-indigo-200 font-normal dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700/50">
-                <Sparkles className="h-3 w-3 mr-1" />
-                AI-Generated
-              </Badge>
-            </div>
-            <CardDescription className="text-indigo-700/80 dark:text-indigo-400/80">
-              Personalized insights based on your infrastructure
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-2">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="bg-indigo-100 dark:bg-indigo-800/40 p-2 rounded-md">
-                    <Layers className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Resource Efficiency</h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">12 underutilized EC2 instances could be downsized to save $432/month</p>
-                    <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
-                      View recommendations
-                      <ChevronRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="bg-red-100 dark:bg-red-900/40 p-2 rounded-md">
-                    <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Security Vulnerability</h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Public S3 bucket detected with sensitive data - immediate action required</p>
-                    <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
-                      View details
-                      <ChevronRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="bg-green-100 dark:bg-green-900/40 p-2 rounded-md">
-                    <RefreshCw className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Auto-Scaling</h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Implement auto-scaling for web app cluster to handle 38% traffic increase</p>
-                    <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
-                      View suggestion
-                      <ChevronRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Main Dashboard Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Cost Optimization Chart */}
-            <CostTrendChart
-              currentSpend={1238400}
-              projectedSpend={1875000}
-              potentialSavings={432000}
-              optimizationCount={32}
-              spendChange={43}
-              projectionChange={51}
-              isLoading={false}
+      {/* Overview Tab */}
+      {dashboardTab === "overview" && (
+        <div>
+          {/* Status Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+            <StatusCard
+              title="Security Status"
+              value="Warning"
+              description="3 security drifts detected"
+              icon="security"
+              status="warning"
             />
-
-            {/* Security Configuration Drifts */}
-            <SecurityDriftsTable 
-              drifts={securityDrifts || []} 
-              isLoading={isLoadingDrifts} 
+            <StatusCard
+              title="Cost Status"
+              value="Critical"
+              description="Cost spike of 43% detected"
+              icon="cost"
+              status="critical"
+            />
+            <StatusCard
+              title="Resources Monitored"
+              value="268"
+              description="Across 3 cloud providers"
+              icon="resources"
+            />
+            <StatusCard
+              title="Active Alerts"
+              value="12"
+              description="4 high, 8 medium priority"
+              icon="alerts"
+              status="warning"
             />
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <QuickActions />
+          {/* Featured Insights Card */}
+          <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 border-indigo-100 dark:border-indigo-900/20 mb-8">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-medium text-indigo-900 dark:text-indigo-300">Featured Insights</CardTitle>
+                <Badge variant="outline" className="bg-indigo-100 text-indigo-800 border-indigo-200 font-normal dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700/50">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  AI-Generated
+                </Badge>
+              </div>
+              <CardDescription className="text-indigo-700/80 dark:text-indigo-400/80">
+                Personalized insights based on your infrastructure
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-indigo-100 dark:bg-indigo-800/40 p-2 rounded-md">
+                      <Layers className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Resource Efficiency</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">12 underutilized EC2 instances could be downsized to save $432/month</p>
+                      <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
+                        View recommendations
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-red-100 dark:bg-red-900/40 p-2 rounded-md">
+                      <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Security Vulnerability</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Public S3 bucket detected with sensitive data - immediate action required</p>
+                      <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
+                        View details
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-green-100 dark:bg-green-900/40 p-2 rounded-md">
+                      <RefreshCw className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-sm mb-1 text-indigo-900 dark:text-indigo-300">Auto-Scaling</h3>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Implement auto-scaling for web app cluster to handle 38% traffic increase</p>
+                      <Button variant="link" size="sm" className="text-xs text-indigo-600 dark:text-indigo-400 px-0 mt-1">
+                        View suggestion
+                        <ChevronRight className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Recent Alerts */}
-            <RecentAlerts 
-              alerts={alerts || []} 
-              isLoading={isLoadingAlerts} 
+          {/* Main Dashboard Sections */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {/* Left Column */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Cost Optimization Chart */}
+              <CostTrendChart
+                currentSpend={1238400}
+                projectedSpend={1875000}
+                potentialSavings={432000}
+                optimizationCount={32}
+                spendChange={43}
+                projectionChange={51}
+                isLoading={false}
+              />
+
+              {/* Security Configuration Drifts */}
+              <SecurityDriftsTable 
+                drifts={securityDrifts || []} 
+                isLoading={isLoadingDrifts} 
+              />
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Quick Actions */}
+              <QuickActions />
+
+              {/* Recent Alerts */}
+              <RecentAlerts 
+                alerts={alerts || []} 
+                isLoading={isLoadingAlerts} 
+              />
+
+              {/* Slack Integration Preview */}
+              <SlackNotifications 
+                isConnected={true} 
+                alertsSentToday={12} 
+              />
+            </div>
+          </div>
+
+          {/* Resource Utilization Section */}
+          <div className="grid grid-cols-1 gap-6 mb-8">
+            <ResourceUtilization 
+              metrics={utilizationMetrics} 
+              isLoading={false} 
             />
+          </div>
 
-            {/* Slack Integration Preview */}
-            <SlackNotifications 
-              isConnected={true} 
-              alertsSentToday={12} 
+          {/* Cost Optimization Recommendations */}
+          <div className="grid grid-cols-1 gap-6">
+            <CostRecommendations 
+              recommendations={recommendations || []} 
+              isLoading={isLoadingRecommendations} 
             />
           </div>
         </div>
-
-        {/* Resource Utilization Section */}
-        <div className="grid grid-cols-1 gap-6 mb-8">
-          <ResourceUtilization 
-            metrics={utilizationMetrics} 
-            isLoading={false} 
-          />
-        </div>
-
-        {/* Cost Optimization Recommendations */}
-        <div className="grid grid-cols-1 gap-6">
-          <CostRecommendations 
-            recommendations={recommendations || []} 
-            isLoading={isLoadingRecommendations} 
-          />
-        </div>
-      </div>
+      )}
 
       {/* Cloud Providers Tab */}
-      <div className={dashboardTab === "providers" ? "block" : "hidden"}>
+      {dashboardTab === "providers" && (
         <CloudProviderIntegration />
-      </div>
+      )}
 
       {/* Custom Widgets Tab */}
-      <div className={dashboardTab === "widgets" ? "block" : "hidden"}>
+      {dashboardTab === "widgets" && (
         <PersonalizedWidgets />
-      </div>
-        </>
       )}
     </DashboardLayout>
   );
