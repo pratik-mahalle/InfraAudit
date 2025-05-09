@@ -42,7 +42,8 @@ import {
   TrendingDown, 
   AlertCircle, 
   ArrowDownRight,
-  Download
+  Download,
+  TrendingUp
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { formatCurrency, formatDate, formatTimeAgo } from "@/lib/utils";
