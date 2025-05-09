@@ -280,6 +280,32 @@ export async function registerCloudProviderRoutes(app: Express) {
     }
   });
 
+  // Sync cloud provider resources
+  app.post('/api/cloud-providers/:provider/sync', async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    try {
+      const provider = req.params.provider as CloudProvider;
+      
+      if (!cloudProviderService.isProviderConfigured(provider)) {
+        return res.status(404).json({ message: 'Cloud provider not configured' });
+      }
+      
+      const resources = await cloudProviderService.syncProvider(provider);
+      res.json({ 
+        success: true, 
+        provider,
+        resourceCount: resources.length,
+        lastSynced: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error syncing provider resources:', error);
+      res.status(500).json({ message: 'Failed to sync cloud provider resources' });
+    }
+  });
+
   // Fetch cost data
   app.get('/api/cloud-costs', async (req, res) => {
     if (!req.isAuthenticated()) {
