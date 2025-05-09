@@ -19,8 +19,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes and middleware
   setupAuth(app);
   
-  // Setup cloud provider routes
-  registerCloudProviderRoutes(app);
+  // Setup cloud provider routes - this is now async
+  await registerCloudProviderRoutes(app);
   
   // Setup notifications routes
   app.use('/api/notifications', notificationsRouter);
