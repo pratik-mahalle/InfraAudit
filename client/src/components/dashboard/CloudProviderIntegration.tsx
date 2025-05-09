@@ -11,11 +11,11 @@ import {
   ChevronRight, 
   AlertTriangle, 
   CircleOff, 
-  LucideIcon, 
   RefreshCw,
-  Loader2
+  Loader2,
+  Info
 } from "lucide-react";
-import { SiAmazon, SiAmazonwebservices, SiGooglecloud } from "react-icons/si";
+import { SiAmazon, SiAmazonwebservices, SiGooglecloud, SiMicrosoftazure } from "react-icons/si";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { CloudProvider, AllCloudCredentials } from "@shared/cloud-providers";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 const awsFormSchema = z.object({
   accessKeyId: z.string().min(16, "Access Key ID must be at least 16 characters"),
@@ -93,52 +94,82 @@ export function CloudProviderIntegration() {
   });
 
   // Fetch connected cloud accounts
-  const { data: connectedAccounts, isLoading } = useQuery<CloudAccountUI[]>({
+  const { data: cloudProviders, isLoading } = useQuery<any[]>({
     queryKey: ["/api/cloud-providers"],
-    queryFn: () => {
-      // Mock implementation
-      return [
-        {
-          id: "aws-123",
-          name: "AWS Production",
-          provider: CloudProvider.AWS,
-          isConnected: true,
-          lastSynced: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          resourceCount: 124,
-          icon: <SiAmazonwebservices className="h-6 w-6 text-orange-500" />,
-          status: "active"
-        },
-        {
-          id: "gcp-456",
-          name: "GCP Development",
-          provider: CloudProvider.GCP,
-          isConnected: true,
-          lastSynced: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          resourceCount: 57,
-          icon: <SiGooglecloud className="h-6 w-6 text-blue-500" />,
-          status: "active"
-        },
-        {
-          id: "azure-789",
-          name: "Azure Staging",
-          provider: CloudProvider.AZURE,
-          isConnected: false,
-          lastSynced: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          resourceCount: 0,
-          icon: <CloudIcon className="h-6 w-6 text-blue-600" />,
-          status: "error"
-        }
-      ];
-    }
   });
+
+  // Fetch cloud resources
+  const { data: cloudResources } = useQuery<any[]>({
+    queryKey: ["/api/cloud-resources"],
+    // Only fetch resources if we have connected providers
+    enabled: !!cloudProviders && cloudProviders.length > 0,
+  });
+
+  // Map cloud providers to UI format
+  const connectedAccounts: CloudAccountUI[] = React.useMemo(() => {
+    if (!cloudProviders) return [];
+    
+    return cloudProviders.map(provider => {
+      // Count resources for this provider if available
+      const providerResources = cloudResources?.filter(
+        resource => resource.provider === provider.id
+      ) || [];
+      
+      let icon: React.ReactNode;
+      switch (provider.id) {
+        case CloudProvider.AWS:
+          icon = <SiAmazonwebservices className="h-6 w-6 text-orange-500" />;
+          break;
+        case CloudProvider.GCP:
+          icon = <SiGooglecloud className="h-6 w-6 text-blue-500" />;
+          break;
+        case CloudProvider.AZURE:
+          icon = <CloudIcon className="h-6 w-6 text-blue-600" />;
+          break;
+        default:
+          icon = <CloudIcon className="h-6 w-6 text-slate-600" />;
+      }
+      
+      return {
+        id: provider.id,
+        name: provider.name,
+        provider: provider.id as CloudProvider,
+        isConnected: provider.isConnected,
+        lastSynced: provider.lastSynced || new Date().toISOString(),
+        resourceCount: providerResources.length,
+        icon,
+        status: provider.isConnected ? "active" : "error"
+      };
+    });
+  }, [cloudProviders, cloudResources]);
 
   // Add cloud provider mutation
   const addProviderMutation = useMutation({
     mutationFn: async (credentials: AllCloudCredentials) => {
-      // In a real app, this would call the API
       console.log("Adding cloud provider:", credentials);
-      // Mock response
-      return { success: true, accountId: "new-account-123" };
+      
+      let endpoint = '';
+      switch (credentials.provider) {
+        case CloudProvider.AWS:
+          endpoint = '/api/cloud-providers/aws';
+          break;
+        case CloudProvider.GCP:
+          endpoint = '/api/cloud-providers/gcp';
+          break;
+        case CloudProvider.AZURE:
+          endpoint = '/api/cloud-providers/azure';
+          break;
+        default:
+          throw new Error('Unsupported cloud provider');
+      }
+      
+      const response = await apiRequest('POST', endpoint, credentials);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to connect provider');
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cloud-providers"] });
