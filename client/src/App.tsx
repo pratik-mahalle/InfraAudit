@@ -14,14 +14,18 @@ import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import CloudProviders from "@/pages/CloudProviders";
 import AuthPage from "@/pages/auth-page";
+import HomePage from "@/pages/HomePage";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
   return (
     <Switch>
+      {/* Public home page */}
+      <Route path="/" component={HomePage} />
+      
       {/* Protected routes */}
-      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/security" component={SecurityMonitoring} />
       <ProtectedRoute path="/cost" component={CostOptimization} />
       <ProtectedRoute path="/cost-prediction" component={CostPrediction} />
