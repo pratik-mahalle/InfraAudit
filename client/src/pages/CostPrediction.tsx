@@ -378,27 +378,31 @@ export default function CostPrediction() {
 
         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-5">
           {/* Configuration Card */}
-          <Card className="md:col-span-1 lg:col-span-3 bg-card/50 backdrop-blur-sm border border-border/50 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center text-lg">
-                <span className="bg-primary/10 p-1.5 rounded-md mr-2">
-                  <Calendar className="h-5 w-5 text-primary" />
+          <Card className="md:col-span-1 lg:col-span-3 bg-gradient-to-br from-slate-50 to-slate-100/80 dark:from-slate-900/70 dark:to-slate-800/50 backdrop-blur-sm border border-border/50 shadow-sm">
+            <CardHeader className="pb-5 pt-6">
+              <CardTitle className="flex items-center text-xl font-bold">
+                <span className="bg-blue-100 dark:bg-blue-900/40 p-2 rounded-md mr-3">
+                  <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                 </span>
                 Configure Analysis
               </CardTitle>
-              <CardDescription>
-                Set parameters for AI analysis
+              <CardDescription className="text-base mt-2">
+                Set parameters for AI-powered cost analysis and optimization
               </CardDescription>
+              <Separator className="mt-4" />
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="resource" className="text-sm font-medium">Resource</Label>
+            <CardContent className="space-y-6 px-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4 p-3 bg-white/70 dark:bg-slate-800/30 rounded-lg border border-border/30">
+                  <div className="flex items-center mb-1">
+                    <HardDrive className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
+                    <Label htmlFor="resource" className="text-sm font-semibold">Resource Selection</Label>
+                  </div>
                   <Select 
                     value={selectedResourceId || "all"} 
                     onValueChange={value => setSelectedResourceId(value)}
                   >
-                    <SelectTrigger id="resource" className="bg-background">
+                    <SelectTrigger id="resource" className="bg-background h-11">
                       <SelectValue placeholder="All Resources" />
                     </SelectTrigger>
                     <SelectContent>
@@ -410,14 +414,19 @@ export default function CostPrediction() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground mt-1">Select specific resource or analyze all</p>
+                  <p className="text-sm text-muted-foreground mt-2 italic">
+                    Choose a specific resource to analyze or select "All Resources" for a comprehensive view across your infrastructure
+                  </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="period" className="text-sm font-medium">Prediction Period</Label>
+                <div className="space-y-4 p-3 bg-white/70 dark:bg-slate-800/30 rounded-lg border border-border/30">
+                  <div className="flex items-center mb-1">
+                    <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
+                    <Label htmlFor="period" className="text-sm font-semibold">Prediction Timeframe</Label>
+                  </div>
                   <Select value={monthsToPredict} onValueChange={setMonthsToPredict}>
-                    <SelectTrigger id="period" className="bg-background">
-                      <SelectValue placeholder="Select period" />
+                    <SelectTrigger id="period" className="bg-background h-11">
+                      <SelectValue placeholder="Select timeframe" />
                     </SelectTrigger>
                     <SelectContent>
                       {predictionPeriods.map(period => (
@@ -427,38 +436,57 @@ export default function CostPrediction() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground mt-1">How far into the future to predict</p>
+                  <p className="text-sm text-muted-foreground mt-2 italic">
+                    Define how far into the future the AI should predict your costs and usage patterns
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-4 border border-blue-100 dark:border-blue-800/30 my-4">
+                <div className="flex items-start">
+                  <div className="bg-blue-100 dark:bg-blue-900/30 p-1.5 rounded-md mr-3 mt-0.5">
+                    <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Analysis Details</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Our AI will analyze historical usage patterns, resource configurations, and pricing models to provide accurate forecasts and cost-saving opportunities.
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="pt-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+            <CardFooter className="pt-2 pb-6 px-6 flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
                 <Button 
                   onClick={handleRunPrediction} 
                   disabled={isPredictionLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-base"
                 >
                   {isPredictionLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   ) : (
-                    <TrendingUp className="mr-2 h-4 w-4" />
+                    <TrendingUp className="mr-2 h-5 w-5" />
                   )}
-                  Generate Prediction
+                  Generate Cost Prediction
                 </Button>
                 <Button 
                   onClick={handleGetRecommendations} 
                   disabled={isRecommendationsLoading}
                   variant="outline"
-                  className="w-full border-green-600 text-green-600 hover:bg-green-50"
+                  className="w-full border-green-600 text-green-600 hover:bg-green-50 h-12 text-base"
                 >
                   {isRecommendationsLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   ) : (
-                    <Percent className="mr-2 h-4 w-4" />
+                    <Percent className="mr-2 h-5 w-5" />
                   )}
-                  Find Savings
+                  Find Cost Savings
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Powered by OpenAI GPT-4o for intelligent cloud cost analysis
+              </p>
             </CardFooter>
           </Card>
 
