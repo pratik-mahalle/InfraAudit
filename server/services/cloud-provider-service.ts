@@ -1,8 +1,8 @@
-import {
-  CloudProvider,
-  AllCloudCredentials,
-  AWSCredentials,
-  GCPCredentials,
+import { 
+  CloudProvider, 
+  AllCloudCredentials, 
+  AWSCredentials, 
+  GCPCredentials, 
   AzureCredentials,
   CloudResource,
   CostData,
@@ -10,7 +10,9 @@ import {
   ResourceUtilization
 } from '../../shared/cloud-providers';
 
-// Interface for all cloud provider integrations
+/**
+ * Interface defining the methods for cloud provider implementations
+ */
 interface CloudProviderInterface {
   getResources(): Promise<CloudResource[]>;
   getCostData(startDate: Date, endDate: Date): Promise<CostData[]>;
@@ -20,7 +22,9 @@ interface CloudProviderInterface {
   generateOptimizationRecommendations(): Promise<any[]>;
 }
 
-// AWS Provider Implementation
+/**
+ * AWS Provider Implementation
+ */
 class AWSProvider implements CloudProviderInterface {
   private credentials: AWSCredentials;
 
@@ -29,56 +33,259 @@ class AWSProvider implements CloudProviderInterface {
   }
 
   async getResources(): Promise<CloudResource[]> {
-    // Here you would use AWS SDK to fetch resources
-    // Example with AWS SDK v3:
-    // const ec2Client = new EC2Client({ 
-    //   region: this.credentials.region || 'us-east-1',
-    //   credentials: {
-    //     accessKeyId: this.credentials.accessKeyId,
-    //     secretAccessKey: this.credentials.secretAccessKey
-    //   }
-    // });
-    // const response = await ec2Client.send(new DescribeInstancesCommand({}));
-    // Transform the response into CloudResource objects
-
-    console.log("Fetching AWS resources");
-    
-    // For now, return empty array until AWS SDK integration is complete
-    return [];
+    // In a real implementation, we would use the AWS SDK to fetch resources
+    // For demo purposes, we'll return simulated resources
+    return [
+      {
+        id: 'i-1234567890abcdef0',
+        name: 'Web Server',
+        type: 'EC2',
+        region: this.credentials.region || 'us-east-1',
+        provider: CloudProvider.AWS,
+        status: 'running',
+        tags: { Environment: 'Production', Role: 'Web' },
+        createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+        lastUsed: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        cost: 45, // $0.45 per hour
+        costPerMonth: 32400, // $324.00 per month
+        utilization: 0.35, // 35% utilization
+        metadata: {
+          instanceType: 't3.large',
+          vpcId: 'vpc-12345',
+          publicIp: '54.123.456.789'
+        }
+      },
+      {
+        id: 'i-0987654321fedcba0',
+        name: 'API Server',
+        type: 'EC2',
+        region: this.credentials.region || 'us-east-1',
+        provider: CloudProvider.AWS,
+        status: 'running',
+        tags: { Environment: 'Production', Role: 'API' },
+        createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
+        lastUsed: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        cost: 96, // $0.96 per hour
+        costPerMonth: 69120, // $691.20 per month
+        utilization: 0.75, // 75% utilization
+        metadata: {
+          instanceType: 'm5.xlarge',
+          vpcId: 'vpc-12345',
+          publicIp: '54.987.654.321'
+        }
+      },
+      {
+        id: 's3-data-bucket-prod',
+        name: 'Data Storage Bucket',
+        type: 'S3',
+        region: this.credentials.region || 'us-east-1',
+        provider: CloudProvider.AWS,
+        status: 'active',
+        tags: { Environment: 'Production', Data: 'Customer' },
+        createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
+        cost: 12, // $0.12 per day
+        costPerMonth: 360, // $3.60 per month
+        metadata: {
+          sizeGB: 125,
+          objects: 18563,
+          versioning: 'Enabled'
+        }
+      },
+      {
+        id: 'rds-mysql-prod',
+        name: 'Production Database',
+        type: 'RDS',
+        region: this.credentials.region || 'us-east-1',
+        provider: CloudProvider.AWS,
+        status: 'available',
+        tags: { Environment: 'Production', Engine: 'MySQL' },
+        createdAt: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000).toISOString(),
+        lastUsed: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        cost: 23, // $0.23 per hour
+        costPerMonth: 16560, // $165.60 per month
+        utilization: 0.42, // 42% utilization
+        metadata: {
+          engine: 'mysql',
+          version: '8.0.25',
+          instanceClass: 'db.t3.medium',
+          storageGB: 100
+        }
+      }
+    ];
   }
 
   async getCostData(startDate: Date, endDate: Date): Promise<CostData[]> {
-    // Use AWS Cost Explorer API to fetch cost data
-    console.log(`Fetching AWS cost data from ${startDate} to ${endDate}`);
-    return [];
+    // In a real implementation, we would use the AWS Cost Explorer API
+    // For demo purposes, we'll generate simulated cost data
+    const costData: CostData[] = [];
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+    
+    // Generate daily cost data
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      
+      // Base cost plus some randomness
+      const baseCost = 150;
+      const randomVariance = Math.random() * 50 - 25; // -25 to +25
+      const cost = Math.max(baseCost + randomVariance, 50); // Ensure minimum $0.50
+      
+      costData.push({
+        date: date.toISOString().split('T')[0],
+        amount: Math.round(cost * 100) / 100,
+        service: 'EC2'
+      });
+      
+      costData.push({
+        date: date.toISOString().split('T')[0],
+        amount: Math.round((cost * 0.15) * 100) / 100,
+        service: 'S3'
+      });
+      
+      costData.push({
+        date: date.toISOString().split('T')[0],
+        amount: Math.round((cost * 0.4) * 100) / 100,
+        service: 'RDS'
+      });
+    }
+    
+    return costData;
   }
 
   async getSecurityFindings(): Promise<SecurityFinding[]> {
-    // Use AWS Security Hub or GuardDuty API to fetch security findings
-    console.log("Fetching AWS security findings");
-    return [];
+    // In a real implementation, we would use the AWS Security Hub API
+    // For demo purposes, we'll return simulated security findings
+    return [
+      {
+        id: 'AWS-SEC-001',
+        resourceId: 'i-1234567890abcdef0',
+        severity: 'high',
+        title: 'Security Group allows unrestricted access to port 22',
+        description: 'The security group sg-1234 attached to instance i-1234567890abcdef0 allows unrestricted access (0.0.0.0/0) to port 22 (SSH).',
+        remediation: 'Modify the security group to restrict SSH access to trusted IP addresses only.',
+        detectedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'open'
+      },
+      {
+        id: 'AWS-SEC-002',
+        resourceId: 's3-data-bucket-prod',
+        severity: 'critical',
+        title: 'S3 Bucket has public read access',
+        description: 'The S3 bucket data-bucket-prod has public read access enabled, potentially exposing sensitive data.',
+        remediation: 'Disable public access to the bucket and implement proper IAM policies.',
+        detectedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'investigating'
+      }
+    ];
   }
 
   async getResourceUtilization(resourceIds: string[], metrics: string[]): Promise<ResourceUtilization[]> {
-    // Use AWS CloudWatch API to fetch resource utilization metrics
-    console.log(`Fetching AWS resource utilization for ${resourceIds.length} resources`);
-    return [];
+    // In a real implementation, we would use the AWS CloudWatch API
+    // For demo purposes, we'll return simulated utilization data
+    const utilization: ResourceUtilization[] = [];
+    
+    // Generate utilization data for EC2 instances
+    for (const resourceId of resourceIds.filter(id => id.startsWith('i-'))) {
+      // CPU utilization
+      if (metrics.includes('cpu') || metrics.length === 0) {
+        for (let i = 0; i < 24; i++) {
+          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
+          const baseValue = 40; // 40% base utilization
+          const randomVariance = Math.random() * 30; // 0-30% variance
+          
+          utilization.push({
+            resourceId,
+            metric: 'cpu',
+            value: Math.min(baseValue + randomVariance, 100),
+            timestamp: timestamp.toISOString(),
+            unit: 'percent'
+          });
+        }
+      }
+      
+      // Memory utilization
+      if (metrics.includes('memory') || metrics.length === 0) {
+        for (let i = 0; i < 24; i++) {
+          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
+          const baseValue = 60; // 60% base utilization
+          const randomVariance = Math.random() * 20; // 0-20% variance
+          
+          utilization.push({
+            resourceId,
+            metric: 'memory',
+            value: Math.min(baseValue + randomVariance, 100),
+            timestamp: timestamp.toISOString(),
+            unit: 'percent'
+          });
+        }
+      }
+    }
+    
+    // Generate utilization data for RDS instances
+    for (const resourceId of resourceIds.filter(id => id.startsWith('rds-'))) {
+      // Database connections
+      if (metrics.includes('connections') || metrics.length === 0) {
+        for (let i = 0; i < 24; i++) {
+          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
+          const baseValue = 25; // 25 connections base
+          const randomVariance = Math.floor(Math.random() * 15); // 0-15 connections variance
+          
+          utilization.push({
+            resourceId,
+            metric: 'connections',
+            value: baseValue + randomVariance,
+            timestamp: timestamp.toISOString(),
+            unit: 'count'
+          });
+        }
+      }
+    }
+    
+    return utilization;
   }
 
   async calculateCostAnomalies(): Promise<any[]> {
-    // Use AWS Cost Anomaly Detection or implement custom logic
-    console.log("Calculating AWS cost anomalies");
-    return [];
+    // In a real implementation, we would analyze cost data to detect anomalies
+    // For demo purposes, we'll return simulated cost anomalies
+    return [
+      {
+        resourceId: 'i-0987654321fedcba0',
+        anomalyType: 'spike',
+        severity: 'high',
+        percentage: 65,
+        previousCost: 42580, // $425.80
+        currentCost: 69120, // $691.20
+        services: ['EC2', 'EBS'],
+        detectedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+      }
+    ];
   }
 
   async generateOptimizationRecommendations(): Promise<any[]> {
-    // Use AWS Cost Optimizer API or implement custom logic
-    console.log("Generating AWS optimization recommendations");
-    return [];
+    // In a real implementation, we would analyze resource usage to generate recommendations
+    // For demo purposes, we'll return simulated recommendations
+    return [
+      {
+        resourceId: 'i-1234567890abcdef0',
+        recommendationType: 'rightsize',
+        description: 'This instance is consistently underutilized. Consider downsizing from t3.large to t3.medium.',
+        potentialSavings: 16200, // $162.00 per month
+        confidence: 'high'
+      },
+      {
+        resourceId: 's3-data-bucket-prod',
+        recommendationType: 'lifecycle',
+        description: 'Implement a lifecycle policy to transition older objects to Glacier storage.',
+        potentialSavings: 125, // $1.25 per month
+        confidence: 'medium'
+      }
+    ];
   }
 }
 
-// GCP Provider Implementation
+/**
+ * GCP Provider Implementation
+ */
 class GCPProvider implements CloudProviderInterface {
   private credentials: GCPCredentials;
 
@@ -87,43 +294,181 @@ class GCPProvider implements CloudProviderInterface {
   }
 
   async getResources(): Promise<CloudResource[]> {
-    // Here you would use Google Cloud Client libraries
-    console.log("Fetching GCP resources");
-    return [];
+    // In a real implementation, we would use the GCP API to fetch resources
+    // For demo purposes, we'll return simulated resources
+    return [
+      {
+        id: 'gce-1234',
+        name: 'App Server',
+        type: 'Compute Engine',
+        region: 'us-central1',
+        provider: CloudProvider.GCP,
+        status: 'running',
+        tags: { environment: 'production', role: 'app' },
+        createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+        lastUsed: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        cost: 35, // $0.35 per hour
+        costPerMonth: 25200, // $252.00 per month
+        utilization: 0.65, // 65% utilization
+        metadata: {
+          machineType: 'n1-standard-2',
+          zone: 'us-central1-a',
+          networkTags: ['http-server', 'https-server']
+        }
+      },
+      {
+        id: 'cloudsql-5678',
+        name: 'Customer Database',
+        type: 'Cloud SQL',
+        region: 'us-central1',
+        provider: CloudProvider.GCP,
+        status: 'running',
+        tags: { environment: 'production', data: 'customer' },
+        createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+        lastUsed: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+        cost: 18, // $0.18 per hour
+        costPerMonth: 12960, // $129.60 per month
+        utilization: 0.53, // 53% utilization
+        metadata: {
+          dbType: 'PostgreSQL',
+          version: '12',
+          tier: 'db-n1-standard-1',
+          storageGB: 50
+        }
+      }
+    ];
   }
 
   async getCostData(startDate: Date, endDate: Date): Promise<CostData[]> {
-    // Use Google Cloud Billing API
-    console.log(`Fetching GCP cost data from ${startDate} to ${endDate}`);
-    return [];
+    // In a real implementation, we would use the GCP Billing API
+    // For demo purposes, we'll generate simulated cost data
+    const costData: CostData[] = [];
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+    
+    // Generate daily cost data
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      
+      // Base cost plus some randomness
+      const baseCost = 80;
+      const randomVariance = Math.random() * 30 - 15; // -15 to +15
+      const cost = Math.max(baseCost + randomVariance, 30); // Ensure minimum $0.30
+      
+      costData.push({
+        date: date.toISOString().split('T')[0],
+        amount: Math.round(cost * 100) / 100,
+        service: 'Compute Engine'
+      });
+      
+      costData.push({
+        date: date.toISOString().split('T')[0],
+        amount: Math.round((cost * 0.25) * 100) / 100,
+        service: 'Cloud SQL'
+      });
+    }
+    
+    return costData;
   }
 
   async getSecurityFindings(): Promise<SecurityFinding[]> {
-    // Use Google Cloud Security Command Center API
-    console.log("Fetching GCP security findings");
-    return [];
+    // In a real implementation, we would use the GCP Security Command Center API
+    // For demo purposes, we'll return simulated security findings
+    return [
+      {
+        id: 'GCP-SEC-001',
+        resourceId: 'gce-1234',
+        severity: 'medium',
+        title: 'VM instance has unnecessary open ports',
+        description: 'The VM instance gce-1234 has firewall rules allowing access to non-essential ports from all sources.',
+        remediation: 'Restrict firewall rules to allow access only to necessary ports and from trusted sources.',
+        detectedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'open'
+      }
+    ];
   }
 
   async getResourceUtilization(resourceIds: string[], metrics: string[]): Promise<ResourceUtilization[]> {
-    // Use Google Cloud Monitoring API
-    console.log(`Fetching GCP resource utilization for ${resourceIds.length} resources`);
-    return [];
+    // In a real implementation, we would use the GCP Monitoring API
+    // For demo purposes, we'll return simulated utilization data
+    const utilization: ResourceUtilization[] = [];
+    
+    // Generate utilization data for Compute Engine instances
+    for (const resourceId of resourceIds.filter(id => id.startsWith('gce-'))) {
+      // CPU utilization
+      if (metrics.includes('cpu') || metrics.length === 0) {
+        for (let i = 0; i < 24; i++) {
+          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
+          const baseValue = 55; // 55% base utilization
+          const randomVariance = Math.random() * 25; // 0-25% variance
+          
+          utilization.push({
+            resourceId,
+            metric: 'cpu',
+            value: Math.min(baseValue + randomVariance, 100),
+            timestamp: timestamp.toISOString(),
+            unit: 'percent'
+          });
+        }
+      }
+    }
+    
+    // Generate utilization data for Cloud SQL instances
+    for (const resourceId of resourceIds.filter(id => id.startsWith('cloudsql-'))) {
+      // Storage utilization
+      if (metrics.includes('storage') || metrics.length === 0) {
+        for (let i = 0; i < 24; i++) {
+          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
+          const baseValue = 45; // 45% base utilization
+          const randomVariance = Math.random() * 5; // 0-5% variance
+          
+          utilization.push({
+            resourceId,
+            metric: 'storage',
+            value: baseValue + randomVariance,
+            timestamp: timestamp.toISOString(),
+            unit: 'percent'
+          });
+        }
+      }
+    }
+    
+    return utilization;
   }
 
   async calculateCostAnomalies(): Promise<any[]> {
-    // Implement custom logic with GCP billing data
-    console.log("Calculating GCP cost anomalies");
-    return [];
+    // For demo purposes, we'll return simulated cost anomalies
+    return [
+      {
+        resourceId: 'gce-1234',
+        anomalyType: 'trend',
+        severity: 'medium',
+        percentage: 28,
+        previousCost: 19680, // $196.80
+        currentCost: 25200, // $252.00
+        services: ['Compute Engine'],
+        detectedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+      }
+    ];
   }
 
   async generateOptimizationRecommendations(): Promise<any[]> {
-    // Use Recommender API or implement custom logic
-    console.log("Generating GCP optimization recommendations");
-    return [];
+    // For demo purposes, we'll return simulated recommendations
+    return [
+      {
+        resourceId: 'cloudsql-5678',
+        recommendationType: 'storage_optimization',
+        description: 'This Cloud SQL instance has 50GB of provisioned storage but is only using 45%. Consider reducing the provisioned storage.',
+        potentialSavings: 3890, // $38.90 per month
+        confidence: 'medium'
+      }
+    ];
   }
 }
 
-// Azure Provider Implementation
+/**
+ * Azure Provider Implementation
+ */
 class AzureProvider implements CloudProviderInterface {
   private credentials: AzureCredentials;
 
@@ -132,158 +477,374 @@ class AzureProvider implements CloudProviderInterface {
   }
 
   async getResources(): Promise<CloudResource[]> {
-    // Here you would use Azure SDK
-    console.log("Fetching Azure resources");
-    return [];
+    // In a real implementation, we would use the Azure Management API
+    // For demo purposes, we'll return simulated resources
+    return [
+      {
+        id: 'vm-9876',
+        name: 'Data Processing',
+        type: 'Virtual Machine',
+        region: 'eastus',
+        provider: CloudProvider.AZURE,
+        status: 'running',
+        tags: { Environment: 'Production', Role: 'Data' },
+        createdAt: new Date(Date.now() - 75 * 24 * 60 * 60 * 1000).toISOString(),
+        lastUsed: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+        cost: 41, // $0.41 per hour
+        costPerMonth: 29520, // $295.20 per month
+        utilization: 0.62, // 62% utilization
+        metadata: {
+          vmSize: 'Standard_D2s_v3',
+          osType: 'Linux',
+          diskSizeGB: 128
+        }
+      },
+      {
+        id: 'sqldb-5432',
+        name: 'Product Database',
+        type: 'SQL Database',
+        region: 'eastus',
+        provider: CloudProvider.AZURE,
+        status: 'online',
+        tags: { Environment: 'Production', Data: 'Product' },
+        createdAt: new Date(Date.now() - 100 * 24 * 60 * 60 * 1000).toISOString(),
+        lastUsed: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+        cost: 16, // $0.16 per hour
+        costPerMonth: 11520, // $115.20 per month
+        utilization: 0.38, // 38% utilization
+        metadata: {
+          tier: 'Standard',
+          maxSizeGB: 100,
+          dtu: 50
+        }
+      },
+      {
+        id: 'storage-7890',
+        name: 'Application Files',
+        type: 'Storage Account',
+        region: 'eastus',
+        provider: CloudProvider.AZURE,
+        status: 'available',
+        tags: { Environment: 'Production', Purpose: 'Files' },
+        createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
+        cost: 8, // $0.08 per day
+        costPerMonth: 240, // $2.40 per month
+        metadata: {
+          tier: 'Standard_LRS',
+          sizeGB: 80
+        }
+      }
+    ];
   }
 
   async getCostData(startDate: Date, endDate: Date): Promise<CostData[]> {
-    // Use Azure Cost Management API
-    console.log(`Fetching Azure cost data from ${startDate} to ${endDate}`);
-    return [];
+    // In a real implementation, we would use the Azure Cost Management API
+    // For demo purposes, we'll generate simulated cost data
+    const costData: CostData[] = [];
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+    
+    // Generate daily cost data
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      
+      // Base cost plus some randomness
+      const baseCost = 120;
+      const randomVariance = Math.random() * 40 - 20; // -20 to +20
+      const cost = Math.max(baseCost + randomVariance, 60); // Ensure minimum $0.60
+      
+      costData.push({
+        date: date.toISOString().split('T')[0],
+        amount: Math.round(cost * 100) / 100,
+        service: 'Virtual Machines'
+      });
+      
+      costData.push({
+        date: date.toISOString().split('T')[0],
+        amount: Math.round((cost * 0.3) * 100) / 100,
+        service: 'SQL Database'
+      });
+      
+      costData.push({
+        date: date.toISOString().split('T')[0],
+        amount: Math.round((cost * 0.05) * 100) / 100,
+        service: 'Storage'
+      });
+    }
+    
+    return costData;
   }
 
   async getSecurityFindings(): Promise<SecurityFinding[]> {
-    // Use Azure Security Center API
-    console.log("Fetching Azure security findings");
-    return [];
+    // In a real implementation, we would use the Azure Security Center API
+    // For demo purposes, we'll return simulated security findings
+    return [
+      {
+        id: 'AZ-SEC-001',
+        resourceId: 'vm-9876',
+        severity: 'high',
+        title: 'Operating system vulnerabilities',
+        description: 'The virtual machine vm-9876 has operating system vulnerabilities that need to be patched.',
+        remediation: 'Apply the latest security patches to the operating system.',
+        detectedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'open'
+      },
+      {
+        id: 'AZ-SEC-002',
+        resourceId: 'storage-7890',
+        severity: 'medium',
+        title: 'Storage account not using HTTPS',
+        description: 'The storage account storage-7890 allows insecure HTTP traffic.',
+        remediation: 'Configure the storage account to accept only HTTPS connections.',
+        detectedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'open'
+      }
+    ];
   }
 
   async getResourceUtilization(resourceIds: string[], metrics: string[]): Promise<ResourceUtilization[]> {
-    // Use Azure Monitor API
-    console.log(`Fetching Azure resource utilization for ${resourceIds.length} resources`);
-    return [];
+    // In a real implementation, we would use the Azure Monitor API
+    // For demo purposes, we'll return simulated utilization data
+    const utilization: ResourceUtilization[] = [];
+    
+    // Generate utilization data for Virtual Machines
+    for (const resourceId of resourceIds.filter(id => id.startsWith('vm-'))) {
+      // CPU utilization
+      if (metrics.includes('cpu') || metrics.length === 0) {
+        for (let i = 0; i < 24; i++) {
+          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
+          const baseValue = 50; // 50% base utilization
+          const randomVariance = Math.random() * 25; // 0-25% variance
+          
+          utilization.push({
+            resourceId,
+            metric: 'cpu',
+            value: Math.min(baseValue + randomVariance, 100),
+            timestamp: timestamp.toISOString(),
+            unit: 'percent'
+          });
+        }
+      }
+      
+      // Disk IO
+      if (metrics.includes('diskIO') || metrics.length === 0) {
+        for (let i = 0; i < 24; i++) {
+          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
+          const baseValue = 20; // 20 MB/s base utilization
+          const randomVariance = Math.random() * 10; // 0-10 MB/s variance
+          
+          utilization.push({
+            resourceId,
+            metric: 'diskIO',
+            value: baseValue + randomVariance,
+            timestamp: timestamp.toISOString(),
+            unit: 'MBps'
+          });
+        }
+      }
+    }
+    
+    // Generate utilization data for SQL Databases
+    for (const resourceId of resourceIds.filter(id => id.startsWith('sqldb-'))) {
+      // DTU utilization
+      if (metrics.includes('dtu') || metrics.length === 0) {
+        for (let i = 0; i < 24; i++) {
+          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
+          const baseValue = 30; // 30% base utilization
+          const randomVariance = Math.random() * 20; // 0-20% variance
+          
+          utilization.push({
+            resourceId,
+            metric: 'dtu',
+            value: baseValue + randomVariance,
+            timestamp: timestamp.toISOString(),
+            unit: 'percent'
+          });
+        }
+      }
+    }
+    
+    return utilization;
   }
 
   async calculateCostAnomalies(): Promise<any[]> {
-    // Use Azure Anomaly Detector or implement custom logic
-    console.log("Calculating Azure cost anomalies");
-    return [];
+    // For demo purposes, we'll return simulated cost anomalies
+    return [
+      {
+        resourceId: 'vm-9876',
+        anomalyType: 'spike',
+        severity: 'low',
+        percentage: 15,
+        previousCost: 25680, // $256.80
+        currentCost: 29520, // $295.20
+        services: ['Virtual Machines', 'Managed Disks'],
+        detectedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      }
+    ];
   }
 
   async generateOptimizationRecommendations(): Promise<any[]> {
-    // Use Azure Advisor API or implement custom logic
-    console.log("Generating Azure optimization recommendations");
-    return [];
+    // For demo purposes, we'll return simulated recommendations
+    return [
+      {
+        resourceId: 'sqldb-5432',
+        recommendationType: 'performance_tier',
+        description: 'This SQL Database is consistently underutilized. Consider switching from DTU-based pricing to vCore with serverless option for automatic scaling.',
+        potentialSavings: 4608, // $46.08 per month
+        confidence: 'high'
+      },
+      {
+        resourceId: 'vm-9876',
+        recommendationType: 'reserved_instance',
+        description: 'This Virtual Machine has been running consistently. Consider purchasing a 1-year reserved instance to reduce costs.',
+        potentialSavings: 8856, // $88.56 per month
+        confidence: 'high'
+      }
+    ];
   }
 }
 
-// Cloud Provider Factory
+/**
+ * Cloud Provider Service to manage multiple cloud providers
+ */
 export class CloudProviderService {
   private providers: Map<CloudProvider, CloudProviderInterface> = new Map();
 
   constructor(credentials: AllCloudCredentials[]) {
-    credentials.forEach(cred => {
-      switch (cred.provider) {
-        case CloudProvider.AWS:
-          this.providers.set(CloudProvider.AWS, new AWSProvider(cred as AWSCredentials));
-          break;
-        case CloudProvider.GCP:
-          this.providers.set(CloudProvider.GCP, new GCPProvider(cred as GCPCredentials));
-          break;
-        case CloudProvider.AZURE:
-          this.providers.set(CloudProvider.AZURE, new AzureProvider(cred as AzureCredentials));
-          break;
-      }
-    });
+    // Initialize providers from credentials
+    credentials.forEach(cred => this.addProvider(cred));
   }
 
-  // Add credentials for a specific provider
+  /**
+   * Add a cloud provider
+   */
   addProvider(credentials: AllCloudCredentials): void {
     switch (credentials.provider) {
       case CloudProvider.AWS:
-        this.providers.set(CloudProvider.AWS, new AWSProvider(credentials as AWSCredentials));
+        this.providers.set(
+          CloudProvider.AWS, 
+          new AWSProvider(credentials as AWSCredentials)
+        );
         break;
       case CloudProvider.GCP:
-        this.providers.set(CloudProvider.GCP, new GCPProvider(credentials as GCPCredentials));
+        this.providers.set(
+          CloudProvider.GCP, 
+          new GCPProvider(credentials as GCPCredentials)
+        );
         break;
       case CloudProvider.AZURE:
-        this.providers.set(CloudProvider.AZURE, new AzureProvider(credentials as AzureCredentials));
+        this.providers.set(
+          CloudProvider.AZURE, 
+          new AzureProvider(credentials as AzureCredentials)
+        );
         break;
+      default:
+        throw new Error(`Unsupported cloud provider: ${credentials.provider}`);
     }
   }
 
-  // Remove a provider
+  /**
+   * Remove a cloud provider
+   */
   removeProvider(provider: CloudProvider): void {
     this.providers.delete(provider);
   }
 
-  // Get all resources from all connected providers
+  /**
+   * Get resources from all configured providers
+   */
   async getAllResources(): Promise<CloudResource[]> {
-    const allResourcesPromises = Array.from(this.providers.values()).map(
-      provider => provider.getResources()
+    const resourcePromises = Array.from(this.providers.values()).map(provider => 
+      provider.getResources()
     );
     
-    const allProviderResources = await Promise.all(allResourcesPromises);
-    return allProviderResources.flat();
+    const allResourceArrays = await Promise.all(resourcePromises);
+    return allResourceArrays.flat();
   }
 
-  // Get resources from a specific provider
+  /**
+   * Get resources from a specific provider
+   */
   async getResourcesByProvider(provider: CloudProvider): Promise<CloudResource[]> {
-    const providerInstance = this.providers.get(provider);
-    if (!providerInstance) {
-      throw new Error(`Provider ${provider} not configured`);
+    const providerImpl = this.providers.get(provider);
+    
+    if (!providerImpl) {
+      return [];
     }
     
-    return await providerInstance.getResources();
+    return await providerImpl.getResources();
   }
 
-  // Get cost data from all providers
+  /**
+   * Get cost data from all configured providers
+   */
   async getAllCostData(startDate: Date, endDate: Date): Promise<CostData[]> {
-    const allCostDataPromises = Array.from(this.providers.values()).map(
-      provider => provider.getCostData(startDate, endDate)
+    const costPromises = Array.from(this.providers.values()).map(provider => 
+      provider.getCostData(startDate, endDate)
     );
     
-    const allProviderCostData = await Promise.all(allCostDataPromises);
-    return allProviderCostData.flat();
+    const allCostArrays = await Promise.all(costPromises);
+    return allCostArrays.flat();
   }
 
-  // Get security findings from all providers
+  /**
+   * Get security findings from all configured providers
+   */
   async getAllSecurityFindings(): Promise<SecurityFinding[]> {
-    const allFindingsPromises = Array.from(this.providers.values()).map(
-      provider => provider.getSecurityFindings()
+    const securityPromises = Array.from(this.providers.values()).map(provider => 
+      provider.getSecurityFindings()
     );
     
-    const allProviderFindings = await Promise.all(allFindingsPromises);
-    return allProviderFindings.flat();
+    const allSecurityArrays = await Promise.all(securityPromises);
+    return allSecurityArrays.flat();
   }
 
-  // Get resource utilization from all providers
+  /**
+   * Get resource utilization data from all configured providers
+   */
   async getAllResourceUtilization(resourceIds: string[], metrics: string[]): Promise<ResourceUtilization[]> {
-    const allUtilizationPromises = Array.from(this.providers.values()).map(
-      provider => provider.getResourceUtilization(resourceIds, metrics)
+    const utilizationPromises = Array.from(this.providers.values()).map(provider => 
+      provider.getResourceUtilization(resourceIds, metrics)
     );
     
-    const allProviderUtilization = await Promise.all(allUtilizationPromises);
-    return allProviderUtilization.flat();
+    const allUtilizationArrays = await Promise.all(utilizationPromises);
+    return allUtilizationArrays.flat();
   }
 
-  // Calculate cost anomalies across all providers
+  /**
+   * Calculate cost anomalies across all configured providers
+   */
   async calculateAllCostAnomalies(): Promise<any[]> {
-    const allAnomaliesPromises = Array.from(this.providers.values()).map(
-      provider => provider.calculateCostAnomalies()
+    const anomalyPromises = Array.from(this.providers.values()).map(provider => 
+      provider.calculateCostAnomalies()
     );
     
-    const allProviderAnomalies = await Promise.all(allAnomaliesPromises);
-    return allProviderAnomalies.flat();
+    const allAnomalyArrays = await Promise.all(anomalyPromises);
+    return allAnomalyArrays.flat();
   }
 
-  // Generate optimization recommendations across all providers
+  /**
+   * Generate optimization recommendations across all configured providers
+   */
   async generateAllOptimizationRecommendations(): Promise<any[]> {
-    const allRecommendationsPromises = Array.from(this.providers.values()).map(
-      provider => provider.generateOptimizationRecommendations()
+    const recommendationPromises = Array.from(this.providers.values()).map(provider => 
+      provider.generateOptimizationRecommendations()
     );
     
-    const allProviderRecommendations = await Promise.all(allRecommendationsPromises);
-    return allProviderRecommendations.flat();
+    const allRecommendationArrays = await Promise.all(recommendationPromises);
+    return allRecommendationArrays.flat();
   }
 
-  // Check if a provider is configured
+  /**
+   * Check if a specific provider is configured
+   */
   isProviderConfigured(provider: CloudProvider): boolean {
     return this.providers.has(provider);
   }
 
-  // Get all configured providers
+  /**
+   * Get a list of all configured providers
+   */
   getConfiguredProviders(): CloudProvider[] {
     return Array.from(this.providers.keys());
   }

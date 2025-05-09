@@ -11,6 +11,7 @@ import ResourceUtilization from "@/pages/ResourceUtilization";
 import Alerts from "@/pages/Alerts";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
+import CloudProviders from "@/pages/CloudProviders";
 import AuthPage from "@/pages/auth-page";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -26,6 +27,7 @@ function Router() {
       <ProtectedRoute path="/alerts" component={Alerts} />
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/profile" component={Profile} />
+      <ProtectedRoute path="/cloud-providers" component={CloudProviders} />
       
       {/* Public routes */}
       <Route path="/auth" component={AuthPage} />
