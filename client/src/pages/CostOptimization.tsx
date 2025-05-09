@@ -8,6 +8,7 @@ import { CostForecasting } from "@/components/cost/CostForecasting";
 import { UnusedResourceRecommender } from "@/components/recommendations/UnusedResourceRecommender";
 import { SavingsPlansOptimizer } from "@/components/cost/SavingsPlansOptimizer";
 import { CloudIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -124,12 +125,11 @@ export default function CostOptimization() {
             id: 1000 + index, // Use high IDs to not conflict with existing recommendations
             title,
             description,
-            type: recTypes[typeIndex] as "right-sizing" | "idle-resources" | "reservations",
-            impact: impact as "high" | "medium" | "low",
-            resourceId: index + 1, // Link to existing resources
+            type: recTypes[typeIndex],
             potentialSavings,
-            implementationEffort: "medium",
+            resourcesAffected: [index + 1], // Link to existing resources
             createdAt: new Date().toISOString(),
+            status: 'open',
           };
         });
         
@@ -788,8 +788,8 @@ export default function CostOptimization() {
       {/* Cost Optimization Recommendations */}
       <div className="mb-6">
         <CostRecommendations
-          recommendations={recommendations || []}
-          isLoading={isLoadingRecommendations}
+          recommendations={allRecommendations}
+          isLoading={isLoadingRecommendations && !awsOptimizations.length}
         />
       </div>
     </DashboardLayout>
