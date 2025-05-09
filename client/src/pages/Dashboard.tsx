@@ -35,7 +35,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -178,7 +178,7 @@ export default function Dashboard() {
       </div>
 
       {/* Dashboard Content */}
-      <TabsContent value="overview" className={dashboardTab === "overview" ? "block" : "hidden"}>
+      <div className={dashboardTab === "overview" ? "block" : "hidden"}>
         {/* Status Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           <StatusCard
@@ -333,17 +333,17 @@ export default function Dashboard() {
             isLoading={isLoadingRecommendations} 
           />
         </div>
-      </TabsContent>
+      </div>
 
       {/* Cloud Providers Tab */}
-      <TabsContent value="providers" className={dashboardTab === "providers" ? "block" : "hidden"}>
+      <div className={dashboardTab === "providers" ? "block" : "hidden"}>
         <CloudProviderIntegration />
-      </TabsContent>
+      </div>
 
       {/* Custom Widgets Tab */}
-      <TabsContent value="widgets" className={dashboardTab === "widgets" ? "block" : "hidden"}>
+      <div className={dashboardTab === "widgets" ? "block" : "hidden"}>
         <PersonalizedWidgets />
-      </TabsContent>
+      </div>
     </DashboardLayout>
   );
 }
