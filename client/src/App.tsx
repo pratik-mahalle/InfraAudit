@@ -10,6 +10,7 @@ import CostOptimization from "@/pages/CostOptimization";
 import ResourceUtilization from "@/pages/ResourceUtilization";
 import Alerts from "@/pages/Alerts";
 import Settings from "@/pages/Settings";
+import Profile from "@/pages/Profile";
 import AuthPage from "@/pages/auth-page";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -24,6 +25,7 @@ function Router() {
       <ProtectedRoute path="/resources" component={ResourceUtilization} />
       <ProtectedRoute path="/alerts" component={Alerts} />
       <ProtectedRoute path="/settings" component={Settings} />
+      <ProtectedRoute path="/profile" component={Profile} />
       
       {/* Public routes */}
       <Route path="/auth" component={AuthPage} />
