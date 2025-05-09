@@ -152,8 +152,8 @@ export function InfrastructureMap({
     setZoom(prev => Math.max(prev - 0.1, 0.5));
   };
 
-  const availableProviders = [...new Set(resources.map(r => r.provider))];
-  const availableRegions = [...new Set(resources.map(r => r.region))];
+  const availableProviders = Array.from(new Set(resources.map(r => r.provider)));
+  const availableRegions = Array.from(new Set(resources.map(r => r.region)));
 
   return (
     <Card className="col-span-3">

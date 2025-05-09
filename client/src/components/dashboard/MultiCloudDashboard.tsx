@@ -118,8 +118,8 @@ export function MultiCloudDashboard({
   const availableTags = Object.keys(stats.costByTag);
   
   // Get unique providers and regions for filter dropdowns
-  const availableProviders = [...new Set(resources.map(r => r.provider))];
-  const availableRegions = [...new Set(resources.map(r => r.region))];
+  const availableProviders = Array.from(new Set(resources.map(r => r.provider)));
+  const availableRegions = Array.from(new Set(resources.map(r => r.region)));
 
   // Chart colors
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d'];
