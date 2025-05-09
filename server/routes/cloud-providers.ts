@@ -6,10 +6,33 @@ import { CloudProviderService } from '../services/cloud-provider-service';
 
 const credentialsService = new CredentialsService();
 
-// Initialize cloud provider service with empty credentials - we'll add them as needed
+// Initialize cloud provider service with empty credentials
+// We'll load saved credentials during route registration
 const cloudProviderService = new CloudProviderService([]);
 
-export function registerCloudProviderRoutes(app: Express) {
+export async function registerCloudProviderRoutes(app: Express) {
+  // Load existing cloud provider credentials from DB
+  try {
+    console.log('Loading saved cloud provider credentials...');
+    // We'll need to fetch all users and their credentials
+    // For now, we'll just focus on the demo user (ID = 1)
+    const demoUserId = 1;
+    const credentials = await credentialsService.getCredentialsByUser(demoUserId);
+    
+    if (credentials.length > 0) {
+      console.log(`Found ${credentials.length} saved provider(s)`);
+      
+      // Add each set of credentials to the cloud provider service
+      for (const cred of credentials) {
+        console.log(`Adding provider: ${cred.provider}`);
+        cloudProviderService.addProvider(cred);
+      }
+    } else {
+      console.log('No saved cloud provider credentials found');
+    }
+  } catch (error) {
+    console.error('Error loading saved cloud provider credentials:', error);
+  }
   // Get all configured cloud providers for the authenticated user
   app.get('/api/cloud-providers', async (req, res) => {
     if (!req.isAuthenticated()) {
