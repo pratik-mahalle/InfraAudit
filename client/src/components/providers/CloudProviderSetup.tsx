@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { SiAmazonaws, SiGooglecloud, SiMicrosoftazure } from 'react-icons/si';
+import { SiAmazon, SiGooglecloud } from 'react-icons/si';
 
 // AWS Form Schema
 const awsFormSchema = z.object({
@@ -241,11 +241,11 @@ export function CloudProviderSetup() {
   const getProviderIcon = (provider: CloudProvider) => {
     switch (provider) {
       case CloudProvider.AWS:
-        return <SiAmazonaws className="h-6 w-6 text-orange-500" />;
+        return <SiAmazon className="h-6 w-6 text-orange-500" />;
       case CloudProvider.GCP:
         return <SiGooglecloud className="h-6 w-6 text-blue-500" />;
       case CloudProvider.AZURE:
-        return <SiMicrosoftazure className="h-6 w-6 text-blue-700" />;
+        return <Cloud className="h-6 w-6 text-blue-700" />;
       default:
         return <CloudCog className="h-6 w-6" />;
     }
@@ -362,7 +362,7 @@ export function CloudProviderSetup() {
             <TabsList className="grid grid-cols-3 mb-4">
               <TabsTrigger value="aws" disabled={isAwsConnected}>
                 <div className="flex items-center">
-                  <SiAmazonaws className="h-4 w-4 mr-2 text-orange-500" />
+                  <SiAmazon className="h-4 w-4 mr-2 text-orange-500" />
                   AWS
                 </div>
               </TabsTrigger>
@@ -374,7 +374,7 @@ export function CloudProviderSetup() {
               </TabsTrigger>
               <TabsTrigger value="azure" disabled={isAzureConnected}>
                 <div className="flex items-center">
-                  <SiMicrosoftazure className="h-4 w-4 mr-2 text-blue-700" />
+                  <SiMicrosoft className="h-4 w-4 mr-2 text-blue-700" />
                   Azure
                 </div>
               </TabsTrigger>
