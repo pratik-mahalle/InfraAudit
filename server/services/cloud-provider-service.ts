@@ -958,6 +958,25 @@ export class CloudProviderService {
     
     return await providerImpl.getResources();
   }
+  
+  /**
+   * Sync resources for a specific provider
+   * @param provider The cloud provider to sync
+   * @returns List of resources after sync
+   */
+  async syncProvider(provider: CloudProvider): Promise<CloudResource[]> {
+    console.log(`Syncing provider: ${provider}`);
+    const providerImpl = this.providers.get(provider);
+    
+    if (!providerImpl) {
+      console.error(`Provider ${provider} is not configured for sync`);
+      return [];
+    }
+    
+    // For now, this just fetches resources again, but in a real implementation
+    // we might invalidate caches, trigger background jobs, etc.
+    return await providerImpl.getResources();
+  }
 
   /**
    * Get cost data from all configured providers
