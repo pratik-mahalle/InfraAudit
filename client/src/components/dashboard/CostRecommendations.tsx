@@ -10,6 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 import { Recommendation } from "@/types";
+import { Badge } from "@/components/ui/badge";
+import { CloudIcon } from "lucide-react";
 
 interface CostRecommendationsProps {
   recommendations: Recommendation[];
