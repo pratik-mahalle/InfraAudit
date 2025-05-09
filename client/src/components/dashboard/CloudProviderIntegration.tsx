@@ -15,7 +15,7 @@ import {
   Loader2,
   Info
 } from "lucide-react";
-import { SiAmazon, SiAmazonwebservices, SiGooglecloud, SiMicrosoftazure } from "react-icons/si";
+import { SiAmazonwebservices, SiGooglecloud } from "react-icons/si";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -196,13 +196,19 @@ export function CloudProviderIntegration() {
   // Sync cloud provider mutation
   const syncProviderMutation = useMutation({
     mutationFn: async (accountId: string) => {
-      // In a real app, this would call the API
       console.log("Syncing cloud provider:", accountId);
-      // Mock response
-      return { success: true };
+      
+      const response = await apiRequest('POST', `/api/cloud-providers/${accountId}/sync`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to sync provider resources');
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cloud-providers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cloud-resources"] });
       toast({
         title: "Sync successful",
         description: "Your cloud provider resources have been synchronized.",
@@ -220,13 +226,19 @@ export function CloudProviderIntegration() {
   // Disconnect cloud provider mutation
   const disconnectProviderMutation = useMutation({
     mutationFn: async (accountId: string) => {
-      // In a real app, this would call the API
       console.log("Disconnecting cloud provider:", accountId);
-      // Mock response
-      return { success: true };
+      
+      const response = await apiRequest('DELETE', `/api/cloud-providers/${accountId}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to disconnect provider');
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cloud-providers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cloud-resources"] });
       toast({
         title: "Provider disconnected",
         description: "Your cloud provider has been disconnected.",
