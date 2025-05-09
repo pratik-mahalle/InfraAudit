@@ -358,6 +358,15 @@ export function CloudProviderSetup() {
             Add your cloud provider API credentials to start monitoring your infrastructure
           </CardDescription>
         </CardHeader>
+        <div className="px-6 mb-4">
+          <Alert variant="warning" className="bg-amber-50 border-amber-200">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800">Security Notice</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              Your credentials are securely encrypted before storage. For maximum security, we recommend using dedicated IAM users with read-only permissions for CloudGuard.
+            </AlertDescription>
+          </Alert>
+        </div>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-3 mb-4">
@@ -404,7 +413,7 @@ export function CloudProviderSetup() {
                             <Input placeholder="AWS Access Key ID" {...field} />
                           </FormControl>
                           <FormDescription>
-                            Enter your AWS IAM Access Key ID
+                            Enter your AWS IAM Access Key ID. Your IAM user needs read-only permissions for EC2, S3, RDS, IAM, and Cost Explorer services.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -420,7 +429,7 @@ export function CloudProviderSetup() {
                             <Input type="password" placeholder="AWS Secret Access Key" {...field} />
                           </FormControl>
                           <FormDescription>
-                            Enter your AWS IAM Secret Access Key
+                            Enter your AWS IAM Secret Access Key. We recommend creating a dedicated IAM user with read-only access for CloudGuard.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -690,15 +699,14 @@ export function CloudProviderSetup() {
                 AWS IAM Permissions
               </h3>
               <ul className="text-sm space-y-1 list-disc pl-5">
-                <li>EC2:Describe*</li>
-                <li>S3:List*</li>
-                <li>S3:Get*</li>
-                <li>RDS:Describe*</li>
-                <li>CloudWatch:Get*</li>
-                <li>CloudWatch:List*</li>
-                <li>Cost Explorer:*</li>
-                <li>SecurityHub:List*</li>
-                <li>SecurityHub:Get*</li>
+                <li>EC2:DescribeInstances</li>
+                <li>EC2:DescribeVolumes</li>
+                <li>S3:ListBuckets</li>
+                <li>S3:GetBucketTagging</li>
+                <li>RDS:DescribeDBInstances</li>
+                <li>IAM:ListAccessKeys</li>
+                <li>CostExplorer:GetCostAndUsage</li>
+                <li><em>Read-only policy recommended</em></li>
               </ul>
             </div>
             <div>
