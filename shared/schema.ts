@@ -174,7 +174,7 @@ export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type Recommendation = typeof recommendations.$inferSelect;
 export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
 
-// Cloud Credentials schema
+// Cloud Credentials
 export const cloudCredentials = pgTable("cloud_credentials", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
