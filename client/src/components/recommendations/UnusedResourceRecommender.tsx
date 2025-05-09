@@ -18,7 +18,7 @@ import {
   Server, 
   CircleOff, 
   Trash2, 
-  LoadBalancer, 
+  Network, 
   Loader2, 
   Filter, 
   Recycle,
@@ -114,7 +114,7 @@ export function UnusedResourceRecommender({
       case "EC2 Instance":
         return <Server className="h-5 w-5 text-red-500" />;
       case "Load Balancer":
-        return <LoadBalancer className="h-5 w-5 text-green-500" />;
+        return <Network className="h-5 w-5 text-green-500" />;
       case "RDS Instance":
         return <Database className="h-5 w-5 text-purple-500" />;
       case "Elastic IP":
@@ -373,7 +373,7 @@ export function UnusedResourceRecommender({
                                 );
                               } else {
                                 setSelectedResources(prev => 
-                                  [...new Set([...prev, ...storageResources])]
+                                  Array.from(new Set([...prev, ...storageResources]))
                                 );
                               }
                             }}

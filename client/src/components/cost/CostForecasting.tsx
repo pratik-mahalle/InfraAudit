@@ -174,7 +174,7 @@ export function CostForecasting({
             )}
 
             {approachingBudget && (
-              <Alert variant="warning" className="mb-6">
+              <Alert className="mb-6 border-yellow-500 bg-yellow-50 text-yellow-800">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Budget Warning</AlertTitle>
                 <AlertDescription>
