@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   User,
@@ -160,10 +161,11 @@ export default function Settings() {
                   <Label htmlFor="timezone">Timezone</Label>
                   <select 
                     id="timezone" 
+                    defaultValue="EST"
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <option value="UTC">UTC</option>
-                    <option value="EST" selected>Eastern Time (EST/EDT)</option>
+                    <option value="EST">Eastern Time (EST/EDT)</option>
                     <option value="CST">Central Time (CST/CDT)</option>
                     <option value="MST">Mountain Time (MST/MDT)</option>
                     <option value="PST">Pacific Time (PST/PDT)</option>
