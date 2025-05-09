@@ -240,7 +240,11 @@ export function Navbar() {
             </>
           )}
           <div 
-            className="flex items-center gap-2 py-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+              location === "/documentation" 
+                ? "text-foreground font-medium" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
             onClick={() => window.location.href = "/documentation"}
           >
             Documentation

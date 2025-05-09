@@ -1,6 +1,5 @@
 import React, { ReactNode, useState } from "react";
-import { Sidebar, MobileSidebar } from "@/components/ui/sidebar";
-import { Bell, Settings, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DashboardLayoutProps {
@@ -22,51 +21,27 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar />
-
+    <div className="flex flex-col w-full">
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto bg-background pb-10">
-        {/* Top Navigation */}
-        <header className="bg-white shadow-sm">
-          <div className="flex justify-between items-center px-6 py-4">
-            <div className="flex items-center md:hidden">
-              <MobileSidebar />
+      <main className="flex-1 bg-background pb-10">
+        {/* Search Bar */}
+        <div className="px-4 md:px-6 lg:px-8 py-4 flex justify-center">
+          <form onSubmit={handleSearch} className="relative max-w-md w-full">
+            <input
+              type="text"
+              placeholder="Search resources, alerts, or configs..."
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent text-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <div className="absolute left-3 top-2.5 text-muted-foreground">
+              <Search className="h-4 w-4" />
             </div>
-            <div className="flex-1 flex items-center md:px-4">
-              <form onSubmit={handleSearch} className="relative max-w-md w-full">
-                <input
-                  type="text"
-                  placeholder="Search resources, alerts, or configs..."
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <div className="absolute left-3 top-2.5 text-gray-500">
-                  <Search className="h-4 w-4" />
-                </div>
-              </form>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="text-gray-500 hover:text-gray-700 focus:outline-none relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-danger"></span>
-              </button>
-              <button className="text-gray-500 hover:text-gray-700 focus:outline-none">
-                <Settings className="h-5 w-5" />
-              </button>
-              <button className="flex items-center text-gray-500 hover:text-gray-700 focus:outline-none md:hidden">
-                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-medium">
-                  JS
-                </div>
-              </button>
-            </div>
-          </div>
-        </header>
+          </form>
+        </div>
 
         {/* Page Content */}
-        <div className="px-4 md:px-6 lg:px-8 py-4 md:py-6 flex-grow">
+        <div className="px-4 md:px-6 lg:px-8 py-4 md:py-6">
           {children}
         </div>
       </main>
