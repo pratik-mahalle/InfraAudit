@@ -790,6 +790,7 @@ export default function CostOptimization() {
         <CostRecommendations
           recommendations={allRecommendations}
           isLoading={isLoadingRecommendations && !awsOptimizations.length}
+          getResourceName={getResourceName}
         />
       </div>
     </DashboardLayout>

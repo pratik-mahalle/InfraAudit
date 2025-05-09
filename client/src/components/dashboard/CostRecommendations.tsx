@@ -18,6 +18,7 @@ interface CostRecommendationsProps {
   isLoading?: boolean;
   onApplyRecommendation?: (id: number) => void;
   onViewDetails?: (id: number) => void;
+  getResourceName?: (id: number) => string;
 }
 
 export function CostRecommendations({
@@ -25,6 +26,7 @@ export function CostRecommendations({
   isLoading = false,
   onApplyRecommendation,
   onViewDetails,
+  getResourceName,
 }: CostRecommendationsProps) {
   const { toast } = useToast();
 
@@ -90,9 +92,20 @@ export function CostRecommendations({
               <div key={recommendation.id} className="border border-gray-300 rounded-lg p-4">
                 <div className="flex justify-between">
                   <div>
-                    <h3 className="text-base font-medium mb-1">
-                      {recommendation.title}
-                    </h3>
+                    <div className="flex items-center mb-1">
+                      <h3 className="text-base font-medium">
+                        {recommendation.title}
+                      </h3>
+                      {recommendation.id >= 1000 && (
+                        <Badge 
+                          variant="outline" 
+                          className="ml-2 bg-blue-100/80 text-blue-700 border-blue-200 px-1.5 py-0.5 flex items-center gap-1"
+                        >
+                          <CloudIcon className="h-3 w-3" />
+                          AWS
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500 mb-3">
                       {recommendation.description}
                     </p>
@@ -104,6 +117,17 @@ export function CostRecommendations({
                     <div className="text-xs text-gray-500">
                       Potential savings
                     </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap justify-between items-center mb-3">
+                  <div className="text-sm text-gray-600 mb-2">
+                    <span className="font-medium mr-1">Affected Resources:</span>
+                    {recommendation.resourcesAffected && recommendation.resourcesAffected.length > 0
+                      ? (getResourceName 
+                          ? getResourceName(recommendation.resourcesAffected[0])
+                          : `Resource ${recommendation.resourcesAffected[0]}`)
+                      : "Multiple resources"}
+                    {recommendation.id >= 1000 && <span className="ml-1 text-blue-600">(AWS)</span>}
                   </div>
                 </div>
                 <div className="flex space-x-2">
