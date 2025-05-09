@@ -359,7 +359,7 @@ export function CloudProviderSetup() {
           </CardDescription>
         </CardHeader>
         <div className="px-6 mb-4">
-          <Alert variant="warning" className="bg-amber-50 border-amber-200">
+          <Alert className="bg-amber-50 border-amber-200 text-amber-800">
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800">Security Notice</AlertTitle>
             <AlertDescription className="text-amber-700">
@@ -467,18 +467,26 @@ export function CloudProviderSetup() {
                         </FormItem>
                       )}
                     />
-                    <Button 
-                      type="submit" 
-                      className="flex items-center"
-                      disabled={awsConnectionMutation.isPending}
-                    >
-                      {awsConnectionMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <CloudCog className="h-4 w-4 mr-2" />
+                    <div className="space-y-2">
+                      <Button 
+                        type="submit" 
+                        className="flex items-center w-full"
+                        disabled={awsConnectionMutation.isPending}
+                      >
+                        {awsConnectionMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CloudCog className="h-4 w-4 mr-2" />
+                        )}
+                        {awsConnectionMutation.isPending ? 'Validating Credentials...' : 'Connect AWS Account'}
+                      </Button>
+                      {awsConnectionMutation.isError && (
+                        <div className="text-sm text-red-500 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span>Connection failed. Please check your credentials and permissions.</span>
+                        </div>
                       )}
-                      Connect AWS Account
-                    </Button>
+                    </div>
                   </form>
                 </Form>
               )}
@@ -550,18 +558,26 @@ export function CloudProviderSetup() {
                         </FormItem>
                       )}
                     />
-                    <Button 
-                      type="submit" 
-                      className="flex items-center"
-                      disabled={gcpConnectionMutation.isPending}
-                    >
-                      {gcpConnectionMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <CloudCog className="h-4 w-4 mr-2" />
+                    <div className="space-y-2">
+                      <Button 
+                        type="submit" 
+                        className="flex items-center w-full"
+                        disabled={gcpConnectionMutation.isPending}
+                      >
+                        {gcpConnectionMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CloudCog className="h-4 w-4 mr-2" />
+                        )}
+                        {gcpConnectionMutation.isPending ? 'Validating Credentials...' : 'Connect GCP Account'}
+                      </Button>
+                      {gcpConnectionMutation.isError && (
+                        <div className="text-sm text-red-500 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span>Connection failed. Please check your service account key and permissions.</span>
+                        </div>
                       )}
-                      Connect GCP Account
-                    </Button>
+                    </div>
                   </form>
                 </Form>
               )}
@@ -660,18 +676,26 @@ export function CloudProviderSetup() {
                         </FormItem>
                       )}
                     />
-                    <Button 
-                      type="submit" 
-                      className="flex items-center"
-                      disabled={azureConnectionMutation.isPending}
-                    >
-                      {azureConnectionMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <CloudCog className="h-4 w-4 mr-2" />
+                    <div className="space-y-2">
+                      <Button 
+                        type="submit" 
+                        className="flex items-center w-full"
+                        disabled={azureConnectionMutation.isPending}
+                      >
+                        {azureConnectionMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <CloudCog className="h-4 w-4 mr-2" />
+                        )}
+                        {azureConnectionMutation.isPending ? 'Validating Credentials...' : 'Connect Azure Account'}
+                      </Button>
+                      {azureConnectionMutation.isError && (
+                        <div className="text-sm text-red-500 flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1 flex-shrink-0" />
+                          <span>Connection failed. Please check your service principal credentials and permissions.</span>
+                        </div>
                       )}
-                      Connect Azure Account
-                    </Button>
+                    </div>
                   </form>
                 </Form>
               )}
