@@ -11,6 +11,8 @@ import {
   Settings,
   User,
   LogOut,
+  TrendingUp,
+  Percent,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -31,6 +33,11 @@ export function Sidebar() {
       name: "Cost Optimization",
       href: "/cost",
       icon: DollarSign,
+    },
+    {
+      name: "AI Cost Prediction",
+      href: "/cost-prediction",
+      icon: TrendingUp,
     },
     {
       name: "Resource Utilization",
@@ -134,6 +141,11 @@ export function MobileSidebar() {
       name: "Cost Optimization",
       href: "/cost",
       icon: DollarSign,
+    },
+    {
+      name: "AI Cost Prediction",
+      href: "/cost-prediction",
+      icon: TrendingUp,
     },
     {
       name: "Resource Utilization",
