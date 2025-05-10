@@ -1,11 +1,12 @@
 import {
-  users, resources, securityDrifts, costAnomalies, alerts, recommendations,
+  users, resources, securityDrifts, costAnomalies, alerts, recommendations, organizations,
   type User, type InsertUser, 
   type Resource, type InsertResource,
   type SecurityDrift, type InsertSecurityDrift,
   type CostAnomaly, type InsertCostAnomaly,
   type Alert, type InsertAlert,
-  type Recommendation, type InsertRecommendation
+  type Recommendation, type InsertRecommendation,
+  type Organization, type InsertOrganization
 } from "@shared/schema";
 import session from "express-session";
 import { DatabaseStorage } from "./database-storage";
@@ -17,7 +18,15 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
+  
+  // Organization operations
+  getOrganization(id: number): Promise<Organization | undefined>;
+  getOrganizationByName(name: string): Promise<Organization | undefined>;
+  createOrganization(organization: InsertOrganization): Promise<Organization>;
+  updateOrganization(id: number, organization: Partial<Organization>): Promise<Organization | undefined>;
   
   // Resource operations
   getResources(): Promise<Resource[]>;

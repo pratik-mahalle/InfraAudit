@@ -1,6 +1,6 @@
 import { db, pool } from "./db";
 import { 
-  users, resources, securityDrifts, costAnomalies, alerts, recommendations 
+  users, resources, securityDrifts, costAnomalies, alerts, recommendations, organizations
 } from "@shared/schema";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
@@ -25,12 +25,31 @@ export async function seedDatabase() {
 
     console.log("Seeding database with initial data...");
 
+    // Create demo organization
+    const [organization] = await db.insert(organizations).values({
+      name: 'demo-org',
+      displayName: 'Demo Organization',
+      billingEmail: 'demo@example.com',
+      planType: 'free',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+
+    console.log("Created demo organization:", organization.name);
+    
     // Create demo user
     const [user] = await db.insert(users).values({
       username: 'demo',
+      email: 'demo@example.com',
       password: await hashPassword('password'),
       fullName: 'Demo User',
-      role: 'admin'
+      role: 'admin',
+      organizationId: organization.id,
+      planType: 'free',
+      subscriptionStatus: 'inactive',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastLoginAt: new Date()
     }).returning();
     
     console.log("Created demo user:", user.username);
@@ -43,7 +62,11 @@ export async function seedDatabase() {
       region: 'us-east-1',
       status: 'running',
       tags: { environment: 'production', app: 'web' },
-      cost: 8400
+      cost: 8400,
+      organizationId: organization.id,
+      userId: user.id,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }).returning();
     
     const [apiServer] = await db.insert(resources).values({
@@ -53,7 +76,11 @@ export async function seedDatabase() {
       region: 'us-east-1',
       status: 'running',
       tags: { environment: 'production', app: 'api' },
-      cost: 6200
+      cost: 6200,
+      organizationId: organization.id,
+      userId: user.id,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }).returning();
     
     const [s3Bucket] = await db.insert(resources).values({
@@ -63,7 +90,11 @@ export async function seedDatabase() {
       region: 'us-east-1',
       status: 'active',
       tags: { environment: 'production', data: 'customer' },
-      cost: 2500
+      cost: 2500,
+      organizationId: organization.id,
+      userId: user.id,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }).returning();
     
     const [rdsCluster] = await db.insert(resources).values({
@@ -73,7 +104,11 @@ export async function seedDatabase() {
       region: 'us-east-1',
       status: 'running',
       tags: { environment: 'production', app: 'analytics' },
-      cost: 12000
+      cost: 12000,
+      organizationId: organization.id,
+      userId: user.id,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }).returning();
     
     const [apiGateway] = await db.insert(resources).values({
@@ -83,7 +118,11 @@ export async function seedDatabase() {
       region: 'us-east-1',
       status: 'active',
       tags: { environment: 'production', app: 'api' },
-      cost: 1800
+      cost: 1800,
+      organizationId: organization.id,
+      userId: user.id,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }).returning();
 
     console.log("Created sample resources");

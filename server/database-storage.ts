@@ -2,13 +2,14 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 import type { IStorage } from "./storage";
 import {
-  users, resources, securityDrifts, costAnomalies, alerts, recommendations,
+  users, resources, securityDrifts, costAnomalies, alerts, recommendations, organizations,
   type User, type InsertUser,
   type Resource, type InsertResource,
   type SecurityDrift, type InsertSecurityDrift,
   type CostAnomaly, type InsertCostAnomaly,
   type Alert, type InsertAlert,
-  type Recommendation, type InsertRecommendation
+  type Recommendation, type InsertRecommendation,
+  type Organization, type InsertOrganization
 } from "@shared/schema";
 import connectPgSimple from "connect-pg-simple";
 import session from "express-session";
@@ -37,10 +38,58 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
 
   async createUser(user: InsertUser): Promise<User> {
     const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
+  }
+  
+  async updateUser(id: number, user: Partial<User>): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set(user)
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
+  
+  // Organization operations
+  async getOrganization(id: number): Promise<Organization | undefined> {
+    const [organization] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, id));
+    return organization;
+  }
+  
+  async getOrganizationByName(name: string): Promise<Organization | undefined> {
+    const [organization] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.name, name));
+    return organization;
+  }
+  
+  async createOrganization(organization: InsertOrganization): Promise<Organization> {
+    const [newOrganization] = await db
+      .insert(organizations)
+      .values(organization)
+      .returning();
+    return newOrganization;
+  }
+  
+  async updateOrganization(id: number, organization: Partial<Organization>): Promise<Organization | undefined> {
+    const [updatedOrganization] = await db
+      .update(organizations)
+      .set(organization)
+      .where(eq(organizations.id, id))
+      .returning();
+    return updatedOrganization;
   }
 
   // Resource operations
