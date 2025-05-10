@@ -430,10 +430,12 @@ export default function Dashboard() {
               <QuickActions />
 
               {/* Recent Alerts */}
-              <RecentAlerts 
-                alerts={alerts || []} 
-                isLoading={isLoadingAlerts} 
-              />
+              <div id="alerts-section">
+                <RecentAlerts
+                  alerts={alerts || []} 
+                  isLoading={isLoadingAlerts} 
+                />
+              </div>
 
               {/* Slack Integration Preview */}
               <SlackNotifications 
@@ -455,7 +457,7 @@ export default function Dashboard() {
           {/* Cost Optimization Recommendations */}
           <div className="grid grid-cols-1 gap-6">
             {cloudResources && cloudResources.length > 0 ? (
-              <Card>
+              <Card id="cost-optimization-section">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-lg font-semibold">AWS Cost Optimization</CardTitle>

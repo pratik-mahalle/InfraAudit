@@ -105,6 +105,7 @@ export function Navbar() {
                 Alerts
               </div>
               <div 
+                id="cloud-providers-nav"
                 className={`flex items-center gap-2 transition-colors cursor-pointer ${
                   location === "/cloud-providers" 
                     ? "text-foreground font-medium" 
@@ -227,6 +228,7 @@ export function Navbar() {
                 Alerts
               </div>
               <div 
+                id="cloud-providers-nav-mobile"
                 className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
                   location === "/cloud-providers" 
                     ? "text-foreground font-medium" 
