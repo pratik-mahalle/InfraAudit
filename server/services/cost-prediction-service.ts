@@ -1,5 +1,13 @@
 import { db } from "../db";
-import { costHistory, costPredictions, resources, costOptimizationSuggestions } from "@shared/schema";
+import { 
+  costHistory, 
+  costPredictions, 
+  resources, 
+  costOptimizationSuggestions,
+  InsertCostPrediction,
+  InsertCostHistory,
+  InsertCostOptimizationSuggestion
+} from "@shared/schema";
 import { eq, and, gte, lte, desc, sql, isNull, sum, count } from "drizzle-orm";
 import { addDays, subDays, format, parse, subMonths, eachDayOfInterval, eachMonthOfInterval } from "date-fns";
 
@@ -210,16 +218,19 @@ export async function predictFutureCosts(
     // Store predictions in database
     const insertedPredictions = [];
     for (const prediction of predictions) {
+      // Create an object that matches the InsertCostPrediction type
+      const predictionData: InsertCostPrediction = {
+        organizationId: organizationId,
+        predictedDate: prediction.predictedDate,
+        predictedAmount: prediction.predictedAmount,
+        confidenceInterval: prediction.confidenceInterval,
+        model: prediction.model,
+        predictionPeriod: prediction.predictionPeriod,
+        resourceId: undefined
+      };
+      
       const [inserted] = await db.insert(costPredictions)
-        .values({
-          organizationId,
-          predictedDate: prediction.predictedDate,
-          predictedAmount: prediction.predictedAmount,
-          confidenceInterval: prediction.confidenceInterval,
-          model: prediction.model,
-          predictionPeriod: prediction.predictionPeriod,
-          // No resourceId for organization-level predictions
-        })
+        .values(predictionData)
         .returning();
       
       insertedPredictions.push(inserted);
