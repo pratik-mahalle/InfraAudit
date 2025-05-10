@@ -151,7 +151,7 @@ export default function Dashboard() {
         toast({
           title: "Reset Dashboard",
           description: "Dashboard has been reset to default layout",
-          variant: "success",
+          variant: "default",
         });
         // In a real implementation, this would reset the dashboard layout
         break;
@@ -288,28 +288,41 @@ export default function Dashboard() {
               <DropdownMenuContent align="end" className="w-[200px]">
                 <DropdownMenuLabel>Dashboard Options</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => handleDashboardAction("refresh")}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh All Data
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => handleDashboardAction("export")}>
                   <CornerLeftDown className="h-4 w-4 mr-2" />
                   Export Dashboard
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => handleDashboardAction("addWidget")}>
                   <PlusSquare className="h-4 w-4 mr-2" />
                   Add New Widget
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => handleDashboardAction("configureProviders")}>
                   <CloudIcon className="h-4 w-4 mr-2" />
                   Configure Cloud Providers
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-              <Play className="h-4 w-4" />
-              Run New Scan
+            <Button 
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              onClick={handleRunScan}
+              disabled={isScanning}
+            >
+              {isScanning ? (
+                <>
+                  <div className="animate-spin h-4 w-4 mr-1 border-2 border-white border-t-transparent rounded-full" />
+                  Scanning...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4" />
+                  Run New Scan
+                </>
+              )}
             </Button>
           </div>
         </div>
