@@ -287,145 +287,49 @@ class AWSProvider implements CloudProviderInterface {
       } catch (error) {
         console.error('Error fetching cost data from AWS:', error);
         
-        // Fall back to simulated data if Cost Explorer access fails
+        // Return empty array if Cost Explorer access fails
         // This could happen if the account doesn't have Cost Explorer enabled
         // or if the IAM permissions don't allow Cost Explorer access
-        console.log('Falling back to simulated cost data');
-        return this.generateSimulatedCostData(startDate, endDate);
+        console.log('Failed to fetch cost data');
+        return this.getNoCostData();
       }
     } catch (error) {
       console.error('Error in getCostData:', error);
-      return this.generateSimulatedCostData(startDate, endDate);
+      return this.getNoCostData();
     }
   }
   
-  // Helper method to generate simulated cost data when Cost Explorer is not available
-  private generateSimulatedCostData(startDate: Date, endDate: Date): CostData[] {
-    const costData: CostData[] = [];
-    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
-    
-    for (let i = 0; i < days; i++) {
-      const date = new Date(startDate);
-      date.setDate(date.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      // Base cost plus some randomness
-      const baseCost = 150;
-      const randomVariance = Math.random() * 50 - 25; // -25 to +25
-      const cost = Math.max(baseCost + randomVariance, 50); // Ensure minimum $0.50
-      
-      costData.push({
-        date: dateStr,
-        amount: Math.round(cost * 100) / 100,
-        service: 'EC2'
-      });
-      
-      costData.push({
-        date: dateStr,
-        amount: Math.round((cost * 0.15) * 100) / 100,
-        service: 'S3'
-      });
-      
-      costData.push({
-        date: dateStr,
-        amount: Math.round((cost * 0.4) * 100) / 100,
-        service: 'RDS'
-      });
-    }
-    
-    return costData;
+  // Return empty cost data when Cost Explorer access fails or is not configured
+  private getNoCostData(): CostData[] {
+    return [];
   }
 
   async getSecurityFindings(): Promise<SecurityFinding[]> {
     // In a real implementation, we would use the AWS Security Hub API
-    // For demo purposes, we'll return simulated security findings
-    return [
-      {
-        id: 'AWS-SEC-001',
-        resourceId: 'i-1234567890abcdef0',
-        severity: 'high',
-        title: 'Security Group allows unrestricted access to port 22',
-        description: 'The security group sg-1234 attached to instance i-1234567890abcdef0 allows unrestricted access (0.0.0.0/0) to port 22 (SSH).',
-        remediation: 'Modify the security group to restrict SSH access to trusted IP addresses only.',
-        detectedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'open'
-      },
-      {
-        id: 'AWS-SEC-002',
-        resourceId: 's3-data-bucket-prod',
-        severity: 'critical',
-        title: 'S3 Bucket has public read access',
-        description: 'The S3 bucket data-bucket-prod has public read access enabled, potentially exposing sensitive data.',
-        remediation: 'Disable public access to the bucket and implement proper IAM policies.',
-        detectedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'investigating'
-      }
-    ];
+    console.log('Fetching AWS security findings...');
+    
+    try {
+      // TODO: Implement real AWS Security Hub API integration when credentials are provided
+      // For now, return empty array to indicate no findings are available without credentials
+      return [];
+    } catch (error) {
+      console.error('Error fetching security findings:', error);
+      return [];
+    }
   }
 
   async getResourceUtilization(resourceIds: string[], metrics: string[]): Promise<ResourceUtilization[]> {
     // In a real implementation, we would use the AWS CloudWatch API
-    // For demo purposes, we'll return simulated utilization data
-    const utilization: ResourceUtilization[] = [];
+    console.log('Fetching AWS resource utilization...');
     
-    // Generate utilization data for EC2 instances
-    for (const resourceId of resourceIds.filter(id => id.startsWith('i-'))) {
-      // CPU utilization
-      if (metrics.includes('cpu') || metrics.length === 0) {
-        for (let i = 0; i < 24; i++) {
-          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
-          const baseValue = 40; // 40% base utilization
-          const randomVariance = Math.random() * 30; // 0-30% variance
-          
-          utilization.push({
-            resourceId,
-            metric: 'cpu',
-            value: Math.min(baseValue + randomVariance, 100),
-            timestamp: timestamp.toISOString(),
-            unit: 'percent'
-          });
-        }
-      }
-      
-      // Memory utilization
-      if (metrics.includes('memory') || metrics.length === 0) {
-        for (let i = 0; i < 24; i++) {
-          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
-          const baseValue = 60; // 60% base utilization
-          const randomVariance = Math.random() * 20; // 0-20% variance
-          
-          utilization.push({
-            resourceId,
-            metric: 'memory',
-            value: Math.min(baseValue + randomVariance, 100),
-            timestamp: timestamp.toISOString(),
-            unit: 'percent'
-          });
-        }
-      }
+    try {
+      // TODO: Implement real AWS CloudWatch API integration when credentials are provided
+      // For now, return empty array to indicate no utilization data is available without credentials
+      return [];
+    } catch (error) {
+      console.error('Error fetching resource utilization:', error);
+      return [];
     }
-    
-    // Generate utilization data for RDS instances
-    for (const resourceId of resourceIds.filter(id => id.startsWith('rds-'))) {
-      // Database connections
-      if (metrics.includes('connections') || metrics.length === 0) {
-        for (let i = 0; i < 24; i++) {
-          const timestamp = new Date(Date.now() - i * 60 * 60 * 1000);
-          const baseValue = 25; // 25 connections base
-          const randomVariance = Math.floor(Math.random() * 15); // 0-15 connections variance
-          
-          utilization.push({
-            resourceId,
-            metric: 'connections',
-            value: baseValue + randomVariance,
-            timestamp: timestamp.toISOString(),
-            unit: 'count'
-          });
-        }
-      }
-    }
-    
-    return utilization;
   }
 
   async calculateCostAnomalies(): Promise<any[]> {
