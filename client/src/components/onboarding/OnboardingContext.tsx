@@ -275,3 +275,20 @@ export const useOnboarding = () => {
   }
   return context;
 };
+
+// Helper component to get content for a specific step
+interface OnboardingMessageProps {
+  step: OnboardingStep;
+}
+
+export const OnboardingMessage: React.FC<OnboardingMessageProps> = ({ step }) => {
+  const { getStepContent } = useOnboarding();
+  const content = getStepContent(step);
+  
+  return (
+    <div className="onboarding-message">
+      <h4 className="text-lg font-semibold mb-1">{content.title}</h4>
+      <p>{content.message}</p>
+    </div>
+  );
+};
