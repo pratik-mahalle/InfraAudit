@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { toast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { StatusCard } from "@/components/dashboard/StatusCard";
 import { CostTrendChart } from "@/components/dashboard/CostTrendChart";
@@ -51,6 +53,8 @@ export default function Dashboard() {
   const [dashboardTab, setDashboardTab] = useState("overview");
   const [hasConnectedProviders, setHasConnectedProviders] = useState(false);
   const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(true);
+  const [isScanning, setIsScanning] = useState(false);
+  const [lastScanResult, setLastScanResult] = useState(null);
   
   // Check for cloud providers
   const { data: cloudProviders, isLoading: isLoadingProviders } = useQuery<any[]>({
