@@ -17,6 +17,9 @@ import Profile from "@/pages/Profile";
 import CloudProviders from "@/pages/CloudProviders";
 import Documentation from "@/pages/documentation";
 import AuthPage from "@/pages/auth-page";
+import SubscriptionPage from "@/pages/SubscriptionPage";
+import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
+import SubscriptionCancel from "@/pages/SubscriptionCancel";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import { 
