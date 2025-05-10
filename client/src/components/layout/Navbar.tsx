@@ -241,21 +241,22 @@ export function Navbar() {
                 <Cloud className="h-4 w-4" />
                 Cloud Providers
               </div>
-              
-              <div 
-                id="documentation-nav-mobile"
-                className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
-                  location === "/documentation" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => window.location.href = "/documentation"}
-              >
-                <BookOpen className="h-4 w-4" />
-                Documentation
-              </div>
             </>
           )}
+          
+          {/* Documentation link (available to all users) */}
+          <div 
+            id="documentation-nav-mobile"
+            className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+              location === "/documentation" 
+                ? "text-foreground font-medium" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => window.location.href = "/documentation"}
+          >
+            <BookOpen className="h-4 w-4" />
+            Documentation
+          </div>
         </div>
       )}
     </nav>
