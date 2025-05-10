@@ -7,16 +7,31 @@ import { relations } from "drizzle-orm";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name"),
-  role: text("role").default("user"),
+  role: text("role").default("user"), // user, admin, support
+  organizationId: integer("organization_id"),
+  planType: text("plan_type").default("free"), // free, basic, pro, enterprise
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionStatus: text("subscription_status").default("inactive"), // active, inactive, past_due, canceled
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  lastLoginAt: timestamp("last_login_at"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
+  email: true,
   password: true,
   fullName: true,
   role: true,
+  organizationId: true,
+  planType: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
+  subscriptionStatus: true,
 });
 
 // Cloud resources schema
@@ -29,7 +44,10 @@ export const resources = pgTable("resources", {
   status: text("status").notNull(), // running, stopped, etc.
   tags: jsonb("tags"),
   cost: integer("cost"), // Cost in cents
+  organizationId: integer("organization_id").notNull().references(() => organizations.id),
+  userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertResourceSchema = createInsertSchema(resources).pick({
@@ -40,6 +58,8 @@ export const insertResourceSchema = createInsertSchema(resources).pick({
   status: true,
   tags: true,
   cost: true,
+  organizationId: true,
+  userId: true,
 });
 
 // Security drifts schema
@@ -127,10 +147,18 @@ export const insertRecommendationSchema = createInsertSchema(recommendations).pi
 });
 
 // Define relations
-export const resourcesRelations = relations(resources, ({ many }) => ({
+export const resourcesRelations = relations(resources, ({ many, one }) => ({
   securityDrifts: many(securityDrifts),
   costAnomalies: many(costAnomalies),
-  alerts: many(alerts)
+  alerts: many(alerts),
+  organization: one(organizations, {
+    fields: [resources.organizationId],
+    references: [organizations.id]
+  }),
+  user: one(users, {
+    fields: [resources.userId],
+    references: [users.id]
+  })
 }));
 
 export const securityDriftsRelations = relations(securityDrifts, ({ one }) => ({
@@ -207,3 +235,47 @@ export const cloudCredentialsRelations = relations(cloudCredentials, ({ one }) =
 
 export type CloudCredential = typeof cloudCredentials.$inferSelect;
 export type InsertCloudCredential = z.infer<typeof insertCloudCredentialsSchema>;
+
+// Organizations schema for multi-tenancy
+export const organizations = pgTable("organizations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  displayName: text("display_name"),
+  billingEmail: text("billing_email").notNull(),
+  billingAddress: text("billing_address"),
+  planType: text("plan_type").default("free"), // free, basic, pro, enterprise
+  resourceLimit: integer("resource_limit").default(10),
+  userLimit: integer("user_limit").default(2),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionStatus: text("subscription_status").default("inactive"), // active, inactive, past_due, canceled
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertOrganizationSchema = createInsertSchema(organizations).pick({
+  name: true,
+  displayName: true,
+  billingEmail: true,
+  billingAddress: true,
+  planType: true,
+  resourceLimit: true,
+  userLimit: true,
+  stripeCustomerId: true,
+  stripeSubscriptionId: true,
+  subscriptionStatus: true,
+});
+
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  users: many(users),
+}));
+
+export const usersRelations = relations(users, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [users.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
