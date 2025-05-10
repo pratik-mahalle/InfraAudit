@@ -758,39 +758,38 @@ class AzureProvider implements CloudProviderInterface {
   }
 
   async calculateCostAnomalies(): Promise<any[]> {
-    // For demo purposes, we'll return simulated cost anomalies
-    return [
-      {
-        resourceId: 'vm-9876',
-        anomalyType: 'spike',
-        severity: 'low',
-        percentage: 15,
-        previousCost: 25680, // $256.80
-        currentCost: 29520, // $295.20
-        services: ['Virtual Machines', 'Managed Disks'],
-        detectedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ];
+    // In a real implementation, we would analyze Azure cost data
+    console.log('Analyzing Azure cost data for anomalies...');
+    
+    try {
+      // TODO: Implement real cost analysis based on Azure Cost Management API
+      // This would require analyzing patterns and detecting unusual changes
+      
+      // For now, return empty array to indicate no anomalies are available without real data
+      return [];
+    } catch (error) {
+      console.error('Error calculating Azure cost anomalies:', error);
+      return [];
+    }
   }
 
   async generateOptimizationRecommendations(): Promise<any[]> {
-    // For demo purposes, we'll return simulated recommendations
-    return [
-      {
-        resourceId: 'sqldb-5432',
-        recommendationType: 'performance_tier',
-        description: 'This SQL Database is consistently underutilized. Consider switching from DTU-based pricing to vCore with serverless option for automatic scaling.',
-        potentialSavings: 4608, // $46.08 per month
-        confidence: 'high'
-      },
-      {
-        resourceId: 'vm-9876',
-        recommendationType: 'reserved_instance',
-        description: 'This Virtual Machine has been running consistently. Consider purchasing a 1-year reserved instance to reduce costs.',
-        potentialSavings: 8856, // $88.56 per month
-        confidence: 'high'
-      }
-    ];
+    // In a real implementation, we would analyze resource usage to generate recommendations
+    console.log('Generating Azure optimization recommendations...');
+    
+    try {
+      // TODO: Implement real optimization analysis based on:
+      // 1. Virtual Machine utilization metrics
+      // 2. SQL Database performance metrics
+      // 3. Storage account analysis
+      // 4. Reserved instance recommendations
+      
+      // For now, return empty array to indicate no recommendations are available without real data
+      return [];
+    } catch (error) {
+      console.error('Error generating Azure optimization recommendations:', error);
+      return [];
+    }
   }
 }
 
