@@ -14,6 +14,7 @@ import { setupAuth } from "./auth";
 import { registerCloudProviderRoutes } from "./routes/cloud-providers";
 import { notificationsRouter } from "./routes/notifications";
 import { aiCostRouter } from "./routes/ai-cost";
+import { scanRouter } from "./routes/scan";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes and middleware
@@ -27,6 +28,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup AI cost prediction and optimization routes
   app.use('/api/ai-cost', aiCostRouter);
+  
+  // Setup scan routes
+  app.use('/api/scan', scanRouter);
   
   // Error handler helper for Zod validation errors
   const handleZodError = (err: ZodError, res: Response) => {
