@@ -1,0 +1,166 @@
+name: CloudGuard Go Backend CI/CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'go-backend/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'go-backend/**'
+      - '.github/workflows/ci.yml'
+
+env:
+  GO_VERSION: '1.20'
+  DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+  KUBECONFIG_FILE: ${{ secrets.KUBECONFIG_FILE }}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          cd go-backend
+          go mod download
+
+      - name: Run tests
+        run: |
+          cd go-backend
+          go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./go-backend/coverage.txt
+          fail_ci_if_error: false
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          cd go-backend
+          go mod download
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          working-directory: go-backend
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [test, lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to Docker Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/cloudguard-api
+          tags: |
+            type=sha,format=short
+            type=ref,event=branch
+            latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: go-backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up kubectl
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ env.KUBECONFIG_FILE }}" > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Update Kubernetes manifests
+        run: |
+          cd go-backend/k8s
+          # Replace placeholder with actual image tag
+          sed -i "s|\${DOCKER_REGISTRY}|${{ env.DOCKER_REGISTRY }}|g" deployment.yaml
+          sed -i "s|\${VERSION}|sha-$(git rev-parse --short HEAD)|g" deployment.yaml
+
+      - name: Apply Kubernetes manifests
+        run: |
+          # Create namespace if it doesn't exist
+          kubectl create namespace cloudguard --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Apply manifests
+          kubectl apply -f go-backend/k8s/configmap.yaml -n cloudguard
+          kubectl apply -f go-backend/k8s/service.yaml -n cloudguard
+          kubectl apply -f go-backend/k8s/deployment.yaml -n cloudguard
+          kubectl apply -f go-backend/k8s/hpa.yaml -n cloudguard
+          kubectl apply -f go-backend/k8s/ingress.yaml -n cloudguard
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/cloudguard-api -n cloudguard --timeout=180s
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always()
+    steps:
+      - name: Notify Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always()
