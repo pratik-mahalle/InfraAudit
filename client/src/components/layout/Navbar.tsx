@@ -12,7 +12,8 @@ import {
   Menu, 
   LogOut,
   BookOpen,
-  CreditCard
+  CreditCard,
+  TrendingUp
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -84,6 +85,17 @@ export function Navbar() {
               >
                 <BarChart3 className="h-4 w-4 flex-shrink-0" />
                 <span>Cost</span>
+              </div>
+              <div 
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+                  location === "/cost-prediction" 
+                    ? "text-foreground font-medium" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => window.location.href = "/cost-prediction"}
+              >
+                <TrendingUp className="h-4 w-4 flex-shrink-0" />
+                <span>Predictions</span>
               </div>
               <div 
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
@@ -229,6 +241,17 @@ export function Navbar() {
                 >
                   <BarChart3 className="h-4 w-4 flex-shrink-0" />
                   <span>Cost</span>
+                </div>
+                <div 
+                  className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                    location === "/cost-prediction" 
+                      ? "text-foreground font-medium" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => window.location.href = "/cost-prediction"}
+                >
+                  <TrendingUp className="h-4 w-4 flex-shrink-0" />
+                  <span>Predictions</span>
                 </div>
                 <div 
                   className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
