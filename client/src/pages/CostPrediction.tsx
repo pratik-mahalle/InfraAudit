@@ -1,985 +1,336 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Resource } from "@shared/schema";
-import { 
-  ArrowRight, Percent, DollarSign, TrendingUp, Calendar, Loader2, 
-  ShieldAlert, Database, AlertTriangle, HardDrive, User, Clock,
-  ShieldCheck, DollarSign as Dollar
-} from "lucide-react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Loader2, TrendingUp, ArrowUp, Zap } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
-} from "recharts";
-
-// Prediction period options
-const predictionPeriods = [
-  { value: "3", label: "3 Months" },
-  { value: "6", label: "6 Months" },
-  { value: "12", label: "12 Months" }
-];
-
-// Colors for the pie chart
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF66B2'];
+import { Helmet } from "react-helmet";
 
 export default function CostPrediction() {
-  const { toast } = useToast();
-  const [monthsToPredict, setMonthsToPredict] = useState("3");
-  const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("prediction");
+  const [predictionModel, setPredictionModel] = useState<"linear" | "movingAverage" | "weightedMovingAverage">("linear");
+  const [timeframe, setTimeframe] = useState(30);
 
-  // Fetch resources for the dropdown
-  const { data: resources = [] } = useQuery<Resource[]>({
-    queryKey: ["/api/resources"],
+  // Query to get optimization suggestions
+  const { 
+    data: optimizationData, 
+    isLoading: isLoadingOptimizations,
+    error: optimizationError
+  } = useQuery({
+    queryKey: ["/api/cost-prediction/optimization-suggestions"],
     enabled: true,
   });
 
-  // Fetch cost prediction from the AI service
-  const {
-    data: prediction,
-    isLoading: isPredictionLoading,
-    refetch: refetchPrediction
-  } = useQuery({
-    queryKey: ["/api/ai-cost/predict", monthsToPredict, selectedResourceId],
-    queryFn: async () => {
-      const queryParams = new URLSearchParams();
-      if (monthsToPredict) queryParams.set("months", monthsToPredict);
-      // Only send resourceId if it's not "all"
-      if (selectedResourceId && selectedResourceId !== "all") {
-        queryParams.set("resourceId", selectedResourceId);
-      }
-      
-      const response = await fetch(`/api/ai-cost/predict?${queryParams}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch cost prediction");
-      }
-      return response.json();
+  // Mutation to generate cost predictions
+  const generatePredictionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/cost-prediction/predict", {
+        days: timeframe,
+        model: predictionModel
+      });
+      return await res.json();
     },
-    enabled: false, // Don't fetch on component mount
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cost-prediction/history"] });
+    }
   });
 
-  // Fetch cost optimization recommendations from the AI service
-  const {
-    data: recommendations,
-    isLoading: isRecommendationsLoading,
-    refetch: refetchRecommendations
-  } = useQuery({
-    queryKey: ["/api/ai-cost/optimize", selectedResourceId],
-    queryFn: async () => {
-      const queryParams = new URLSearchParams();
-      // Only send resourceId if it's not "all"
-      if (selectedResourceId && selectedResourceId !== "all") {
-        queryParams.set("resourceId", selectedResourceId);
-      }
-      
-      const response = await fetch(`/api/ai-cost/optimize?${queryParams}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch optimization recommendations");
-      }
-      return response.json();
+  // Mutation to generate optimization suggestions
+  const generateOptimizationsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/cost-prediction/generate-suggestions");
+      return await res.json();
     },
-    enabled: false, // Don't fetch on component mount
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cost-prediction/optimization-suggestions"] });
+    }
   });
 
-  // Generate the chart data based on the prediction results
-  const getChartData = () => {
-    if (!prediction || !prediction.monthly_predictions) return [];
-    
-    return prediction.monthly_predictions.map((month: any) => ({
-      name: new Date(month.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-      cost: Math.round(month.predicted_cost * 100) / 100,
-    }));
+  // Fetch historical cost data
+  const { 
+    data: historicalData, 
+    isLoading: isLoadingHistory,
+    error: historyError 
+  } = useQuery({
+    queryKey: ["/api/cost-prediction/history"],
+    enabled: true,
+  });
+
+  // Mock data for UI display (until real data is available)
+  const mockPrediction = {
+    monthlyPrediction: {
+      predictedAmount: 1245.67,
+      confidenceInterval: 125.30,
+    },
+    weeklyPredictions: [
+      { period: "Week 1", predictedAmount: 280.45 },
+      { period: "Week 2", predictedAmount: 310.22 },
+      { period: "Week 3", predictedAmount: 325.50 },
+      { period: "Week 4", predictedAmount: 329.50 },
+    ]
   };
 
-  // Generate pie chart data for cost by service
-  const getPieChartData = () => {
-    if (!prediction || !prediction.cost_breakdown_by_service) return [];
-    
-    const services = prediction.cost_breakdown_by_service as Record<string, number>;
-    return Object.keys(services).map(service => ({
-      name: service,
-      value: services[service],
-    }));
-  };
+  const mockOptimizations = [
+    { 
+      title: "Right-size underutilized EC2 instances", 
+      description: "3 instances are consistently below 20% CPU utilization", 
+      potentialSavings: 312.45,
+      confidence: 0.85,
+      implementationDifficulty: "easy" 
+    },
+    { 
+      title: "Enable S3 lifecycle policies", 
+      description: "Move infrequently accessed objects to cheaper storage classes", 
+      potentialSavings: 85.20,
+      confidence: 0.92,
+      implementationDifficulty: "easy" 
+    },
+    { 
+      title: "Terminate idle RDS read replicas", 
+      description: "2 read replicas have not been accessed in 30+ days", 
+      potentialSavings: 210.75,
+      confidence: 0.78,
+      implementationDifficulty: "medium" 
+    },
+  ];
 
-  // Handle prediction request
-  const handleRunPrediction = async () => {
-    try {
-      await refetchPrediction();
-      setActiveTab("prediction");
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to fetch cost prediction",
-        variant: "destructive",
-      });
-    }
-  };
+  // Determine if data exists or if we need to use mock data for display
+  const hasRealData = false; // This would check if API responses contain actual data
+  const predictionToDisplay = hasRealData ? generatePredictionMutation.data : mockPrediction;
+  const optimizationsToDisplay = hasRealData ? optimizationData?.suggestions : mockOptimizations;
 
-  // Handle optimization request
-  const handleGetRecommendations = async () => {
-    try {
-      await refetchRecommendations();
-      setActiveTab("optimization");
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to fetch optimization recommendations",
-        variant: "destructive",
-      });
-    }
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(amount);
   };
 
   return (
-    <DashboardLayout>
-      <div className="w-full max-w-full py-3 md:py-5 space-y-6">
-        {/* Header section with gradient background */}
-        <div className="bg-gradient-to-r from-blue-50/80 to-cyan-50/80 dark:from-blue-950/30 dark:to-cyan-950/30 rounded-xl p-5 mb-6 shadow-sm border border-blue-100/50 dark:border-blue-800/20">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-                AI Cost Intelligence
-              </h1>
-              <p className="text-muted-foreground mt-1 max-w-2xl">
-                Leverage advanced AI to forecast future cloud costs and identify optimization opportunities across your infrastructure
-              </p>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <RadioGroup defaultValue="standard" className="grid grid-cols-2 h-9 items-center justify-center rounded-lg bg-white/80 dark:bg-gray-900/50 p-1 text-muted-foreground shadow-sm border border-blue-100/70 dark:border-blue-800/30">
-                <div 
-                  className={`px-4 ${activeTab === 'prediction' ? 'bg-blue-100/80 dark:bg-blue-900/30 shadow-sm rounded-md text-blue-700 dark:text-blue-300' : ''} cursor-pointer flex items-center justify-center h-7`} 
-                  onClick={() => setActiveTab('prediction')}
-                >
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  <span className="text-sm font-medium">Forecast</span>
-                </div>
-                <div 
-                  className={`px-4 ${activeTab === 'optimization' ? 'bg-green-100/80 dark:bg-green-900/30 shadow-sm rounded-md text-green-700 dark:text-green-300' : ''} cursor-pointer flex items-center justify-center h-7`} 
-                  onClick={() => setActiveTab('optimization')}
-                >
-                  <Percent className="h-4 w-4 mr-2" />
-                  <span className="text-sm font-medium">Optimize</span>
-                </div>
-              </RadioGroup>
-            </div>
-          </div>
-        </div>
-
-        {/* AI Recommendations Section */}
-        <div className="w-full space-y-5">
+    <>
+      <Helmet>
+        <title>Cost Prediction | CloudGuard</title>
+        <meta name="description" content="Predict your future cloud costs and find optimization opportunities with CloudGuard's AI-powered prediction tools." />
+      </Helmet>
+    
+      <div className="container max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">AI RECOMMENDATIONS</h2>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-gray-900 border-border/50 shadow-sm overflow-hidden">
-                <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b border-border/40 pb-3 px-6">
-                  <CardTitle className="text-base text-gray-800 dark:text-gray-200 font-semibold tracking-tight">
-                    SECURITY & MISCONFIGURATION INSIGHTS
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 px-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-border/40 shadow-sm">
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          <ShieldAlert className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                            S3 bucket 'logs-backup' became public on 3 occasions
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Consider setting policy to prevent public ACLs
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-border/40 shadow-sm">
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          <ShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                            IAM Role 'admin-devops' has wildcard '*' permissions across 12 services
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Use least-privilege policy
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-border/40 shadow-sm">
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          <Database className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                            Unattached EBS volumes: Attach to instances or delete
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            5 volumes consuming unnecessary resources
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white dark:bg-gray-900 border-border/50 shadow-sm overflow-hidden">
-                <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b border-border/40 pb-3 px-6">
-                  <CardTitle className="text-base text-gray-800 dark:text-gray-200 font-semibold tracking-tight">
-                    COST OPTIMIZATION RECOMMENDATIONS
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 px-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-border/40 shadow-sm">
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          <Dollar className="h-5 w-5 text-green-600 dark:text-green-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                            EC2 instance i-xyz123 at 5% utilized for 7 days
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Downsizing or stopping to save costs
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-border/40 shadow-sm">
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          <Dollar className="h-5 w-5 text-green-600 dark:text-green-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                            Switch to a Reserved instance for EC2 (linux-prod)
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Savings {">"}$90/mo with 1-year commitment
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-border/40 shadow-sm">
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                            RDS 'mysql-prod' backup retention at 35 days
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Reduce to 14 days to save storage costs
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white dark:bg-gray-900 border-border/50 shadow-sm overflow-hidden">
-                <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b border-border/40 pb-3 px-6">
-                  <CardTitle className="text-base text-gray-800 dark:text-gray-200 font-semibold tracking-tight">
-                    ANOMALY DETECTION
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 px-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-border/40 shadow-sm">
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                            VPC 'prod-vpc' 300% Ingress traffic in past 24 hours
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Unusual compared to baseline levels
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-border/40 shadow-sm">
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                            Sudden IAM policy change without staging
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Suspect privilege escalation attempt
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-white dark:bg-gray-900 border-border/50 shadow-sm overflow-hidden">
-                <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b border-border/40 pb-3 px-6">
-                  <CardTitle className="text-base text-gray-800 dark:text-gray-200 font-semibold tracking-tight">
-                    INFRASTRUCTURE HYGIENE SUGGESTIONS
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 px-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-border/40 shadow-sm">
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          <HardDrive className="h-5 w-5 text-purple-600 dark:text-purple-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                            3 orphaned Load Balancers with 0 backend instances
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Delete to avoid unnecessary costs
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-gray-800/60 p-3 rounded-lg border border-border/40 shadow-sm">
-                      <div className="flex gap-3">
-                        <div className="mt-0.5 flex-shrink-0">
-                          <User className="h-5 w-5 text-purple-600 dark:text-purple-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
-                            4 IAM users haven{"'"}t logged in for {">"}90 days
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Deactivate or remove unused accounts
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <h1 className="text-3xl font-bold tracking-tight">Cost Prediction</h1>
+            <p className="text-muted-foreground">
+              Predict future cloud costs and discover optimization opportunities
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Model:</span>
+              <Select 
+                value={predictionModel} 
+                onValueChange={(value) => setPredictionModel(value as any)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Prediction Model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="linear">Linear Regression</SelectItem>
+                  <SelectItem value="movingAverage">Moving Average</SelectItem>
+                  <SelectItem value="weightedMovingAverage">Weighted Average</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Days:</span>
+              <Select 
+                value={timeframe.toString()} 
+                onValueChange={(value) => setTimeframe(parseInt(value))}
+              >
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue placeholder="Days" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">7 days</SelectItem>
+                  <SelectItem value="30">30 days</SelectItem>
+                  <SelectItem value="60">60 days</SelectItem>
+                  <SelectItem value="90">90 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Button 
+              onClick={() => generatePredictionMutation.mutate()}
+              disabled={generatePredictionMutation.isPending}
+            >
+              {generatePredictionMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Generate Prediction
+            </Button>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-5">
-          {/* Configuration Card */}
-          <Card className="md:col-span-1 lg:col-span-3 bg-gradient-to-br from-slate-50 to-slate-100/80 dark:from-slate-900/70 dark:to-slate-800/50 backdrop-blur-sm border border-border/50 shadow-sm">
-            <CardHeader className="pb-5 pt-6">
-              <CardTitle className="flex items-center text-xl font-bold">
-                <span className="bg-blue-100 dark:bg-blue-900/40 p-2 rounded-md mr-3">
-                  <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                </span>
-                Configure Analysis
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Monthly Cost Prediction */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl flex items-center">
+                <TrendingUp className="mr-2 h-5 w-5 text-blue-500" />
+                Estimated Monthly Cost
               </CardTitle>
-              <CardDescription className="text-base mt-2">
-                Set parameters for AI-powered cost analysis and optimization
+              <CardDescription>
+                Predicted cloud costs for the next {timeframe} days
               </CardDescription>
-              <Separator className="mt-4" />
             </CardHeader>
-            <CardContent className="space-y-6 px-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4 p-3 bg-white/70 dark:bg-slate-800/30 rounded-lg border border-border/30">
-                  <div className="flex items-center mb-1">
-                    <HardDrive className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
-                    <Label htmlFor="resource" className="text-sm font-semibold">Resource Selection</Label>
+            <CardContent>
+              {generatePredictionMutation.isPending ? (
+                <div className="h-40 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                    {formatCurrency(predictionToDisplay.monthlyPrediction.predictedAmount)}
                   </div>
-                  <Select 
-                    value={selectedResourceId || "all"} 
-                    onValueChange={value => setSelectedResourceId(value)}
-                  >
-                    <SelectTrigger id="resource" className="bg-background h-11">
-                      <SelectValue placeholder="All Resources" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Resources</SelectItem>
-                      {resources?.map((resource: Resource) => (
-                        <SelectItem key={resource.id} value={resource.id.toString()}>
-                          {resource.name} ({resource.type})
-                        </SelectItem>
+                  <div className="text-sm text-muted-foreground">
+                    Confidence interval: ±{formatCurrency(predictionToDisplay.monthlyPrediction.confidenceInterval)}
+                  </div>
+                  
+                  <div className="mt-6">
+                    <h3 className="font-medium text-sm mb-2">Weekly Breakdown</h3>
+                    <div className="space-y-3">
+                      {predictionToDisplay.weeklyPredictions.map((week) => (
+                        <div key={week.period} className="flex justify-between items-center">
+                          <span className="text-sm">{week.period}</span>
+                          <span className="font-medium">{formatCurrency(week.predictedAmount)}</span>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground mt-2 italic">
-                    Choose a specific resource to analyze or select "All Resources" for a comprehensive view across your infrastructure
-                  </p>
-                </div>
-
-                <div className="space-y-4 p-3 bg-white/70 dark:bg-slate-800/30 rounded-lg border border-border/30">
-                  <div className="flex items-center mb-1">
-                    <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
-                    <Label htmlFor="period" className="text-sm font-semibold">Prediction Timeframe</Label>
+                    </div>
                   </div>
-                  <Select value={monthsToPredict} onValueChange={setMonthsToPredict}>
-                    <SelectTrigger id="period" className="bg-background h-11">
-                      <SelectValue placeholder="Select timeframe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {predictionPeriods.map(period => (
-                        <SelectItem key={period.value} value={period.value}>
-                          {period.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground mt-2 italic">
-                    Define how far into the future the AI should predict your costs and usage patterns
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-4 border border-blue-100 dark:border-blue-800/30 my-4">
-                <div className="flex items-start">
-                  <div className="bg-blue-100 dark:bg-blue-900/30 p-1.5 rounded-md mr-3 mt-0.5">
-                    <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium mb-1">Analysis Details</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Our AI will analyze historical usage patterns, resource configurations, and pricing models to provide accurate forecasts and cost-saving opportunities.
-                    </p>
-                  </div>
-                </div>
-              </div>
+                </>
+              )}
             </CardContent>
-            <CardFooter className="pt-2 pb-6 px-6 flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                <Button 
-                  onClick={handleRunPrediction} 
-                  disabled={isPredictionLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-base"
-                >
-                  {isPredictionLoading ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  ) : (
-                    <TrendingUp className="mr-2 h-5 w-5" />
-                  )}
-                  Generate Cost Prediction
-                </Button>
-                <Button 
-                  onClick={handleGetRecommendations} 
-                  disabled={isRecommendationsLoading}
-                  variant="outline"
-                  className="w-full border-green-600 text-green-600 hover:bg-green-50 h-12 text-base"
-                >
-                  {isRecommendationsLoading ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  ) : (
-                    <Percent className="mr-2 h-5 w-5" />
-                  )}
-                  Find Cost Savings
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground text-center">
-                Powered by OpenAI GPT-4o for intelligent cloud cost analysis
-              </p>
-            </CardFooter>
           </Card>
-
-          {/* Results Area */}
-          <div className="md:col-span-3 lg:col-span-9">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="hidden">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="prediction">Cost Prediction</TabsTrigger>
-                <TabsTrigger value="optimization">Cost Optimization</TabsTrigger>
+          
+          {/* Cost Optimization */}
+          <Card>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-xl flex items-center">
+                  <Zap className="mr-2 h-5 w-5 text-green-500" />
+                  Cost Optimization
+                </CardTitle>
+                <CardDescription>
+                  Potential monthly savings from optimizations
+                </CardDescription>
+              </div>
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={() => generateOptimizationsMutation.mutate()}
+                disabled={generateOptimizationsMutation.isPending}
+              >
+                {generateOptimizationsMutation.isPending && (
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                )}
+                Generate
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {isLoadingOptimizations || generateOptimizationsMutation.isPending ? (
+                <div className="h-40 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : optimizationError ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Error loading optimization suggestions
+                </div>
+              ) : (
+                <>
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    {formatCurrency(optimizationsToDisplay.reduce((sum, opt) => sum + opt.potentialSavings, 0))}
+                  </div>
+                  <div className="text-sm text-muted-foreground mb-6">
+                    Estimated monthly savings
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {optimizationsToDisplay.map((opt, idx) => (
+                      <div key={idx} className="flex justify-between border-b border-border pb-3">
+                        <div>
+                          <div className="font-medium">{opt.title}</div>
+                          <div className="text-sm text-muted-foreground">{opt.description}</div>
+                          <div className="text-xs mt-1 px-2 py-0.5 bg-muted inline-block rounded-full">
+                            {opt.implementationDifficulty} to implement
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold text-green-600">
+                            {formatCurrency(opt.potentialSavings)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {Math.round(opt.confidence * 100)}% confidence
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Historical Cost Analysis */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Historical Cost Analysis</CardTitle>
+            <CardDescription>
+              View and analyze your historical cloud spending
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="chart">
+              <TabsList>
+                <TabsTrigger value="chart">Chart</TabsTrigger>
+                <TabsTrigger value="categories">Categories</TabsTrigger>
+                <TabsTrigger value="resources">Top Resources</TabsTrigger>
               </TabsList>
               
-              {/* Cost Prediction Tab */}
-              <TabsContent value="prediction" className="space-y-6">
-                {isPredictionLoading ? (
-                  <Card className="border border-border/50 overflow-hidden">
-                    <CardContent className="p-8 flex justify-center items-center min-h-[400px]">
-                      <div className="text-center">
-                        <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-6">
-                          <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-                        </div>
-                        <h3 className="text-lg font-medium mb-2">AI is analyzing your cloud costs</h3>
-                        <p className="text-muted-foreground max-w-md">
-                          Our AI is analyzing historical usage patterns and current resource configuration to generate accurate cost predictions...
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : prediction ? (
-                  <>
-                    {/* Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 dark:from-blue-950/30 dark:to-blue-900/20 dark:border-blue-800/50">
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-1">Current Monthly</p>
-                              <div className="flex items-baseline">
-                                <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-500 mr-1" />
-                                <span className="text-3xl font-bold text-blue-700 dark:text-blue-400">
-                                  {prediction.current_monthly_cost ? prediction.current_monthly_cost.toFixed(2) : '0.00'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="bg-white dark:bg-blue-900/30 p-2 rounded-full">
-                              <Calendar className="h-5 w-5 text-blue-500" />
-                            </div>
-                          </div>
-                          <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-2">Your current cloud spend average</p>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 dark:from-purple-950/30 dark:to-purple-900/20 dark:border-purple-800/50">
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-sm font-medium text-purple-700 dark:text-purple-400 mb-1">Projected Monthly</p>
-                              <div className="flex items-baseline">
-                                <DollarSign className="h-4 w-4 text-purple-600 dark:text-purple-500 mr-1" />
-                                <span className="text-3xl font-bold text-purple-700 dark:text-purple-400">
-                                  {prediction.average_predicted_cost ? prediction.average_predicted_cost.toFixed(2) : '0.00'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="bg-white dark:bg-purple-900/30 p-2 rounded-full">
-                              <TrendingUp className="h-5 w-5 text-purple-500" />
-                            </div>
-                          </div>
-                          <p className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-2">Average projected monthly cost</p>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className={`${prediction.growth_percentage && prediction.growth_percentage > 0 
-                        ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-200 dark:from-red-950/30 dark:to-red-900/20 dark:border-red-800/50' 
-                        : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200 dark:from-green-950/30 dark:to-green-900/20 dark:border-green-800/50'}`}>
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className={`text-sm font-medium ${prediction.growth_percentage && prediction.growth_percentage > 0
-                                ? 'text-red-700 dark:text-red-400'
-                                : 'text-green-700 dark:text-green-400'} mb-1`}>Growth Trend</p>
-                              <div className="flex items-baseline">
-                                {prediction.growth_percentage && prediction.growth_percentage > 0 
-                                  ? <TrendingUp className="h-4 w-4 text-red-600 dark:text-red-500 mr-1" />
-                                  : <ArrowRight className="h-4 w-4 text-green-600 dark:text-green-500 mr-1" />}
-                                <span className={`text-3xl font-bold ${prediction.growth_percentage && prediction.growth_percentage > 0
-                                  ? 'text-red-700 dark:text-red-400'
-                                  : 'text-green-700 dark:text-green-400'}`}>
-                                  {prediction.growth_percentage ? Math.abs(prediction.growth_percentage).toFixed(1) : '0.0'}%
-                                </span>
-                              </div>
-                            </div>
-                            <div className={`${prediction.growth_percentage && prediction.growth_percentage > 0
-                                ? 'bg-white dark:bg-red-900/30'
-                                : 'bg-white dark:bg-green-900/30'} p-2 rounded-full`}>
-                              {prediction.growth_percentage && prediction.growth_percentage > 0 
-                                ? <Percent className="h-5 w-5 text-red-500" />
-                                : <Percent className="h-5 w-5 text-green-500" />}
-                            </div>
-                          </div>
-                          <p className={`text-xs ${prediction.growth_percentage && prediction.growth_percentage > 0
-                            ? 'text-red-600/70 dark:text-red-400/70'
-                            : 'text-green-600/70 dark:text-green-400/70'} mt-2`}>
-                            {prediction.growth_percentage && prediction.growth_percentage > 0
-                              ? 'Cost is projected to increase'
-                              : 'Cost is projected to remain stable or decrease'}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Charts */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Line Chart */}
-                      <Card className="border border-border/50 shadow-sm">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg font-medium">Cost Projection Timeline</CardTitle>
-                          <CardDescription>
-                            Future cloud costs over the next {monthsToPredict} months
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="h-[300px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={getChartData()}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis 
-                                  dataKey="name" 
-                                  axisLine={{ stroke: '#e2e8f0' }}
-                                  tickLine={false}
-                                  tick={{ fill: '#64748b', fontSize: 12 }}
-                                />
-                                <YAxis 
-                                  axisLine={{ stroke: '#e2e8f0' }}
-                                  tickLine={false}
-                                  tick={{ fill: '#64748b', fontSize: 12 }}
-                                  tickFormatter={(value) => `$${value}`}
-                                />
-                                <Tooltip 
-                                  formatter={(value) => [`$${value}`, 'Projected Cost']} 
-                                  contentStyle={{ 
-                                    background: 'rgba(255, 255, 255, 0.9)',
-                                    border: '1px solid #e2e8f0',
-                                    borderRadius: '6px',
-                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                  }}
-                                  labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
-                                />
-                                <Line 
-                                  type="monotone" 
-                                  dataKey="cost" 
-                                  stroke="#0066CC" 
-                                  strokeWidth={2}
-                                  dot={{ stroke: '#0066CC', strokeWidth: 2, r: 4, fill: '#fff' }}
-                                  activeDot={{ stroke: '#0066CC', strokeWidth: 2, r: 6, fill: '#0066CC' }}
-                                />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Pie Chart */}
-                      {prediction.cost_breakdown_by_service && (
-                        <Card className="border border-border/50 shadow-sm">
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-lg font-medium">Cost Breakdown by Service</CardTitle>
-                            <CardDescription>
-                              Distribution of cloud costs across services
-                            </CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="h-[300px] w-full">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                  <Pie
-                                    data={getPieChartData()}
-                                    cx="50%"
-                                    cy="50%"
-                                    labelLine={false}
-                                    outerRadius={100}
-                                    dataKey="value"
-                                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
-                                  >
-                                    {getPieChartData().map((entry, index) => (
-                                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                  </Pie>
-                                  <Tooltip 
-                                    formatter={(value: any) => [`$${Number(value).toFixed(2)}`, '']} 
-                                    contentStyle={{ 
-                                      background: 'rgba(255, 255, 255, 0.9)',
-                                      border: '1px solid #e2e8f0',
-                                      borderRadius: '6px',
-                                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                    }}
-                                  />
-                                  <Legend 
-                                    layout="horizontal" 
-                                    verticalAlign="bottom" 
-                                    align="center"
-                                    wrapperStyle={{ paddingTop: '20px' }}
-                                  />
-                                </PieChart>
-                              </ResponsiveContainer>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
-                    </div>
-
-                    {/* Insights Card */}
-                    {prediction.insights && (
-                      <Card className="border border-border/50 bg-blue-50/50 dark:bg-blue-950/10">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg font-medium flex items-center">
-                            <span className="bg-blue-100 dark:bg-blue-900/30 p-1.5 rounded-md mr-2">
-                              <Calendar className="h-4 w-4 text-blue-600" />
-                            </span>
-                            AI Insights & Analysis
-                          </CardTitle>
-                          <CardDescription>
-                            Key observations from your cloud usage patterns
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <ul className="space-y-3 mt-2">
-                            {prediction.insights.map((insight: string, index: number) => (
-                              <li key={index} className="flex items-start p-3 rounded-lg bg-white dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
-                                <div className="bg-blue-100 dark:bg-blue-900/40 p-1 rounded text-blue-700 dark:text-blue-400 mr-3 mt-0.5">
-                                  <ArrowRight className="h-4 w-4" />
-                                </div>
-                                <span className="text-sm">{insight}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                        <CardFooter>
-                          <p className="text-xs text-muted-foreground">
-                            <Calendar className="inline h-3 w-3 mr-1" />
-                            Prediction generated on {new Date().toLocaleDateString()} using OpenAI GPT-4o model
-                          </p>
-                        </CardFooter>
-                      </Card>
-                    )}
-                  </>
+              <TabsContent value="chart" className="pt-4">
+                {isLoadingHistory ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : historyError ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No historical cost data available
+                  </div>
                 ) : (
-                  <Card className="border-dashed border-2 border-muted bg-muted/20">
-                    <CardContent className="p-8 flex flex-col justify-center items-center min-h-[400px]">
-                      <div className="rounded-full bg-primary/10 p-3 mb-4">
-                        <TrendingUp className="h-8 w-8 text-primary" />
-                      </div>
-                      <h3 className="text-xl font-medium mb-2">Run a cost prediction</h3>
-                      <p className="text-muted-foreground text-center max-w-md mb-6">
-                        Select your parameters and click "Generate Prediction" to see AI-powered cost forecasts and insights
-                      </p>
-                      <Button onClick={handleRunPrediction} className="bg-blue-600 hover:bg-blue-700">
-                        <TrendingUp className="mr-2 h-4 w-4" />
-                        Start Prediction
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  <div className="h-64 flex items-center justify-center border border-dashed rounded-md">
+                    <p className="text-muted-foreground">Historical cost chart will be displayed here</p>
+                  </div>
                 )}
               </TabsContent>
               
-              {/* Cost Optimization Tab */}
-              <TabsContent value="optimization" className="space-y-6">
-                {isRecommendationsLoading ? (
-                  <Card className="border border-border/50 overflow-hidden">
-                    <CardContent className="p-8 flex justify-center items-center min-h-[400px]">
-                      <div className="text-center">
-                        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-                          <Loader2 className="h-10 w-10 animate-spin text-green-600" />
-                        </div>
-                        <h3 className="text-lg font-medium mb-2">Finding cost-saving opportunities</h3>
-                        <p className="text-muted-foreground max-w-md">
-                          Our AI is analyzing your cloud infrastructure to identify inefficiencies and recommend optimization strategies...
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : recommendations ? (
-                  <>
-                    {/* Savings Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 dark:from-green-950/30 dark:to-green-900/20 dark:border-green-800/50">
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-sm font-medium text-green-700 dark:text-green-400 mb-1">Monthly Savings</p>
-                              <div className="flex items-baseline">
-                                <DollarSign className="h-4 w-4 text-green-600 dark:text-green-500 mr-1" />
-                                <span className="text-3xl font-bold text-green-700 dark:text-green-400">
-                                  {recommendations.estimated_savings ? recommendations.estimated_savings.monthly.toFixed(2) : '0.00'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="bg-white dark:bg-green-900/30 p-2 rounded-full">
-                              <Percent className="h-5 w-5 text-green-500" />
-                            </div>
-                          </div>
-                          <p className="text-xs text-green-600/70 dark:text-green-400/70 mt-2">Potential monthly cost reduction</p>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 dark:from-blue-950/30 dark:to-blue-900/20 dark:border-blue-800/50">
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-1">Annual Savings</p>
-                              <div className="flex items-baseline">
-                                <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-500 mr-1" />
-                                <span className="text-3xl font-bold text-blue-700 dark:text-blue-400">
-                                  {recommendations.estimated_savings ? recommendations.estimated_savings.annual.toFixed(2) : '0.00'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="bg-white dark:bg-blue-900/30 p-2 rounded-full">
-                              <Calendar className="h-5 w-5 text-blue-500" />
-                            </div>
-                          </div>
-                          <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-2">Projected savings over 12 months</p>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 dark:from-purple-950/30 dark:to-purple-900/20 dark:border-purple-800/50">
-                        <CardContent className="p-6">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-sm font-medium text-purple-700 dark:text-purple-400 mb-1">Savings Percentage</p>
-                              <div className="flex items-baseline">
-                                <Percent className="h-4 w-4 text-purple-600 dark:text-purple-500 mr-1" />
-                                <span className="text-3xl font-bold text-purple-700 dark:text-purple-400">
-                                  {recommendations.estimated_savings ? recommendations.estimated_savings.percentage.toFixed(1) : '0.0'}%
-                                </span>
-                              </div>
-                            </div>
-                            <div className="bg-white dark:bg-purple-900/30 p-2 rounded-full">
-                              <TrendingUp className="h-5 w-5 text-purple-500" />
-                            </div>
-                          </div>
-                          <p className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-2">Percent reduction in total cloud spend</p>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Recommendations Card */}
-                    {recommendations.recommendations && recommendations.recommendations.length > 0 && (
-                      <Card className="border border-border/50 shadow-sm">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg font-medium flex items-center">
-                            <span className="bg-green-100 dark:bg-green-900/30 p-1.5 rounded-md mr-2">
-                              <Percent className="h-4 w-4 text-green-600" />
-                            </span>
-                            Optimization Recommendations
-                          </CardTitle>
-                          <CardDescription>
-                            Actionable steps to reduce your cloud costs
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-5 mt-2">
-                            {recommendations.recommendations.map((rec: any, index: number) => (
-                              <div key={index} className="p-5 rounded-lg bg-white dark:bg-card border border-border/80 shadow-sm">
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-3">
-                                  <h3 className="font-medium text-lg flex items-center">
-                                    <span className="bg-green-100 text-green-700 p-1 rounded-md mr-2">
-                                      <TrendingUp className="h-4 w-4" />
-                                    </span>
-                                    {rec.title}
-                                  </h3>
-                                  {rec.estimated_savings && (
-                                    <div className="bg-green-100 text-green-800 font-medium px-3 py-1 rounded-full text-sm flex items-center gap-1 whitespace-nowrap">
-                                      <DollarSign className="h-3.5 w-3.5" />
-                                      <span>Save {rec.estimated_savings.toFixed(2)}/mo</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <p className="text-muted-foreground mb-4">{rec.description}</p>
-                                
-                                {rec.steps && (
-                                  <div className="mt-3 pt-3 border-t border-border/50">
-                                    <h4 className="font-medium mb-2 flex items-center text-sm">
-                                      <span className="bg-blue-100 text-blue-700 p-1 rounded-md mr-2">
-                                        <ArrowRight className="h-3.5 w-3.5" />
-                                      </span>
-                                      Implementation Steps
-                                    </h4>
-                                    <ul className="space-y-2 pl-6">
-                                      {rec.steps.map((step: string, stepIndex: number) => (
-                                        <li key={stepIndex} className="text-sm relative before:absolute before:content-[''] before:w-1.5 before:h-1.5 before:bg-green-400 before:rounded-full before:left-[-20px] before:top-[7px]">
-                                          {step}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                                
-                                {rec.resources && (
-                                  <div className="mt-4 pt-3 border-t border-border/50">
-                                    <h4 className="text-sm font-medium mb-2">Affected Resources:</h4>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {rec.resources.map((resource: string, resIndex: number) => (
-                                        <span key={resIndex} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                                          {resource}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                    {/* Additional Insights */}
-                    {recommendations.additional_insights && (
-                      <Card className="border border-border/50 bg-amber-50/50 dark:bg-amber-950/10">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg font-medium flex items-center">
-                            <span className="bg-amber-100 dark:bg-amber-900/30 p-1.5 rounded-md mr-2">
-                              <Calendar className="h-4 w-4 text-amber-600" />
-                            </span>
-                            Long-term Optimization Insights
-                          </CardTitle>
-                          <CardDescription>
-                            Strategic recommendations for sustainable cost management
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <ul className="space-y-3 mt-2">
-                            {recommendations.additional_insights.map((insight: string, index: number) => (
-                              <li key={index} className="flex items-start p-3 rounded-lg bg-white dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30">
-                                <div className="bg-amber-100 dark:bg-amber-900/40 p-1 rounded text-amber-700 dark:text-amber-400 mr-3 mt-0.5">
-                                  <ArrowRight className="h-4 w-4" />
-                                </div>
-                                <span className="text-sm">{insight}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </CardContent>
-                        <CardFooter>
-                          <p className="text-xs text-muted-foreground">
-                            <Calendar className="inline h-3 w-3 mr-1" />
-                            Analysis generated on {new Date().toLocaleDateString()} using OpenAI GPT-4o model
-                          </p>
-                        </CardFooter>
-                      </Card>
-                    )}
-                  </>
-                ) : (
-                  <Card className="border-dashed border-2 border-muted bg-muted/20">
-                    <CardContent className="p-8 flex flex-col justify-center items-center min-h-[400px]">
-                      <div className="rounded-full bg-green-100 p-3 mb-4">
-                        <Percent className="h-8 w-8 text-green-600" />
-                      </div>
-                      <h3 className="text-xl font-medium mb-2">Discover cost-saving opportunities</h3>
-                      <p className="text-muted-foreground text-center max-w-md mb-6">
-                        Find ways to optimize your cloud spend with AI-powered recommendations tailored to your infrastructure
-                      </p>
-                      <Button onClick={handleGetRecommendations} className="border-green-600 text-green-600 hover:bg-green-50" variant="outline">
-                        <Percent className="mr-2 h-4 w-4" />
-                        Get Optimization Recommendations
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
+              <TabsContent value="categories" className="pt-4">
+                <div className="h-64 flex items-center justify-center border border-dashed rounded-md">
+                  <p className="text-muted-foreground">Category breakdown will be displayed here</p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="resources" className="pt-4">
+                <div className="h-64 flex items-center justify-center border border-dashed rounded-md">
+                  <p className="text-muted-foreground">Top resource costs will be displayed here</p>
+                </div>
               </TabsContent>
             </Tabs>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }
