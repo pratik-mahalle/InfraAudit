@@ -1,0 +1,4 @@
+id,title,description,type,potential_savings,resources_affected,created_at,status
+1,"Right-size over-provisioned instances","15 EC2 instances consistently using <20% CPU and memory.","rightsizing",218000,"[1,2]","""2025-05-10T09:49:56.792Z""","open"
+2,"Remove unused EBS volumes","8 unattached EBS volumes totaling 1.2TB of storage.","unused_resources",84000,"[]","""2025-05-10T09:49:56.862Z""","open"
+3,"Optimize S3 storage classes","3.5TB of infrequently accessed data in Standard tier.","storage_optimization",62000,"[3]","""2025-05-10T09:49:56.931Z""","open"

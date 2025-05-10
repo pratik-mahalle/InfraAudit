@@ -1,0 +1,4 @@
+id,resource_id,drift_type,severity,details,detected_at,status
+1,3,"Public Access","critical","{""current"":""public"",""previous"":""private""}","""2025-05-10T09:49:56.304Z""","open"
+2,5,"IAM Policy Change","high","{""policy"":""API execution permissions expanded""}","""2025-05-10T09:49:56.375Z""","open"
+3,4,"Encryption Disabled","high","{""current"":""unencrypted"",""previous"":""encrypted""}","""2025-05-10T09:49:56.446Z""","open"

@@ -1,0 +1,4 @@
+id,title,message,type,severity,resource_id,created_at,status
+1,"Cost anomaly detected in EC2","Unexpected 43% increase in compute costs over the last 24 hours.","cost","critical",1,"""2025-05-10T09:49:56.585Z""","open"
+2,"Security group modified","Port 22 (SSH) opened to 0.0.0.0/0 on production-web-sg.","security","high",1,"""2025-05-10T09:49:56.655Z""","open"
+3,"S3 access policy changed","Public read access granted to data-exports bucket.","security","high",3,"""2025-05-10T09:49:56.724Z""","open"

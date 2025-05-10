@@ -1,0 +1,2 @@
+id,resource_id,anomaly_type,severity,percentage,previous_cost,current_cost,detected_at,status
+1,1,"spike","critical",43,5800,8400,"""2025-05-10T09:49:56.515Z""","open"
