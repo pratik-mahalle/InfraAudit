@@ -310,6 +310,7 @@ export default function CostOptimization() {
           <TabsTrigger value="anomalies">Cost Anomalies</TabsTrigger>
           <TabsTrigger value="by-service">Costs by Service</TabsTrigger>
           <TabsTrigger value="by-region">Costs by Region</TabsTrigger>
+          <TabsTrigger value="import-csv">Import CSV</TabsTrigger>
         </TabsList>
 
         {/* Cost Anomalies Tab */}
