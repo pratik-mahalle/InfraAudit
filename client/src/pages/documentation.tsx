@@ -52,7 +52,7 @@ const Documentation = () => {
             <TabsTrigger value="connection">Cloud Connection</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="costs">Cost Optimization</TabsTrigger>
-            <TabsTrigger value="go-migration">Go Migration</TabsTrigger>
+            <TabsTrigger value="go-migration">Go Backend</TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview">
@@ -67,8 +67,8 @@ const Documentation = () => {
                 <p>
                   CloudGuard is an intelligent infrastructure monitoring platform designed to help DevOps teams maintain 
                   infrastructure integrity and cost efficiency across multiple cloud providers including AWS, Azure, and GCP. 
-                  The platform combines powerful monitoring capabilities with AI-powered insights to prevent security issues 
-                  and reduce cloud spending.
+                  Built on a high-performance Go backend, the platform combines powerful monitoring capabilities with AI-powered 
+                  insights to prevent security issues and reduce cloud spending.
                 </p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
@@ -303,16 +303,65 @@ const Documentation = () => {
           <TabsContent value="go-migration">
             <Card>
               <CardHeader>
-                <CardTitle>Go Backend Migration</CardTitle>
+                <CardTitle>Go Backend Architecture</CardTitle>
                 <CardDescription>
-                  Information about the ongoing migration to Go microservices
+                  Information about CloudGuard's Go-powered backend
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <p>
-                  CloudGuard is in the process of migrating from a Node.js backend to a Go-based microservices architecture.
-                  This migration will bring significant performance improvements, better type safety, and more efficient resource utilization.
+                  CloudGuard is built on a high-performance Go-based microservices architecture, which provides
+                  significant performance advantages, robust type safety, and efficient resource utilization compared
+                  to traditional Node.js applications.
                 </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                  <div>
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                      <Code className="h-5 w-5 text-blue-600" />
+                      Go Backend Benefits
+                    </h3>
+                    <ul className="list-disc pl-6 space-y-1 mt-2">
+                      <li>Superior performance and reduced latency</li>
+                      <li>Static typing eliminates entire classes of runtime errors</li>
+                      <li>Lower memory footprint for better resource efficiency</li>
+                      <li>Simple deployment with single binary executables</li>
+                      <li>Built-in concurrency with goroutines and channels</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-medium flex items-center gap-2">
+                      <GitBranch className="h-5 w-5 text-blue-600" />
+                      Architecture Design
+                    </h3>
+                    <ul className="list-disc pl-6 space-y-1 mt-2">
+                      <li>Clean separation of concerns with proper layering</li>
+                      <li>RESTful API design with consistent patterns</li>
+                      <li>Efficient cloud provider integrations</li>
+                      <li>High-performance database access layer</li>
+                      <li>Comprehensive testing with high coverage</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium flex items-center gap-2 mt-4">
+                    <Container className="h-5 w-5 text-blue-600" />
+                    Deployment Architecture
+                  </h3>
+                  <p className="mt-2">
+                    The Go backend is deployed using Kubernetes with the following components:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-1 mt-2">
+                    <li><strong>deployment.yaml:</strong> Core application deployment configuration</li>
+                    <li><strong>service.yaml:</strong> Internal networking and service discovery</li>
+                    <li><strong>ingress.yaml:</strong> External access and routing rules</li>
+                    <li><strong>secrets.yaml:</strong> Secure storage for sensitive configuration</li>
+                    <li><strong>configmap.yaml:</strong> Non-sensitive configuration parameters</li>
+                    <li><strong>hpa.yaml:</strong> Horizontal Pod Autoscaler for dynamic scaling</li>
+                  </ul>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
