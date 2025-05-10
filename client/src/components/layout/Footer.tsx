@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation } from "wouter";
-import { Shield, Github, Twitter, Linkedin, Mail } from "lucide-react";
+import { Shield, Github, Twitter, Linkedin, Mail, Heart } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -187,6 +187,17 @@ export function Footer() {
           >
             Cookies
           </div>
+        </div>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          Made with <Heart className="h-3 w-3 text-red-500" /> by{" "}
+          <a 
+            href="https://github.com/thedevopsguy" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:text-foreground transition-colors"
+          >
+            thedevopsguy
+          </a>
         </div>
       </div>
     </footer>

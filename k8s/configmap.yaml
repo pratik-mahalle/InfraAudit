@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: infraaudit-config
+data:
+  NODE_ENV: "production"
+  DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/infraaudit"
+  PGDATABASE: "infraaudit"
+  PGHOST: "postgres"
+  PGPORT: "5432"
+  PGUSER: "postgres"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+data:
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "postgres"
+  POSTGRES_DB: "infraaudit" 

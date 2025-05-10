@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infraaudit-app
+  labels:
+    app: infraaudit
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: infraaudit
+  template:
+    metadata:
+      labels:
+        app: infraaudit
+    spec:
+      containers:
+      - name: infraaudit
+        image: ${DOCKER_REGISTRY}/infraaudit:latest
+        ports:
+        - containerPort: 5000
+        envFrom:
+        - configMapRef:
+            name: infraaudit-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 15
+          periodSeconds: 20 
