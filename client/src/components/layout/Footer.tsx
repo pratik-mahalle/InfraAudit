@@ -8,7 +8,7 @@ export function Footer() {
 
   return (
     <footer className="w-full border-t border-border/40 bg-background py-10">
-      <div className="container grid gap-8 px-4 md:px-6 lg:grid-cols-4">
+      <div className="container grid gap-8 px-4 md:px-6 lg:grid-cols-4 max-w-6xl mx-auto">
         <div className="space-y-4">
           <div 
             className="flex items-center gap-2 cursor-pointer"
@@ -164,8 +164,8 @@ export function Footer() {
           </ul>
         </div>
       </div>
-      <div className="container flex flex-col items-center justify-between gap-4 border-t border-border/40 py-6 mt-6 md:flex-row px-4 md:px-6">
-        <p className="text-xs text-muted-foreground">
+      <div className="container max-w-6xl mx-auto flex flex-col items-center justify-center gap-4 border-t border-border/40 py-6 mt-6 md:flex-row px-4 md:px-6">
+        <p className="text-xs text-muted-foreground text-center md:text-left">
           &copy; {currentYear} CloudGuard. All rights reserved.
         </p>
         <div className="flex gap-4 text-xs text-muted-foreground">
