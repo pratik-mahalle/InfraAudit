@@ -162,22 +162,26 @@ class StripeService {
         throw new Error(`Invalid plan type: ${planType}`);
       }
 
-      // Update the subscription with new price data
+      // Create a new product
+      const product = await stripe.products.create({
+        name: plan.name,
+        description: plan.description,
+      });
+      
+      // Create a new price
+      const price = await stripe.prices.create({
+        product: product.id,
+        unit_amount: plan.price,
+        currency: 'usd',
+        recurring: { interval: 'month' },
+      });
+      
+      // Update the subscription with the new price
       const updatedSubscription = await stripe.subscriptions.update(subscriptionId, {
         items: [
           {
             id: subscription.items.data[0].id,
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: plan.name,
-                description: plan.description,
-              },
-              unit_amount: plan.price,
-              recurring: {
-                interval: 'month',
-              },
-            },
+            price: price.id,
           },
         ],
       });
@@ -211,22 +215,27 @@ class StripeService {
         throw new Error(`Invalid plan type: ${planType}`);
       }
 
+      // Create a product
+      const product = await stripe.products.create({
+        name: plan.name,
+        description: plan.description,
+      });
+      
+      // Create a price
+      const price = await stripe.prices.create({
+        product: product.id,
+        unit_amount: plan.price,
+        currency: 'usd',
+        recurring: { interval: 'month' },
+      });
+      
+      // Create checkout session with the price
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         payment_method_types: ['card'],
         line_items: [
           {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: plan.name,
-                description: plan.description,
-              },
-              unit_amount: plan.price,
-              recurring: {
-                interval: 'month',
-              },
-            },
+            price: price.id,
             quantity: 1,
           },
         ],
