@@ -11,7 +11,8 @@ import {
   Shield, 
   Menu, 
   LogOut,
-  BookOpen
+  BookOpen,
+  Code
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -116,6 +117,19 @@ export function Navbar() {
               >
                 <Cloud className="h-4 w-4" />
                 Cloud Providers
+              </div>
+              
+              <div 
+                id="go-backend-nav"
+                className={`flex items-center gap-2 transition-colors cursor-pointer ${
+                  location === "/go-backend" 
+                    ? "text-foreground font-medium" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => window.location.href = "/go-backend"}
+              >
+                <Code className="h-4 w-4" />
+                Go Backend
               </div>
             </>
           )}
@@ -240,6 +254,19 @@ export function Navbar() {
               >
                 <Cloud className="h-4 w-4" />
                 Cloud Providers
+              </div>
+              
+              <div 
+                id="go-backend-nav-mobile"
+                className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                  location === "/go-backend" 
+                    ? "text-foreground font-medium" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => window.location.href = "/go-backend"}
+              >
+                <Code className="h-4 w-4" />
+                Go Backend
               </div>
             </>
           )}
