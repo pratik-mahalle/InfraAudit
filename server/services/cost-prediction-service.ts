@@ -218,19 +218,16 @@ export async function predictFutureCosts(
     // Store predictions in database
     const insertedPredictions = [];
     for (const prediction of predictions) {
-      // Create an object that matches the InsertCostPrediction type
-      const predictionData: InsertCostPrediction = {
+      // Use the object property names from the schema, not the DB column names
+      const [inserted] = await db.insert(costPredictions).values({
+        resourceId: null,
         organizationId: organizationId,
         predictedDate: prediction.predictedDate,
-        predictedAmount: prediction.predictedAmount,
-        confidenceInterval: prediction.confidenceInterval,
+        predictedAmount: prediction.predictedAmount.toString(), // Convert to string for numeric fields
+        confidenceInterval: prediction.confidenceInterval.toString(), // Convert to string for numeric fields
         model: prediction.model,
-        predictionPeriod: prediction.predictionPeriod,
-        resourceId: undefined
-      };
-      
-      const [inserted] = await db.insert(costPredictions)
-        .values(predictionData)
+        predictionPeriod: prediction.predictionPeriod
+      })
         .returning();
       
       insertedPredictions.push(inserted);
