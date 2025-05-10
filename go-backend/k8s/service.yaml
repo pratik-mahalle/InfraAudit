@@ -6,11 +6,12 @@ metadata:
     app: cloudguard
     component: api
 spec:
-  selector:
-    app: cloudguard
-    component: api
+  type: ClusterIP
   ports:
   - port: 80
     targetPort: http
+    protocol: TCP
     name: http
-  type: ClusterIP
+  selector:
+    app: cloudguard
+    component: api
