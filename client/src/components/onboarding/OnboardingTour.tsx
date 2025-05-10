@@ -13,7 +13,8 @@ export const OnboardingTour: React.FC = () => {
     isOnboarding, 
     nextStep, 
     previousStep, 
-    dismissOnboarding 
+    dismissOnboarding,
+    getStepContent
   } = useOnboarding();
   
   const [, navigate] = useLocation();
@@ -25,7 +26,7 @@ export const OnboardingTour: React.FC = () => {
   const findAndPositionTooltip = () => {
     if (!currentStep || !isOnboarding) return;
     
-    const content = OnboardingContent[currentStep];
+    const content = getStepContent(currentStep);
     
     // If this step has a target element, find it and position the tooltip
     if (content.targetElementId) {
@@ -71,7 +72,7 @@ export const OnboardingTour: React.FC = () => {
     
     if (!currentStep || !isOnboarding) return;
     
-    const content = OnboardingContent[currentStep];
+    const content = getStepContent(currentStep);
     
     // If this step needs to navigate to a different route
     if (content.routePath) {
@@ -191,7 +192,7 @@ export const OnboardingTour: React.FC = () => {
   
   if (!currentStep || !isOnboarding) return null;
   
-  const content = OnboardingContent[currentStep];
+  const content = getStepContent(currentStep);
   const isFirstStep = currentStep === 'welcome';
   const isLastStep = currentStep === 'completed';
   
