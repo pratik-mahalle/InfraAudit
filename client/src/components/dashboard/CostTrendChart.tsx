@@ -13,7 +13,7 @@ import {
 import { Line } from "react-chartjs-2";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MoreVertical, ArrowUpRight, ArrowDownRight, CheckCircle } from "lucide-react";
+import { MoreVertical, ArrowUpRight, ArrowDownRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { ChartTimeframe } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -248,6 +248,15 @@ export function CostTrendChart({
           {isLoading ? (
             <div className="h-full w-full flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : currentSpend === 0 ? (
+            <div className="h-full w-full flex flex-col items-center justify-center space-y-2 bg-gray-50 rounded-lg">
+              <AlertTriangle className="h-8 w-8 text-amber-500" />
+              <p className="text-gray-600 text-sm">No cost data available</p>
+              <p className="text-gray-500 text-xs text-center max-w-md">
+                Connect your cloud provider credentials to see actual cost data.
+                Go to Cloud Providers page to add your AWS, GCP, or Azure credentials.
+              </p>
             </div>
           ) : (
             <Line data={chartData} options={options} />
