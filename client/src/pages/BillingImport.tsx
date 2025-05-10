@@ -36,7 +36,8 @@ export default function BillingImport() {
     queryKey: ['/api/billing-import/status'],
     retry: false,
     refetchInterval: false,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    staleTime: 30000
   });
 
   // File upload mutation
@@ -54,11 +55,10 @@ export default function BillingImport() {
       }, 200);
 
       try {
-        const response = await apiRequest('POST', '/api/billing-import/upload', undefined, {
+        const response = await fetch('/api/billing-import/upload', {
+          method: 'POST',
           body: formData,
-          headers: {
-            // Don't set Content-Type header as it's automatically set with form boundary
-          }
+          // Don't set Content-Type header as it's automatically set with form boundary
         });
         
         // Clear the progress interval
