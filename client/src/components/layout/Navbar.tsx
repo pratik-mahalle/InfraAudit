@@ -109,17 +109,7 @@ export function Navbar() {
                 <Shield className="h-4 w-4 flex-shrink-0" />
                 <span>Security</span>
               </div>
-              <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  location === "/alerts" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => window.location.href = "/alerts"}
-              >
-                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                <span>Alerts</span>
-              </div>
+              {/* Alerts have been integrated into the Security page */}
               <div 
                 id="cloud-providers-nav"
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
@@ -265,17 +255,7 @@ export function Navbar() {
                   <Shield className="h-4 w-4 flex-shrink-0" />
                   <span>Security</span>
                 </div>
-                <div 
-                  className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
-                    location === "/alerts" 
-                      ? "text-foreground font-medium" 
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() => window.location.href = "/alerts"}
-                >
-                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                  <span>Alerts</span>
-                </div>
+                {/* Alerts have been integrated into the Security page */}
                 <div 
                   id="cloud-providers-nav-mobile"
                   className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
