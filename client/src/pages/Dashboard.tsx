@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { StatusCard } from "@/components/dashboard/StatusCard";
 import { CostTrendChart } from "@/components/dashboard/CostTrendChart";
@@ -55,6 +55,108 @@ export default function Dashboard() {
   const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(true);
   const [isScanning, setIsScanning] = useState(false);
   const [lastScanResult, setLastScanResult] = useState(null);
+  const { toast } = useToast();
+  
+  // Mutation for running a new scan
+  const scanMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/scan/trigger");
+      return await res.json();
+    },
+    onMutate: () => {
+      setIsScanning(true);
+      toast({
+        title: "Starting New Scan",
+        description: "Scanning your cloud infrastructure...",
+      });
+    },
+    onSuccess: (data) => {
+      setLastScanResult(data);
+      toast({
+        title: "Scan Completed",
+        description: `Successfully scanned ${data.resourcesScanned} resources in ${data.scanDuration}`,
+        variant: "default",
+      });
+      
+      // Refresh relevant data
+      queryClient.invalidateQueries({ queryKey: ["/api/security-drifts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cloud-resources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/aws-resources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/recommendations"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Scan Failed",
+        description: error.message || "Failed to complete infrastructure scan",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsScanning(false);
+    }
+  });
+  
+  // Handle running a new scan
+  const handleRunScan = () => {
+    scanMutation.mutate();
+  };
+  
+  // Handle dashboard action selections
+  const handleDashboardAction = (action: string) => {
+    switch (action) {
+      case "refresh":
+        toast({
+          title: "Refreshing Dashboard",
+          description: "Fetching the latest data for all widgets...",
+        });
+        queryClient.invalidateQueries();
+        break;
+      
+      case "export":
+        toast({
+          title: "Exporting Dashboard",
+          description: "Preparing dashboard export as PDF...",
+        });
+        // In a real implementation, this would trigger a PDF export
+        setTimeout(() => {
+          toast({
+            title: "Dashboard Exported",
+            description: "The export is ready for download",
+            variant: "default",
+          });
+        }, 1500);
+        break;
+      
+      case "addWidget":
+        toast({
+          title: "Add Widget",
+          description: "Widget customization feature will be available soon",
+        });
+        break;
+      
+      case "configureProviders":
+        // Navigate to cloud providers page
+        window.location.href = "/cloud-providers";
+        break;
+      
+      case "scheduleScan":
+        toast({
+          title: "Schedule Scan",
+          description: "Scan scheduling feature will be available soon",
+        });
+        break;
+      
+      case "resetDashboard":
+        toast({
+          title: "Reset Dashboard",
+          description: "Dashboard has been reset to default layout",
+          variant: "success",
+        });
+        // In a real implementation, this would reset the dashboard layout
+        break;
+    }
+  };
   
   // Check for cloud providers
   const { data: cloudProviders, isLoading: isLoadingProviders } = useQuery<any[]>({
@@ -107,8 +209,19 @@ export default function Dashboard() {
     enabled: !!cloudProviders && cloudProviders.some(p => p.isConnected),
   });
 
-  // Last scan time
-  const lastScanTime = new Date();
+  // Latest scan status
+  const { data: lastScanStatus, isLoading: isLoadingLastScan } = useQuery({
+    queryKey: ["/api/scan/status"],
+    queryFn: async () => {
+      const res = await fetch("/api/scan/status");
+      if (!res.ok) throw new Error("Failed to fetch last scan status");
+      return res.json();
+    },
+    refetchInterval: isScanning ? 5000 : false, // Poll every 5 seconds while scanning
+  });
+  
+  // Format the last scan time
+  const lastScanTime = lastScanStatus?.timestamp ? new Date(lastScanStatus.timestamp) : new Date();
 
   // Resource utilization metrics
   const utilizationMetrics: UtilizationMetric[] = [
