@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudguard-api
+  labels:
+    app: cloudguard
+    component: api
+spec:
+  selector:
+    app: cloudguard
+    component: api
+  ports:
+  - port: 80
+    targetPort: http
+    name: http
+  type: ClusterIP
