@@ -45,7 +45,7 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center px-4 md:px-6">
+      <div className="container flex h-16 items-center px-4 md:px-6 max-w-6xl mx-auto">
         <div className="flex-1 flex justify-start">
           <div 
             className="flex items-center gap-2 cursor-pointer"
@@ -59,7 +59,7 @@ export function Navbar() {
         </div>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-6 justify-center flex-1">
+        <div className="hidden md:flex items-center gap-4 justify-center flex-auto">
           {user && (
             <>
               <div 
@@ -117,6 +117,17 @@ export function Navbar() {
               >
                 <Cloud className="h-4 w-4" />
                 Cloud Providers
+              </div>
+              <div 
+                className={`flex items-center gap-2 transition-colors cursor-pointer ${
+                  location === "/subscription" 
+                    ? "text-foreground font-medium" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => window.location.href = "/subscription"}
+              >
+                <CreditCard className="h-4 w-4" />
+                Subscription
               </div>
             </>
           )}
@@ -189,7 +200,7 @@ export function Navbar() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden px-4 py-4 pb-6 border-t border-border/40 space-y-4 bg-background">
+        <div className="md:hidden px-4 py-4 pb-6 border-t border-border/40 space-y-4 bg-background max-w-6xl mx-auto">
           {user && (
             <>
               <div 
@@ -249,6 +260,7 @@ export function Navbar() {
                 Cloud Providers
               </div>
               <div 
+                id="subscription-nav-mobile"
                 className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
                   location === "/subscription" 
                     ? "text-foreground font-medium" 
