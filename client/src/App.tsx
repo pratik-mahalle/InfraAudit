@@ -11,7 +11,7 @@ import SecurityMonitoring from "@/pages/SecurityMonitoring";
 import CostOptimization from "@/pages/CostOptimization";
 import CostPrediction from "@/pages/CostPrediction";
 import ResourceUtilization from "@/pages/ResourceUtilization";
-import Alerts from "@/pages/Alerts";
+// Removed Alerts import as it's now integrated into Security
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import CloudProviders from "@/pages/CloudProviders";
@@ -39,7 +39,7 @@ function Router() {
       <ProtectedRoute path="/cost" component={CostOptimization} />
       <ProtectedRoute path="/cost-prediction" component={CostPrediction} />
       <ProtectedRoute path="/resources" component={ResourceUtilization} />
-      <ProtectedRoute path="/alerts" component={Alerts} />
+      {/* Alerts have been integrated into the Security page */}
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/profile" component={Profile} />
       <ProtectedRoute path="/cloud-providers" component={CloudProviders} />
