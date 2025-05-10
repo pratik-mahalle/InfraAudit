@@ -16,7 +16,6 @@ import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import CloudProviders from "@/pages/CloudProviders";
 import Documentation from "@/pages/documentation";
-import GoBackendArchitecture from "@/pages/go-backend-architecture";
 import AuthPage from "@/pages/auth-page";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -40,7 +39,6 @@ function Router() {
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/profile" component={Profile} />
       <ProtectedRoute path="/cloud-providers" component={CloudProviders} />
-      <ProtectedRoute path="/go-backend" component={GoBackendArchitecture} />
       
       {/* Public routes */}
       <Route path="/auth" component={AuthPage} />
