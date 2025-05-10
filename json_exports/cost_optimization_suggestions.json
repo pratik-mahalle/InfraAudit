@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "resource_id": 1,
+    "organization_id": 1,
+    "title": "Implement instance scheduling",
+    "description": "Instance web-server-prod is running 24/7. Implement scheduling to stop during non-business hours.",
+    "suggested_action": "Schedule",
+    "potential_savings": "2520",
+    "confidence": "0.75",
+    "implementation_difficulty": "easy",
+    "status": "pending",
+    "created_at": "2025-05-10T13:31:36.040Z",
+    "updated_at": "2025-05-10T13:31:36.040Z",
+    "applied_at": null
+  },
+  {
+    "id": 2,
+    "resource_id": 2,
+    "organization_id": 1,
+    "title": "Implement instance scheduling",
+    "description": "Instance api-server-prod is running 24/7. Implement scheduling to stop during non-business hours.",
+    "suggested_action": "Schedule",
+    "potential_savings": "1860",
+    "confidence": "0.75",
+    "implementation_difficulty": "easy",
+    "status": "pending",
+    "created_at": "2025-05-10T13:31:36.140Z",
+    "updated_at": "2025-05-10T13:31:36.140Z",
+    "applied_at": null
+  }
+]
