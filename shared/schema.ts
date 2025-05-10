@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, numeric, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -279,3 +279,129 @@ export const usersRelations = relations(users, ({ one }) => ({
 
 export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+
+// Cost History table to store historical cost data
+export const costHistory = pgTable("cost_history", {
+  id: serial("id").primaryKey(),
+  resourceId: integer("resource_id").references(() => resources.id),
+  date: date("date").notNull(),
+  amount: numeric("amount").notNull(), // Cost in dollars (with decimal)
+  serviceCategory: text("service_category"), // e.g., "Compute", "Storage", "Database"
+  region: text("region"),
+  usageType: text("usage_type"), // e.g., "BoxUsage:t3.micro"
+  usageAmount: numeric("usage_amount"), // Units of usage
+  usageUnit: text("usage_unit"), // e.g., "GB", "hours"
+  organizationId: integer("organization_id").references(() => organizations.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCostHistorySchema = createInsertSchema(costHistory).pick({
+  resourceId: true,
+  date: true,
+  amount: true,
+  serviceCategory: true,
+  region: true,
+  usageType: true,
+  usageAmount: true,
+  usageUnit: true,
+  organizationId: true,
+});
+
+export const costHistoryRelations = relations(costHistory, ({ one }) => ({
+  resource: one(resources, {
+    fields: [costHistory.resourceId],
+    references: [resources.id],
+  }),
+  organization: one(organizations, {
+    fields: [costHistory.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+// Cost Predictions table to store forecasted costs
+export const costPredictions = pgTable("cost_predictions", {
+  id: serial("id").primaryKey(),
+  resourceId: integer("resource_id").references(() => resources.id),
+  organizationId: integer("organization_id").references(() => organizations.id),
+  predictedDate: date("predicted_date").notNull(),
+  predictedAmount: numeric("predicted_amount").notNull(), // Cost in dollars (with decimal)
+  serviceCategory: text("service_category"),
+  region: text("region"),
+  createdAt: timestamp("created_at").defaultNow(),
+  confidenceInterval: numeric("confidence_interval"), // Prediction confidence interval
+  model: text("model"), // Model used for prediction (e.g., "LinearRegression", "ARIMA")
+  predictionPeriod: text("prediction_period"), // daily, weekly, monthly
+});
+
+export const insertCostPredictionSchema = createInsertSchema(costPredictions).pick({
+  resourceId: true,
+  organizationId: true,
+  predictedDate: true,
+  predictedAmount: true,
+  serviceCategory: true,
+  region: true,
+  confidenceInterval: true,
+  model: true,
+  predictionPeriod: true,
+});
+
+export const costPredictionsRelations = relations(costPredictions, ({ one }) => ({
+  resource: one(resources, {
+    fields: [costPredictions.resourceId],
+    references: [resources.id],
+  }),
+  organization: one(organizations, {
+    fields: [costPredictions.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+// Cost optimization suggestions table
+export const costOptimizationSuggestions = pgTable("cost_optimization_suggestions", {
+  id: serial("id").primaryKey(),
+  resourceId: integer("resource_id").references(() => resources.id),
+  organizationId: integer("organization_id").references(() => organizations.id),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  suggestedAction: text("suggested_action").notNull(), // e.g., "Downsize", "Terminate", "Schedule"
+  potentialSavings: numeric("potential_savings").notNull(), // Monthly savings in dollars
+  confidence: numeric("confidence").notNull(), // 0-1 scale
+  implementationDifficulty: text("implementation_difficulty"), // "easy", "medium", "hard"
+  status: text("status").default("pending"), // "pending", "applied", "dismissed"
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  appliedAt: timestamp("applied_at"),
+});
+
+export const insertCostOptimizationSuggestionSchema = createInsertSchema(costOptimizationSuggestions).pick({
+  resourceId: true,
+  organizationId: true,
+  title: true,
+  description: true,
+  suggestedAction: true,
+  potentialSavings: true,
+  confidence: true,
+  implementationDifficulty: true,
+  status: true,
+});
+
+export const costOptimizationSuggestionsRelations = relations(costOptimizationSuggestions, ({ one }) => ({
+  resource: one(resources, {
+    fields: [costOptimizationSuggestions.resourceId],
+    references: [resources.id],
+  }),
+  organization: one(organizations, {
+    fields: [costOptimizationSuggestions.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+// Types for our new tables
+export type CostHistory = typeof costHistory.$inferSelect;
+export type InsertCostHistory = z.infer<typeof insertCostHistorySchema>;
+
+export type CostPrediction = typeof costPredictions.$inferSelect;
+export type InsertCostPrediction = z.infer<typeof insertCostPredictionSchema>;
+
+export type CostOptimizationSuggestion = typeof costOptimizationSuggestions.$inferSelect;
+export type InsertCostOptimizationSuggestion = z.infer<typeof insertCostOptimizationSuggestionSchema>;
