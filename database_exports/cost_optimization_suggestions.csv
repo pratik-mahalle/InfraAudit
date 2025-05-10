@@ -1,0 +1,3 @@
+id,resource_id,organization_id,title,description,suggested_action,potential_savings,confidence,implementation_difficulty,status,created_at,updated_at,applied_at
+1,1,1,"Implement instance scheduling","Instance web-server-prod is running 24/7. Implement scheduling to stop during non-business hours.","Schedule","2520","0.75","easy","pending","""2025-05-10T13:31:36.040Z""","""2025-05-10T13:31:36.040Z""",
+2,2,1,"Implement instance scheduling","Instance api-server-prod is running 24/7. Implement scheduling to stop during non-business hours.","Schedule","1860","0.75","easy","pending","""2025-05-10T13:31:36.140Z""","""2025-05-10T13:31:36.140Z""",
