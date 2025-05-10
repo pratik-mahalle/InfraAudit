@@ -123,3 +123,6 @@ export const OnboardingMessage: React.FC<OnboardingMessageProps> = ({ step }) =>
     </div>
   );
 };
+
+// Default export for both components
+export default { OnboardingContent, OnboardingMessage };
