@@ -1,13 +1,21 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 
 // Onboarding steps
 export type OnboardingStep = 
   | 'welcome'
   | 'dashboard-overview'
   | 'connect-aws'
+  | 'aws-credentials'
   | 'security-monitoring'
+  | 'security-drifts'
   | 'cost-optimization'
+  | 'cost-prediction'
+  | 'resource-utilization'
   | 'alerts-setup'
+  | 'slack-integration'
+  | 'settings-customization'
+  | 'ai-insights'
   | 'completed';
 
 interface OnboardingContextType {
@@ -20,6 +28,7 @@ interface OnboardingContextType {
   goToStep: (step: OnboardingStep) => void;
   completedSteps: Set<OnboardingStep>;
   markStepCompleted: (step: OnboardingStep) => void;
+  restartTour: () => void;
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -29,9 +38,16 @@ const STEP_ORDER: OnboardingStep[] = [
   'welcome',
   'dashboard-overview',
   'connect-aws',
+  'aws-credentials',
   'security-monitoring',
+  'security-drifts',
   'cost-optimization',
+  'cost-prediction',
+  'resource-utilization',
   'alerts-setup',
+  'slack-integration',
+  'settings-customization',
+  'ai-insights',
   'completed'
 ];
 
@@ -39,6 +55,7 @@ export const OnboardingProvider: React.FC<{children: React.ReactNode}> = ({ chil
   const [currentStep, setCurrentStep] = useState<OnboardingStep | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Set<OnboardingStep>>(new Set());
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean>(false);
+  const [, navigate] = useLocation();
 
   useEffect(() => {
     // Check if user has completed onboarding before
@@ -57,6 +74,29 @@ export const OnboardingProvider: React.FC<{children: React.ReactNode}> = ({ chil
     localStorage.setItem('onboardingCompleted', 'true');
     setHasSeenOnboarding(true);
   };
+
+  const restartTour = () => {
+    localStorage.removeItem('onboardingCompleted');
+    setHasSeenOnboarding(false);
+    setCompletedSteps(new Set());
+    setCurrentStep('welcome');
+  };
+
+  // Function to navigate to the appropriate page for the current step
+  useEffect(() => {
+    if (!currentStep) return;
+    
+    // Import here to avoid circular dependency
+    const { OnboardingContent } = require('./OnboardingTourContent');
+    
+    // Get the route path for the current step
+    const routePath = OnboardingContent[currentStep]?.routePath;
+    
+    // If the step has a route path, navigate to it
+    if (routePath) {
+      navigate(routePath);
+    }
+  }, [currentStep, navigate]);
 
   const nextStep = () => {
     if (!currentStep) return;
@@ -106,6 +146,7 @@ export const OnboardingProvider: React.FC<{children: React.ReactNode}> = ({ chil
         goToStep,
         completedSteps,
         markStepCompleted,
+        restartTour,
       }}
     >
       {children}
