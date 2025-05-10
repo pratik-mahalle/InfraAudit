@@ -55,15 +55,23 @@ export default function BillingImport() {
       }, 200);
 
       try {
+        // Can't use apiRequest because it adds Content-Type: application/json
+        // which breaks multipart/form-data uploads
         const response = await fetch('/api/billing-import/upload', {
           method: 'POST',
           body: formData,
+          credentials: 'include'
           // Don't set Content-Type header as it's automatically set with form boundary
         });
         
         // Clear the progress interval
         clearInterval(progressInterval);
         setUploadProgress(100);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || response.statusText);
+        }
         
         // Return the response data
         return await response.json();
