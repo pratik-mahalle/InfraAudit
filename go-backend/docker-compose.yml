@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: go-backend/Dockerfile
+    container_name: cloudguard-api
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/cloudguard?sslmode=disable
+      - JWT_SECRET=development-jwt-secret-key-change-in-production
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_CHANNEL_ID=${SLACK_CHANNEL_ID}
+    depends_on:
+      - postgres
+    networks:
+      - cloudguard-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: cloudguard-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=cloudguard
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - cloudguard-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Additional services for local development
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: cloudguard-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@cloudguard.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - cloudguard-network
+
+  # For local development, we can include a Swagger UI container
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    container_name: cloudguard-swagger
+    environment:
+      - SWAGGER_JSON=/api/swagger.json
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./api/swagger.json:/api/swagger.json
+    networks:
+      - cloudguard-network
+
+volumes:
+  postgres-data:
+
+networks:
+  cloudguard-network:
+    driver: bridge
