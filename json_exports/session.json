@@ -1,0 +1,18 @@
+[
+  {
+    "sid": "HFuy7N-X9QmRjE2sucrsQnuSUJswqh-T",
+    "sess": {
+      "cookie": {
+        "originalMaxAge": 86400000,
+        "expires": "2025-05-11T11:14:57.263Z",
+        "secure": false,
+        "httpOnly": true,
+        "path": "/"
+      },
+      "passport": {
+        "user": 1
+      }
+    },
+    "expire": "2025-05-11T16:00:52.000Z"
+  }
+]
