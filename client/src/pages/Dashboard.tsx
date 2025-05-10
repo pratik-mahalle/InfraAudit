@@ -227,7 +227,7 @@ export default function Dashboard() {
 
       {/* Overview Tab */}
       {dashboardTab === "overview" && (
-        <div>
+        <div id="dashboard-overview-section">
           {/* Status Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             <StatusCard
@@ -360,7 +360,7 @@ export default function Dashboard() {
 
               {/* Security Configuration Drifts - AWS Resources */}
               {cloudResources && cloudResources.length > 0 ? (
-                <Card>
+                <Card id="security-monitoring-section">
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-center">
                       <CardTitle className="text-lg font-semibold">AWS S3 Security Configuration</CardTitle>
