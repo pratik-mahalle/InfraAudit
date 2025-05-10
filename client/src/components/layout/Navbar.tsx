@@ -45,9 +45,9 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4 md:px-6 max-w-6xl mx-auto">
+      <div className="container flex h-16 items-center justify-between px-0 md:px-2 max-w-6xl mx-auto">
         {/* Logo - aligned left */}
-        <div className="flex items-center">
+        <div className="flex items-center pl-2">
           <div 
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => window.location.href = "/"}
@@ -59,91 +59,91 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Main Navigation - evenly spaced on right */}
-        <div className="hidden md:flex items-center space-x-6">
+        {/* Main Navigation - evenly spaced on right with even widths */}
+        <div className="hidden md:flex items-center justify-end space-x-5 flex-1 pr-4">
           {user && (
             <>
               <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => window.location.href = "/"}
               >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
+                <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
+                <span>Dashboard</span>
               </div>
               <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/cost" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => window.location.href = "/cost"}
               >
-                <BarChart3 className="h-4 w-4" />
-                Cost Optimization
+                <BarChart3 className="h-4 w-4 flex-shrink-0" />
+                <span>Cost</span>
               </div>
               <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/security" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => window.location.href = "/security"}
               >
-                <Shield className="h-4 w-4" />
-                Security
+                <Shield className="h-4 w-4 flex-shrink-0" />
+                <span>Security</span>
               </div>
               <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/alerts" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => window.location.href = "/alerts"}
               >
-                <AlertTriangle className="h-4 w-4" />
-                Alerts
+                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                <span>Alerts</span>
               </div>
               <div 
                 id="cloud-providers-nav"
-                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/cloud-providers" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => window.location.href = "/cloud-providers"}
               >
-                <Cloud className="h-4 w-4" />
-                Cloud Providers
+                <Cloud className="h-4 w-4 flex-shrink-0" />
+                <span>Providers</span>
               </div>
               <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/subscription" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => window.location.href = "/subscription"}
               >
-                <CreditCard className="h-4 w-4" />
-                Subscription
+                <CreditCard className="h-4 w-4 flex-shrink-0" />
+                <span>Subscription</span>
               </div>
             </>
           )}
           
           {/* Documentation link - available to all users */}
           <div 
-            className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
+            className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
               location === "/documentation" 
                 ? "text-foreground font-medium" 
                 : "text-muted-foreground hover:text-foreground"
             }`}
             onClick={() => window.location.href = "/documentation"}
           >
-            <BookOpen className="h-4 w-4" />
-            Documentation
+            <BookOpen className="h-4 w-4 flex-shrink-0" />
+            <span>Docs</span>
           </div>
         </div>
 
@@ -216,8 +216,8 @@ export function Navbar() {
                   }`}
                   onClick={() => window.location.href = "/"}
                 >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
+                  <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
+                  <span>Dashboard</span>
                 </div>
                 <div 
                   className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
@@ -227,8 +227,8 @@ export function Navbar() {
                   }`}
                   onClick={() => window.location.href = "/cost"}
                 >
-                  <BarChart3 className="h-4 w-4" />
-                  Cost Optimization
+                  <BarChart3 className="h-4 w-4 flex-shrink-0" />
+                  <span>Cost</span>
                 </div>
                 <div 
                   className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
@@ -238,8 +238,8 @@ export function Navbar() {
                   }`}
                   onClick={() => window.location.href = "/security"}
                 >
-                  <Shield className="h-4 w-4" />
-                  Security
+                  <Shield className="h-4 w-4 flex-shrink-0" />
+                  <span>Security</span>
                 </div>
                 <div 
                   className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
@@ -249,8 +249,8 @@ export function Navbar() {
                   }`}
                   onClick={() => window.location.href = "/alerts"}
                 >
-                  <AlertTriangle className="h-4 w-4" />
-                  Alerts
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>Alerts</span>
                 </div>
                 <div 
                   id="cloud-providers-nav-mobile"
@@ -261,8 +261,8 @@ export function Navbar() {
                   }`}
                   onClick={() => window.location.href = "/cloud-providers"}
                 >
-                  <Cloud className="h-4 w-4" />
-                  Cloud Providers
+                  <Cloud className="h-4 w-4 flex-shrink-0" />
+                  <span>Providers</span>
                 </div>
                 <div 
                   id="subscription-nav-mobile"
@@ -273,8 +273,8 @@ export function Navbar() {
                   }`}
                   onClick={() => window.location.href = "/subscription"}
                 >
-                  <CreditCard className="h-4 w-4" />
-                  Subscription
+                  <CreditCard className="h-4 w-4 flex-shrink-0" />
+                  <span>Subscription</span>
                 </div>
               </>
             )}
@@ -289,8 +289,8 @@ export function Navbar() {
               }`}
               onClick={() => window.location.href = "/documentation"}
             >
-              <BookOpen className="h-4 w-4" />
-              Documentation
+              <BookOpen className="h-4 w-4 flex-shrink-0" />
+              <span>Docs</span>
             </div>
           </div>
         </div>
