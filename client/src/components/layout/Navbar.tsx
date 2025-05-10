@@ -133,18 +133,6 @@ export function Navbar() {
                 <span>Providers</span>
               </div>
               <div 
-                id="billing-import-nav"
-                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  location === "/billing-import" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => window.location.href = "/billing-import"}
-              >
-                <FileSpreadsheet className="h-4 w-4 flex-shrink-0" />
-                <span>Import CSV</span>
-              </div>
-              <div 
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/subscription" 
                     ? "text-foreground font-medium" 
@@ -299,18 +287,6 @@ export function Navbar() {
                 >
                   <Cloud className="h-4 w-4 flex-shrink-0" />
                   <span>Providers</span>
-                </div>
-                <div 
-                  id="billing-import-nav-mobile"
-                  className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
-                    location === "/billing-import" 
-                      ? "text-foreground font-medium" 
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() => window.location.href = "/billing-import"}
-                >
-                  <FileSpreadsheet className="h-4 w-4 flex-shrink-0" />
-                  <span>Import CSV</span>
                 </div>
                 <div 
                   id="subscription-nav-mobile"
