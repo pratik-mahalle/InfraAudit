@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 import CloudMascot from './CloudMascot';
 import { useOnboarding } from './OnboardingContext';
-import { OnboardingContent } from './OnboardingTourContent';
 
 export const OnboardingTour: React.FC = () => {
   const { 
