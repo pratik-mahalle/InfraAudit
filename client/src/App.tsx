@@ -19,6 +19,12 @@ import Documentation from "@/pages/documentation";
 import AuthPage from "@/pages/auth-page";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
+import { 
+  OnboardingProvider, 
+  OnboardingTour, 
+  WelcomeModal, 
+  HelpButton 
+} from "@/components/onboarding";
 
 function Router() {
   return (
@@ -49,12 +55,19 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <AuthProvider>
-          <TooltipProvider>
-            <MainLayout>
-              <Toaster />
-              <Router />
-            </MainLayout>
-          </TooltipProvider>
+          <OnboardingProvider>
+            <TooltipProvider>
+              <MainLayout>
+                <Toaster />
+                <Router />
+                
+                {/* Onboarding components */}
+                <OnboardingTour />
+                <WelcomeModal />
+                <HelpButton />
+              </MainLayout>
+            </TooltipProvider>
+          </OnboardingProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
