@@ -57,8 +57,32 @@ export default function CostPrediction() {
     enabled: true,
   });
 
+  // Types for prediction and optimization data
+  interface WeeklyPrediction {
+    period: string;
+    predictedAmount: number;
+  }
+
+  interface MonthlyPrediction {
+    predictedAmount: number;
+    confidenceInterval: number;
+  }
+
+  interface PredictionData {
+    monthlyPrediction: MonthlyPrediction;
+    weeklyPredictions: WeeklyPrediction[];
+  }
+
+  interface OptimizationSuggestion {
+    title: string;
+    description: string;
+    potentialSavings: number;
+    confidence: number;
+    implementationDifficulty: string;
+  }
+
   // Mock data for UI display (until real data is available)
-  const mockPrediction = {
+  const mockPrediction: PredictionData = {
     monthlyPrediction: {
       predictedAmount: 1245.67,
       confidenceInterval: 125.30,
@@ -71,7 +95,7 @@ export default function CostPrediction() {
     ]
   };
 
-  const mockOptimizations = [
+  const mockOptimizations: OptimizationSuggestion[] = [
     { 
       title: "Right-size underutilized EC2 instances", 
       description: "3 instances are consistently below 20% CPU utilization", 
@@ -96,9 +120,25 @@ export default function CostPrediction() {
   ];
 
   // Determine if data exists or if we need to use mock data for display
+  // Check if real data exists and use it if available
   const hasRealData = false; // This would check if API responses contain actual data
-  const predictionToDisplay = hasRealData ? generatePredictionMutation.data : mockPrediction;
-  const optimizationsToDisplay = hasRealData ? optimizationData?.suggestions : mockOptimizations;
+  
+  // Define the expected structure of the API response
+  interface OptimizationResponse {
+    suggestions: OptimizationSuggestion[];
+  }
+  
+  // Create a type-safe optimizationData object
+  const optimizationSuggestions = (optimizationData as OptimizationResponse)?.suggestions;
+  
+  // Use real data if available, otherwise fall back to mock data
+  const predictionToDisplay = hasRealData && generatePredictionMutation.data 
+    ? generatePredictionMutation.data as PredictionData 
+    : mockPrediction;
+    
+  const optimizationsToDisplay = hasRealData && optimizationSuggestions 
+    ? optimizationSuggestions 
+    : mockOptimizations;
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -202,7 +242,7 @@ export default function CostPrediction() {
                   <div className="mt-6">
                     <h3 className="font-medium text-sm mb-2">Weekly Breakdown</h3>
                     <div className="space-y-3">
-                      {predictionToDisplay.weeklyPredictions.map((week) => (
+                      {predictionToDisplay.weeklyPredictions.map((week: WeeklyPrediction) => (
                         <div key={week.period} className="flex justify-between items-center">
                           <span className="text-sm">{week.period}</span>
                           <span className="font-medium">{formatCurrency(week.predictedAmount)}</span>
@@ -251,14 +291,14 @@ export default function CostPrediction() {
               ) : (
                 <>
                   <div className="text-3xl font-bold text-green-600 mb-2">
-                    {formatCurrency(optimizationsToDisplay.reduce((sum, opt) => sum + opt.potentialSavings, 0))}
+                    {formatCurrency(optimizationsToDisplay.reduce((sum: number, opt: OptimizationSuggestion) => sum + opt.potentialSavings, 0))}
                   </div>
                   <div className="text-sm text-muted-foreground mb-6">
                     Estimated monthly savings
                   </div>
                   
                   <div className="space-y-4">
-                    {optimizationsToDisplay.map((opt, idx) => (
+                    {optimizationsToDisplay.map((opt: OptimizationSuggestion, idx: number) => (
                       <div key={idx} className="flex justify-between border-b border-border pb-3">
                         <div>
                           <div className="font-medium">{opt.title}</div>
