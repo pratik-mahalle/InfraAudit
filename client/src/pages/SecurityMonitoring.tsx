@@ -26,18 +26,37 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SecurityDrift, Resource } from "@/types";
-import { ShieldCheck, ShieldAlert, ShieldOff, Search, Filter } from "lucide-react";
+import { SecurityDrift, Resource, Alert } from "@/types";
+import { 
+  ShieldCheck, 
+  ShieldAlert, 
+  ShieldOff, 
+  Search, 
+  Filter, 
+  Bell, 
+  BellRing, 
+  BellOff, 
+  AlertTriangle 
+} from "lucide-react";
 import { formatTimeAgo, getSeverityColor, getSeverityBgColor } from "@/lib/utils";
 
 export default function SecurityMonitoring() {
   const [severity, setSeverity] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<string>("drifts");
+  const [alertType, setAlertType] = useState<string>("all");
+  const [alertSeverity, setAlertSeverity] = useState<string>("all");
+  const [alertStatus, setAlertStatus] = useState<string>("all");
 
   // Fetch security drifts
   const { data: securityDrifts, isLoading: isLoadingDrifts } = useQuery<SecurityDrift[]>({
     queryKey: ["/api/security-drifts"],
+  });
+
+  // Fetch alerts
+  const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[]>({
+    queryKey: ["/api/alerts"],
   });
 
   // Fetch resources to get names
@@ -136,14 +155,22 @@ export default function SecurityMonitoring() {
         </Card>
       </div>
 
-      {/* Tabs and Filters */}
-      <Tabs defaultValue="all" className="mb-6">
+      {/* Main Tabs - Configuration Drifts vs Alerts */}
+      <Tabs defaultValue="drifts" className="mb-6" onValueChange={(value) => setActiveTab(value)}>
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 mb-4">
           <TabsList>
-            <TabsTrigger value="all">All Drifts</TabsTrigger>
-            <TabsTrigger value="critical">Critical</TabsTrigger>
-            <TabsTrigger value="high">High</TabsTrigger>
-            <TabsTrigger value="remediated">Remediated</TabsTrigger>
+            <TabsTrigger value="drifts">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4" />
+                <span>Configuration Drifts</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="alerts">
+              <div className="flex items-center gap-2">
+                <BellRing className="h-4 w-4" />
+                <span>Alerts</span>
+              </div>
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
