@@ -20,7 +20,7 @@ import AuthPage from "@/pages/auth-page";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import SubscriptionCancel from "@/pages/SubscriptionCancel";
-import BillingImport from "@/pages/BillingImport";
+// Removed BillingImport as we've integrated it into CostOptimization
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import { 
@@ -43,7 +43,7 @@ function Router() {
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/profile" component={Profile} />
       <ProtectedRoute path="/cloud-providers" component={CloudProviders} />
-      <ProtectedRoute path="/billing-import" component={BillingImport} />
+      {/* Billing import has been integrated into the cost optimization page */}
       <ProtectedRoute path="/subscription" component={SubscriptionPage} />
       <ProtectedRoute path="/subscription/success" component={SubscriptionSuccess} />
       <ProtectedRoute path="/subscription/cancel" component={SubscriptionCancel} />
