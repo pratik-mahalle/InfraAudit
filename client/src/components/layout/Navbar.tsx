@@ -45,8 +45,9 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center px-4 md:px-6 max-w-6xl mx-auto">
-        <div className="flex-1 flex justify-start">
+      <div className="container flex h-16 items-center justify-between px-4 md:px-6 max-w-6xl mx-auto">
+        {/* Logo - aligned left */}
+        <div className="flex items-center">
           <div 
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => window.location.href = "/"}
@@ -58,12 +59,12 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-4 justify-center flex-auto">
+        {/* Main Navigation - evenly spaced on right */}
+        <div className="hidden md:flex items-center space-x-6">
           {user && (
             <>
               <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
                   location === "/" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
@@ -74,7 +75,7 @@ export function Navbar() {
                 Dashboard
               </div>
               <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
                   location === "/cost" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
@@ -85,7 +86,7 @@ export function Navbar() {
                 Cost Optimization
               </div>
               <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
                   location === "/security" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
@@ -96,7 +97,7 @@ export function Navbar() {
                 Security
               </div>
               <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
                   location === "/alerts" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
@@ -108,7 +109,7 @@ export function Navbar() {
               </div>
               <div 
                 id="cloud-providers-nav"
-                className={`flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
                   location === "/cloud-providers" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
@@ -119,7 +120,7 @@ export function Navbar() {
                 Cloud Providers
               </div>
               <div 
-                className={`flex items-center gap-2 transition-colors cursor-pointer ${
+                className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
                   location === "/subscription" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
@@ -131,8 +132,10 @@ export function Navbar() {
               </div>
             </>
           )}
+          
+          {/* Documentation link - available to all users */}
           <div 
-            className={`flex items-center gap-2 transition-colors cursor-pointer ${
+            className={`flex items-center gap-2 transition-colors cursor-pointer px-2 ${
               location === "/documentation" 
                 ? "text-foreground font-medium" 
                 : "text-muted-foreground hover:text-foreground"
@@ -144,7 +147,8 @@ export function Navbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 justify-end flex-1">
+        {/* User controls and mobile menu */}
+        <div className="flex items-center gap-3 ml-auto">
           <ThemeToggle />
           
           {user ? (
@@ -200,92 +204,94 @@ export function Navbar() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden px-4 py-4 pb-6 border-t border-border/40 space-y-4 bg-background max-w-6xl mx-auto">
-          {user && (
-            <>
-              <div 
-                className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
-                  location === "/" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => window.location.href = "/"}
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                Dashboard
-              </div>
-              <div 
-                className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
-                  location === "/cost" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => window.location.href = "/cost"}
-              >
-                <BarChart3 className="h-4 w-4" />
-                Cost Optimization
-              </div>
-              <div 
-                className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
-                  location === "/security" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => window.location.href = "/security"}
-              >
-                <Shield className="h-4 w-4" />
-                Security
-              </div>
-              <div 
-                className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
-                  location === "/alerts" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => window.location.href = "/alerts"}
-              >
-                <AlertTriangle className="h-4 w-4" />
-                Alerts
-              </div>
-              <div 
-                id="cloud-providers-nav-mobile"
-                className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
-                  location === "/cloud-providers" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => window.location.href = "/cloud-providers"}
-              >
-                <Cloud className="h-4 w-4" />
-                Cloud Providers
-              </div>
-              <div 
-                id="subscription-nav-mobile"
-                className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
-                  location === "/subscription" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                onClick={() => window.location.href = "/subscription"}
-              >
-                <CreditCard className="h-4 w-4" />
-                Subscription
-              </div>
-            </>
-          )}
-          
-          {/* Documentation link (available to all users) */}
-          <div 
-            id="documentation-nav-mobile"
-            className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
-              location === "/documentation" 
-                ? "text-foreground font-medium" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            onClick={() => window.location.href = "/documentation"}
-          >
-            <BookOpen className="h-4 w-4" />
-            Documentation
+        <div className="md:hidden py-4 pb-6 border-t border-border/40 bg-background">
+          <div className="px-4 max-w-6xl mx-auto space-y-3">
+            {user && (
+              <>
+                <div 
+                  className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                    location === "/" 
+                      ? "text-foreground font-medium" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => window.location.href = "/"}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </div>
+                <div 
+                  className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                    location === "/cost" 
+                      ? "text-foreground font-medium" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => window.location.href = "/cost"}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Cost Optimization
+                </div>
+                <div 
+                  className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                    location === "/security" 
+                      ? "text-foreground font-medium" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => window.location.href = "/security"}
+                >
+                  <Shield className="h-4 w-4" />
+                  Security
+                </div>
+                <div 
+                  className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                    location === "/alerts" 
+                      ? "text-foreground font-medium" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => window.location.href = "/alerts"}
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Alerts
+                </div>
+                <div 
+                  id="cloud-providers-nav-mobile"
+                  className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                    location === "/cloud-providers" 
+                      ? "text-foreground font-medium" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => window.location.href = "/cloud-providers"}
+                >
+                  <Cloud className="h-4 w-4" />
+                  Cloud Providers
+                </div>
+                <div 
+                  id="subscription-nav-mobile"
+                  className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                    location === "/subscription" 
+                      ? "text-foreground font-medium" 
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => window.location.href = "/subscription"}
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Subscription
+                </div>
+              </>
+            )}
+            
+            {/* Documentation link (available to all users) */}
+            <div 
+              id="documentation-nav-mobile"
+              className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                location === "/documentation" 
+                  ? "text-foreground font-medium" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              onClick={() => window.location.href = "/documentation"}
+            >
+              <BookOpen className="h-4 w-4" />
+              Documentation
+            </div>
           </div>
         </div>
       )}
