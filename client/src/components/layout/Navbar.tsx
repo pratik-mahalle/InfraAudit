@@ -11,7 +11,8 @@ import {
   Shield, 
   Menu, 
   LogOut,
-  BookOpen
+  BookOpen,
+  CreditCard
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -158,6 +159,12 @@ export function Navbar() {
                     <span>Settings</span>
                   </DropdownMenuItem>
                 </Link>
+                <Link href="/subscription">
+                  <DropdownMenuItem className="cursor-pointer">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Subscription</span>
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
@@ -240,6 +247,17 @@ export function Navbar() {
               >
                 <Cloud className="h-4 w-4" />
                 Cloud Providers
+              </div>
+              <div 
+                className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                  location === "/subscription" 
+                    ? "text-foreground font-medium" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                onClick={() => window.location.href = "/subscription"}
+              >
+                <CreditCard className="h-4 w-4" />
+                Subscription
               </div>
             </>
           )}

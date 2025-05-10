@@ -42,6 +42,9 @@ function Router() {
       <ProtectedRoute path="/settings" component={Settings} />
       <ProtectedRoute path="/profile" component={Profile} />
       <ProtectedRoute path="/cloud-providers" component={CloudProviders} />
+      <ProtectedRoute path="/subscription" component={SubscriptionPage} />
+      <ProtectedRoute path="/subscription/success" component={SubscriptionSuccess} />
+      <ProtectedRoute path="/subscription/cancel" component={SubscriptionCancel} />
       
       {/* Public routes */}
       <Route path="/auth" component={AuthPage} />
