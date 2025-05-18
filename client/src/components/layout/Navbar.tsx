@@ -65,89 +65,89 @@ export function Navbar() {
         <div className="hidden md:flex items-center justify-end space-x-5 flex-1 pr-4">
           {user && (
             <>
-              <div 
+              <Link 
+                href="/dashboard" 
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  location === "/" 
+                  location === "/dashboard" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                onClick={() => window.location.href = "/"}
               >
                 <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
                 <span>Dashboard</span>
-              </div>
-              <div 
+              </Link>
+              <Link 
+                href="/cost" 
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/cost" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                onClick={() => window.location.href = "/cost"}
               >
                 <BarChart3 className="h-4 w-4 flex-shrink-0" />
                 <span>Cost</span>
-              </div>
-              <div 
+              </Link>
+              <Link 
+                href="/cost-prediction" 
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/cost-prediction" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                onClick={() => window.location.href = "/cost-prediction"}
               >
                 <TrendingUp className="h-4 w-4 flex-shrink-0" />
                 <span>Predictions</span>
-              </div>
-              <div 
+              </Link>
+              <Link 
+                href="/security" 
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/security" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                onClick={() => window.location.href = "/security"}
               >
                 <Shield className="h-4 w-4 flex-shrink-0" />
                 <span>Security</span>
-              </div>
+              </Link>
               {/* Alerts have been integrated into the Security page */}
-              <div 
+              <Link 
+                href="/cloud-providers" 
                 id="cloud-providers-nav"
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/cloud-providers" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                onClick={() => window.location.href = "/cloud-providers"}
               >
                 <Cloud className="h-4 w-4 flex-shrink-0" />
                 <span>Providers</span>
-              </div>
-              <div 
+              </Link>
+              <Link 
+                href="/subscription" 
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/subscription" 
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                onClick={() => window.location.href = "/subscription"}
               >
                 <CreditCard className="h-4 w-4 flex-shrink-0" />
                 <span>Subscription</span>
-              </div>
+              </Link>
             </>
           )}
           
           {/* Documentation link - available to all users */}
-          <div 
+          <Link 
+            href="/documentation" 
             className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
               location === "/documentation" 
                 ? "text-foreground font-medium" 
                 : "text-muted-foreground hover:text-foreground"
             }`}
-            onClick={() => window.location.href = "/documentation"}
           >
             <BookOpen className="h-4 w-4 flex-shrink-0" />
             <span>Docs</span>
-          </div>
+          </Link>
         </div>
 
         {/* User controls and mobile menu */}
