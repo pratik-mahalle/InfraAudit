@@ -135,17 +135,46 @@ export function Navbar() {
             </>
           )}
           
-          {/* Documentation link - available to all users */}
+          {/* Public links for all users */}
           <Link 
-            href="/documentation" 
+            href="/#features" 
             className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-              location === "/documentation" 
+              location === "/#features" 
                 ? "text-foreground font-medium" 
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <BookOpen className="h-4 w-4 flex-shrink-0" />
-            <span>Docs</span>
+            <span>Features</span>
+          </Link>
+          <Link 
+            href="/#pricing" 
+            className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+              location === "/#pricing" 
+                ? "text-foreground font-medium" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span>Pricing</span>
+          </Link>
+          <Link 
+            href="/#testimonials" 
+            className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+              location === "/#testimonials" 
+                ? "text-foreground font-medium" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span>Testimonials</span>
+          </Link>
+          <Link 
+            href="/#faq" 
+            className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+              location === "/#faq" 
+                ? "text-foreground font-medium" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span>FAQ</span>
           </Link>
         </div>
 
@@ -190,11 +219,18 @@ export function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href="/auth">
-              <Button variant="default" size="sm">
-                Login
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/auth">
+                <Button variant="outline" size="sm">
+                  Login
+                </Button>
+              </Link>
+              <Link href="/auth">
+                <Button variant="default" size="sm">
+                  Start Free Trial
+                </Button>
+              </Link>
+            </div>
           )}
           
           {/* Mobile Menu Toggle */}
