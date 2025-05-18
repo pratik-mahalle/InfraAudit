@@ -16,7 +16,7 @@ export function Footer() {
           >
             <Shield className="h-6 w-6 text-blue-600" />
             <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              CloudGuard
+              InfraAudit
             </span>
           </div>
           <p className="text-sm text-muted-foreground max-w-xs">
@@ -166,7 +166,7 @@ export function Footer() {
       </div>
       <div className="container max-w-6xl mx-auto flex flex-col items-center justify-center gap-4 border-t border-border/40 py-6 mt-6 md:flex-row px-4 md:px-6">
         <p className="text-xs text-muted-foreground text-center md:text-left">
-          &copy; {currentYear} CloudGuard. All rights reserved.
+          &copy; {currentYear} InfraAudit. All rights reserved.
         </p>
         <div className="flex gap-4 text-xs text-muted-foreground">
           <div 

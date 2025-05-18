@@ -18,7 +18,7 @@ export function WelcomeOnboarding({ onCloudIntegrationClick }: WelcomeOnboarding
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-100 dark:border-blue-900/20 shadow-sm">
         <CardHeader>
           <CardTitle className="text-2xl bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
-            Welcome to CloudGuard
+            Welcome to InfraAudit
           </CardTitle>
           <CardDescription className="text-slate-600 dark:text-slate-400 text-base">
             Let's set up your infrastructure monitoring to get started
@@ -122,7 +122,7 @@ export function WelcomeOnboarding({ onCloudIntegrationClick }: WelcomeOnboarding
         <CardHeader>
           <CardTitle>Optimize Your Infrastructure</CardTitle>
           <CardDescription>
-            CloudGuard provides powerful tools to help you manage and optimize your cloud resources
+            InfraAudit provides powerful tools to help you manage and optimize your cloud resources
           </CardDescription>
         </CardHeader>
         <CardContent>
