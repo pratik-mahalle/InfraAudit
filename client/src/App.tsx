@@ -30,6 +30,7 @@ import {
   WelcomeModal, 
   HelpButton 
 } from "@/components/onboarding";
+import ExpiredTrialRedirect from "@/components/trial/ExpiredTrialRedirect";
 
 function Router() {
   return (
