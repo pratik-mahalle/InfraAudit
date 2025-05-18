@@ -151,11 +151,17 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
       };
     }
     
+    // Get data based on whether comparison is enabled
+    const currentPeriodData = costData;
+    const previousPeriodData = comparisonMode ? getPreviousPeriodData() : [];
+    
     // Group by date
     const dateMap = new Map<string, Record<string, number>>();
+    const previousDateMap = new Map<string, Record<string, number>>();
     const serviceSet = new Set<string>();
     
-    costData.forEach(item => {
+    // Process current period data
+    currentPeriodData.forEach(item => {
       if (!dateMap.has(item.date)) {
         dateMap.set(item.date, {});
       }
@@ -167,27 +173,72 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
       dateEntry[serviceName] = (dateEntry[serviceName] || 0) + item.amount;
     });
     
+    // Process previous period data if comparison mode is enabled
+    if (comparisonMode) {
+      previousPeriodData.forEach(item => {
+        if (!previousDateMap.has(item.date)) {
+          previousDateMap.set(item.date, {});
+        }
+        
+        const serviceName = item[groupBy as keyof CostData] as string || 'Unknown';
+        
+        const dateEntry = previousDateMap.get(item.date)!;
+        dateEntry[serviceName] = (dateEntry[serviceName] || 0) + item.amount;
+      });
+    }
+    
     // Sort dates
     const sortedDates = Array.from(dateMap.keys()).sort();
     
     // Get services to display (either selected or all)
     const servicesToShow = selectedServices.length > 0 
       ? Array.from(serviceSet).filter(s => selectedServices.includes(s))
-      : Array.from(serviceSet);
+      : selectedDetail 
+        ? [selectedDetail] 
+        : Array.from(serviceSet);
     
     // Create datasets
-    const datasets = servicesToShow.map((service, index) => {
+    const datasets = [];
+    
+    // Add current period datasets
+    servicesToShow.forEach((service, index) => {
       const color = getColorForIndex(index);
       
-      return {
-        label: service,
+      datasets.push({
+        label: comparisonMode ? `${service} (Current)` : service,
         data: sortedDates.map(date => dateMap.get(date)?.[service] || 0),
         borderColor: color,
         backgroundColor: chartType === 'area' ? `${color}33` : color,
         fill: chartType === 'area',
         tension: 0.4
-      };
+      });
     });
+    
+    // Add previous period datasets if comparison mode is enabled
+    if (comparisonMode) {
+      servicesToShow.forEach((service, index) => {
+        const color = getColorForIndex(index);
+        const previousDates = Array.from(previousDateMap.keys()).sort();
+        
+        // Match dates between periods
+        const previousData = sortedDates.map((date, i) => {
+          if (i < previousDates.length) {
+            return previousDateMap.get(previousDates[i])?.[service] || 0;
+          }
+          return 0;
+        });
+        
+        datasets.push({
+          label: `${service} (Previous)`,
+          data: previousData,
+          borderColor: color,
+          backgroundColor: `${color}22`,
+          borderDash: [5, 5],
+          fill: false,
+          tension: 0.4
+        });
+      });
+    }
     
     return {
       labels: sortedDates,
@@ -243,6 +294,33 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
   
   // Calculate total spend
   const totalSpend = costData ? costData.reduce((sum, item) => sum + item.amount, 0) : 0;
+  
+  // For drill-down functionality
+  const [selectedDetail, setSelectedDetail] = useState<string | null>(null);
+  const [comparisonMode, setComparisonMode] = useState<boolean>(false);
+  
+  // Get previous period data for comparison when enabled
+  const getPreviousPeriodData = () => {
+    if (!costData || costData.length === 0) return [];
+    
+    // Clone and manipulate data to represent previous period (30 days before)
+    const previousPeriodData = costData.map(item => {
+      const dateParts = item.date.split('-');
+      const itemDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+      
+      // Move date 30 days back for previous period
+      itemDate.setDate(itemDate.getDate() - 30);
+      
+      return {
+        ...item,
+        date: itemDate.toISOString().split('T')[0],
+        // Randomize previous amount for demo purposes (in real app, fetch actual previous data)
+        amount: item.amount * (Math.random() * (0.7 - 1.3) + 0.85)
+      };
+    });
+    
+    return previousPeriodData;
+  };
   
   // Sample anomalies
   const anomalies: CostAnomaly[] = [
@@ -398,6 +476,16 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
           >
             <Info className="h-3.5 w-3.5 mr-1" />
             <span className="text-xs">{showAnomalies ? 'Hide anomalies' : 'Show anomalies'}</span>
+          </Button>
+          
+          <Button 
+            variant={comparisonMode ? "default" : "outline"}
+            size="sm" 
+            className="h-8 flex items-center"
+            onClick={() => setComparisonMode(!comparisonMode)}
+          >
+            <LineChart className="h-3.5 w-3.5 mr-1" />
+            <span className="text-xs">Compare periods</span>
           </Button>
         </div>
         
@@ -611,41 +699,162 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
               </Card>
             </div>
             
-            <div>
-              <h3 className="text-sm font-medium mb-3">Top Services by Cost</h3>
-              <div className="space-y-3">
-                {costData.reduce((acc, item) => {
-                  if (item.service) {
-                    if (!acc[item.service]) {
-                      acc[item.service] = 0;
-                    }
-                    acc[item.service] += item.amount;
-                  }
-                  return acc;
-                }, {} as Record<string, number>)
-                .entries()
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 5)
-                .map(([service, cost], index) => (
-                  <div key={service} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div 
-                        className="w-3 h-3 rounded-full mr-2" 
-                        style={{ backgroundColor: getColorForIndex(index) }}
-                      />
-                      <span>{service}</span>
+            {selectedDetail ? (
+              // Drill-down view for a specific service
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium flex items-center">
+                    <button 
+                      onClick={() => setSelectedDetail(null)}
+                      className="mr-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <ArrowUpRight className="h-4 w-4 rotate-180" />
+                    </button>
+                    {selectedDetail} Details
+                  </h3>
+                  
+                  {comparisonMode && (
+                    <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200">
+                      Comparing with Previous Period
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <Card className="p-4 bg-gray-50 dark:bg-gray-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium">Usage by Region</h4>
                     </div>
-                    <div className="flex items-center">
-                      <span className="font-medium">{formatCurrency(cost)}</span>
-                      <span className="text-gray-500 dark:text-gray-400 text-xs ml-2">
-                        ({formatPercentage((cost / totalSpend) * 100)})
-                      </span>
-                      <ChevronRight className="h-4 w-4 ml-1 text-gray-400" />
+                    <div className="space-y-2">
+                      {costData
+                        .filter(item => item.service === selectedDetail)
+                        .reduce((acc, item) => {
+                          const region = item.region || 'Unknown';
+                          if (!acc[region]) {
+                            acc[region] = 0;
+                          }
+                          acc[region] += item.amount;
+                          return acc;
+                        }, {} as Record<string, number>)
+                        .entries()
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([region, cost], index) => (
+                          <div key={region} className="flex items-center justify-between p-2 rounded bg-white dark:bg-gray-900">
+                            <div className="flex items-center">
+                              <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: getColorForIndex(index) }} />
+                              <span className="text-sm">{region}</span>
+                            </div>
+                            <span className="text-sm font-medium">{formatCurrency(cost)}</span>
+                          </div>
+                        ))
+                      }
                     </div>
-                  </div>
-                ))}
+                  </Card>
+                  
+                  <Card className="p-4 bg-gray-50 dark:bg-gray-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium">Daily Trend</h4>
+                    </div>
+                    <div className="text-center py-8">
+                      {costData
+                        .filter(item => item.service === selectedDetail)
+                        .reduce((acc, item) => {
+                          const day = item.date.split('-')[2]; // Get day from date
+                          if (!acc[day]) {
+                            acc[day] = 0;
+                          }
+                          acc[day] += item.amount;
+                          return acc;
+                        }, {} as Record<string, number>)
+                        .entries()
+                        .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+                        .reduce((total, [day, amount]) => total + amount, 0) / 30
+                      }
+                      <div className="text-2xl font-bold">{formatCurrency(
+                        costData
+                          .filter(item => item.service === selectedDetail)
+                          .reduce((acc, item) => acc + item.amount, 0) / 30
+                      )}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">Average Daily Cost</div>
+                    </div>
+                  </Card>
+                </div>
+                
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium mb-2">Cost Optimization Suggestions</h4>
+                  <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/30">
+                    <div className="flex gap-3">
+                      <div className="bg-amber-100 dark:bg-amber-900/50 p-2 h-fit rounded-full">
+                        <BarChart3 className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <h5 className="font-medium text-sm">Potential Savings for {selectedDetail}</h5>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          {selectedDetail === 'EC2' ? 
+                            'Right-size instances by analyzing utilization patterns. Consider reserved instances for stable workloads.' : 
+                            selectedDetail === 'S3' ? 
+                              'Implement lifecycle policies to move infrequently accessed data to cheaper storage tiers.' : 
+                              'Review usage patterns and consider optimizing resource allocation.'}
+                        </p>
+                        <Button variant="outline" size="sm" className="mt-3">
+                          View Optimization Plan
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
               </div>
-            </div>
+            ) : (
+              // Normal view with top services
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium">Top Services by Cost</h3>
+                  
+                  {comparisonMode && (
+                    <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200">
+                      Comparing with Previous Period
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="space-y-3">
+                  {costData && costData.reduce((acc, item) => {
+                    if (item.service) {
+                      if (!acc[item.service]) {
+                        acc[item.service] = 0;
+                      }
+                      acc[item.service] += item.amount;
+                    }
+                    return acc;
+                  }, {} as Record<string, number>)
+                  .entries()
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 5)
+                  .map(([service, cost], index) => (
+                    <div 
+                      key={service} 
+                      className="flex items-center justify-between p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                      onClick={() => setSelectedDetail(service)}
+                    >
+                      <div className="flex items-center">
+                        <div 
+                          className="w-3 h-3 rounded-full mr-2" 
+                          style={{ backgroundColor: getColorForIndex(index) }}
+                        />
+                        <span>{service}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="font-medium">{formatCurrency(cost)}</span>
+                        <span className="text-gray-500 dark:text-gray-400 text-xs ml-2">
+                          ({formatPercentage((cost / totalSpend) * 100)})
+                        </span>
+                        <ArrowUpRight className="h-4 w-4 ml-1 text-gray-400 rotate-45" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         ) : (
           <div className="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-lg p-6 flex flex-col items-center justify-center min-h-[300px] text-center">
