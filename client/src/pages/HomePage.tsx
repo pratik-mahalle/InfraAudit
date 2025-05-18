@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -71,9 +71,13 @@ export default function HomePage() {
   }, []);
   
   // Redirect to dashboard if already logged in
-  if (user) {
-    return <Link href="/dashboard" />;
-  }
+  const [, setLocation] = useLocation();
+  
+  useEffect(() => {
+    if (user) {
+      setLocation("/dashboard");
+    }
+  }, [user, setLocation]);
   
   return (
     <div className="flex flex-col min-h-screen">
