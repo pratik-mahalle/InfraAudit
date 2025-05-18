@@ -498,9 +498,11 @@ export default function HomePage() {
                     <div className="relative">
                       <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-[6px] border-white dark:border-gray-800 shadow-xl mx-auto 
                                   group-hover:scale-105 transition-transform duration-500 ease-out">
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                          <span className="text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-500">PM</span>
-                        </div>
+                        <img 
+                          src="/attached_assets/me.jpg" 
+                          alt="Pratik Mahalle" 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
                       </div>
                     </div>
                     <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs py-1 px-3 rounded-full shadow-lg
