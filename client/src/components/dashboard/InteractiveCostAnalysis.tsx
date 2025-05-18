@@ -239,8 +239,12 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
       y: {
         beginAtZero: true,
         ticks: {
-          callback: function(value: number) {
-            return formatCurrency(value);
+          // Use proper typing for the callback
+          callback: function(value: any) {
+            if (typeof value === 'number') {
+              return formatCurrency(value);
+            }
+            return value;
           }
         }
       },
