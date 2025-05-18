@@ -103,9 +103,6 @@ export default function HomePage() {
         </div>
       </header>
       
-      {/* Spacer for fixed header */}
-      <div className="h-16"></div>
-      
       {/* Hero Section */}
       <section className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
         <div className="max-w-6xl mx-auto">
