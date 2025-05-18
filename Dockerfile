@@ -27,9 +27,13 @@ RUN npm run build
 # Expose the port the app runs on
 EXPOSE 5000
 
-# Set environment variables
+# Only set non-secret defaults
 ENV NODE_ENV=production
 ENV PORT=5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
 
 # Start the application
 CMD ["npm", "start"]
