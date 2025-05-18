@@ -124,7 +124,7 @@ export function setupAuth(app: Express) {
       // Set the current timestamp for user creation
       const now = new Date();
       
-      // Create the user
+      // Create the user with trial automatically activated
       const user = await storage.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
@@ -132,8 +132,9 @@ export function setupAuth(app: Express) {
         createdAt: now,
         updatedAt: now,
         lastLoginAt: now,
-        // Initialize trial fields but don't activate yet (user will click "Start Trial" button later)
-        trialStatus: "inactive",
+        // Start the trial automatically upon registration
+        trialStatus: "active",
+        trialStartedAt: now,
       });
 
       req.login(user, (err) => {
