@@ -1,0 +1,10 @@
+apiVersion: v2
+name: infraaudit
+description: A Helm chart for deploying the InfraAudit platform on Kubernetes / Amazon EKS
+
+# Chart version
+version: 0.1.0
+# Application version
+appVersion: "1.0.0"
+
+type: application 

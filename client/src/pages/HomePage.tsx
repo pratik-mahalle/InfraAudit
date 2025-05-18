@@ -481,7 +481,7 @@ export default function HomePage() {
               Trusted by DevOps Teams Worldwide
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Here's what our customers are saying about InfraAudit
+              Here's what our CEO are saying about InfraAudit
             </p>
           </div>
           
@@ -519,20 +519,19 @@ export default function HomePage() {
                     <Quote className="h-10 w-10 text-blue-300 dark:text-blue-500 mr-2 shrink-0" />
                     <div>
                       <h3 className="text-2xl font-bold">Pratik Mahalle</h3>
-                      <p className="text-blue-600 dark:text-blue-400">Founder & DevOps Engineer</p>
+                      <p className="text-blue-600 dark:text-blue-400">Founder & CEO</p>
                     </div>
                   </div>
                   
                   <p className="text-gray-700 dark:text-gray-300 text-lg mb-4 pl-4 border-l-4 border-blue-300 dark:border-blue-500/50 italic">
-                    Hi, I'm Pratik, a DevOps engineer and CNCF organizer building InfraAudit — an infra observability and security tool that saves cloud teams hours of manual checks. We're currently onboarding 10 pilot users and looking to raise a pre-seed round. Would love to send over the deck if you're open to it.
-                  </p>
+                  Hi, I'm Pratik, Founder and DevOps Engineer behind InfraAudit — a cloud observability and security tool that eliminates hours of manual effort for cloud teams. With InfraAudit, we’ve automated compliance checks, surfaced critical misconfigurations, and reduced cloud overspend with smart, real-time insights. It’s now an operational prototype and actively evolving into a must-have tool for modern DevOps and FinOps workflows.                  </p>
                   
                   <div className="mt-6 flex flex-wrap gap-4">
                     <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm">
                       DevOps Engineer
                     </span>
                     <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm">
-                      CNCF Organizer
+                      DevRel
                     </span>
                     <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-sm">
                       Cloud Infrastructure Expert
