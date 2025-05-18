@@ -43,7 +43,8 @@ import {
   PieChart,
   Filter,
   Download,
-  Share2
+  Share2,
+  X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
@@ -271,21 +272,38 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
     }
   };
   
-  // For demo purposes, mock some anomalies
-  const anomalies = [
+  // Fetch cost anomalies
+  const { data: anomaliesData = [] } = useQuery({
+    queryKey: ['/api/cost-analysis/anomalies'],
+    queryFn: async () => {
+      try {
+        const res = await apiRequest('GET', '/api/cost-analysis/anomalies');
+        return await res.json();
+      } catch (error) {
+        console.error('Error fetching cost anomalies:', error);
+        return [];
+      }
+    },
+    enabled: hasCloudCredentials && showAnomalies
+  });
+  
+  // Format anomalies for display
+  const anomalies = anomaliesData.length > 0 ? anomaliesData : [
     { 
       service: "EC2", 
       date: "2025-05-12", 
       amount: 432.15, 
       percentage: 43, 
-      severity: "critical" 
+      severity: "critical",
+      description: "Unexpected compute usage spike in us-east-1"
     },
     { 
       service: "S3", 
       date: "2025-05-14", 
       amount: 213.80, 
       percentage: 22, 
-      severity: "warning" 
+      severity: "warning",
+      description: "Unusual storage growth pattern detected"
     }
   ];
   
@@ -398,11 +416,96 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
             </SelectContent>
           </Select>
           
-          <Button variant="outline" size="sm" className="h-8 flex items-center">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-8 flex items-center"
+            onClick={() => setShowAnomalies(!showAnomalies)}
+          >
             <Info className="h-3.5 w-3.5 mr-1" />
-            <span className="text-xs">Show anomalies</span>
+            <span className="text-xs">{showAnomalies ? 'Hide anomalies' : 'Show anomalies'}</span>
           </Button>
         </div>
+        
+        {/* Advanced Filters Panel */}
+        {showFilters && (
+          <div className="mt-3 p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-background">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-sm font-medium">Advanced Filters</h4>
+              <Button variant="ghost" size="sm" onClick={() => setShowFilters(false)} className="h-7 w-7 p-0">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Services filter */}
+              <div>
+                <h5 className="text-xs font-medium mb-2">Filter by Services</h5>
+                <div className="flex flex-wrap gap-1 max-h-[100px] overflow-y-auto p-1">
+                  {services?.map(service => (
+                    <Badge 
+                      key={service}
+                      variant={selectedServices.includes(service) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        if (selectedServices.includes(service)) {
+                          setSelectedServices(selectedServices.filter(s => s !== service));
+                        } else {
+                          setSelectedServices([...selectedServices, service]);
+                        }
+                      }}
+                    >
+                      {service}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Regions filter */}
+              <div>
+                <h5 className="text-xs font-medium mb-2">Filter by Regions</h5>
+                <div className="flex flex-wrap gap-1 max-h-[100px] overflow-y-auto p-1">
+                  {['us-east-1', 'us-west-2', 'eu-west-1', 'ap-southeast-1', 'eu-central-1'].map(region => (
+                    <Badge 
+                      key={region}
+                      variant={selectedRegions.includes(region) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        if (selectedRegions.includes(region)) {
+                          setSelectedRegions(selectedRegions.filter(r => r !== region));
+                        } else {
+                          setSelectedRegions([...selectedRegions, region]);
+                        }
+                      }}
+                    >
+                      {region}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setSelectedServices([]);
+                  setSelectedRegions([]);
+                }}
+              >
+                Reset
+              </Button>
+              <Button 
+                size="sm"
+                onClick={() => setShowFilters(false)}
+              >
+                Apply Filters
+              </Button>
+            </div>
+          </div>
+        )}
       </CardHeader>
       
       <CardContent>
@@ -434,7 +537,43 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
               ) : (
                 <Line data={chartData} options={chartOptions} />
               )}
+              
+              {/* Display anomalies as markers on the chart */}
+              {showAnomalies && anomalies.length > 0 && (
+                <div className="absolute top-2 right-2">
+                  <Badge variant="destructive" className="flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    {anomalies.length} Anomalies Detected
+                  </Badge>
+                </div>
+              )}
             </div>
+            
+            {/* Anomalies Section */}
+            {showAnomalies && anomalies.length > 0 && (
+              <div className="mb-6 border border-red-100 dark:border-red-900/30 bg-red-50 dark:bg-red-950/30 rounded-md p-3">
+                <h3 className="text-sm font-medium flex items-center text-red-700 dark:text-red-400 mb-2">
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  Cost Anomalies Detected
+                </h3>
+                <div className="space-y-2">
+                  {anomalies.map((anomaly, index) => (
+                    <div key={index} className="flex justify-between items-start text-sm p-2 bg-white dark:bg-gray-800 rounded border border-red-100 dark:border-red-900/30">
+                      <div>
+                        <div className="font-medium">{anomaly.service}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{anomaly.description}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-red-600 dark:text-red-400">{formatCurrency(anomaly.amount)}</div>
+                        <div className="text-xs">
+                          +{formatPercentage(anomaly.percentage)} from normal
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/30">
