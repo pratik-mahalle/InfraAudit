@@ -57,7 +57,7 @@ export function RecentAlerts({ alerts, isLoading = false }: RecentAlertsProps) {
               </div>
             ))
           ) : alerts.length === 0 ? (
-            <div className="text-center py-6 text-gray-500">
+            <div className="text-center py-6 text-gray-500 dark:text-gray-400">
               No alerts to display.
             </div>
           ) : (

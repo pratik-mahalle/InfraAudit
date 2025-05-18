@@ -238,7 +238,7 @@ export function CostTrendChart({
               <SelectItem value="90d">Last 90 days</SelectItem>
             </SelectContent>
           </Select>
-          <button className="text-gray-500 hover:text-gray-700">
+          <button className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
             <MoreVertical className="h-5 w-5" />
           </button>
         </div>
@@ -252,7 +252,7 @@ export function CostTrendChart({
           ) : currentSpend === 0 ? (
             <div className="h-full w-full flex flex-col items-center justify-center space-y-2 bg-gray-50 rounded-lg">
               <AlertTriangle className="h-8 w-8 text-amber-500" />
-              <p className="text-gray-600 text-sm">No cost data available</p>
+              <p className="text-gray-600 dark:text-gray-300 text-sm">No cost data available</p>
               <p className="text-gray-500 text-xs text-center max-w-md">
                 Connect your cloud provider credentials to see actual cost data.
                 Go to Cloud Providers page to add your AWS, GCP, or Azure credentials.
