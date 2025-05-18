@@ -38,14 +38,11 @@ export default function ExpiredTrialRedirect({ children }: { children: React.Rea
     }
   }, [trialStatus]);
   
-  // Show loading spinner while checking trial status
+  // Show loading spinner while checking trial status - use a less intrusive approach
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Checking trial status...</span>
-      </div>
-    );
+    // If we're still loading, just render the children
+    // This prevents a disruptive loading screen
+    return <>{children}</>;
   }
   
   // Redirect to upgrade page if trial expired
