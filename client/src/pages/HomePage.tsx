@@ -81,27 +81,6 @@ export default function HomePage() {
   
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header - with scroll effect */}
-      <header className={`w-full py-4 px-6 flex justify-between items-center border-b fixed top-0 z-50 transition-all duration-300 ${scrollY > 50 ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-md' : 'bg-white dark:bg-gray-900'}`}>
-        <div className="flex items-center gap-2">
-          <CloudLightning className="h-8 w-8 text-primary" />
-          <span className="font-bold text-xl">InfraAudit</span>
-        </div>
-        <nav className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Features</a>
-          <a href="#pricing" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Pricing</a>
-          <a href="#testimonials" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Testimonials</a>
-          <a href="#faq" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">FAQ</a>
-        </nav>
-        <div className="flex items-center gap-3">
-          <Link href="/auth">
-            <Button variant="outline">Log In</Button>
-          </Link>
-          <Link href="/auth">
-            <Button>Start Free Trial</Button>
-          </Link>
-        </div>
-      </header>
       
       {/* Hero Section */}
       <section className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
