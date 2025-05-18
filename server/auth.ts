@@ -132,6 +132,8 @@ export function setupAuth(app: Express) {
         createdAt: now,
         updatedAt: now,
         lastLoginAt: now,
+        // Initialize trial fields but don't activate yet (user will click "Start Trial" button later)
+        trialStatus: "inactive",
       });
 
       req.login(user, (err) => {
@@ -202,5 +204,113 @@ export function setupAuth(app: Express) {
     // Return user without password
     const { password, ...userWithoutPassword } = req.user as SelectUser;
     res.json(userWithoutPassword);
+  });
+
+  // Start the 7-day free trial
+  app.post("/api/start-trial", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+    
+    try {
+      const user = req.user as SelectUser;
+      
+      // Check if trial already started
+      if (user.trialStatus === "active") {
+        return res.status(400).json({ message: "Trial already active" });
+      }
+      
+      // Check if trial already expired
+      if (user.trialStatus === "expired") {
+        return res.status(400).json({ message: "Trial already expired" });
+      }
+      
+      // Start the trial
+      const now = new Date();
+      const updatedUser = await storage.updateUser(user.id, {
+        trialStartedAt: now,
+        trialStatus: "active",
+        updatedAt: now
+      });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to start trial" });
+      }
+      
+      // Return updated user without password
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Start trial error:", error);
+      res.status(500).json({ message: "Failed to start trial" });
+    }
+  });
+
+  // Check trial status
+  app.get("/api/trial-status", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+    
+    try {
+      const user = req.user as SelectUser;
+      
+      // If trial hasn't started yet
+      if (user.trialStatus === "inactive" || !user.trialStartedAt) {
+        return res.json({ 
+          status: "inactive",
+          message: "Trial not started yet",
+          daysRemaining: 7
+        });
+      }
+      
+      // If trial is active, calculate days remaining
+      if (user.trialStatus === "active") {
+        const trialStartDate = new Date(user.trialStartedAt);
+        const currentDate = new Date();
+        
+        // Calculate days elapsed since trial start
+        const millisecondsPerDay = 24 * 60 * 60 * 1000;
+        const daysElapsed = Math.floor((currentDate.getTime() - trialStartDate.getTime()) / millisecondsPerDay);
+        const daysRemaining = Math.max(0, 7 - daysElapsed);
+        
+        // If trial period is over but status not updated yet
+        if (daysRemaining <= 0) {
+          // Update user trial to expired
+          await storage.updateUser(user.id, {
+            trialStatus: "expired",
+            updatedAt: new Date()
+          });
+          
+          return res.json({ 
+            status: "expired", 
+            message: "Your 7-day trial has expired. Upgrade to continue using InfraAudit.",
+            daysRemaining: 0
+          });
+        }
+        
+        return res.json({ 
+          status: "active", 
+          message: `You have ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining in your trial.`,
+          daysRemaining: daysRemaining
+        });
+      }
+      
+      // If trial has already expired
+      if (user.trialStatus === "expired") {
+        return res.json({ 
+          status: "expired", 
+          message: "Your 7-day trial has expired. Upgrade to continue using InfraAudit.",
+          daysRemaining: 0
+        });
+      }
+      
+      // Default response for unexpected status
+      return res.json({ 
+        status: user.trialStatus,
+        message: "Unknown trial status",
+        daysRemaining: 0
+      });
+      
+    } catch (error) {
+      console.error("Trial status check error:", error);
+      res.status(500).json({ message: "Failed to check trial status" });
+    }
   });
 }
