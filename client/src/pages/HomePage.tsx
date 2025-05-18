@@ -499,7 +499,7 @@ export default function HomePage() {
                       <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-[6px] border-white dark:border-gray-800 shadow-xl mx-auto 
                                   group-hover:scale-105 transition-transform duration-500 ease-out">
                         <img 
-                          src="/attached_assets/me.jpg" 
+                          src="/assets/me.jpg" 
                           alt="Pratik Mahalle" 
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
@@ -732,11 +732,23 @@ export default function HomePage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="px-8 group relative overflow-hidden hover:bg-primary-600 transition-colors">
+            <Button 
+              size="lg" 
+              className="px-8 group relative overflow-hidden hover:bg-primary-600 transition-colors"
+              onClick={() => window.location.href = "/auth"}
+            >
               <span className="relative z-10">Start Free Trial</span>
             </Button>
-            <Button size="lg" variant="outline" className="px-8 group relative overflow-hidden hover:bg-primary-100 dark:hover:bg-primary-900/20 transition-colors">
-              <span className="relative z-10">Schedule Demo</span>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="px-8 group relative overflow-hidden hover:bg-primary-100 dark:hover:bg-primary-900/20 transition-colors"
+              onClick={() => {
+                // Open email client with pre-filled subject
+                window.location.href = "mailto:sales@infraaudit.com?subject=InfraAudit Sales Inquiry";
+              }}
+            >
+              <span className="relative z-10">Contact Sales</span>
             </Button>
           </div>
         </div>
