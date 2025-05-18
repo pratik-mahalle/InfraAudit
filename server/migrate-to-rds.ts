@@ -1,9 +1,12 @@
 import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/pg-core';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '../shared/schema';
-import { migrate } from 'drizzle-orm/pg-core/migrate';
-import fs from 'fs';
+import { sql } from 'drizzle-orm';
 import { exit } from 'process';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 // Source database (current database)
 const sourceConfig = {
@@ -14,8 +17,8 @@ const sourceConfig = {
 const targetConfig = {
   host: 'infra.cpuki6mbomx637.ap-south-1.rds.amazonaws.com',
   port: 5432, 
-  database: 'infra', // Assuming database name is 'infra'
-  user: 'postgres', // Assuming username is 'postgres'
+  database: 'postgres', // Default database name is postgres
+  user: 'postgres', // Default username is postgres
   password: 'InfraAudit',
 };
 
