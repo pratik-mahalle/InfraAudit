@@ -74,7 +74,7 @@ export default function AuthPage() {
             <div className="flex items-center justify-center mb-4">
               <Shield className="h-10 w-10 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center">CloudGuard</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">InfraAudit</CardTitle>
             <CardDescription className="text-center">
               Sign in to your account or create a new one
             </CardDescription>
@@ -230,7 +230,7 @@ export default function AuthPage() {
       {/* Right side - Hero section */}
       <div className="lg:w-1/2 bg-gradient-to-br from-primary to-primary-foreground text-white p-12 hidden lg:flex flex-col justify-center">
         <div className="max-w-md mx-auto">
-          <h1 className="text-4xl font-bold mb-6">CloudGuard Infrastructure Monitoring</h1>
+          <h1 className="text-4xl font-bold mb-6">InfraAudit Infrastructure Monitoring</h1>
           <p className="text-lg mb-8">
             Monitor your cloud infrastructure for cost anomalies and security configuration drifts.
             Stay on top of resource utilization and get actionable insights.
