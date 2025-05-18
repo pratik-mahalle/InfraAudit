@@ -742,64 +742,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-      
-      {/* Footer */}
-      <footer className="w-full py-12 px-6 bg-gray-50 dark:bg-gray-900 border-t dark:border-gray-800">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="font-medium mb-4">Product</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Features</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Pricing</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Integrations</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Security</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-medium mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Documentation</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Blog</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Guides</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Webinars</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-medium mb-4">Company</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">About</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Careers</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Contact</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Partners</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-medium mb-4">Legal</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Privacy</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Terms</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Security</a></li>
-                <li><a href="#" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Compliance</a></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="pt-8 border-t border-gray-200 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <CloudLightning className="h-6 w-6 text-primary" />
-              <span className="font-bold">CloudGuard</span>
-            </div>
-            
-            <div className="text-gray-500 dark:text-gray-400 text-sm">
-              © {new Date().getFullYear()} CloudGuard. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
