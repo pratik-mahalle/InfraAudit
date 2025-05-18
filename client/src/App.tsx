@@ -17,6 +17,7 @@ import Profile from "@/pages/Profile";
 import CloudProviders from "@/pages/CloudProviders";
 import Documentation from "@/pages/documentation";
 import AuthPage from "@/pages/auth-page";
+import HomePage from "@/pages/HomePage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import SubscriptionCancel from "@/pages/SubscriptionCancel";
@@ -33,8 +34,8 @@ import {
 function Router() {
   return (
     <Switch>
-      {/* Protected routes */}
-      <ProtectedRoute path="/" component={Dashboard} />
+      {/* Protected routes - require authentication */}
+      <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/security" component={SecurityMonitoring} />
       <ProtectedRoute path="/cost" component={CostOptimization} />
       <ProtectedRoute path="/cost-prediction" component={CostPrediction} />
@@ -49,6 +50,7 @@ function Router() {
       <ProtectedRoute path="/subscription/cancel" component={SubscriptionCancel} />
       
       {/* Public routes */}
+      <Route path="/" component={HomePage} /> {/* Landing page for non-authenticated users */}
       <Route path="/auth" component={AuthPage} />
       <Route path="/documentation" component={Documentation} />
       
