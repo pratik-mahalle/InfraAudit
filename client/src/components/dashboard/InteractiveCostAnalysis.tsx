@@ -91,7 +91,12 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
   const [groupBy, setGroupBy] = useState<GroupBy>("service");
   const [chartType, setChartType] = useState<ChartType>("area");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [showAnomalies, setShowAnomalies] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Calculate the number of selected filters
+  const selectedFilters = selectedServices.length + selectedRegions.length;
   
   // Fetch cost data with filters
   const { data: costData, isLoading } = useQuery<CostData[]>({
@@ -310,12 +315,51 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
               </TabsList>
             </Tabs>
             
-            <Button variant="outline" size="sm" className="h-8">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8"
+              onClick={() => setShowFilters(!showFilters)}
+            >
               <Filter className="h-4 w-4 mr-1" />
               <span className="hidden md:inline">Filters</span>
+              {selectedFilters > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1">{selectedFilters}</Badge>
+              )}
             </Button>
             
-            <Button variant="outline" size="sm" className="h-8">
+            <Button 
+              variant="outline"
+              size="sm" 
+              className="h-8"
+              onClick={() => {
+                // Prepare data for export
+                const csvContent = [
+                  // Header row
+                  ["Date", "Service", "Region", "Amount ($)"].join(","),
+                  // Data rows
+                  ...(costData || []).map(item => 
+                    [
+                      item.date, 
+                      item.service || "N/A", 
+                      item.region || "N/A", 
+                      item.amount.toFixed(2)
+                    ].join(",")
+                  )
+                ].join("\n");
+                
+                // Create a blob and download link
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `cloud-cost-analysis-${timeRange}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+            >
               <Download className="h-4 w-4 mr-1" />
               <span className="hidden md:inline">Export</span>
             </Button>
