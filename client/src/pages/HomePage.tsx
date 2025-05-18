@@ -635,27 +635,27 @@ export default function HomePage() {
                 <Button className="w-full">Start Free Trial</Button>
               </div>
               
-              <div className="p-6 bg-gray-50 dark:bg-gray-850 border-t dark:border-gray-700">
+              <div className="p-6 bg-gray-50 dark:bg-gray-800/70 border-t dark:border-gray-700">
                 <ul className="space-y-3">
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Up to 100 resources</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Up to 100 resources</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Basic cost analysis</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Basic cost analysis</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Daily security scans</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Daily security scans</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Email notifications</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Email notifications</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>7-day data retention</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">7-day data retention</span>
                   </li>
                 </ul>
               </div>
@@ -677,31 +677,31 @@ export default function HomePage() {
                 <Button className="w-full">Start Free Trial</Button>
               </div>
               
-              <div className="p-6 bg-gray-50 dark:bg-gray-850 border-t dark:border-gray-700">
+              <div className="p-6 bg-gray-50 dark:bg-gray-800/70 border-t dark:border-gray-700">
                 <ul className="space-y-3">
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Up to 500 resources</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Up to 500 resources</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Advanced cost analysis</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Advanced cost analysis</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Hourly security scans</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Hourly security scans</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Slack integration</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Slack integration</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>30-day data retention</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">30-day data retention</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>AI-powered recommendations</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">AI-powered recommendations</span>
                   </li>
                 </ul>
               </div>
@@ -718,31 +718,31 @@ export default function HomePage() {
                 <Button variant="outline" className="w-full">Contact Sales</Button>
               </div>
               
-              <div className="p-6 bg-gray-50 dark:bg-gray-850 border-t dark:border-gray-700">
+              <div className="p-6 bg-gray-50 dark:bg-gray-800/70 border-t dark:border-gray-700">
                 <ul className="space-y-3">
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Unlimited resources</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Unlimited resources</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Enterprise-grade security</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Enterprise-grade security</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Custom alerting rules</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Custom alerting rules</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Dedicated support</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Dedicated support</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Unlimited data retention</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Unlimited data retention</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500" />
-                    <span>Custom integrations</span>
+                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
+                    <span className="text-gray-700 dark:text-gray-300">Custom integrations</span>
                   </li>
                 </ul>
               </div>
