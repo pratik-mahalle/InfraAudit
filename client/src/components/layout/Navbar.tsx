@@ -54,7 +54,7 @@ export function Navbar() {
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
               <Zap className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hidden md:block">
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 InfraAudit
               </span>
             </div>
@@ -62,7 +62,7 @@ export function Navbar() {
         </div>
 
         {/* Main Navigation - centered and evenly spaced */}
-        <div className="hidden md:flex items-center justify-center space-x-8 flex-1">
+        <div className="hidden md:flex items-center justify-center space-x-14 flex-1">
           {user && (
             <>
               <Link 
@@ -139,27 +139,27 @@ export function Navbar() {
           {/* Public links for all users */}
           <a 
             href="/#features" 
-            className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground"
+            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
           >
-            <span>Features</span>
+            Features
           </a>
           <a 
             href="/#pricing" 
-            className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground"
+            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
           >
-            <span>Pricing</span>
+            Pricing
           </a>
           <a 
             href="/#testimonials" 
-            className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground"
+            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
           >
-            <span>Testimonials</span>
+            Testimonials
           </a>
           <a 
             href="/#faq" 
-            className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground"
+            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
           >
-            <span>FAQ</span>
+            FAQ
           </a>
         </div>
 
