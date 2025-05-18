@@ -84,7 +84,7 @@ export function CostRecommendations({
               </div>
             ))
           ) : recommendations.length === 0 ? (
-            <div className="text-center py-6 text-gray-500">
+            <div className="text-center py-6 text-gray-500 dark:text-gray-400">
               No cost optimization recommendations available.
             </div>
           ) : (
@@ -106,7 +106,7 @@ export function CostRecommendations({
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500 mb-3">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                       {recommendation.description}
                     </p>
                   </div>
@@ -114,13 +114,13 @@ export function CostRecommendations({
                     <div className="text-secondary font-semibold mb-1">
                       {formatCurrency(recommendation.potentialSavings)}/mo
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
                       Potential savings
                     </div>
                   </div>
                 </div>
                 <div className="flex flex-wrap justify-between items-center mb-3">
-                  <div className="text-sm text-gray-600 mb-2">
+                  <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                     <span className="font-medium mr-1">Affected Resources:</span>
                     {recommendation.resourcesAffected && recommendation.resourcesAffected.length > 0
                       ? (getResourceName 
