@@ -15,6 +15,7 @@ import { PersonalizedWidgets } from "@/components/dashboard/PersonalizedWidgets"
 import { CloudProviderIntegration } from "@/components/dashboard/CloudProviderIntegration";
 import { WelcomeOnboarding } from "@/components/dashboard/WelcomeOnboarding";
 import { InteractiveCostAnalysis } from "@/components/dashboard/InteractiveCostAnalysis";
+import TrialBanner from "@/components/trial/TrialBanner";
 import { 
   CornerLeftDown, 
   Play, 
@@ -267,6 +268,9 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
+      {/* Trial Status Banner */}
+      <TrialBanner />
+      
       {/* Enhanced Header with Tabs */}
       <div className="mb-6 bg-gradient-to-r from-slate-50 to-blue-50/80 dark:from-slate-900/70 dark:to-blue-950/30 p-6 rounded-xl border border-blue-100/50 dark:border-blue-900/20 shadow-sm">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4">
