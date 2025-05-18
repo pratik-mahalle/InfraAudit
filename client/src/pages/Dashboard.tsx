@@ -381,7 +381,7 @@ export default function Dashboard() {
             <StatusCard
               title="Resources Monitored"
               value={`${cloudResources?.length || 0}`}
-              description={cloudResources?.length > 0 ? "Cloud resources" : "No resources detected"}
+              description={(cloudResources && cloudResources.length > 0) ? "Cloud resources" : "No resources detected"}
               icon="resources"
               isLoading={isLoadingCloudResources}
             />
