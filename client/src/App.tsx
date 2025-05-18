@@ -25,12 +25,6 @@ import PricingPage from "@/pages/pricing";
 // Removed BillingImport as we've integrated it into CostOptimization
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
-import { 
-  OnboardingProvider, 
-  OnboardingTour, 
-  WelcomeModal, 
-  HelpButton 
-} from "@/components/onboarding";
 import ExpiredTrialRedirect from "@/components/trial/ExpiredTrialRedirect";
 
 function Router() {
@@ -135,19 +129,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <AuthProvider>
-          <OnboardingProvider>
-            <TooltipProvider>
-              <MainLayout>
-                <Toaster />
-                <Router />
-                
-                {/* Onboarding components */}
-                <OnboardingTour />
-                <WelcomeModal />
-                <HelpButton />
-              </MainLayout>
-            </TooltipProvider>
-          </OnboardingProvider>
+          <TooltipProvider>
+            <MainLayout>
+              <Toaster />
+              <Router />
+            </MainLayout>
+          </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
