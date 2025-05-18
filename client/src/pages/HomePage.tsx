@@ -17,6 +17,8 @@ import {
   Quote
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+// Import founder photo
+const founderPhoto = "/me.jpg";
 
 // FAQ data structure
 const faqItems = [
@@ -499,7 +501,7 @@ export default function HomePage() {
                       <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-[6px] border-white dark:border-gray-800 shadow-xl mx-auto 
                                   group-hover:scale-105 transition-transform duration-500 ease-out">
                         <img 
-                          src="/assets/me.jpg" 
+                          src={founderPhoto} 
                           alt="Pratik Mahalle" 
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
@@ -602,7 +604,12 @@ export default function HomePage() {
                   <span className="text-gray-500 dark:text-gray-400">/month</span>
                 </div>
                 
-                <Button className="w-full">Start Free Trial</Button>
+                <Button 
+                  className="w-full" 
+                  onClick={() => window.location.href = "/auth"}
+                >
+                  Start Free Trial
+                </Button>
               </div>
               
               <div className="p-6 bg-gray-50 dark:bg-gray-800/70 border-t dark:border-gray-700">
