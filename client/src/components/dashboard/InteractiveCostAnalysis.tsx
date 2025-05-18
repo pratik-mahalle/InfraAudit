@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Line, Bar } from "react-chartjs-2";
@@ -30,11 +30,10 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowUpRight, 
   ArrowDownRight, 
-  ChevronRight, 
   AlertTriangle,
   DollarSign,
   Info,
@@ -49,6 +48,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatPercentage } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 // Register Chart.js components
 ChartJS.register(
@@ -87,7 +87,17 @@ interface InteractiveCostAnalysisProps {
   hasCloudCredentials: boolean;
 }
 
+interface CostAnomaly {
+  service: string;
+  date: string;
+  amount: number;
+  percentage: number;
+  severity: string;
+  description: string;
+}
+
 export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCostAnalysisProps) {
+  const { toast } = useToast();
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [groupBy, setGroupBy] = useState<GroupBy>("service");
   const [chartType, setChartType] = useState<ChartType>("area");
@@ -131,34 +141,6 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
   
   // Cost breakdown
   const [costBreakdown, setCostBreakdown] = useState<CostBreakdown[]>([]);
-  
-  useEffect(() => {
-    if (costData && costData.length > 0) {
-      // Group and calculate cost breakdown
-      const breakdown: Record<string, number> = {};
-      let total = 0;
-      
-      costData.forEach(cost => {
-        const key = cost[groupBy as keyof CostData] as string || 'Unknown';
-        breakdown[key] = (breakdown[key] || 0) + cost.amount;
-        total += cost.amount;
-      });
-      
-      // Calculate percentages and format for display
-      const formattedBreakdown: CostBreakdown[] = Object.entries(breakdown)
-        .map(([name, value]) => ({
-          name,
-          value,
-          percentage: (value / total) * 100,
-          change: Math.random() * 30 - 15 // Placeholder for change data
-        }))
-        .sort((a, b) => b.value - a.value);
-      
-      setCostBreakdown(formattedBreakdown);
-    } else {
-      setCostBreakdown([]);
-    }
-  }, [costData, groupBy]);
   
   // Prepare chart data
   const prepareChartData = () => {
@@ -260,35 +242,10 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
   const chartData = prepareChartData();
   
   // Calculate total spend
-  const totalSpend = costBreakdown.reduce((sum, item) => sum + item.value, 0);
+  const totalSpend = costData ? costData.reduce((sum, item) => sum + item.amount, 0) : 0;
   
-  // Generate time range options text
-  const getTimeRangeText = (range: TimeRange) => {
-    switch (range) {
-      case "7d": return "Last 7 days";
-      case "30d": return "Last 30 days";
-      case "90d": return "Last 90 days";
-      case "1y": return "Last 12 months";
-    }
-  };
-  
-  // Fetch cost anomalies
-  const { data: anomaliesData = [] } = useQuery({
-    queryKey: ['/api/cost-analysis/anomalies'],
-    queryFn: async () => {
-      try {
-        const res = await apiRequest('GET', '/api/cost-analysis/anomalies');
-        return await res.json();
-      } catch (error) {
-        console.error('Error fetching cost anomalies:', error);
-        return [];
-      }
-    },
-    enabled: hasCloudCredentials && showAnomalies
-  });
-  
-  // Format anomalies for display
-  const anomalies = anomaliesData.length > 0 ? anomaliesData : [
+  // Sample anomalies
+  const anomalies: CostAnomaly[] = [
     { 
       service: "EC2", 
       date: "2025-05-12", 
@@ -306,6 +263,49 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
       description: "Unusual storage growth pattern detected"
     }
   ];
+  
+  // Handle export CSV
+  const handleExportCsv = () => {
+    if (!costData || costData.length === 0) {
+      toast({
+        title: "No data to export",
+        description: "There is no cost data available to export.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Prepare data for export
+    const csvContent = [
+      // Header row
+      ["Date", "Service", "Region", "Amount ($)"].join(","),
+      // Data rows
+      ...(costData || []).map(item => 
+        [
+          item.date, 
+          item.service || "N/A", 
+          item.region || "N/A", 
+          item.amount.toFixed(2)
+        ].join(",")
+      )
+    ].join("\n");
+    
+    // Create a blob and download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `cloud-cost-analysis-${timeRange}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Export successful",
+      description: "Your cost data has been downloaded as a CSV file.",
+    });
+  };
   
   return (
     <Card className="mb-6">
@@ -350,33 +350,7 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
               variant="outline"
               size="sm" 
               className="h-8"
-              onClick={() => {
-                // Prepare data for export
-                const csvContent = [
-                  // Header row
-                  ["Date", "Service", "Region", "Amount ($)"].join(","),
-                  // Data rows
-                  ...(costData || []).map(item => 
-                    [
-                      item.date, 
-                      item.service || "N/A", 
-                      item.region || "N/A", 
-                      item.amount.toFixed(2)
-                    ].join(",")
-                  )
-                ].join("\n");
-                
-                // Create a blob and download link
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.setAttribute('href', url);
-                link.setAttribute('download', `cloud-cost-analysis-${timeRange}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
+              onClick={handleExportCsv}
             >
               <Download className="h-4 w-4 mr-1" />
               <span className="hidden md:inline">Export</span>
@@ -443,7 +417,7 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
               <div>
                 <h5 className="text-xs font-medium mb-2">Filter by Services</h5>
                 <div className="flex flex-wrap gap-1 max-h-[100px] overflow-y-auto p-1">
-                  {services?.map(service => (
+                  {services.map(service => (
                     <Badge 
                       key={service}
                       variant={selectedServices.includes(service) ? "default" : "outline"}
@@ -531,7 +505,7 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
           </div>
         ) : costData && costData.length > 0 ? (
           <>
-            <div className="h-[300px] mb-6">
+            <div className="relative h-[300px] mb-6">
               {chartType === 'bar' ? (
                 <Bar data={chartData} options={chartOptions} />
               ) : (
@@ -637,90 +611,59 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
               </Card>
             </div>
             
-            <div className="mb-4">
-              <h3 className="text-sm font-medium mb-3">{groupBy.charAt(0).toUpperCase() + groupBy.slice(1)} Breakdown</h3>
+            <div>
+              <h3 className="text-sm font-medium mb-3">Top Services by Cost</h3>
               <div className="space-y-3">
-                {costBreakdown.slice(0, 5).map((item) => (
-                  <div key={item.name} className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3">
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center">
-                        <span className="font-medium">{item.name}</span>
-                        <Badge variant="outline" className="ml-2 text-xs">
-                          {formatPercentage(item.percentage)}
-                        </Badge>
-                      </div>
-                      <span className="font-semibold">{formatCurrency(item.value)}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                {costData.reduce((acc, item) => {
+                  if (item.service) {
+                    if (!acc[item.service]) {
+                      acc[item.service] = 0;
+                    }
+                    acc[item.service] += item.amount;
+                  }
+                  return acc;
+                }, {} as Record<string, number>)
+                .entries()
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5)
+                .map(([service, cost], index) => (
+                  <div key={service} className="flex items-center justify-between">
+                    <div className="flex items-center">
                       <div 
-                        className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full" 
-                        style={{ width: `${item.percentage}%` }}
-                      ></div>
+                        className="w-3 h-3 rounded-full mr-2" 
+                        style={{ backgroundColor: getColorForIndex(index) }}
+                      />
+                      <span>{service}</span>
                     </div>
-                    <div className="flex justify-end mt-1 text-xs">
-                      <span className={item.change > 0 ? 'text-danger flex items-center' : 'text-green-600 flex items-center'}>
-                        {item.change > 0 ? (
-                          <ArrowUpRight className="h-3 w-3 mr-1" />
-                        ) : (
-                          <ArrowDownRight className="h-3 w-3 mr-1" />
-                        )}
-                        {item.change > 0 ? '+' : ''}{Math.abs(item.change).toFixed(1)}%
+                    <div className="flex items-center">
+                      <span className="font-medium">{formatCurrency(cost)}</span>
+                      <span className="text-gray-500 dark:text-gray-400 text-xs ml-2">
+                        ({formatPercentage((cost / totalSpend) * 100)})
                       </span>
+                      <ChevronRight className="h-4 w-4 ml-1 text-gray-400" />
                     </div>
                   </div>
                 ))}
               </div>
-              
-              {costBreakdown.length > 5 && (
-                <Button variant="ghost" size="sm" className="w-full mt-2">
-                  Show all {costBreakdown.length} items
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              )}
             </div>
-            
-            {showAnomalies && anomalies.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium mb-3">Detected Cost Anomalies</h3>
-                <div className="space-y-3">
-                  {anomalies.map((anomaly, index) => (
-                    <div key={index} className="bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/30 rounded-lg p-3">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mr-2" />
-                          <span className="font-medium">{anomaly.service}</span>
-                          <Badge variant={anomaly.severity === 'critical' ? 'destructive' : 'outline'} className="ml-2">
-                            {anomaly.severity}
-                          </Badge>
-                        </div>
-                        <span className="font-semibold">{formatCurrency(anomaly.amount)}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        {anomaly.percentage}% increase detected on {anomaly.date}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         ) : (
           <div className="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-lg p-6 flex flex-col items-center justify-center min-h-[300px] text-center">
-            <Info className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Data Available</h3>
-            <p className="text-gray-600 dark:text-gray-400 max-w-md">
+            <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Cost Data Available</h3>
+            <p className="text-gray-600 dark:text-gray-400 max-w-md mb-4">
               There is no cost data available for the selected time range and filters.
-              Try adjusting your filters or time period.
             </p>
+            <Button onClick={() => {
+              setTimeRange("30d");
+              setSelectedServices([]);
+              setSelectedRegions([]);
+            }}>
+              Reset Filters
+            </Button>
           </div>
         )}
       </CardContent>
-      
-      <CardFooter className="pt-0 pb-3">
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          Data shown for {getTimeRangeText(timeRange)} • Last updated: {new Date().toLocaleString()}
-        </div>
-      </CardFooter>
     </Card>
   );
 }
