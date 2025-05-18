@@ -105,10 +105,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row items-center gap-12">
             <div className="md:w-1/2">
-              <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 mb-4">
-                <span className="text-xs font-semibold mr-2">Certified</span>
-                <span className="text-xs">SOC 2 Type II and ISO 27001</span>
-              </div>
+
               
               <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
                 <span className="bg-gradient-to-r from-primary to-blue-600 dark:from-primary dark:to-blue-400 bg-clip-text text-transparent">Cloud Monitoring Made</span> <br />
