@@ -30,7 +30,7 @@ const Documentation = () => {
       <div className="container mx-auto py-8 px-4 max-w-7xl">
         <div className="flex flex-col md:flex-row items-start justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">CloudGuard Documentation</h1>
+            <h1 className="text-3xl font-bold tracking-tight">InfraAudit Documentation</h1>
             <p className="text-muted-foreground mt-1">
               Comprehensive guide to monitoring and optimizing your cloud infrastructure
             </p>
@@ -58,14 +58,14 @@ const Documentation = () => {
           <TabsContent value="overview">
             <Card>
               <CardHeader>
-                <CardTitle>CloudGuard Platform Overview</CardTitle>
+                <CardTitle>InfraAudit Platform Overview</CardTitle>
                 <CardDescription>
                   A comprehensive multi-cloud infrastructure monitoring platform
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p>
-                  CloudGuard is an intelligent infrastructure monitoring platform designed to help DevOps teams maintain 
+                  InfraAudit is an intelligent infrastructure monitoring platform designed to help DevOps teams maintain 
                   infrastructure integrity and cost efficiency across multiple cloud providers including AWS, Azure, and GCP. 
                   The platform combines powerful monitoring capabilities with AI-powered insights to prevent security issues 
                   and reduce cloud spending.
@@ -126,7 +126,7 @@ const Documentation = () => {
               <CardHeader>
                 <CardTitle>Key Features</CardTitle>
                 <CardDescription>
-                  Detailed overview of CloudGuard's capabilities
+                  Detailed overview of InfraAudit's capabilities
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -169,7 +169,7 @@ const Documentation = () => {
                   <div>
                     <CardTitle>Interactive Onboarding Tour</CardTitle>
                     <CardDescription>
-                      Guide to CloudGuard's interactive walkthrough
+                      Guide to InfraAudit's interactive walkthrough
                     </CardDescription>
                   </div>
                   <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">New Feature</Badge>
