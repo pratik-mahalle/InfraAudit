@@ -65,7 +65,7 @@ const STEP_ORDER: OnboardingStep[] = [
 // Content for different onboarding steps
 const ONBOARDING_CONTENT: Record<OnboardingStep, OnboardingStepContent> = {
   'welcome': {
-    title: 'Welcome to CloudGuard!',
+    title: 'Welcome to InfraAudit!',
     message: "I'm Cirrus, your cloud assistant! I'll help you get started with monitoring and optimizing your cloud infrastructure across AWS, Azure, and GCP.",
     mascotExpression: 'happy',
     position: 'center',
@@ -79,7 +79,7 @@ const ONBOARDING_CONTENT: Record<OnboardingStep, OnboardingStepContent> = {
   },
   'connect-aws': {
     title: 'Connect Your Cloud Providers',
-    message: "First, let's connect your cloud accounts to monitor resources, security, and costs. CloudGuard supports AWS, Azure, and Google Cloud Platform.",
+    message: "First, let's connect your cloud accounts to monitor resources, security, and costs. InfraAudit supports AWS, Azure, and Google Cloud Platform.",
     mascotExpression: 'thinking',
     targetElementId: 'cloud-providers-nav',
     routePath: '/cloud-providers',

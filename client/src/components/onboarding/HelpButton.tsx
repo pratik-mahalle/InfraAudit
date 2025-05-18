@@ -59,7 +59,7 @@ export const HelpButton: React.FC = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>CloudGuard Assistant</DropdownMenuLabel>
+            <DropdownMenuLabel>InfraAudit Assistant</DropdownMenuLabel>
             <DropdownMenuSeparator />
             
             <DropdownMenuGroup>
