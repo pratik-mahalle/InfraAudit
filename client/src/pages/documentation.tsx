@@ -177,14 +177,14 @@ const Documentation = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <p>
-                  CloudGuard features a comprehensive interactive onboarding tour guided by Cirrus, your cloud assistant mascot.
+                  InfraAudit features a comprehensive interactive onboarding tour guided by Cirrus, your cloud assistant mascot.
                   This tour will walk you through all the key features of the platform, ensuring you get the most out of your
                   cloud monitoring experience.
                 </p>
                 
                 <h3 className="text-lg font-medium">Tour Features</h3>
                 <ul className="list-disc pl-6 space-y-1">
-                  <li>Guided walkthrough of all major CloudGuard sections</li>
+                  <li>Guided walkthrough of all major InfraAudit sections</li>
                   <li>Automatic page navigation during the tour</li>
                   <li>Interactive UI elements with visual highlights</li>
                   <li>Friendly cloud mascot guide with contextual explanations</li>
@@ -199,12 +199,12 @@ const Documentation = () => {
               <CardHeader>
                 <CardTitle>Cloud Provider Connections</CardTitle>
                 <CardDescription>
-                  How to connect your cloud accounts to CloudGuard
+                  How to connect your cloud accounts to InfraAudit
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <p>
-                  CloudGuard supports monitoring resources across all major cloud providers. Follow these guides
+                  InfraAudit supports monitoring resources across all major cloud providers. Follow these guides
                   to connect your cloud accounts and start monitoring your infrastructure.
                 </p>
                 
