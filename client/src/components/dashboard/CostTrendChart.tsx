@@ -253,7 +253,7 @@ export function CostTrendChart({
             <div className="h-full w-full flex flex-col items-center justify-center space-y-2 bg-gray-50 rounded-lg">
               <AlertTriangle className="h-8 w-8 text-amber-500" />
               <p className="text-gray-600 dark:text-gray-300 text-sm">No cost data available</p>
-              <p className="text-gray-500 text-xs text-center max-w-md">
+              <p className="text-gray-500 dark:text-gray-400 text-xs text-center max-w-md">
                 Connect your cloud provider credentials to see actual cost data.
                 Go to Cloud Providers page to add your AWS, GCP, or Azure credentials.
               </p>
@@ -264,7 +264,7 @@ export function CostTrendChart({
         </div>
         <div className="grid grid-cols-3 gap-4 mt-4">
           <div className="border-l-4 border-primary pl-3">
-            <p className="text-xs text-gray-500">Current Spend</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Current Spend</p>
             <p className="font-semibold text-lg font-inter">{formatCurrency(currentSpend)}</p>
             <p className={`text-xs flex items-center ${spendChange > 0 ? 'text-danger' : 'text-secondary'}`}>
               {spendChange > 0 ? (
@@ -276,7 +276,7 @@ export function CostTrendChart({
             </p>
           </div>
           <div className="border-l-4 border-danger pl-3">
-            <p className="text-xs text-gray-500">Projected</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Projected</p>
             <p className="font-semibold text-lg font-inter">{formatCurrency(projectedSpend)}</p>
             <p className={`text-xs flex items-center ${projectionChange > 0 ? 'text-danger' : 'text-secondary'}`}>
               {projectionChange > 0 ? (
@@ -288,7 +288,7 @@ export function CostTrendChart({
             </p>
           </div>
           <div className="border-l-4 border-warning pl-3">
-            <p className="text-xs text-gray-500">Potential Savings</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Potential Savings</p>
             <p className="font-semibold text-lg font-inter">{formatCurrency(potentialSavings)}</p>
             <p className="text-xs text-secondary flex items-center">
               <CheckCircle className="mr-1 h-3 w-3" />
