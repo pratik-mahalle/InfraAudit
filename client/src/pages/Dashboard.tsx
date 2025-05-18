@@ -14,6 +14,7 @@ import { CostRecommendations } from "@/components/dashboard/CostRecommendations"
 import { PersonalizedWidgets } from "@/components/dashboard/PersonalizedWidgets";
 import { CloudProviderIntegration } from "@/components/dashboard/CloudProviderIntegration";
 import { WelcomeOnboarding } from "@/components/dashboard/WelcomeOnboarding";
+import { InteractiveCostAnalysis } from "@/components/dashboard/InteractiveCostAnalysis";
 import { 
   CornerLeftDown, 
   Play, 
@@ -52,7 +53,7 @@ import {
 export default function Dashboard() {
   const [dashboardTab, setDashboardTab] = useState("overview");
   const [hasConnectedProviders, setHasConnectedProviders] = useState(false);
-  const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(true);
+  const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(false); // Changed to false to skip first-time setup by default
   const [isScanning, setIsScanning] = useState(false);
   const [lastScanResult, setLastScanResult] = useState(null);
   const { toast } = useToast();
@@ -358,6 +359,9 @@ export default function Dashboard() {
       {/* Overview Tab */}
       {dashboardTab === "overview" && (
         <div id="dashboard-overview-section">
+          {/* New interactive cost analysis component */}
+          <InteractiveCostAnalysis hasCloudCredentials={hasConnectedProviders} />
+          
           {/* Status Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             <StatusCard
@@ -369,15 +373,15 @@ export default function Dashboard() {
             />
             <StatusCard
               title="Cost Status"
-              value="Active"
-              description="AWS cost data available"
+              value={hasConnectedProviders ? "Active" : "Pending"}
+              description={hasConnectedProviders ? "Cloud cost data available" : "Connect cloud provider"}
               icon="cost"
-              status="healthy"
+              status={hasConnectedProviders ? "healthy" : "warning"}
             />
             <StatusCard
               title="Resources Monitored"
               value={`${cloudResources?.length || 0}`}
-              description={`AWS S3 Buckets`}
+              description={cloudResources?.length > 0 ? "Cloud resources" : "No resources detected"}
               icon="resources"
               isLoading={isLoadingCloudResources}
             />
