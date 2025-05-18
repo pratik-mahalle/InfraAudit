@@ -17,7 +17,11 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatPercentage(value: number): string {
-  return `${value}%`;
+  return new Intl.NumberFormat('en-US', {
+    style: 'percent',
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  }).format(value / 100);
 }
 
 export function formatDate(date: Date | string): string {
