@@ -1,47 +1,30 @@
 import pg from 'pg';
-import dotenv from 'dotenv';
 import fs from 'fs';
-import { neon } from '@neondatabase/serverless';
-import ws from 'ws';
+import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
 
 const { Pool } = pg;
 
-// This script migrates data from your current database to NeonDB
-// To use: 
-// 1. Create a NeonDB account and database at https://neon.tech/
-// 2. Set the NEON_DATABASE_URL environment variable to your NeonDB connection string
-// 3. Run this script with: node migrate-to-neon.mjs
+// Using the NeonDB connection string you provided
+const NEON_DATABASE_URL = 'postgresql://infra_owner:npg_b1VqtoSrW0wE@ep-calm-snow-a4uvy34l-pooler.us-east-1.aws.neon.tech/infra?sslmode=require';
 
 // Source database (current database)
-const sourceConfig = {
+const sourcePool = new Pool({
   connectionString: process.env.DATABASE_URL,
-};
+});
 
 // Target NeonDB database
-const NEON_DATABASE_URL = process.env.NEON_DATABASE_URL;
-
-if (!NEON_DATABASE_URL) {
-  console.error("❌ NEON_DATABASE_URL environment variable is not set!");
-  console.error("Please create a NeonDB account, set up a database, and set the connection string.");
-  process.exit(1);
-}
-
-const neonConfig = {
-  webSocketConstructor: ws,
-  useSecureWebSocket: true,
-};
+const targetPool = new Pool({
+  connectionString: NEON_DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
 async function migrateToNeon() {
   console.log('Starting migration to NeonDB...');
-  
-  // Connect to source database
-  const sourcePool = new Pool(sourceConfig);
-  
-  // Connect to NeonDB database
-  const neonClient = neon(NEON_DATABASE_URL, neonConfig);
   
   try {
     // 1. Get list of tables
@@ -54,161 +37,200 @@ async function migrateToNeon() {
     const tables = tablesResult.rows.map(row => row.table_name);
     console.log('Tables to migrate:', tables);
 
-    // First we need to create tables in the target database
-    console.log('\nCreating tables in NeonDB...');
-    
+    // 2. For each table, create it in the target and migrate data
     for (const table of tables) {
       try {
-        // Get table schema
-        const schemaResult = await sourcePool.query(`
-          SELECT column_name, data_type, character_maximum_length, 
-                 column_default, is_nullable
-          FROM information_schema.columns 
-          WHERE table_name = $1
-          ORDER BY ordinal_position
+        console.log(`\nProcessing table: ${table}`);
+        
+        // Create the table in the target database
+        const tableSchemaResult = await sourcePool.query(`
+          SELECT 
+            column_name, 
+            data_type, 
+            is_nullable, 
+            column_default,
+            character_maximum_length
+          FROM 
+            information_schema.columns 
+          WHERE 
+            table_name = $1
+          ORDER BY 
+            ordinal_position
         `, [table]);
         
-        if (schemaResult.rows.length === 0) {
-          console.log(`No schema information for ${table}, skipping...`);
+        if (tableSchemaResult.rows.length === 0) {
+          console.log(`No schema information found for table ${table}, skipping...`);
           continue;
         }
         
-        // Generate CREATE TABLE command
+        console.log(`Creating table ${table} in NeonDB...`);
+        
+        // Generate CREATE TABLE statement
         let createTableSQL = `CREATE TABLE IF NOT EXISTS ${table} (\n`;
         
-        for (let i = 0; i < schemaResult.rows.length; i++) {
-          const column = schemaResult.rows[i];
+        for (let i = 0; i < tableSchemaResult.rows.length; i++) {
+          const column = tableSchemaResult.rows[i];
+          
           createTableSQL += `  "${column.column_name}" ${column.data_type}`;
           
-          // Add length for character types
-          if (column.character_maximum_length) {
+          // Add character length for varchar/char types
+          if (column.character_maximum_length !== null) {
             createTableSQL += `(${column.character_maximum_length})`;
           }
           
-          // Nullable
+          // Add NOT NULL constraint if needed
           if (column.is_nullable === 'NO') {
             createTableSQL += ' NOT NULL';
           }
           
-          // Default value
-          if (column.column_default) {
+          // Add default value if present
+          if (column.column_default !== null) {
             createTableSQL += ` DEFAULT ${column.column_default}`;
           }
           
-          // Comma if not the last column
-          if (i < schemaResult.rows.length - 1) {
+          // Add comma if not the last column
+          if (i < tableSchemaResult.rows.length - 1) {
             createTableSQL += ',\n';
           }
         }
         
-        // Close the CREATE TABLE statement
-        createTableSQL += '\n);';
+        // End the CREATE TABLE statement
+        createTableSQL += '\n)';
         
-        // Execute CREATE TABLE
-        await neonClient.query(createTableSQL);
-        console.log(`✅ Created table ${table}`);
-      } catch (err) {
-        console.log(`❌ Error creating table ${table}:`, err.message);
-      }
-    }
-
-    // 2. Migrate data table by table
-    for (const table of tables) {
-      try {
-        console.log(`\nMigrating data for table: ${table}`);
+        // Create the table in NeonDB
+        await targetPool.query(createTableSQL);
+        console.log(`✅ Table ${table} created successfully`);
         
-        // Get data
-        const dataResult = await sourcePool.query(`SELECT * FROM ${table}`);
-        console.log(`Found ${dataResult.rows.length} rows in ${table}`);
+        // Get primary key info if available
+        const pkResult = await sourcePool.query(`
+          SELECT 
+            kcu.column_name
+          FROM 
+            information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu
+              ON tc.constraint_name = kcu.constraint_name
+              AND tc.table_schema = kcu.table_schema
+          WHERE 
+            tc.constraint_type = 'PRIMARY KEY' 
+            AND tc.table_name = $1
+        `, [table]);
         
-        if (dataResult.rows.length === 0) {
-          console.log(`No data in ${table}, skipping...`);
-          continue;
-        }
+        const pkColumns = pkResult.rows.map(row => row.column_name);
         
-        // For each row, insert into target
-        let successCount = 0;
-        
-        for (const row of dataResult.rows) {
+        if (pkColumns.length > 0) {
+          console.log(`Adding primary key to ${table}...`);
           try {
-            const columns = Object.keys(row);
-            const values = Object.values(row);
-            const placeholders = Array(values.length).fill(0).map((_, i) => `$${i + 1}`).join(', ');
-            
-            await neonClient.query(
-              `INSERT INTO ${table}(${columns.join(', ')}) 
-               VALUES(${placeholders})
-               ON CONFLICT DO NOTHING`,
-              values
-            );
-            successCount++;
-          } catch (rowError) {
-            console.log(`❌ Error inserting row in ${table}:`, rowError.message);
+            await targetPool.query(`
+              ALTER TABLE ${table} 
+              ADD PRIMARY KEY (${pkColumns.map(col => `"${col}"`).join(', ')})
+            `);
+            console.log(`✅ Primary key added to ${table}`);
+          } catch (pkError) {
+            // Primary key might already exist
+            console.log(`Note: ${pkError.message}`);
           }
         }
         
-        console.log(`✅ Successfully migrated ${successCount} out of ${dataResult.rows.length} rows from ${table}`);
-      } catch (tableError) {
-        console.log(`❌ Error migrating table ${table}:`, tableError.message);
-      }
-    }
-    
-    // 3. Add sequences/indexes (if needed)
-    console.log('\nSetting up sequences for serial columns...');
-    for (const table of tables) {
-      try {
+        // Copy data
+        console.log(`Copying data from ${table}...`);
+        const countResult = await sourcePool.query(`SELECT COUNT(*) FROM ${table}`);
+        const rowCount = parseInt(countResult.rows[0].count);
+        
+        if (rowCount === 0) {
+          console.log(`Table ${table} is empty, skipping data copy...`);
+          continue;
+        }
+        
+        console.log(`Found ${rowCount} rows to copy from ${table}`);
+        
+        // Get all data
+        const dataResult = await sourcePool.query(`SELECT * FROM ${table}`);
+        
+        // Insert in batches
+        const batchSize = 100;
+        let successCount = 0;
+        
+        for (let i = 0; i < dataResult.rows.length; i += batchSize) {
+          const batch = dataResult.rows.slice(i, i + batchSize);
+          
+          for (const row of batch) {
+            try {
+              const columns = Object.keys(row);
+              const values = Object.values(row);
+              const placeholders = columns.map((_, idx) => `$${idx + 1}`).join(', ');
+              
+              await targetPool.query(
+                `INSERT INTO ${table} (${columns.map(c => `"${c}"`).join(', ')}) 
+                 VALUES (${placeholders})
+                 ON CONFLICT DO NOTHING`,
+                values
+              );
+              
+              successCount++;
+            } catch (insertError) {
+              console.log(`Error inserting row in ${table}:`, insertError.message);
+            }
+          }
+          
+          // Log progress for large tables
+          if (batch.length === batchSize) {
+            console.log(`Progress: ${i + batch.length}/${rowCount} rows`);
+          }
+        }
+        
+        console.log(`✅ Copied ${successCount} of ${rowCount} rows from ${table}`);
+        
+        // Update sequences if needed
         const sequenceResult = await sourcePool.query(`
           SELECT column_name, column_default
           FROM information_schema.columns
           WHERE table_name = $1
-            AND column_default LIKE 'nextval%'
+          AND column_default LIKE 'nextval%'
         `, [table]);
         
-        for (const seqRow of sequenceResult.rows) {
-          try {
-            // Get current max value to set sequence properly
-            const maxResult = await sourcePool.query(`
-              SELECT COALESCE(MAX("${seqRow.column_name}"), 0) as max_value
-              FROM ${table}
-            `);
-            
-            const maxValue = maxResult.rows[0].max_value;
-            
-            // Set the sequence value
-            if (maxValue > 0) {
-              await neonClient.query(`
-                SELECT setval(pg_get_serial_sequence('${table}', '${seqRow.column_name}'), ${maxValue}, true)
+        if (sequenceResult.rows.length > 0) {
+          console.log(`Updating sequences for ${table}...`);
+          
+          for (const seqRow of sequenceResult.rows) {
+            try {
+              // Get current max value
+              const maxResult = await sourcePool.query(`
+                SELECT COALESCE(MAX("${seqRow.column_name}"), 0) as max_value 
+                FROM ${table}
               `);
-              console.log(`✅ Set sequence for ${table}.${seqRow.column_name} to ${maxValue}`);
+              
+              const maxValue = parseInt(maxResult.rows[0].max_value);
+              
+              if (maxValue > 0) {
+                // Update sequence in target
+                await targetPool.query(`
+                  SELECT setval(pg_get_serial_sequence('${table}', '${seqRow.column_name}'), ${maxValue})
+                `);
+                console.log(`✅ Updated sequence for ${table}.${seqRow.column_name} to ${maxValue}`);
+              }
+            } catch (seqError) {
+              console.log(`Error updating sequence for ${table}.${seqRow.column_name}:`, seqError.message);
             }
-          } catch (seqError) {
-            console.log(`❌ Error setting sequence for ${table}.${seqRow.column_name}:`, seqError.message);
           }
         }
-      } catch (err) {
-        console.log(`❌ Error handling sequences for ${table}:`, err.message);
+      } catch (tableError) {
+        console.log(`Error processing table ${table}:`, tableError.message);
       }
     }
     
-    console.log('\n✅ Migration to NeonDB completed!');
-    console.log('\nTo use NeonDB in your application, update your .env file with:');
-    console.log('DB_TYPE=neon');
-    console.log('NEON_DATABASE_URL=your_neon_connection_string');
+    console.log('\n✅ Migration to NeonDB completed successfully!');
+    console.log(`\nTo use NeonDB in your application, update your .env file:`);
+    console.log(`DATABASE_URL=${NEON_DATABASE_URL}`);
     
-  } catch (err) {
-    console.error('❌ Migration failed:', err);
+  } catch (error) {
+    console.error('Migration failed:', error);
   } finally {
-    // Close source database connection
     await sourcePool.end();
-    // NeonDB serverless connections auto-close
+    await targetPool.end();
   }
 }
 
 // Run the migration
-migrateToNeon().then(() => {
-  console.log('Migration script completed');
-  process.exit(0);
-}).catch(err => {
-  console.error('Migration script error:', err);
-  process.exit(1);
+migrateToNeon().catch(error => {
+  console.error('Migration script error:', error);
 });

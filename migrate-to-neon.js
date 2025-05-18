@@ -2,16 +2,8 @@ const { Pool } = require('pg');
 const fs = require('fs');
 require('dotenv').config();
 
-// IMPORTANT: You need to set NEON_DATABASE_URL in your environment variables
-// This is your NeonDB connection string that looks like:
-// postgres://user:password@endpoint.neon.tech/neondb
-const NEON_DATABASE_URL = process.env.NEON_DATABASE_URL;
-
-if (!NEON_DATABASE_URL) {
-  console.error("Error: Please set NEON_DATABASE_URL environment variable");
-  console.error("You can get this from your NeonDB dashboard");
-  process.exit(1);
-}
+// Using the NeonDB connection string you provided
+const NEON_DATABASE_URL = 'postgresql://infra_owner:npg_b1VqtoSrW0wE@ep-calm-snow-a4uvy34l-pooler.us-east-1.aws.neon.tech/infra?sslmode=require';
 
 // Source database (current database)
 const sourcePool = new Pool({
