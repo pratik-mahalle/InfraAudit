@@ -73,7 +73,7 @@ export function StatusCard({
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-col">
-          <span className="text-gray-500 text-sm">{title}</span>
+          <span className="text-gray-500 dark:text-gray-400 text-sm">{title}</span>
           {isLoading ? (
             <Skeleton className="h-8 w-20 mt-1" />
           ) : (
@@ -99,10 +99,10 @@ export function StatusCard({
       {isLoading ? (
         <Skeleton className="h-4 w-full mb-3" />
       ) : (
-        <p className="text-sm text-gray-500 mb-3">{description}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{description}</p>
       )}
       <div className="flex justify-between items-center">
-        <span className="text-xs text-gray-500">{timeframe}</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">{timeframe}</span>
         {isLoading ? (
           <Skeleton className="h-4 w-20" />
         ) : (
