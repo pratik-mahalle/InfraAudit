@@ -49,7 +49,7 @@ export function SecurityDriftsTable({
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold font-inter">Security Configuration Drifts</CardTitle>
         <div className="flex items-center">
-          <span className="text-xs text-gray-500 mr-2">Last 24 hours</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">Last 24 hours</span>
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreVertical className="h-4 w-4" />
           </Button>
@@ -88,13 +88,13 @@ export function SecurityDriftsTable({
                 drifts.map((drift) => (
                   <TableRow key={drift.id}>
                     <TableCell className="font-medium">{drift.id}</TableCell>
-                    <TableCell className="text-sm text-gray-500">{drift.driftType}</TableCell>
+                    <TableCell className="text-sm text-gray-500 dark:text-gray-400">{drift.driftType}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(drift.severity)} ${getSeverityColor(drift.severity)} rounded-full`}>
                         {drift.severity.charAt(0).toUpperCase() + drift.severity.slice(1)}
                       </span>
                     </TableCell>
-                    <TableCell className="text-sm text-gray-500">
+                    <TableCell className="text-sm text-gray-500 dark:text-gray-400">
                       {formatTimeAgo(drift.detectedAt)}
                     </TableCell>
                     <TableCell>
