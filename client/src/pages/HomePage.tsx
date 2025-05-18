@@ -108,7 +108,7 @@ export default function HomePage() {
                 <div className="flex-grow group">
                   <Input 
                     type="email" 
-                    placeholder="Enter your email address" 
+                    placeholder="contact@infraaudit.io" 
                     className="w-full h-12 transition-all duration-300 group-hover:border-primary" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -461,22 +461,16 @@ export default function HomePage() {
               Trusted by DevOps Teams Worldwide
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Here's what our customers are saying about InfraAudit
+              Here's what our Founder are saying about InfraAudit
             </p>
           </div>
           
           {/* Founder Section with Animation */}
           <div className="mb-16 overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-600/20 dark:to-indigo-600/20 rounded-xl z-0 
-                          animate-pulse duration-5000"></div>
-            <div className="absolute -top-8 -left-8 w-32 h-32 bg-blue-400/20 dark:bg-blue-600/20 rounded-full blur-2xl"></div>
-            <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-indigo-400/20 dark:bg-indigo-600/20 rounded-full blur-2xl"></div>
-            
             <div className="p-8 md:p-10 lg:p-12 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 relative z-10">
               <div className="flex flex-col md:flex-row items-center gap-8">
                 <div className="md:w-1/3">
                   <div className="relative group">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full opacity-70 group-hover:opacity-100 blur group-hover:blur-md transition duration-1000"></div>
                     <div className="relative">
                       <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-[6px] border-white dark:border-gray-800 shadow-xl mx-auto 
                                   group-hover:scale-105 transition-transform duration-500 ease-out">
@@ -499,20 +493,19 @@ export default function HomePage() {
                     <Quote className="h-10 w-10 text-blue-300 dark:text-blue-500 mr-2 shrink-0" />
                     <div>
                       <h3 className="text-2xl font-bold">Pratik Mahalle</h3>
-                      <p className="text-blue-600 dark:text-blue-400">Founder & DevOps Engineer</p>
+                      <p className="text-blue-600 dark:text-blue-400">Founder & CEO</p>
                     </div>
                   </div>
                   
                   <p className="text-gray-700 dark:text-gray-300 text-lg mb-4 pl-4 border-l-4 border-blue-300 dark:border-blue-500/50 italic">
-                    Hi, I'm Pratik, a DevOps engineer and CNCF organizer building InfraAudit — an infra observability and security tool that saves cloud teams hours of manual checks. We're currently onboarding 10 pilot users and looking to raise a pre-seed round. Would love to send over the deck if you're open to it.
-                  </p>
+                   Hi, I'm Pratik, Founder and DevOps Engineer behind InfraAudit — a cloud observability and security tool that eliminates hours of manual effort for cloud teams. With InfraAudit, we've automated compliance checks, surfaced critical misconfigurations, and reduced cloud overspend with smart, real-time insights. It's now an operational prototype and actively evolving into a must-have tool for modern DevOps and FinOps workflows                  </p>
                   
                   <div className="mt-6 flex flex-wrap gap-4">
                     <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm">
                       DevOps Engineer
                     </span>
                     <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm">
-                      CNCF Organizer
+                      DevRel
                     </span>
                     <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-sm">
                       Cloud Infrastructure Expert
@@ -681,7 +674,7 @@ export default function HomePage() {
                   variant="outline" 
                   className="w-full"
                   onClick={() => {
-                    window.location.href = "mailto:sales@infraaudit.com?subject=InfraAudit Enterprise Inquiry";
+                    window.location.href = "mailto:contact@infraaudit.io?subject=InfraAudit Enterprise Inquiry";
                   }}
                 >
                   Contact Sales
@@ -745,10 +738,10 @@ export default function HomePage() {
               className="px-8 group relative overflow-hidden hover:bg-primary-100 dark:hover:bg-primary-900/20 transition-colors"
               onClick={() => {
                 // Open email client with pre-filled subject
-                window.location.href = "mailto:sales@infraaudit.com?subject=InfraAudit Sales Inquiry";
+                window.location.href = "mailto:contact@infraaudit.in?subject=InfraAudit Sales Inquiry";
               }}
             >
-              <span className="relative z-10">Contact Sales</span>
+              <span className="relative z-10">Contact Us</span>
             </Button>
           </div>
         </div>

@@ -48,9 +48,9 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-0 md:px-2 max-w-6xl mx-auto">
+      <div className="w-full flex h-16 items-center justify-between px-4 md:px-6">
         {/* Logo - aligned left */}
-        <div className="flex items-center pl-2">
+        <div className="flex items-center">
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
               <Zap className="h-6 w-6 text-primary" />
@@ -61,8 +61,8 @@ export function Navbar() {
           </Link>
         </div>
 
-        {/* Main Navigation - evenly spaced on right with even widths */}
-        <div className="hidden md:flex items-center justify-end space-x-5 flex-1 pr-4">
+        {/* Main Navigation - centered and evenly spaced */}
+        <div className="hidden md:flex items-center justify-center space-x-8 flex-1">
           {user && (
             <>
               <Link 
