@@ -541,33 +541,6 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          
-          {/* Testimonials Section - Clean Design */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Primary Testimonial */}
-            <div className="bg-blue-800 dark:bg-blue-900 text-white p-8 rounded-lg relative overflow-hidden group hover:shadow-xl transition-shadow duration-300 border-2 border-blue-500/30 md:col-span-2 flex flex-col md:flex-row gap-6 items-center">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-10 -mt-10"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-10 -mb-10"></div>
-              
-              <div className="md:w-1/4 flex justify-center relative z-10">
-                <div className="h-20 w-20 rounded-full bg-green-800 border-2 border-green-400 flex items-center justify-center font-bold text-green-100 shrink-0 text-lg">
-                  MS
-                </div>
-              </div>
-              
-              <div className="md:w-3/4 relative z-10">
-                <Quote className="h-10 w-10 text-blue-300 mb-4" />
-                <p className="italic mb-6 text-gray-100 text-lg md:text-xl">
-                  "The security drift detection is a game-changer. We caught a misconfigured S3 bucket before it became a data breach. Worth every penny."
-                </p>
-                
-                <div className="mt-4">
-                  <p className="font-medium text-gray-100 text-lg">Michael Smith</p>
-                  <p className="text-blue-300">DevOps Lead at SecureData</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
       
