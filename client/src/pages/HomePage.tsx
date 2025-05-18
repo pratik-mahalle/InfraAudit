@@ -12,16 +12,51 @@ import {
   LineChart,
   ArrowRight,
   CloudLightning,
-  ChevronRight
+  ChevronRight,
+  Plus
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+
+// FAQ data structure
+const faqItems = [
+  {
+    question: "What is CloudGuard, and who is it for?",
+    answer: "CloudGuard is a comprehensive cloud infrastructure monitoring platform designed for DevOps teams, cloud engineers, and IT managers who need to maintain security compliance and cost efficiency across AWS, Azure, and Google Cloud environments."
+  },
+  {
+    question: "How does CloudGuard help reduce cloud management risks?",
+    answer: "CloudGuard continuously monitors your cloud infrastructure for security vulnerabilities, cost anomalies, and resource inefficiencies. Our AI-powered analysis detects issues before they become problems, helping to prevent data breaches and unexpected billing spikes."
+  },
+  {
+    question: "Can CloudGuard integrate with our existing systems?",
+    answer: "Yes, CloudGuard provides seamless integration with your existing DevOps toolchain, including Slack, PagerDuty, Jira, and GitHub. We also provide a REST API for custom integrations with your specific workflows and internal systems."
+  },
+  {
+    question: "What makes CloudGuard unique compared to other monitoring tools?",
+    answer: "Unlike competitors who focus on either cost or security, CloudGuard provides comprehensive coverage across all cloud providers with AI-driven insights, interactive visualizations, and customizable alerting—all in one unified dashboard."
+  },
+  {
+    question: "What kind of reports can CloudGuard generate?",
+    answer: "CloudGuard generates detailed cost analysis reports, security compliance audits, resource utilization summaries, and predictive forecasts. All reports are customizable, exportable, and can be scheduled for regular delivery to stakeholders."
+  }
+];
 
 export default function HomePage() {
   const { user } = useAuth();
   const [email, setEmail] = useState("");
+  const [expandedFaqs, setExpandedFaqs] = useState<number[]>([]);
   
   // Add scroll animation hooks
   const [scrollY, setScrollY] = useState(0);
+  
+  // Toggle FAQ expansion
+  const toggleFaq = (index: number) => {
+    setExpandedFaqs(prev => 
+      prev.includes(index)
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
+  };
   
   useEffect(() => {
     const handleScroll = () => {
@@ -450,6 +485,39 @@ export default function HomePage() {
             </p>
           </div>
           
+          {/* Founder Section */}
+          <div className="mb-16 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-8 rounded-xl">
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="md:w-1/3">
+                <div className="relative">
+                  <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg mx-auto">
+                    <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                      <span className="text-4xl font-bold text-white">SJ</span>
+                    </div>
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 bg-green-500 text-white text-xs py-1 px-3 rounded-full">
+                    Founder
+                  </div>
+                </div>
+              </div>
+              
+              <div className="md:w-2/3 text-center md:text-left">
+                <div className="mb-4">
+                  <h3 className="text-2xl font-bold">Sarah Johnson</h3>
+                  <p className="text-blue-600 dark:text-blue-400">Founder & CEO</p>
+                </div>
+                
+                <p className="text-gray-700 dark:text-gray-300 text-lg mb-4">
+                  "I founded CloudGuard after experiencing firsthand the challenges of managing multi-cloud environments at scale. Our mission is to bring simplicity and intelligence to cloud infrastructure management, helping teams stay secure and cost-efficient."
+                </p>
+                
+                <p className="text-gray-600 dark:text-gray-400">
+                  Previously Engineering Director at AWS • 15+ years in cloud infrastructure • BS in Computer Science from MIT
+                </p>
+              </div>
+            </div>
+          </div>
+          
           <div className="grid md:grid-cols-3 gap-8">
             {/* Testimonial 1 */}
             <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm relative hover:shadow-lg transition-shadow duration-300">
@@ -510,63 +578,34 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">
-              Frequently Asked Questions
+              Frequently asked questions
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Everything you need to know about CloudGuard
-            </p>
           </div>
           
           <div className="space-y-6">
-            {/* FAQ Item 1 */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
-              <div className="p-6">
-                <h3 className="text-xl font-medium mb-3">Does CloudGuard require admin access to my cloud accounts?</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  No, CloudGuard works with read-only access. We provide detailed IAM policies for each cloud provider that grant only the permissions needed for monitoring and analysis, without any ability to modify your infrastructure.
-                </p>
+            {/* FAQ Items with collapsible content */}
+            {faqItems.map((item, index) => (
+              <div 
+                key={index} 
+                className="border-b border-gray-200 dark:border-gray-700 py-5 cursor-pointer"
+                onClick={() => toggleFaq(index)}
+              >
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-medium">{item.question}</h3>
+                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                    <Plus
+                      className={`h-5 w-5 transform transition-transform duration-200 ${expandedFaqs.includes(index) ? 'rotate-45' : ''}`}
+                    />
+                  </button>
+                </div>
+                
+                {expandedFaqs.includes(index) && (
+                  <div className="mt-4 text-gray-600 dark:text-gray-300 text-lg">
+                    {item.answer}
+                  </div>
+                )}
               </div>
-            </div>
-            
-            {/* FAQ Item 2 */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
-              <div className="p-6">
-                <h3 className="text-xl font-medium mb-3">How does CloudGuard's pricing work for multiple cloud providers?</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Our pricing is based on the number of resources monitored, not the number of cloud providers. You can connect any combination of AWS, Azure, and Google Cloud at no additional cost, making it ideal for multi-cloud environments.
-                </p>
-              </div>
-            </div>
-            
-            {/* FAQ Item 3 */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
-              <div className="p-6">
-                <h3 className="text-xl font-medium mb-3">Can CloudGuard help with regulatory compliance?</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Yes, CloudGuard includes built-in compliance checks for major regulations including GDPR, HIPAA, PCI DSS, and SOC 2. Our security drift detection continuously monitors your environment for compliance violations and provides step-by-step remediation instructions.
-                </p>
-              </div>
-            </div>
-            
-            {/* FAQ Item 4 */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
-              <div className="p-6">
-                <h3 className="text-xl font-medium mb-3">How long does it take to implement CloudGuard?</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Most customers are fully onboarded within 24 hours. The initial setup typically takes less than 30 minutes per cloud provider, and our system begins providing insights immediately after connection.
-                </p>
-              </div>
-            </div>
-            
-            {/* FAQ Item 5 */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
-              <div className="p-6">
-                <h3 className="text-xl font-medium mb-3">Does CloudGuard integrate with other DevOps tools?</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Yes, CloudGuard provides native integrations with popular DevOps tools including Slack, PagerDuty, Jira, and GitHub. We also offer a REST API for custom integrations with your existing workflows.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
