@@ -651,7 +651,12 @@ export default function HomePage() {
                   <span className="text-gray-500 dark:text-gray-400">/month</span>
                 </div>
                 
-                <Button className="w-full">Start Free Trial</Button>
+                <Button 
+                  className="w-full" 
+                  onClick={() => window.location.href = "/auth"}
+                >
+                  Start Free Trial
+                </Button>
               </div>
               
               <div className="p-6 bg-gray-50 dark:bg-gray-800/70 border-t dark:border-gray-700">
@@ -692,7 +697,15 @@ export default function HomePage() {
                   <span className="text-4xl font-bold">Custom</span>
                 </div>
                 
-                <Button variant="outline" className="w-full">Contact Sales</Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    window.location.href = "mailto:sales@infraaudit.com?subject=InfraAudit Enterprise Inquiry";
+                  }}
+                >
+                  Contact Sales
+                </Button>
               </div>
               
               <div className="p-6 bg-gray-50 dark:bg-gray-800/70 border-t dark:border-gray-700">
