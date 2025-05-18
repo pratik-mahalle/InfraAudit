@@ -542,67 +542,28 @@ export default function HomePage() {
             </div>
           </div>
           
-          {/* Testimonials Section - New Design */}
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Testimonial 1 */}
-            <div className="bg-gray-900 dark:bg-gray-800/90 text-white p-6 rounded-lg relative overflow-hidden group hover:shadow-xl transition-shadow duration-300">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-10 -mt-10"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full -ml-10 -mb-10"></div>
+          {/* Testimonials Section - Clean Design */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Primary Testimonial */}
+            <div className="bg-blue-800 dark:bg-blue-900 text-white p-8 rounded-lg relative overflow-hidden group hover:shadow-xl transition-shadow duration-300 border-2 border-blue-500/30 md:col-span-2 flex flex-col md:flex-row gap-6 items-center">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-10 -mt-10"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-10 -mb-10"></div>
               
-              <Quote className="h-8 w-8 text-blue-400 mb-4" />
-              <p className="italic relative z-10 mb-6 text-gray-100">
-                "CloudGuard helped us reduce our AWS costs by 32% in the first month. The anomaly detection saved us from a potential 5-figure surprise bill."
-              </p>
-              
-              <div className="flex items-center gap-4 mt-8">
-                <div className="h-12 w-12 rounded-full bg-blue-800 border-2 border-blue-400 flex items-center justify-center font-bold text-blue-100 shrink-0">
-                  JD
-                </div>
-                <div>
-                  <p className="font-medium text-gray-100">Jane Doe</p>
-                  <p className="text-sm text-blue-300">CTO at TechCorp</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Testimonial 2 */}
-            <div className="bg-blue-800 dark:bg-blue-900 text-white p-6 rounded-lg relative overflow-hidden group hover:shadow-xl transition-shadow duration-300 border-2 border-blue-500/30">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-10 -mb-10"></div>
-              
-              <Quote className="h-8 w-8 text-blue-300 mb-4" />
-              <p className="italic relative z-10 mb-6 text-gray-100">
-                "The security drift detection is a game-changer. We caught a misconfigured S3 bucket before it became a data breach. Worth every penny."
-              </p>
-              
-              <div className="flex items-center gap-4 mt-8">
-                <div className="h-12 w-12 rounded-full bg-green-800 border-2 border-green-400 flex items-center justify-center font-bold text-green-100 shrink-0">
+              <div className="md:w-1/4 flex justify-center relative z-10">
+                <div className="h-20 w-20 rounded-full bg-green-800 border-2 border-green-400 flex items-center justify-center font-bold text-green-100 shrink-0 text-lg">
                   MS
                 </div>
-                <div>
-                  <p className="font-medium text-gray-100">Michael Smith</p>
-                  <p className="text-sm text-blue-300">DevOps Lead at SecureData</p>
-                </div>
               </div>
-            </div>
-            
-            {/* Testimonial 3 */}
-            <div className="bg-gray-900 dark:bg-gray-800/90 text-white p-6 rounded-lg relative overflow-hidden group hover:shadow-xl transition-shadow duration-300">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-10 -mt-10"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full -ml-10 -mb-10"></div>
               
-              <Quote className="h-8 w-8 text-blue-400 mb-4" />
-              <p className="italic relative z-10 mb-6 text-gray-100">
-                "Managing our multi-cloud environment used to be a nightmare. CloudGuard unifies everything in one dashboard with actionable insights."
-              </p>
-              
-              <div className="flex items-center gap-4 mt-8">
-                <div className="h-12 w-12 rounded-full bg-amber-800 border-2 border-amber-400 flex items-center justify-center font-bold text-amber-100 shrink-0">
-                  AR
-                </div>
-                <div>
-                  <p className="font-medium text-gray-100">Alex Rodriguez</p>
-                  <p className="text-sm text-blue-300">Cloud Engineer at GlobalTech</p>
+              <div className="md:w-3/4 relative z-10">
+                <Quote className="h-10 w-10 text-blue-300 mb-4" />
+                <p className="italic mb-6 text-gray-100 text-lg md:text-xl">
+                  "The security drift detection is a game-changer. We caught a misconfigured S3 bucket before it became a data breach. Worth every penny."
+                </p>
+                
+                <div className="mt-4">
+                  <p className="font-medium text-gray-100 text-lg">Michael Smith</p>
+                  <p className="text-blue-300">DevOps Lead at SecureData</p>
                 </div>
               </div>
             </div>
