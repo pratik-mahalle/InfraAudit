@@ -21,6 +21,7 @@ import HomePage from "@/pages/HomePage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import SubscriptionCancel from "@/pages/SubscriptionCancel";
+import PricingPage from "@/pages/pricing";
 // Removed BillingImport as we've integrated it into CostOptimization
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -33,27 +34,95 @@ import {
 import ExpiredTrialRedirect from "@/components/trial/ExpiredTrialRedirect";
 
 function Router() {
+  // Wrap all protected components with the ExpiredTrialRedirect component
+  const ProtectedDashboard = () => (
+    <ExpiredTrialRedirect>
+      <Dashboard />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedSecurity = () => (
+    <ExpiredTrialRedirect>
+      <SecurityMonitoring />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedCost = () => (
+    <ExpiredTrialRedirect>
+      <CostOptimization />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedCostPrediction = () => (
+    <ExpiredTrialRedirect>
+      <CostPrediction />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedResources = () => (
+    <ExpiredTrialRedirect>
+      <ResourceUtilization />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedSettings = () => (
+    <ExpiredTrialRedirect>
+      <Settings />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedProfile = () => (
+    <ExpiredTrialRedirect>
+      <Profile />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedCloudProviders = () => (
+    <ExpiredTrialRedirect>
+      <CloudProviders />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedSubscription = () => (
+    <ExpiredTrialRedirect>
+      <SubscriptionPage />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedSubscriptionSuccess = () => (
+    <ExpiredTrialRedirect>
+      <SubscriptionSuccess />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedSubscriptionCancel = () => (
+    <ExpiredTrialRedirect>
+      <SubscriptionCancel />
+    </ExpiredTrialRedirect>
+  );
+  
   return (
     <Switch>
-      {/* Protected routes - require authentication */}
-      <ProtectedRoute path="/dashboard" component={Dashboard} />
-      <ProtectedRoute path="/security" component={SecurityMonitoring} />
-      <ProtectedRoute path="/cost" component={CostOptimization} />
-      <ProtectedRoute path="/cost-prediction" component={CostPrediction} />
-      <ProtectedRoute path="/resources" component={ResourceUtilization} />
+      {/* Protected routes - require authentication and active trial */}
+      <ProtectedRoute path="/dashboard" component={ProtectedDashboard} />
+      <ProtectedRoute path="/security" component={ProtectedSecurity} />
+      <ProtectedRoute path="/cost" component={ProtectedCost} />
+      <ProtectedRoute path="/cost-prediction" component={ProtectedCostPrediction} />
+      <ProtectedRoute path="/resources" component={ProtectedResources} />
       {/* Alerts have been integrated into the Security page */}
-      <ProtectedRoute path="/settings" component={Settings} />
-      <ProtectedRoute path="/profile" component={Profile} />
-      <ProtectedRoute path="/cloud-providers" component={CloudProviders} />
+      <ProtectedRoute path="/settings" component={ProtectedSettings} />
+      <ProtectedRoute path="/profile" component={ProtectedProfile} />
+      <ProtectedRoute path="/cloud-providers" component={ProtectedCloudProviders} />
       {/* Billing import has been integrated into the cost optimization page */}
-      <ProtectedRoute path="/subscription" component={SubscriptionPage} />
-      <ProtectedRoute path="/subscription/success" component={SubscriptionSuccess} />
-      <ProtectedRoute path="/subscription/cancel" component={SubscriptionCancel} />
+      <ProtectedRoute path="/subscription" component={ProtectedSubscription} />
+      <ProtectedRoute path="/subscription/success" component={ProtectedSubscriptionSuccess} />
+      <ProtectedRoute path="/subscription/cancel" component={ProtectedSubscriptionCancel} />
       
       {/* Public routes */}
       <Route path="/" component={HomePage} /> {/* Landing page for non-authenticated users */}
       <Route path="/auth" component={AuthPage} />
       <Route path="/documentation" component={Documentation} />
+      <Route path="/pricing" component={PricingPage} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
