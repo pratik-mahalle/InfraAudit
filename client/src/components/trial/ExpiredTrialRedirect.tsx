@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
@@ -13,13 +13,25 @@ interface TrialStatusResponse {
 export default function ExpiredTrialRedirect({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [location] = useLocation();
+  
+  // List of allowed paths even if trial is expired
+  const allowedPaths = ["/pricing", "/subscription", "/auth"];
+  
+  // If current path is already in the allowed paths, don't redirect
+  const isAllowedPath = allowedPaths.some(path => location === path || location.startsWith(`${path}/`));
   
   // Check trial status
   const { data: trialStatus } = useQuery<TrialStatusResponse>({
     queryKey: ["/api/trial-status"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/trial-status");
-      return await res.json();
+      try {
+        const res = await apiRequest("GET", "/api/trial-status");
+        return await res.json();
+      } catch (error) {
+        console.error("Error fetching trial status:", error);
+        return undefined;
+      }
     },
     // Poll every minute to make sure we detect expiry
     refetchInterval: 60 * 1000,
@@ -29,27 +41,25 @@ export default function ExpiredTrialRedirect({ children }: { children: React.Rea
     if (trialStatus) {
       setIsLoading(false);
       
-      // If trial is expired, redirect to upgrade page
-      if (trialStatus.status === "expired") {
+      // If trial is expired and not on an allowed path, force redirect
+      if (trialStatus.status === "expired" && !isAllowedPath) {
         setShouldRedirect(true);
       } else {
         setShouldRedirect(false);
       }
     }
-  }, [trialStatus]);
+  }, [trialStatus, isAllowedPath]);
   
-  // Show loading spinner while checking trial status - use a less intrusive approach
+  // During loading, proceed as normal
   if (isLoading) {
-    // If we're still loading, just render the children
-    // This prevents a disruptive loading screen
     return <>{children}</>;
   }
   
-  // Redirect to upgrade page if trial expired
+  // If we need to redirect to subscription page
   if (shouldRedirect) {
     return <Redirect to="/pricing" />;
   }
   
-  // If trial is active or not started, show the children
+  // If we're already on an allowed path or the trial isn't expired
   return <>{children}</>;
 }
