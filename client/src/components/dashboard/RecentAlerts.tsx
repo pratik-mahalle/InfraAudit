@@ -37,7 +37,7 @@ export function RecentAlerts({ alerts, isLoading = false }: RecentAlertsProps) {
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold font-inter">Recent Alerts</CardTitle>
         <Link href="/alerts">
-          <a className="text-primary text-sm hover:underline">View all</a>
+          <span className="text-primary text-sm hover:underline cursor-pointer">View all</span>
         </Link>
       </CardHeader>
       <CardContent>
