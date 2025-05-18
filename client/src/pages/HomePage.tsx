@@ -487,11 +487,6 @@ export default function HomePage() {
           
           {/* Founder Section with Animation */}
           <div className="mb-16 overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-600/20 dark:to-indigo-600/20 rounded-xl z-0 
-                          animate-pulse duration-5000"></div>
-            <div className="absolute -top-8 -left-8 w-32 h-32 bg-blue-400/20 dark:bg-blue-600/20 rounded-full blur-2xl"></div>
-            <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-indigo-400/20 dark:bg-indigo-600/20 rounded-full blur-2xl"></div>
-            
             <div className="p-8 md:p-10 lg:p-12 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 relative z-10">
               <div className="flex flex-col md:flex-row items-center gap-8">
                 <div className="md:w-1/3">
@@ -524,7 +519,7 @@ export default function HomePage() {
                   </div>
                   
                   <p className="text-gray-700 dark:text-gray-300 text-lg mb-4 pl-4 border-l-4 border-blue-300 dark:border-blue-500/50 italic">
-                  Hi, I'm Pratik, Founder and DevOps Engineer behind InfraAudit — a cloud observability and security tool that eliminates hours of manual effort for cloud teams. With InfraAudit, we’ve automated compliance checks, surfaced critical misconfigurations, and reduced cloud overspend with smart, real-time insights. It’s now an operational prototype and actively evolving into a must-have tool for modern DevOps and FinOps workflows.                  </p>
+                  Hi, I'm Pratik, Founder and DevOps Engineer behind InfraAudit — a cloud observability and security tool that eliminates hours of manual effort for cloud teams. With InfraAudit, we've automated compliance checks, surfaced critical misconfigurations, and reduced cloud overspend with smart, real-time insights. It's now an operational prototype and actively evolving into a must-have tool for modern DevOps and FinOps workflows.                  </p>
                   
                   <div className="mt-6 flex flex-wrap gap-4">
                     <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm">
