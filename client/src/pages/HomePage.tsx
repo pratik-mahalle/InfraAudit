@@ -482,7 +482,7 @@ export default function HomePage() {
               Trusted by DevOps Teams Worldwide
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Here's what our customers are saying about CloudGuard
+              Here's what our customers are saying about InfraAudit
             </p>
           </div>
           
@@ -729,7 +729,7 @@ export default function HomePage() {
             Ready to Optimize Your Cloud?
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-            Join hundreds of organizations that trust CloudGuard to secure and optimize their cloud infrastructure.
+            Join our pilot users and trust InfraAudit to secure and optimize your cloud infrastructure.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
