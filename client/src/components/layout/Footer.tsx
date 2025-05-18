@@ -1,24 +1,22 @@
 import React from "react";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { Shield, Github, Twitter, Linkedin, Mail, Heart } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
-  const [_, navigate] = useLocation();
 
   return (
     <footer className="w-full border-t border-border/40 bg-background py-10">
       <div className="container grid gap-8 px-4 md:px-6 lg:grid-cols-4 max-w-6xl mx-auto">
         <div className="space-y-4">
-          <div 
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            <Shield className="h-6 w-6 text-blue-600" />
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              InfraAudit
-            </span>
-          </div>
+          <Link href="/">
+            <div className="flex items-center gap-2 cursor-pointer">
+              <Shield className="h-6 w-6 text-blue-600" />
+              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                InfraAudit
+              </span>
+            </div>
+          </Link>
           <p className="text-sm text-muted-foreground max-w-xs">
             A multi-cloud infrastructure monitoring platform that leverages AI to detect cost anomalies and security configuration drifts.
           </p>
@@ -35,7 +33,7 @@ export function Footer() {
               <Linkedin className="h-5 w-5" />
               <span className="sr-only">LinkedIn</span>
             </a>
-            <a href="mailto:contact@cloudguard.com" className="text-muted-foreground hover:text-foreground">
+            <a href="mailto:contact@infraaudit.com" className="text-muted-foreground hover:text-foreground">
               <Mail className="h-5 w-5" />
               <span className="sr-only">Email</span>
             </a>
@@ -46,44 +44,39 @@ export function Footer() {
           <h3 className="text-base font-medium">Platform</h3>
           <ul className="space-y-2 text-sm">
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/dashboard")}
-              >
-                Dashboard
-              </div>
+              <Link href="/dashboard">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Dashboard
+                </div>
+              </Link>
             </li>
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/cost-optimization")}
-              >
-                Cost Optimization
-              </div>
+              <Link href="/cost-optimization">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Cost Optimization
+                </div>
+              </Link>
             </li>
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/security-monitoring")}
-              >
-                Security Monitoring
-              </div>
+              <Link href="/security-monitoring">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Security Monitoring
+                </div>
+              </Link>
             </li>
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/alerts")}
-              >
-                Alerts
-              </div>
+              <Link href="/alerts">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Alerts
+                </div>
+              </Link>
             </li>
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/cloud-providers")}
-              >
-                Cloud Providers
-              </div>
+              <Link href="/cloud-providers">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Cloud Providers
+                </div>
+              </Link>
             </li>
           </ul>
         </div>
@@ -92,36 +85,32 @@ export function Footer() {
           <h3 className="text-base font-medium">Resources</h3>
           <ul className="space-y-2 text-sm">
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/documentation")}
-              >
-                Documentation
-              </div>
+              <Link href="/documentation">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Documentation
+                </div>
+              </Link>
             </li>
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/guides")}
-              >
-                Guides
-              </div>
+              <Link href="/guides">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Guides
+                </div>
+              </Link>
             </li>
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/api")}
-              >
-                API
-              </div>
+              <Link href="/api">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  API
+                </div>
+              </Link>
             </li>
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/blog")}
-              >
-                Blog
-              </div>
+              <Link href="/blog">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Blog
+                </div>
+              </Link>
             </li>
           </ul>
         </div>
@@ -130,36 +119,32 @@ export function Footer() {
           <h3 className="text-base font-medium">Company</h3>
           <ul className="space-y-2 text-sm">
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/about")}
-              >
-                About
-              </div>
+              <Link href="/about">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  About
+                </div>
+              </Link>
             </li>
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/contact")}
-              >
-                Contact
-              </div>
+              <Link href="/contact">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Contact
+                </div>
+              </Link>
             </li>
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/privacy")}
-              >
-                Privacy Policy
-              </div>
+              <Link href="/privacy">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Privacy Policy
+                </div>
+              </Link>
             </li>
             <li>
-              <div 
-                className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => navigate("/terms")}
-              >
-                Terms of Service
-              </div>
+              <Link href="/terms">
+                <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
+                  Terms of Service
+                </div>
+              </Link>
             </li>
           </ul>
         </div>
@@ -169,24 +154,21 @@ export function Footer() {
           &copy; {currentYear} InfraAudit. All rights reserved.
         </p>
         <div className="flex gap-4 text-xs text-muted-foreground">
-          <div 
-            className="hover:text-foreground transition-colors cursor-pointer"
-            onClick={() => navigate("/privacy")}
-          >
-            Privacy
-          </div>
-          <div 
-            className="hover:text-foreground transition-colors cursor-pointer"
-            onClick={() => navigate("/terms")}
-          >
-            Terms
-          </div>
-          <div 
-            className="hover:text-foreground transition-colors cursor-pointer"
-            onClick={() => navigate("/cookies")}
-          >
-            Cookies
-          </div>
+          <Link href="/privacy">
+            <div className="hover:text-foreground transition-colors cursor-pointer">
+              Privacy
+            </div>
+          </Link>
+          <Link href="/terms">
+            <div className="hover:text-foreground transition-colors cursor-pointer">
+              Terms
+            </div>
+          </Link>
+          <Link href="/cookies">
+            <div className="hover:text-foreground transition-colors cursor-pointer">
+              Cookies
+            </div>
+          </Link>
         </div>
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           Made with <Heart className="h-3 w-3 text-red-500" /> by{" "}
