@@ -252,12 +252,21 @@ export function setupAuth(app: Express) {
     try {
       const user = req.user as SelectUser;
       
-      // If trial hasn't started yet
+      // If trial hasn't started yet (this should rarely happen since we auto-start trial on registration)
       if (user.trialStatus === "inactive" || !user.trialStartedAt) {
         return res.json({ 
           status: "inactive",
           message: "Trial not started yet",
           daysRemaining: 7
+        });
+      }
+      
+      // If trial has already been marked as expired
+      if (user.trialStatus === "expired") {
+        return res.json({
+          status: "expired",
+          message: "Your free trial has ended. Please subscribe to continue using InfraAudit.",
+          daysRemaining: 0
         });
       }
       
