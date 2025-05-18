@@ -13,7 +13,8 @@ import {
   ArrowRight,
   CloudLightning,
   ChevronRight,
-  Plus
+  Plus,
+  Quote
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -485,87 +486,123 @@ export default function HomePage() {
             </p>
           </div>
           
-          {/* Founder Section */}
-          <div className="mb-16 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-8 rounded-xl">
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="md:w-1/3">
-                <div className="relative">
-                  <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-white dark:border-gray-800 shadow-lg mx-auto">
-                    <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                      <span className="text-4xl font-bold text-white">SJ</span>
+          {/* Founder Section with Animation */}
+          <div className="mb-16 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-600/20 dark:to-indigo-600/20 rounded-xl z-0 
+                          animate-pulse duration-5000"></div>
+            <div className="absolute -top-8 -left-8 w-32 h-32 bg-blue-400/20 dark:bg-blue-600/20 rounded-full blur-2xl"></div>
+            <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-indigo-400/20 dark:bg-indigo-600/20 rounded-full blur-2xl"></div>
+            
+            <div className="p-8 md:p-10 lg:p-12 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 relative z-10">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="md:w-1/3">
+                  <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full opacity-70 group-hover:opacity-100 blur group-hover:blur-md transition duration-1000"></div>
+                    <div className="relative">
+                      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-[6px] border-white dark:border-gray-800 shadow-xl mx-auto 
+                                  group-hover:scale-105 transition-transform duration-500 ease-out">
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                          <span className="text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-500">SJ</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs py-1 px-3 rounded-full shadow-lg
+                                z-20 hover:scale-110 transition-transform duration-300">
+                      Founder
                     </div>
                   </div>
-                  <div className="absolute -bottom-2 -right-2 bg-green-500 text-white text-xs py-1 px-3 rounded-full">
-                    Founder
+                </div>
+                
+                <div className="md:w-2/3 text-center md:text-left">
+                  <div className="flex items-center mb-4">
+                    <Quote className="h-10 w-10 text-blue-300 dark:text-blue-500 mr-2 shrink-0" />
+                    <div>
+                      <h3 className="text-2xl font-bold">Sarah Johnson</h3>
+                      <p className="text-blue-600 dark:text-blue-400">Founder & CEO</p>
+                    </div>
+                  </div>
+                  
+                  <p className="text-gray-700 dark:text-gray-300 text-lg mb-4 pl-4 border-l-4 border-blue-300 dark:border-blue-500/50 italic">
+                    I founded CloudGuard after experiencing firsthand the challenges of managing multi-cloud environments at scale. Our mission is to bring simplicity and intelligence to cloud infrastructure management, helping teams stay secure and cost-efficient.
+                  </p>
+                  
+                  <div className="mt-6 flex flex-wrap gap-4">
+                    <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm">
+                      Previously Engineering Director at AWS
+                    </span>
+                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm">
+                      15+ years in cloud infrastructure
+                    </span>
+                    <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-sm">
+                      BS in Computer Science from MIT
+                    </span>
                   </div>
                 </div>
-              </div>
-              
-              <div className="md:w-2/3 text-center md:text-left">
-                <div className="mb-4">
-                  <h3 className="text-2xl font-bold">Sarah Johnson</h3>
-                  <p className="text-blue-600 dark:text-blue-400">Founder & CEO</p>
-                </div>
-                
-                <p className="text-gray-700 dark:text-gray-300 text-lg mb-4">
-                  "I founded CloudGuard after experiencing firsthand the challenges of managing multi-cloud environments at scale. Our mission is to bring simplicity and intelligence to cloud infrastructure management, helping teams stay secure and cost-efficient."
-                </p>
-                
-                <p className="text-gray-600 dark:text-gray-400">
-                  Previously Engineering Director at AWS • 15+ years in cloud infrastructure • BS in Computer Science from MIT
-                </p>
               </div>
             </div>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          {/* Testimonials Section - New Design */}
+          <div className="grid md:grid-cols-3 gap-6">
             {/* Testimonial 1 */}
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm relative hover:shadow-lg transition-shadow duration-300">
-              <div className="absolute -top-5 left-8 text-6xl text-blue-300 dark:text-blue-700">"</div>
-              <p className="italic text-gray-600 dark:text-gray-300 relative z-10 mb-6">
+            <div className="bg-gray-900 dark:bg-gray-800/90 text-white p-6 rounded-lg relative overflow-hidden group hover:shadow-xl transition-shadow duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-10 -mt-10"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full -ml-10 -mb-10"></div>
+              
+              <Quote className="h-8 w-8 text-blue-400 mb-4" />
+              <p className="italic relative z-10 mb-6 text-gray-100">
                 "CloudGuard helped us reduce our AWS costs by 32% in the first month. The anomaly detection saved us from a potential 5-figure surprise bill."
               </p>
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300">
+              
+              <div className="flex items-center gap-4 mt-8">
+                <div className="h-12 w-12 rounded-full bg-blue-800 border-2 border-blue-400 flex items-center justify-center font-bold text-blue-100 shrink-0">
                   JD
                 </div>
                 <div>
-                  <p className="font-medium">Jane Doe</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">CTO at TechCorp</p>
+                  <p className="font-medium text-gray-100">Jane Doe</p>
+                  <p className="text-sm text-blue-300">CTO at TechCorp</p>
                 </div>
               </div>
             </div>
             
             {/* Testimonial 2 */}
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm relative hover:shadow-lg transition-shadow duration-300">
-              <div className="absolute -top-5 left-8 text-6xl text-blue-300 dark:text-blue-700">"</div>
-              <p className="italic text-gray-600 dark:text-gray-300 relative z-10 mb-6">
+            <div className="bg-blue-800 dark:bg-blue-900 text-white p-6 rounded-lg relative overflow-hidden group hover:shadow-xl transition-shadow duration-300 border-2 border-blue-500/30">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-10 -mb-10"></div>
+              
+              <Quote className="h-8 w-8 text-blue-300 mb-4" />
+              <p className="italic relative z-10 mb-6 text-gray-100">
                 "The security drift detection is a game-changer. We caught a misconfigured S3 bucket before it became a data breach. Worth every penny."
               </p>
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center font-bold text-green-700 dark:text-green-300">
+              
+              <div className="flex items-center gap-4 mt-8">
+                <div className="h-12 w-12 rounded-full bg-green-800 border-2 border-green-400 flex items-center justify-center font-bold text-green-100 shrink-0">
                   MS
                 </div>
                 <div>
-                  <p className="font-medium">Michael Smith</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">DevOps Lead at SecureData</p>
+                  <p className="font-medium text-gray-100">Michael Smith</p>
+                  <p className="text-sm text-blue-300">DevOps Lead at SecureData</p>
                 </div>
               </div>
             </div>
             
             {/* Testimonial 3 */}
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm relative hover:shadow-lg transition-shadow duration-300">
-              <div className="absolute -top-5 left-8 text-6xl text-blue-300 dark:text-blue-700">"</div>
-              <p className="italic text-gray-600 dark:text-gray-300 relative z-10 mb-6">
+            <div className="bg-gray-900 dark:bg-gray-800/90 text-white p-6 rounded-lg relative overflow-hidden group hover:shadow-xl transition-shadow duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-10 -mt-10"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full -ml-10 -mb-10"></div>
+              
+              <Quote className="h-8 w-8 text-blue-400 mb-4" />
+              <p className="italic relative z-10 mb-6 text-gray-100">
                 "Managing our multi-cloud environment used to be a nightmare. CloudGuard unifies everything in one dashboard with actionable insights."
               </p>
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center font-bold text-amber-700 dark:text-amber-300">
+              
+              <div className="flex items-center gap-4 mt-8">
+                <div className="h-12 w-12 rounded-full bg-amber-800 border-2 border-amber-400 flex items-center justify-center font-bold text-amber-100 shrink-0">
                   AR
                 </div>
                 <div>
-                  <p className="font-medium">Alex Rodriguez</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Cloud Engineer at GlobalTech</p>
+                  <p className="font-medium text-gray-100">Alex Rodriguez</p>
+                  <p className="text-sm text-blue-300">Cloud Engineer at GlobalTech</p>
                 </div>
               </div>
             </div>
