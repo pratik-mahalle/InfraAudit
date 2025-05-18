@@ -1,25 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, BarChart3, Shield, DollarSign, LineChart, ArrowRight, CloudLightning } from "lucide-react";
+import {
+  Check,
+  BarChart3,
+  Shield,
+  DollarSign,
+  LineChart,
+  ArrowRight,
+  CloudLightning,
+  ChevronRight
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function HomePage() {
   const { user } = useAuth();
   const [email, setEmail] = useState("");
   
+  // Add scroll animation hooks
+  const [scrollY, setScrollY] = useState(0);
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+  
   // Redirect to dashboard if already logged in
   if (user) {
-    return <Link href="/" />;
+    return <Link href="/dashboard" />;
   }
   
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <header className="w-full py-4 px-6 flex justify-between items-center border-b">
+      {/* Header - with scroll effect */}
+      <header className={`w-full py-4 px-6 flex justify-between items-center border-b fixed top-0 z-50 transition-all duration-300 ${scrollY > 50 ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-md' : 'bg-white dark:bg-gray-900'}`}>
         <div className="flex items-center gap-2">
           <CloudLightning className="h-8 w-8 text-primary" />
           <span className="font-bold text-xl">CloudGuard</span>
@@ -27,8 +48,8 @@ export default function HomePage() {
         <nav className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Features</a>
           <a href="#pricing" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Pricing</a>
-          <a href="#about" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">About</a>
-          <a href="#contact" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Contact</a>
+          <a href="#testimonials" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Testimonials</a>
+          <a href="#faq" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">FAQ</a>
         </nav>
         <div className="flex items-center gap-3">
           <Link href="/auth">
@@ -39,6 +60,9 @@ export default function HomePage() {
           </Link>
         </div>
       </header>
+      
+      {/* Spacer for fixed header */}
+      <div className="h-16"></div>
       
       {/* Hero Section */}
       <section className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
@@ -51,28 +75,35 @@ export default function HomePage() {
               </div>
               
               <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
-                Cloud Monitoring Made <br /> 
-                Effortless through AI
+                <span className="bg-gradient-to-r from-primary to-blue-600 dark:from-primary dark:to-blue-400 bg-clip-text text-transparent">Cloud Monitoring Made</span> <br />
+                <span className="relative">
+                  Effortless through AI
+                </span>
               </h1>
+              
               <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">
                 AI-powered platform to monitor, secure, and optimize your cloud infrastructure across all providers.
               </p>
+              
               <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-8">
                 Tailor-made for DevOps and Cloud Engineering teams
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3 mb-8">
-                <div className="flex-grow">
+                <div className="flex-grow group">
                   <Input 
                     type="email" 
                     placeholder="Enter your email address" 
-                    className="w-full h-12" 
+                    className="w-full h-12 transition-all duration-300 group-hover:border-primary" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
-                <Button className="h-12 px-6">
-                  Schedule Demo
+                <Button className="h-12 px-6 relative overflow-hidden group">
+                  <span className="relative z-10 flex items-center">
+                    Schedule Demo
+                    <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </span>
                 </Button>
               </div>
             </div>
@@ -309,8 +340,239 @@ export default function HomePage() {
         </div>
       </section>
       
+      {/* What Makes Us Unique */}
+      <section className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">
+              What Makes CloudGuard Different
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              We're not just another cloud monitoring tool
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-1 rounded-xl shadow-xl">
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-8">
+                  <div className="space-y-6">
+                    <div className="flex items-start gap-4">
+                      <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0 mt-1">
+                        <span className="font-bold text-blue-600 dark:text-blue-400">1</span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-medium mb-2">True Multi-Cloud Integration</h3>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          Unlike competitors who prioritize one cloud provider, CloudGuard delivers equal depth of features across AWS, Azure, and Google Cloud from day one.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-4">
+                      <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0 mt-1">
+                        <span className="font-bold text-blue-600 dark:text-blue-400">2</span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-medium mb-2">AI-Driven Insights</h3>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          Our advanced machine learning algorithms don't just detect issues—they predict them before they happen, with 87% accuracy in cost spike prediction.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-4">
+                      <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0 mt-1">
+                        <span className="font-bold text-blue-600 dark:text-blue-400">3</span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-medium mb-2">Interactive Drill-Down Analytics</h3>
+                        <p className="text-gray-600 dark:text-gray-300">
+                          CloudGuard provides detailed, interactive visualizations that let you explore cost and security data by clicking on any element to reveal deeper insights.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-8">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30">
+                  <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium mb-2">23% Average Cost Savings</h3>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Our customers see an average of 23% reduction in cloud spending within the first quarter after implementation.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                  <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium mb-2">94% Security Compliance</h3>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    CloudGuard users maintain an average of 94% compliance with industry security standards, compared to the industry average of 71%.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                  <BarChart3 className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium mb-2">5x Faster Issue Resolution</h3>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Teams using CloudGuard resolve infrastructure issues 5 times faster than teams using traditional monitoring tools.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Testimonials Section */}
+      <section id="testimonials" className="w-full py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">
+              Trusted by DevOps Teams Worldwide
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Here's what our customers are saying about CloudGuard
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Testimonial 1 */}
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm relative hover:shadow-lg transition-shadow duration-300">
+              <div className="absolute -top-5 left-8 text-6xl text-blue-300 dark:text-blue-700">"</div>
+              <p className="italic text-gray-600 dark:text-gray-300 relative z-10 mb-6">
+                "CloudGuard helped us reduce our AWS costs by 32% in the first month. The anomaly detection saved us from a potential 5-figure surprise bill."
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300">
+                  JD
+                </div>
+                <div>
+                  <p className="font-medium">Jane Doe</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">CTO at TechCorp</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Testimonial 2 */}
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm relative hover:shadow-lg transition-shadow duration-300">
+              <div className="absolute -top-5 left-8 text-6xl text-blue-300 dark:text-blue-700">"</div>
+              <p className="italic text-gray-600 dark:text-gray-300 relative z-10 mb-6">
+                "The security drift detection is a game-changer. We caught a misconfigured S3 bucket before it became a data breach. Worth every penny."
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center font-bold text-green-700 dark:text-green-300">
+                  MS
+                </div>
+                <div>
+                  <p className="font-medium">Michael Smith</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">DevOps Lead at SecureData</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Testimonial 3 */}
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm relative hover:shadow-lg transition-shadow duration-300">
+              <div className="absolute -top-5 left-8 text-6xl text-blue-300 dark:text-blue-700">"</div>
+              <p className="italic text-gray-600 dark:text-gray-300 relative z-10 mb-6">
+                "Managing our multi-cloud environment used to be a nightmare. CloudGuard unifies everything in one dashboard with actionable insights."
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center font-bold text-amber-700 dark:text-amber-300">
+                  AR
+                </div>
+                <div>
+                  <p className="font-medium">Alex Rodriguez</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Cloud Engineer at GlobalTech</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* FAQ Section */}
+      <section id="faq" className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+              Everything you need to know about CloudGuard
+            </p>
+          </div>
+          
+          <div className="space-y-6">
+            {/* FAQ Item 1 */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+              <div className="p-6">
+                <h3 className="text-xl font-medium mb-3">Does CloudGuard require admin access to my cloud accounts?</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  No, CloudGuard works with read-only access. We provide detailed IAM policies for each cloud provider that grant only the permissions needed for monitoring and analysis, without any ability to modify your infrastructure.
+                </p>
+              </div>
+            </div>
+            
+            {/* FAQ Item 2 */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+              <div className="p-6">
+                <h3 className="text-xl font-medium mb-3">How does CloudGuard's pricing work for multiple cloud providers?</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Our pricing is based on the number of resources monitored, not the number of cloud providers. You can connect any combination of AWS, Azure, and Google Cloud at no additional cost, making it ideal for multi-cloud environments.
+                </p>
+              </div>
+            </div>
+            
+            {/* FAQ Item 3 */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+              <div className="p-6">
+                <h3 className="text-xl font-medium mb-3">Can CloudGuard help with regulatory compliance?</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Yes, CloudGuard includes built-in compliance checks for major regulations including GDPR, HIPAA, PCI DSS, and SOC 2. Our security drift detection continuously monitors your environment for compliance violations and provides step-by-step remediation instructions.
+                </p>
+              </div>
+            </div>
+            
+            {/* FAQ Item 4 */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+              <div className="p-6">
+                <h3 className="text-xl font-medium mb-3">How long does it take to implement CloudGuard?</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Most customers are fully onboarded within 24 hours. The initial setup typically takes less than 30 minutes per cloud provider, and our system begins providing insights immediately after connection.
+                </p>
+              </div>
+            </div>
+            
+            {/* FAQ Item 5 */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md">
+              <div className="p-6">
+                <h3 className="text-xl font-medium mb-3">Does CloudGuard integrate with other DevOps tools?</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Yes, CloudGuard provides native integrations with popular DevOps tools including Slack, PagerDuty, Jira, and GitHub. We also offer a REST API for custom integrations with your existing workflows.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
       {/* Pricing Section */}
-      <section id="pricing" className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
+      <section id="pricing" className="w-full py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">
@@ -322,7 +584,7 @@ export default function HomePage() {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden transform transition-transform hover:scale-105">
               <div className="p-6 bg-white dark:bg-gray-800">
                 <h3 className="text-xl font-bold mb-2">Starter</h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-4">For small teams getting started with cloud management</p>
@@ -360,7 +622,7 @@ export default function HomePage() {
               </div>
             </Card>
             
-            <Card className="overflow-hidden border-primary relative">
+            <Card className="overflow-hidden border-primary relative transform transition-transform hover:scale-105">
               <div className="absolute top-0 right-0 bg-primary text-white text-xs py-1 px-3 rounded-bl-lg">
                 Most Popular
               </div>
@@ -406,7 +668,7 @@ export default function HomePage() {
               </div>
             </Card>
             
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden transform transition-transform hover:scale-105">
               <div className="p-6 bg-white dark:bg-gray-800">
                 <h3 className="text-xl font-bold mb-2">Enterprise</h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-4">For organizations with complex cloud environments</p>
@@ -451,7 +713,7 @@ export default function HomePage() {
       </section>
       
       {/* CTA Section */}
-      <section className="w-full py-20 px-6">
+      <section className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">
             Ready to Optimize Your Cloud?
@@ -461,11 +723,11 @@ export default function HomePage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="px-8">
-              Start Free Trial
+            <Button size="lg" className="px-8 group relative overflow-hidden hover:bg-primary-600 transition-colors">
+              <span className="relative z-10">Start Free Trial</span>
             </Button>
-            <Button size="lg" variant="outline" className="px-8">
-              Schedule Demo
+            <Button size="lg" variant="outline" className="px-8 group relative overflow-hidden hover:bg-primary-100 dark:hover:bg-primary-900/20 transition-colors">
+              <span className="relative z-10">Schedule Demo</span>
             </Button>
           </div>
         </div>
