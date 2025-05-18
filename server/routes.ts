@@ -19,6 +19,7 @@ import { subscriptionsRouter } from "./routes/subscriptions";
 import { costPredictionRouter } from "./routes/cost-prediction";
 import { billingImportRouter } from "./routes/billing-import";
 
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes and middleware
   setupAuth(app);
@@ -43,6 +44,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup billing import routes
   app.use('/api/billing-import', billingImportRouter);
+  
+  // Setup a simplified cost analysis endpoint
+  app.get('/api/cost-analysis', async (req, res) => {
+    try {
+      // In a real implementation, this would fetch data from cloud providers
+      // For now, return sample data
+      const mockData = generateMockCostData();
+      res.json(mockData);
+    } catch (error: any) {
+      console.error('Error fetching cost analysis data:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch cost analysis data' });
+    }
+  });
+  
+  // Helper function to generate mock cost data
+  function generateMockCostData() {
+    const services = ['EC2', 'S3', 'RDS', 'Lambda', 'DynamoDB', 'CloudFront'];
+    const regions = ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-southeast-1'];
+    const data = [];
+    
+    // Generate 90 days of data
+    const endDate = new Date();
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - 90);
+    
+    let currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const service = services[Math.floor(Math.random() * services.length)];
+      const region = regions[Math.floor(Math.random() * regions.length)];
+      const baseAmount = Math.random() * 100 + 10; // $10-$110
+      
+      // Add some trends and patterns
+      const dayOfWeek = currentDate.getDay(); // 0-6
+      let multiplier = 1.0;
+      
+      // Weekends have lower costs
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        multiplier = 0.7;
+      }
+      
+      // Add a cost spike for a specific service in the middle of the data
+      const daysSinceStart = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (service === 'EC2' && daysSinceStart > 40 && daysSinceStart < 50) {
+        multiplier = 2.5;
+      }
+      
+      data.push({
+        date: currentDate.toISOString().split('T')[0],
+        amount: baseAmount * multiplier,
+        service,
+        region
+      });
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return data;
+  }
   
   // Error handler helper for Zod validation errors
   const handleZodError = (err: ZodError, res: Response) => {
