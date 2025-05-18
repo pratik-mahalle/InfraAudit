@@ -62,7 +62,7 @@ export const WelcomeModal: React.FC = () => {
               className="bg-white/20 p-2 rounded-full" 
             />
             <div>
-              <DialogTitle className="text-2xl">Welcome to CloudGuard!</DialogTitle>
+              <DialogTitle className="text-2xl">Welcome to InfraAudit!</DialogTitle>
               <DialogDescription className="text-blue-100 mt-1">
                 Your intelligent cloud infrastructure monitoring platform
               </DialogDescription>
@@ -77,7 +77,7 @@ export const WelcomeModal: React.FC = () => {
           </div>
           
           <p className="text-gray-600 mb-6">
-            CloudGuard helps you monitor, secure, and optimize your cloud infrastructure across AWS, Azure, and Google Cloud.
+            InfraAudit helps you monitor, secure, and optimize your cloud infrastructure across AWS, Azure, and Google Cloud.
             Let me show you what we can do together!
           </p>
           
