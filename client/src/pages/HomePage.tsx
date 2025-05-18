@@ -424,7 +424,7 @@ export default function HomePage() {
                       <div>
                         <h3 className="text-xl font-medium mb-2">Interactive Drill-Down Analytics</h3>
                         <p className="text-gray-600 dark:text-gray-300">
-                          CloudGuard provides detailed, interactive visualizations that let you explore cost and security data by clicking on any element to reveal deeper insights.
+                          InfraAudit provides detailed, interactive visualizations that let you explore cost and security data by clicking on any element to reveal deeper insights.
                         </p>
                       </div>
                     </div>
@@ -453,7 +453,7 @@ export default function HomePage() {
                 <div>
                   <h3 className="text-xl font-medium mb-2">94% Security Compliance</h3>
                   <p className="text-gray-600 dark:text-gray-300">
-                    CloudGuard users maintain an average of 94% compliance with industry security standards, compared to the industry average of 71%.
+                    InfraAudit users maintain an average of 94% compliance with industry security standards, compared to the industry average of 71%.
                   </p>
                 </div>
               </div>
@@ -465,7 +465,7 @@ export default function HomePage() {
                 <div>
                   <h3 className="text-xl font-medium mb-2">5x Faster Issue Resolution</h3>
                   <p className="text-gray-600 dark:text-gray-300">
-                    Teams using CloudGuard resolve infrastructure issues 5 times faster than teams using traditional monitoring tools.
+                    Teams using InfraAudit resolve infrastructure issues 5 times faster than teams using traditional monitoring tools.
                   </p>
                 </div>
               </div>
@@ -517,24 +517,24 @@ export default function HomePage() {
                   <div className="flex items-center mb-4">
                     <Quote className="h-10 w-10 text-blue-300 dark:text-blue-500 mr-2 shrink-0" />
                     <div>
-                      <h3 className="text-2xl font-bold">Sarah Johnson</h3>
-                      <p className="text-blue-600 dark:text-blue-400">Founder & CEO</p>
+                      <h3 className="text-2xl font-bold">Pratik Mahalle</h3>
+                      <p className="text-blue-600 dark:text-blue-400">Founder & DevOps Engineer</p>
                     </div>
                   </div>
                   
                   <p className="text-gray-700 dark:text-gray-300 text-lg mb-4 pl-4 border-l-4 border-blue-300 dark:border-blue-500/50 italic">
-                    I founded CloudGuard after experiencing firsthand the challenges of managing multi-cloud environments at scale. Our mission is to bring simplicity and intelligence to cloud infrastructure management, helping teams stay secure and cost-efficient.
+                    Hi, I'm Pratik, a DevOps engineer and CNCF organizer building InfraAudit — an infra observability and security tool that saves cloud teams hours of manual checks. We're currently onboarding 10 pilot users and looking to raise a pre-seed round. Would love to send over the deck if you're open to it.
                   </p>
                   
                   <div className="mt-6 flex flex-wrap gap-4">
                     <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm">
-                      Previously Engineering Director at AWS
+                      DevOps Engineer
                     </span>
                     <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm">
-                      15+ years in cloud infrastructure
+                      CNCF Organizer
                     </span>
                     <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-sm">
-                      BS in Computer Science from MIT
+                      Cloud Infrastructure Expert
                     </span>
                   </div>
                 </div>
