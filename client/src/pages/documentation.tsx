@@ -23,8 +23,6 @@ import { Badge } from '@/components/ui/badge';
 import { useOnboarding } from '@/components/onboarding/OnboardingContext';
 
 const Documentation = () => {
-  const { restartTour } = useOnboarding();
-  
   return (
     <MainLayout>
       <div className="container mx-auto py-8 px-4 max-w-7xl">
@@ -35,24 +33,15 @@ const Documentation = () => {
               Comprehensive guide to monitoring and optimizing your cloud infrastructure
             </p>
           </div>
-          <Button 
-            onClick={restartTour}
-            className="gap-2"
-          >
-            <RefreshCw size={16} />
-            <span>Start Interactive Tour</span>
-          </Button>
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full md:w-auto md:inline-flex grid-cols-2 md:grid-cols-none mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="features">Features</TabsTrigger>
-            <TabsTrigger value="onboarding">Onboarding Tour</TabsTrigger>
             <TabsTrigger value="connection">Cloud Connection</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="costs">Cost Optimization</TabsTrigger>
-            <TabsTrigger value="go-migration">Go Migration</TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview">
@@ -162,37 +151,7 @@ const Documentation = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="onboarding">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>Interactive Onboarding Tour</CardTitle>
-                    <CardDescription>
-                      Guide to InfraAudit's interactive walkthrough
-                    </CardDescription>
-                  </div>
-                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">New Feature</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <p>
-                  InfraAudit features a comprehensive interactive onboarding tour guided by Cirrus, your cloud assistant mascot.
-                  This tour will walk you through all the key features of the platform, ensuring you get the most out of your
-                  cloud monitoring experience.
-                </p>
-                
-                <h3 className="text-lg font-medium">Tour Features</h3>
-                <ul className="list-disc pl-6 space-y-1">
-                  <li>Guided walkthrough of all major InfraAudit sections</li>
-                  <li>Automatic page navigation during the tour</li>
-                  <li>Interactive UI elements with visual highlights</li>
-                  <li>Friendly cloud mascot guide with contextual explanations</li>
-                  <li>Tour can be paused, resumed, or restarted at any time</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </TabsContent>
+
           
           <TabsContent value="connection">
             <Card>
@@ -272,12 +231,12 @@ const Documentation = () => {
               <CardHeader>
                 <CardTitle>Security Monitoring</CardTitle>
                 <CardDescription>
-                  How CloudGuard protects your cloud infrastructure
+                  How InfraAudit protects your cloud infrastructure
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <p>
-                  CloudGuard continuously monitors your cloud resources for security issues, configuration drifts, and compliance violations.
+                  InfraAudit continuously monitors your cloud resources for security issues, configuration drifts, and compliance violations.
                   Our platform helps identify and remediate security risks before they can be exploited.
                 </p>
               </CardContent>
@@ -289,33 +248,18 @@ const Documentation = () => {
               <CardHeader>
                 <CardTitle>Cost Optimization</CardTitle>
                 <CardDescription>
-                  How CloudGuard helps reduce your cloud spending
+                  How InfraAudit helps reduce your cloud spending
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <p>
-                  CloudGuard's AI-powered cost optimization engine analyzes your resource usage patterns and identifies opportunities to reduce cloud spending without impacting performance.
+                  InfraAudit's AI-powered cost optimization engine analyzes your resource usage patterns and identifies opportunities to reduce cloud spending without impacting performance.
                 </p>
               </CardContent>
             </Card>
           </TabsContent>
           
-          <TabsContent value="go-migration">
-            <Card>
-              <CardHeader>
-                <CardTitle>Go Backend Migration</CardTitle>
-                <CardDescription>
-                  Information about the ongoing migration to Go microservices
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <p>
-                  CloudGuard is in the process of migrating from a Node.js backend to a Go-based microservices architecture.
-                  This migration will bring significant performance improvements, better type safety, and more efficient resource utilization.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+
         </Tabs>
       </div>
     </MainLayout>
