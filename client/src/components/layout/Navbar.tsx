@@ -14,7 +14,8 @@ import {
   BookOpen,
   CreditCard,
   TrendingUp,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Zap
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -52,7 +53,7 @@ export function Navbar() {
         <div className="flex items-center pl-2">
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
-              <Shield className="h-6 w-6 text-blue-600" />
+              <Zap className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hidden md:block">
                 InfraAudit
               </span>
