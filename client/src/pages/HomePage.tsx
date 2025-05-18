@@ -21,24 +21,24 @@ import { useAuth } from "@/hooks/use-auth";
 // FAQ data structure
 const faqItems = [
   {
-    question: "What is CloudGuard, and who is it for?",
-    answer: "CloudGuard is a comprehensive cloud infrastructure monitoring platform designed for DevOps teams, cloud engineers, and IT managers who need to maintain security compliance and cost efficiency across AWS, Azure, and Google Cloud environments."
+    question: "What is InfraAudit, and who is it for?",
+    answer: "InfraAudit is a comprehensive cloud infrastructure monitoring platform designed for DevOps teams, cloud engineers, and IT managers who need to maintain security compliance and cost efficiency across AWS, Azure, and Google Cloud environments."
   },
   {
-    question: "How does CloudGuard help reduce cloud management risks?",
-    answer: "CloudGuard continuously monitors your cloud infrastructure for security vulnerabilities, cost anomalies, and resource inefficiencies. Our AI-powered analysis detects issues before they become problems, helping to prevent data breaches and unexpected billing spikes."
+    question: "How does InfraAudit help reduce cloud management risks?",
+    answer: "InfraAudit continuously monitors your cloud infrastructure for security vulnerabilities, cost anomalies, and resource inefficiencies. Our AI-powered analysis detects issues before they become problems, helping to prevent data breaches and unexpected billing spikes."
   },
   {
-    question: "Can CloudGuard integrate with our existing systems?",
-    answer: "Yes, CloudGuard provides seamless integration with your existing DevOps toolchain, including Slack, PagerDuty, Jira, and GitHub. We also provide a REST API for custom integrations with your specific workflows and internal systems."
+    question: "Can InfraAudit integrate with our existing systems?",
+    answer: "Yes, InfraAudit provides seamless integration with your existing DevOps toolchain, including Slack, PagerDuty, Jira, and GitHub. We also provide a REST API for custom integrations with your specific workflows and internal systems."
   },
   {
-    question: "What makes CloudGuard unique compared to other monitoring tools?",
-    answer: "Unlike competitors who focus on either cost or security, CloudGuard provides comprehensive coverage across all cloud providers with AI-driven insights, interactive visualizations, and customizable alerting—all in one unified dashboard."
+    question: "What makes InfraAudit unique compared to other monitoring tools?",
+    answer: "Unlike competitors who focus on either cost or security, InfraAudit provides comprehensive coverage across all cloud providers with AI-driven insights, interactive visualizations, and customizable alerting—all in one unified dashboard."
   },
   {
-    question: "What kind of reports can CloudGuard generate?",
-    answer: "CloudGuard generates detailed cost analysis reports, security compliance audits, resource utilization summaries, and predictive forecasts. All reports are customizable, exportable, and can be scheduled for regular delivery to stakeholders."
+    question: "What kind of reports can InfraAudit generate?",
+    answer: "InfraAudit generates detailed cost analysis reports, security compliance audits, resource utilization summaries, and predictive forecasts. All reports are customizable, exportable, and can be scheduled for regular delivery to stakeholders."
   }
 ];
 
@@ -79,7 +79,7 @@ export default function HomePage() {
       <header className={`w-full py-4 px-6 flex justify-between items-center border-b fixed top-0 z-50 transition-all duration-300 ${scrollY > 50 ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-md' : 'bg-white dark:bg-gray-900'}`}>
         <div className="flex items-center gap-2">
           <CloudLightning className="h-8 w-8 text-primary" />
-          <span className="font-bold text-xl">CloudGuard</span>
+          <span className="font-bold text-xl">InfraAudit</span>
         </div>
         <nav className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">Features</a>
@@ -292,7 +292,7 @@ export default function HomePage() {
               All-in-One Cloud Management Solution
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              CloudGuard provides comprehensive tools to monitor, secure, and optimize your entire cloud infrastructure.
+              InfraAudit provides comprehensive tools to monitor, secure, and optimize your entire cloud infrastructure.
             </p>
           </div>
           
@@ -381,7 +381,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">
-              What Makes CloudGuard Different
+              What Makes InfraAudit Different
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               We're not just another cloud monitoring tool
@@ -400,7 +400,7 @@ export default function HomePage() {
                       <div>
                         <h3 className="text-xl font-medium mb-2">True Multi-Cloud Integration</h3>
                         <p className="text-gray-600 dark:text-gray-300">
-                          Unlike competitors who prioritize one cloud provider, CloudGuard delivers equal depth of features across AWS, Azure, and Google Cloud from day one.
+                          Unlike competitors who prioritize one cloud provider, InfraAudit delivers equal depth of features across AWS, Azure, and Google Cloud from day one.
                         </p>
                       </div>
                     </div>
@@ -502,7 +502,7 @@ export default function HomePage() {
                       <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-[6px] border-white dark:border-gray-800 shadow-xl mx-auto 
                                   group-hover:scale-105 transition-transform duration-500 ease-out">
                         <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                          <span className="text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-500">SJ</span>
+                          <span className="text-4xl font-bold text-white group-hover:scale-110 transition-transform duration-500">PM</span>
                         </div>
                       </div>
                     </div>
