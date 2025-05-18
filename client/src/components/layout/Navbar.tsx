@@ -137,46 +137,30 @@ export function Navbar() {
           )}
           
           {/* Public links for all users */}
-          <Link 
+          <a 
             href="/#features" 
-            className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-              location === "/#features" 
-                ? "text-foreground font-medium" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground"
           >
             <span>Features</span>
-          </Link>
-          <Link 
+          </a>
+          <a 
             href="/#pricing" 
-            className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-              location === "/#pricing" 
-                ? "text-foreground font-medium" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground"
           >
             <span>Pricing</span>
-          </Link>
-          <Link 
+          </a>
+          <a 
             href="/#testimonials" 
-            className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-              location === "/#testimonials" 
-                ? "text-foreground font-medium" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground"
           >
             <span>Testimonials</span>
-          </Link>
-          <Link 
+          </a>
+          <a 
             href="/#faq" 
-            className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-              location === "/#faq" 
-                ? "text-foreground font-medium" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap text-muted-foreground hover:text-foreground"
           >
             <span>FAQ</span>
-          </Link>
+          </a>
         </div>
 
         {/* User controls and mobile menu */}
