@@ -94,7 +94,7 @@ export default function HomePage() {
             <Button variant="outline">Log In</Button>
           </Link>
           <Link href="/auth">
-            <Button>Try Demo</Button>
+            <Button>Start Free Trial</Button>
           </Link>
         </div>
       </header>

@@ -16,6 +16,8 @@ export const users = pgTable("users", {
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
   subscriptionStatus: text("subscription_status").default("inactive"), // active, inactive, past_due, canceled
+  trialStartedAt: timestamp("trial_started_at"),
+  trialStatus: text("trial_status").default("inactive"), // inactive, active, expired
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   lastLoginAt: timestamp("last_login_at"),
@@ -32,6 +34,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   stripeCustomerId: true,
   stripeSubscriptionId: true,
   subscriptionStatus: true,
+  trialStartedAt: true,
+  trialStatus: true,
 });
 
 // Cloud resources schema
