@@ -46,6 +46,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup billing import routes
   app.use('/api/billing-import', billingImportRouter);
   
+  // Setup Kubernetes routes
+  app.use('/api/kubernetes', kubernetesRouter);
+  
   // Setup a simplified cost analysis endpoint
   app.get('/api/cost-analysis', async (req, res) => {
     try {

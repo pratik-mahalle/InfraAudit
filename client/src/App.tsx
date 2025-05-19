@@ -22,6 +22,7 @@ import SubscriptionPage from "@/pages/SubscriptionPage";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import SubscriptionCancel from "@/pages/SubscriptionCancel";
 import PricingPage from "@/pages/pricing";
+import KubernetesPage from "@/pages/KubernetesPage";
 // Removed BillingImport as we've integrated it into CostOptimization
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -77,6 +78,12 @@ function Router() {
     </ExpiredTrialRedirect>
   );
   
+  const ProtectedKubernetes = () => (
+    <ExpiredTrialRedirect>
+      <KubernetesPage />
+    </ExpiredTrialRedirect>
+  );
+  
   const ProtectedSubscription = () => (
     <ExpiredTrialRedirect>
       <SubscriptionPage />
@@ -107,6 +114,7 @@ function Router() {
       <ProtectedRoute path="/settings" component={ProtectedSettings} />
       <ProtectedRoute path="/profile" component={ProtectedProfile} />
       <ProtectedRoute path="/cloud-providers" component={ProtectedCloudProviders} />
+      <ProtectedRoute path="/kubernetes" component={ProtectedKubernetes} />
       {/* Billing import has been integrated into the cost optimization page */}
       <ProtectedRoute path="/subscription" component={ProtectedSubscription} />
       <ProtectedRoute path="/subscription/success" component={ProtectedSubscriptionSuccess} />
