@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, TrendingUp, ArrowUp, Zap } from "lucide-react";
+import { Loader2, TrendingUp, ArrowUp, Zap, Server } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet";
+import KubernetesCostAnalytics from "@/components/costs/KubernetesCostAnalytics";
 
 export default function CostPrediction() {
   const [predictionModel, setPredictionModel] = useState<"linear" | "movingAverage" | "weightedMovingAverage">("linear");
@@ -323,6 +324,22 @@ export default function CostPrediction() {
             </CardContent>
           </Card>
         </div>
+        
+        {/* Kubernetes Cost Analytics */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl flex items-center">
+              <Server className="mr-2 h-5 w-5 text-blue-600" />
+              Kubernetes Cost Analytics
+            </CardTitle>
+            <CardDescription>
+              Real-time cost analysis and optimization for Kubernetes clusters
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <KubernetesCostAnalytics />
+          </CardContent>
+        </Card>
         
         {/* Historical Cost Analysis */}
         <Card>
