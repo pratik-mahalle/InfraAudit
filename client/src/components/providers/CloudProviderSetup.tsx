@@ -26,7 +26,8 @@ import {
   ServerCog, 
   CloudCog,
   Database,
-  Cloud
+  Cloud,
+  Server
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
@@ -369,7 +370,7 @@ export function CloudProviderSetup() {
         </div>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-3 mb-4">
+            <TabsList className="grid grid-cols-4 mb-4">
               <TabsTrigger value="aws" disabled={isAwsConnected}>
                 <div className="flex items-center">
                   <SiAmazon className="h-4 w-4 mr-2 text-orange-500" />
@@ -386,6 +387,12 @@ export function CloudProviderSetup() {
                 <div className="flex items-center">
                   <Cloud className="h-4 w-4 mr-2 text-blue-700" />
                   Azure
+                </div>
+              </TabsTrigger>
+              <TabsTrigger value="kubernetes">
+                <div className="flex items-center">
+                  <Server className="h-4 w-4 mr-2 text-blue-400" />
+                  Kubernetes
                 </div>
               </TabsTrigger>
             </TabsList>
@@ -699,6 +706,136 @@ export function CloudProviderSetup() {
                   </form>
                 </Form>
               )}
+            </TabsContent>
+            {/* Kubernetes Tab Content */}
+            <TabsContent value="kubernetes">
+              <div className="space-y-4">
+                <div className="border rounded-md p-4 bg-blue-50 dark:bg-blue-950/20">
+                  <div className="flex items-start space-x-3">
+                    <Server className="h-5 w-5 text-blue-500 mt-0.5" />
+                    <div>
+                      <h3 className="font-medium">Kubernetes Cluster Integration</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Integrate your Kubernetes clusters by uploading your kubeconfig file or pasting its contents below.
+                        The kubeconfig provides the necessary credentials to access your cluster.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Tabs defaultValue="upload">
+                    <TabsList className="w-full">
+                      <TabsTrigger value="upload" className="flex-1">Upload Kubeconfig</TabsTrigger>
+                      <TabsTrigger value="paste" className="flex-1">Paste Kubeconfig</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="upload" className="mt-4 space-y-4">
+                      <label className="block text-sm font-medium mb-1">
+                        Kubeconfig File
+                      </label>
+                      <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                        <input
+                          type="file"
+                          id="kubeconfig-file"
+                          className="hidden"
+                          accept=".yaml,.yml,.json"
+                          onChange={(e) => {
+                            // Handle file upload
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // File processing would go here
+                              console.log('File selected:', file.name);
+                            }
+                          }}
+                        />
+                        <label htmlFor="kubeconfig-file" className="cursor-pointer w-full text-center">
+                          <Database className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                          <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            YAML or JSON (max. 100KB)
+                          </p>
+                        </label>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium mb-1">
+                          Cluster Name (Optional)
+                        </label>
+                        <Input 
+                          placeholder="e.g., Production Cluster" 
+                          className="w-full"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          If not provided, we'll use the cluster name from the kubeconfig.
+                        </p>
+                      </div>
+                      
+                      <Button className="w-full mt-4">
+                        Connect Kubernetes Cluster
+                      </Button>
+                    </TabsContent>
+                    
+                    <TabsContent value="paste" className="mt-4 space-y-4">
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium mb-1">
+                          Kubeconfig Content
+                        </label>
+                        <textarea
+                          className="flex min-h-[200px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                          placeholder="Paste your kubeconfig content here (YAML or JSON)"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium mb-1">
+                          Cluster Name (Optional)
+                        </label>
+                        <Input 
+                          placeholder="e.g., Production Cluster" 
+                          className="w-full"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          If not provided, we'll use the cluster name from the kubeconfig.
+                        </p>
+                      </div>
+                      
+                      <Button className="w-full mt-4">
+                        Connect Kubernetes Cluster
+                      </Button>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+
+                {/* Connected Kubernetes clusters list */}
+                <div className="mt-6">
+                  <h4 className="text-sm font-medium mb-3">Connected Kubernetes Clusters</h4>
+                  
+                  <div className="border rounded-md overflow-hidden">
+                    {/* Example cluster - in a real implementation this would be dynamic */}
+                    <div className="p-4 border-b last:border-0 flex justify-between items-center">
+                      <div className="flex items-center space-x-3">
+                        <Server className="h-8 w-8 text-blue-400" />
+                        <div>
+                          <div className="font-medium">Development Cluster</div>
+                          <div className="text-xs text-muted-foreground flex gap-2 mt-1">
+                            <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs">
+                              v1.25.8
+                            </span>
+                            <span>3 nodes</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <Button variant="outline" size="sm">
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Disconnect
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
