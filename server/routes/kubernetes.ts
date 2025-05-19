@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { KubernetesService, KubernetesClusterConfig } from '../services/kubernetes-service';
+import { getKubernetesCosts } from './kubernetes-costs';
 
 // Create a new Kubernetes service instance that will be used across the application
 const kubernetesService = new KubernetesService();
@@ -124,6 +125,16 @@ router.get('/clusters/:id/namespaces/:namespace/pods/:name/logs', async (req: Re
   } catch (error) {
     console.error('Error getting pod logs:', error);
     res.status(500).json({ error: 'Failed to get pod logs' });
+  }
+});
+
+// Get Kubernetes costs data
+router.get('/costs', async (req: Request, res: Response) => {
+  try {
+    await getKubernetesCosts(req, res);
+  } catch (error) {
+    console.error('Error getting Kubernetes costs:', error);
+    res.status(500).json({ error: 'Failed to get Kubernetes costs data' });
   }
 });
 
