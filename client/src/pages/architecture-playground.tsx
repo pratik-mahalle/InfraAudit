@@ -105,7 +105,7 @@ export function ArchitecturePlaygroundPage() {
         animated: true,
         style: { stroke: '#3b82f6', strokeWidth: 2 },
         labelStyle: { fill: '#3b82f6', fontWeight: 700 },
-        markerEnd: { type: 'arrowclosed', color: '#3b82f6' },
+        markerEnd: { type: 'arrow', color: '#3b82f6' },
       }, eds));
     },
     [nodes, setEdges]
