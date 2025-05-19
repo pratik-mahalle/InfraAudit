@@ -517,4 +517,355 @@ export class KubernetesService {
       return 'warning';
     }
   }
+
+  // Calculate cost for Kubernetes resources based on cloud provider pricing
+  async calculateKubernetesCosts(clusterId: string): Promise<{ 
+    totalCost: number;
+    costBreakdown: Record<string, number>;
+    resourceCosts: Array<{ resourceId: string; cost: number; type: string }>
+  }> {
+    try {
+      // Get all resources in the cluster
+      const pods = await this.getPods(clusterId);
+      const deployments = await this.getDeployments(clusterId);
+      const services = await this.getServices(clusterId);
+      const nodes = await this.getNodes(clusterId);
+      
+      // Pricing constants (USD)
+      const pricingModel = {
+        cpu: {
+          hourly: 0.0425, // Per vCPU hour
+          monthly: 31.025 // Per vCPU month (avg 31 days)
+        },
+        memory: {
+          hourly: 0.00553, // Per GB hour
+          monthly: 4.0369 // Per GB month (avg 31 days)
+        },
+        loadBalancer: {
+          hourly: 0.025, // Per hour
+          monthly: 18.25 // Per month (avg 31 days)
+        },
+        persistentStorage: {
+          standard: {
+            perGBMonth: 0.10 // Standard storage per GB-month
+          },
+          ssd: {
+            perGBMonth: 0.17 // SSD storage per GB-month
+          }
+        }
+      };
+      
+      // Initialize cost breakdown
+      const costBreakdown: Record<string, number> = {
+        compute: 0,
+        memory: 0,
+        storage: 0,
+        networking: 0
+      };
+      
+      const resourceCosts: Array<{ resourceId: string; cost: number; type: string }> = [];
+      
+      // Calculate node costs - this is the baseline compute cost
+      for (const node of nodes) {
+        const cpuCapacity = this.parseCpuValue(node.status?.capacity?.cpu || '0');
+        const memoryGb = this.parseMemoryValue(node.status?.capacity?.memory || '0') / 1024; // Convert MB to GB
+        
+        const cpuCost = cpuCapacity * pricingModel.cpu.hourly * 24; // Daily cost
+        const memoryCost = memoryGb * pricingModel.memory.hourly * 24; // Daily cost
+        
+        costBreakdown.compute += cpuCost;
+        costBreakdown.memory += memoryCost;
+        
+        resourceCosts.push({
+          resourceId: node.name,
+          cost: cpuCost + memoryCost,
+          type: 'Node'
+        });
+      }
+      
+      // Calculate costs for pods based on resource requests/limits
+      for (const pod of pods) {
+        let podCpuCost = 0;
+        let podMemoryCost = 0;
+        
+        // Sum up container resources
+        if (pod.cpu && pod.memory) {
+          const cpuRequests = this.parseCpuValue(pod.cpu.requests || '0');
+          const memoryGb = this.parseMemoryValue(pod.memory.requests || '0') / 1024; // Convert MB to GB
+          
+          podCpuCost = cpuRequests * pricingModel.cpu.hourly * 24; // Daily cost
+          podMemoryCost = memoryGb * pricingModel.memory.hourly * 24; // Daily cost
+        }
+        
+        // Add pod storage costs if applicable
+        // This is a simplified approach - in real systems you'd look at PVC data
+        const podStorageCost = 0; // Placeholder for real storage cost calculation
+        
+        // Calculate pod utilization (if metrics available)
+        let utilization = 0;
+        if (pod.cpu?.usage && pod.cpu?.requests) {
+          const cpuUsage = this.parseCpuValue(pod.cpu.usage);
+          const cpuRequests = this.parseCpuValue(pod.cpu.requests);
+          if (cpuRequests > 0) {
+            utilization = Math.min(100, Math.round((cpuUsage / cpuRequests) * 100));
+          }
+        }
+        
+        const totalPodCost = podCpuCost + podMemoryCost + podStorageCost;
+        
+        // Update the pod object with cost information
+        pod.cost = parseFloat(totalPodCost.toFixed(4));
+        pod.costPerMonth = parseFloat((totalPodCost * 30).toFixed(2));
+        pod.utilization = utilization;
+        
+        // Add to cost breakdown
+        costBreakdown.compute += podCpuCost;
+        costBreakdown.memory += podMemoryCost;
+        costBreakdown.storage += podStorageCost;
+        
+        resourceCosts.push({
+          resourceId: pod.id,
+          cost: totalPodCost,
+          type: 'Pod'
+        });
+      }
+      
+      // Calculate service costs (primarily for load balancers)
+      for (const service of services) {
+        let serviceCost = 0;
+        
+        // Charge for LoadBalancer type services
+        if (service.type === 'LoadBalancer') {
+          serviceCost = pricingModel.loadBalancer.hourly * 24; // Daily cost
+          costBreakdown.networking += serviceCost;
+        }
+        
+        resourceCosts.push({
+          resourceId: service.id,
+          cost: serviceCost,
+          type: 'Service'
+        });
+      }
+      
+      // Calculate total cost
+      const totalCost = Object.values(costBreakdown).reduce((sum, cost) => sum + cost, 0);
+      
+      return {
+        totalCost,
+        costBreakdown,
+        resourceCosts
+      };
+    } catch (error) {
+      console.error('Error calculating Kubernetes costs:', error);
+      throw new Error(`Failed to calculate Kubernetes costs: ${error.message}`);
+    }
+  }
+  
+  // Generate cost predictions for Kubernetes cluster
+  async generateKubernetesCostPredictions(clusterId: string, days: number = 30): Promise<{
+    daily: Array<{ date: string; cost: number }>;
+    weekly: Array<{ week: number; cost: number }>;
+    monthly: { cost: number };
+    resourceProjections: Array<{ resourceId: string; type: string; currentCost: number; projectedCost: number; trend: 'increasing' | 'stable' | 'decreasing' }>
+  }> {
+    try {
+      // Get current costs
+      const currentCosts = await this.calculateKubernetesCosts(clusterId);
+      
+      // Get historical pod counts and resource usage (simplified version)
+      // In a real implementation, this would query a time-series database
+      const podHistory = await this.getPods(clusterId);
+      const nodeHistory = await this.getNodes(clusterId);
+      
+      // Calculate growth rate based on recent history (simulated)
+      // In a real implementation, this would analyze trends in resource usage
+      const growthRates = {
+        pods: 0.015, // 1.5% daily growth
+        nodes: 0.005, // 0.5% daily growth
+        cpu: 0.01,   // 1% daily growth
+        memory: 0.02  // 2% daily growth
+      };
+      
+      // Generate daily projections
+      const daily = [];
+      let cumulativeCost = currentCosts.totalCost;
+      
+      for (let i = 1; i <= days; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        
+        // Apply growth rates
+        cumulativeCost *= (1 + growthRates.pods + growthRates.cpu);
+        
+        daily.push({
+          date: date.toISOString().split('T')[0],
+          cost: parseFloat(cumulativeCost.toFixed(2))
+        });
+      }
+      
+      // Generate weekly projections
+      const weekly = [];
+      for (let i = 0; i < days; i += 7) {
+        const weekCosts = daily.slice(i, i + 7);
+        if (weekCosts.length > 0) {
+          const weekTotal = weekCosts.reduce((sum, day) => sum + day.cost, 0);
+          weekly.push({
+            week: Math.floor(i / 7) + 1,
+            cost: parseFloat(weekTotal.toFixed(2))
+          });
+        }
+      }
+      
+      // Monthly projection
+      const monthlyTotal = daily.reduce((sum, day) => sum + day.cost, 0);
+      
+      // Generate resource-specific projections
+      const resourceProjections = currentCosts.resourceCosts.map(resource => {
+        // Apply different growth rates based on resource type
+        let growthRate = 0.01; // Default
+        if (resource.type === 'Pod') {
+          growthRate = growthRates.pods;
+        } else if (resource.type === 'Node') {
+          growthRate = growthRates.nodes;
+        }
+        
+        const projectedCost = resource.cost * Math.pow(1 + growthRate, days);
+        const trend = growthRate > 0.01 ? 'increasing' : (growthRate < 0.005 ? 'decreasing' : 'stable');
+        
+        return {
+          resourceId: resource.resourceId,
+          type: resource.type,
+          currentCost: parseFloat(resource.cost.toFixed(2)),
+          projectedCost: parseFloat(projectedCost.toFixed(2)),
+          trend: trend as 'increasing' | 'stable' | 'decreasing'
+        };
+      });
+      
+      return {
+        daily,
+        weekly,
+        monthly: { cost: parseFloat(monthlyTotal.toFixed(2)) },
+        resourceProjections
+      };
+    } catch (error) {
+      console.error('Error generating Kubernetes cost predictions:', error);
+      throw new Error(`Failed to generate Kubernetes cost predictions: ${error.message}`);
+    }
+  }
+  
+  // Generate cost optimization recommendations for Kubernetes resources
+  async generateKubernetesOptimizationRecommendations(clusterId: string): Promise<Array<{
+    resourceId: string;
+    resourceName: string;
+    resourceType: string;
+    recommendation: string;
+    potentialSavings: number;
+    details: string;
+    severity: 'high' | 'medium' | 'low';
+  }>> {
+    try {
+      const pods = await this.getPods(clusterId);
+      const nodes = await this.getNodes(clusterId);
+      const deployments = await this.getDeployments(clusterId);
+      
+      const recommendations = [];
+      
+      // Check for underutilized pods
+      for (const pod of pods) {
+        if (pod.utilization !== undefined && pod.utilization < 30 && pod.cost && pod.cost > 0) {
+          recommendations.push({
+            resourceId: pod.id,
+            resourceName: pod.name,
+            resourceType: 'Pod',
+            recommendation: 'Rightsize container resources',
+            potentialSavings: parseFloat((pod.cost * 0.4).toFixed(2)), // 40% potential savings
+            details: `Pod ${pod.name} is consistently using less than 30% of requested CPU resources. Consider reducing resource requests.`,
+            severity: 'medium'
+          });
+        }
+      }
+      
+      // Check for node optimization opportunities
+      for (const node of nodes) {
+        // Check if node is underutilized
+        if (node.utilization !== undefined && node.utilization < 20) {
+          recommendations.push({
+            resourceId: node.name,
+            resourceName: node.name,
+            resourceType: 'Node',
+            recommendation: 'Consider node consolidation',
+            potentialSavings: 0, // Calculate based on node cost
+            details: `Node ${node.name} is significantly underutilized. Consider consolidating workloads to reduce cluster size.`,
+            severity: 'high'
+          });
+        }
+      }
+      
+      // Check deployment configurations
+      for (const deployment of deployments) {
+        // Check for missing resource limits
+        if (!deployment.cpu?.limits || !deployment.memory?.limits) {
+          recommendations.push({
+            resourceId: deployment.id,
+            resourceName: deployment.name,
+            resourceType: 'Deployment',
+            recommendation: 'Add resource limits',
+            potentialSavings: 0, // Non-cost recommendation
+            details: `Deployment ${deployment.name} is missing resource limits, which can lead to resource contention and poor cluster efficiency.`,
+            severity: 'medium'
+          });
+        }
+        
+        // Check for high replica count with low utilization
+        if (deployment.replicas && deployment.replicas > 3 && deployment.utilization && deployment.utilization < 30) {
+          const potentialSavings = (deployment.replicas * 0.3); // Simplified calculation
+          
+          recommendations.push({
+            resourceId: deployment.id,
+            resourceName: deployment.name,
+            resourceType: 'Deployment',
+            recommendation: 'Reduce replica count',
+            potentialSavings: parseFloat(potentialSavings.toFixed(2)),
+            details: `Deployment ${deployment.name} has ${deployment.replicas} replicas with low utilization. Consider reducing the replica count.`,
+            severity: 'medium'
+          });
+        }
+      }
+      
+      return recommendations;
+    } catch (error) {
+      console.error('Error generating Kubernetes optimization recommendations:', error);
+      throw new Error(`Failed to generate Kubernetes optimization recommendations: ${error.message}`);
+    }
+  }
+  
+  // Helper function to parse CPU values (e.g., "100m" to 0.1)
+  private parseCpuValue(cpu: string): number {
+    if (!cpu) return 0;
+    
+    if (cpu.endsWith('m')) {
+      return parseFloat(cpu.replace('m', '')) / 1000;
+    }
+    
+    return parseFloat(cpu);
+  }
+  
+  // Helper function to parse memory values to MB
+  private parseMemoryValue(memory: string): number {
+    if (!memory) return 0;
+    
+    let value = parseFloat(memory.replace(/[^0-9.]/g, ''));
+    
+    if (memory.includes('Ki')) {
+      value = value / 1024; // Convert KiB to MiB
+    } else if (memory.includes('Mi')) {
+      // Already in MiB
+    } else if (memory.includes('Gi')) {
+      value = value * 1024; // Convert GiB to MiB
+    } else if (memory.includes('Ti')) {
+      value = value * 1024 * 1024; // Convert TiB to MiB
+    }
+    
+    return value;
+  }
 }
