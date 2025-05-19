@@ -1,11 +1,18 @@
 import * as k8s from '@kubernetes/client-node';
-import { EventEmitter } from 'events';
+import { v4 as uuidv4 } from 'uuid';
 
+// Types for Kubernetes clusters and resources
 export interface KubernetesClusterConfig {
-  id: string;
   name: string;
   kubeconfig?: string;
   context?: string;
+}
+
+export interface KubernetesCluster {
+  id: string;
+  name: string;
+  context?: string;
+  hasKubeconfig: boolean;
 }
 
 export interface KubernetesResource {
@@ -29,20 +36,10 @@ export interface KubernetesResource {
   clusterName: string;
 }
 
-interface UtilizationData {
-  cpu: {
-    current: number;
-    limit: number;
-    timestamp: string;
-  };
-  memory: {
-    current: number;
-    limit: number;
-    timestamp: string;
-  };
-}
-
-export class KubernetesService extends EventEmitter {
+/**
+ * Service to manage Kubernetes clusters
+ */
+export class KubernetesService {
   private clusters: Map<string, {
     config: KubernetesClusterConfig;
     client: k8s.KubeConfig;
@@ -52,292 +49,350 @@ export class KubernetesService extends EventEmitter {
   }> = new Map();
 
   constructor() {
-    super();
+    console.log('Initializing Kubernetes service...');
   }
 
   /**
    * Add a Kubernetes cluster
    */
-  async addCluster(config: KubernetesClusterConfig): Promise<boolean> {
+  addCluster(config: KubernetesClusterConfig): KubernetesCluster {
     try {
-      const kc = new k8s.KubeConfig();
+      console.log(`Adding Kubernetes cluster: ${config.name}`);
+      
+      // Create a KubeConfig
+      const kubeConfig = new k8s.KubeConfig();
       
       if (config.kubeconfig) {
-        // Load from kubeconfig string
-        const kubeConfigBuffer = Buffer.from(config.kubeconfig, 'utf-8');
-        kc.loadFromString(kubeConfigBuffer.toString());
+        // Load from provided kubeconfig
+        kubeConfig.loadFromString(config.kubeconfig);
+        
+        // Set context if provided
+        if (config.context) {
+          kubeConfig.setCurrentContext(config.context);
+        }
       } else {
-        // Try loading from default location
-        kc.loadFromDefault();
+        // If no kubeconfig is provided, try to load from default locations
+        try {
+          kubeConfig.loadFromDefault();
+        } catch (error) {
+          console.error('Failed to load kubeconfig from default location:', error);
+          throw new Error('No valid kubeconfig provided and could not load from default location');
+        }
       }
-
-      // Set context if provided
-      if (config.context) {
-        kc.setCurrentContext(config.context);
-      }
-
-      const coreApi = kc.makeApiClient(k8s.CoreV1Api);
-      const appsApi = kc.makeApiClient(k8s.AppsV1Api);
       
-      // Attempt to access the API to verify credentials
-      await coreApi.listNamespacedPod('default');
-
-      // If metrics server is available, create metrics client
+      // Create API clients
+      const coreApi = kubeConfig.makeApiClient(k8s.CoreV1Api);
+      const appsApi = kubeConfig.makeApiClient(k8s.AppsV1Api);
+      
+      // Create Metrics client if available
+      let metricsClient: k8s.Metrics | undefined;
       try {
-        const metricsClient = new k8s.Metrics(kc);
-        this.clusters.set(config.id, { config, client: kc, coreApi, appsApi, metricsClient });
+        metricsClient = new k8s.Metrics(kubeConfig);
       } catch (error) {
-        // Store without metrics if not available
-        console.warn(`Metrics not available for cluster ${config.name}: ${error}`);
-        this.clusters.set(config.id, { config, client: kc, coreApi, appsApi });
+        console.warn('Metrics API not available:', error);
       }
-
-      return true;
+      
+      // Generate an ID for the cluster
+      const clusterId = uuidv4();
+      
+      // Store the cluster configuration and clients
+      this.clusters.set(clusterId, {
+        config,
+        client: kubeConfig,
+        coreApi,
+        appsApi,
+        metricsClient
+      });
+      
+      // Return the cluster information
+      return {
+        id: clusterId,
+        name: config.name,
+        context: kubeConfig.getCurrentContext(),
+        hasKubeconfig: !!config.kubeconfig
+      };
     } catch (error) {
-      console.error(`Failed to add Kubernetes cluster ${config.name}:`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Remove a Kubernetes cluster
-   */
-  removeCluster(clusterId: string): boolean {
-    return this.clusters.delete(clusterId);
-  }
-
-  /**
-   * Get all configured clusters
-   */
-  getClusters(): KubernetesClusterConfig[] {
-    return Array.from(this.clusters.values()).map(cluster => cluster.config);
-  }
-
-  /**
-   * Check if cluster is already configured
-   */
-  hasCluster(clusterId: string): boolean {
-    return this.clusters.has(clusterId);
-  }
-
-  /**
-   * Get all resources from all clusters
-   */
-  async getAllResources(): Promise<KubernetesResource[]> {
-    const allResources: KubernetesResource[] = [];
-    
-    for (const [clusterId, cluster] of this.clusters.entries()) {
-      try {
-        const resources = await this.getClusterResources(clusterId);
-        allResources.push(...resources);
-      } catch (error) {
-        console.error(`Error fetching resources from cluster ${cluster.config.name}:`, error);
-      }
-    }
-
-    return allResources;
-  }
-
-  /**
-   * Get resources from a specific cluster
-   */
-  async getClusterResources(clusterId: string): Promise<KubernetesResource[]> {
-    const cluster = this.clusters.get(clusterId);
-    if (!cluster) {
-      throw new Error(`Cluster ${clusterId} not found`);
-    }
-
-    const resources: KubernetesResource[] = [];
-    
-    try {
-      // Get all pods
-      const { body: pods } = await cluster.coreApi.listPodForAllNamespaces();
-      
-      for (const pod of pods.items) {
-        const resource: KubernetesResource = {
-          id: `${clusterId}:pod:${pod.metadata?.namespace}/${pod.metadata?.name}`,
-          name: pod.metadata?.name || 'unknown',
-          namespace: pod.metadata?.namespace || 'default',
-          kind: 'Pod',
-          creationTimestamp: pod.metadata?.creationTimestamp || new Date().toISOString(),
-          status: pod.status?.phase || 'Unknown',
-          labels: pod.metadata?.labels || {},
-          annotations: pod.metadata?.annotations || {},
-          clusterName: cluster.config.name,
-          cpu: {
-            requests: this.calculatePodCpuRequests(pod),
-            limits: this.calculatePodCpuLimits(pod),
-          },
-          memory: {
-            requests: this.calculatePodMemoryRequests(pod),
-            limits: this.calculatePodMemoryLimits(pod),
-          }
-        };
-        
-        resources.push(resource);
-      }
-
-      // Get all deployments
-      const { body: deployments } = await cluster.appsApi.listDeploymentForAllNamespaces();
-      
-      for (const deployment of deployments.items) {
-        const resource: KubernetesResource = {
-          id: `${clusterId}:deployment:${deployment.metadata?.namespace}/${deployment.metadata?.name}`,
-          name: deployment.metadata?.name || 'unknown',
-          namespace: deployment.metadata?.namespace || 'default',
-          kind: 'Deployment',
-          creationTimestamp: deployment.metadata?.creationTimestamp || new Date().toISOString(),
-          status: this.getDeploymentStatus(deployment),
-          labels: deployment.metadata?.labels || {},
-          annotations: deployment.metadata?.annotations || {},
-          clusterName: cluster.config.name,
-          podCount: deployment.status?.readyReplicas || 0
-        };
-        
-        resources.push(resource);
-      }
-
-      // Get all services
-      const { body: services } = await cluster.coreApi.listServiceForAllNamespaces();
-      
-      for (const service of services.items) {
-        const resource: KubernetesResource = {
-          id: `${clusterId}:service:${service.metadata?.namespace}/${service.metadata?.name}`,
-          name: service.metadata?.name || 'unknown',
-          namespace: service.metadata?.namespace || 'default',
-          kind: 'Service',
-          creationTimestamp: service.metadata?.creationTimestamp || new Date().toISOString(),
-          status: 'Active', // Services don't really have a status
-          labels: service.metadata?.labels || {},
-          annotations: service.metadata?.annotations || {},
-          clusterName: cluster.config.name
-        };
-        
-        resources.push(resource);
-      }
-
-      return resources;
-    } catch (error) {
-      console.error(`Error fetching resources from cluster ${cluster.config.name}:`, error);
+      console.error('Error adding Kubernetes cluster:', error);
       throw error;
     }
   }
 
   /**
-   * Get resource utilization data
+   * Get all Kubernetes clusters
    */
-  async getResourceUtilization(clusterId: string, namespace: string, podName: string): Promise<UtilizationData | null> {
+  getClusters(): KubernetesCluster[] {
+    const clusters: KubernetesCluster[] = [];
+    
+    for (const [id, { config, client }] of this.clusters.entries()) {
+      clusters.push({
+        id,
+        name: config.name,
+        context: client.getCurrentContext(),
+        hasKubeconfig: !!config.kubeconfig
+      });
+    }
+    
+    return clusters;
+  }
+
+  /**
+   * Get a Kubernetes cluster by ID
+   */
+  getCluster(id: string): KubernetesCluster | undefined {
+    const cluster = this.clusters.get(id);
+    if (!cluster) return undefined;
+    
+    return {
+      id,
+      name: cluster.config.name,
+      context: cluster.client.getCurrentContext(),
+      hasKubeconfig: !!cluster.config.kubeconfig
+    };
+  }
+
+  /**
+   * Remove a Kubernetes cluster
+   */
+  removeCluster(id: string): boolean {
+    return this.clusters.delete(id);
+  }
+
+  /**
+   * Get resources for a specific cluster
+   */
+  async getResources(clusterId: string): Promise<KubernetesResource[]> {
     const cluster = this.clusters.get(clusterId);
-    if (!cluster || !cluster.metricsClient) {
+    if (!cluster) {
+      throw new Error(`Cluster with ID ${clusterId} not found`);
+    }
+    
+    try {
+      const resources: KubernetesResource[] = [];
+      
+      // Get pods
+      const pods = await this.getPods(clusterId);
+      resources.push(...pods);
+      
+      // Get deployments
+      const deployments = await this.getDeployments(clusterId);
+      resources.push(...deployments);
+      
+      // Get services
+      const services = await this.getServices(clusterId);
+      resources.push(...services);
+      
+      return resources;
+    } catch (error) {
+      console.error(`Error getting resources for cluster ${clusterId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get pods for a specific cluster
+   */
+  private async getPods(clusterId: string): Promise<KubernetesResource[]> {
+    const cluster = this.clusters.get(clusterId);
+    if (!cluster) {
+      throw new Error(`Cluster with ID ${clusterId} not found`);
+    }
+    
+    try {
+      // Get pods from all namespaces
+      const response = await cluster.coreApi.listPodForAllNamespaces();
+      const resources: KubernetesResource[] = [];
+      
+      if (response && response.body && response.body.items) {
+        for (const pod of response.body.items) {
+          // Extract resource requests and limits
+          const containers = pod.spec?.containers || [];
+          const cpu: { requests?: string; limits?: string } = {};
+          const memory: { requests?: string; limits?: string } = {};
+          
+          // Aggregate resource requests and limits from all containers
+          for (const container of containers) {
+            if (container.resources) {
+              if (container.resources.requests?.cpu) {
+                cpu.requests = container.resources.requests.cpu;
+              }
+              if (container.resources.limits?.cpu) {
+                cpu.limits = container.resources.limits.cpu;
+              }
+              if (container.resources.requests?.memory) {
+                memory.requests = container.resources.requests.memory;
+              }
+              if (container.resources.limits?.memory) {
+                memory.limits = container.resources.limits.memory;
+              }
+            }
+          }
+          
+          resources.push({
+            id: `${clusterId}-pod-${pod.metadata?.uid || uuidv4()}`,
+            name: pod.metadata?.name || 'unknown',
+            namespace: pod.metadata?.namespace || 'default',
+            kind: 'Pod',
+            creationTimestamp: pod.metadata?.creationTimestamp || new Date().toISOString(),
+            status: pod.status?.phase || 'Unknown',
+            cpu,
+            memory,
+            labels: pod.metadata?.labels || {},
+            annotations: pod.metadata?.annotations || {},
+            clusterName: cluster.config.name
+          });
+        }
+      }
+      
+      return resources;
+    } catch (error) {
+      console.error(`Error getting pods for cluster ${clusterId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get deployments for a specific cluster
+   */
+  private async getDeployments(clusterId: string): Promise<KubernetesResource[]> {
+    const cluster = this.clusters.get(clusterId);
+    if (!cluster) {
+      throw new Error(`Cluster with ID ${clusterId} not found`);
+    }
+    
+    try {
+      // Get deployments from all namespaces
+      const response = await cluster.appsApi.listDeploymentForAllNamespaces();
+      const resources: KubernetesResource[] = [];
+      
+      if (response && response.body && response.body.items) {
+        for (const deployment of response.body.items) {
+          resources.push({
+            id: `${clusterId}-deployment-${deployment.metadata?.uid || uuidv4()}`,
+            name: deployment.metadata?.name || 'unknown',
+            namespace: deployment.metadata?.namespace || 'default',
+            kind: 'Deployment',
+            creationTimestamp: deployment.metadata?.creationTimestamp || new Date().toISOString(),
+            status: this.getDeploymentStatus(deployment),
+            podCount: deployment.status?.readyReplicas || 0,
+            labels: deployment.metadata?.labels || {},
+            annotations: deployment.metadata?.annotations || {},
+            clusterName: cluster.config.name
+          });
+        }
+      }
+      
+      return resources;
+    } catch (error) {
+      console.error(`Error getting deployments for cluster ${clusterId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get services for a specific cluster
+   */
+  private async getServices(clusterId: string): Promise<KubernetesResource[]> {
+    const cluster = this.clusters.get(clusterId);
+    if (!cluster) {
+      throw new Error(`Cluster with ID ${clusterId} not found`);
+    }
+    
+    try {
+      // Get services from all namespaces
+      const response = await cluster.coreApi.listServiceForAllNamespaces();
+      const resources: KubernetesResource[] = [];
+      
+      if (response && response.body && response.body.items) {
+        for (const service of response.body.items) {
+          resources.push({
+            id: `${clusterId}-service-${service.metadata?.uid || uuidv4()}`,
+            name: service.metadata?.name || 'unknown',
+            namespace: service.metadata?.namespace || 'default',
+            kind: 'Service',
+            creationTimestamp: service.metadata?.creationTimestamp || new Date().toISOString(),
+            status: 'Active', // Services don't have a status field
+            labels: service.metadata?.labels || {},
+            annotations: service.metadata?.annotations || {},
+            clusterName: cluster.config.name
+          });
+        }
+      }
+      
+      return resources;
+    } catch (error) {
+      console.error(`Error getting services for cluster ${clusterId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get metrics for a pod
+   */
+  async getPodMetrics(clusterId: string, namespace: string, podName: string): Promise<any> {
+    const cluster = this.clusters.get(clusterId);
+    if (!cluster) {
+      throw new Error(`Cluster with ID ${clusterId} not found`);
+    }
+    
+    if (!cluster.metricsClient) {
+      throw new Error('Metrics API not available for this cluster');
+    }
+    
+    try {
+      const metrics = await cluster.metricsClient.getPodMetrics(namespace, podName);
+      
+      if (metrics && metrics.containers) {
+        return metrics;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Error getting metrics for pod ${namespace}/${podName}:`, error);
       return null;
     }
+  }
 
+  /**
+   * Get pod logs
+   */
+  async getPodLogs(clusterId: string, namespace: string, podName: string, container?: string): Promise<string> {
+    const cluster = this.clusters.get(clusterId);
+    if (!cluster) {
+      throw new Error(`Cluster with ID ${clusterId} not found`);
+    }
+    
     try {
-      const podMetrics = await cluster.metricsClient.getPodMetrics(namespace, podName);
-      if (!podMetrics || !podMetrics.containers || podMetrics.containers.length === 0) {
-        return null;
-      }
-
-      // Get pod to calculate capacity/limits
-      const { body: pod } = await cluster.coreApi.readNamespacedPod(podName, namespace);
-      
-      // Calculate total CPU and memory usage across all containers
-      let totalCpuUsage = 0;
-      let totalMemoryUsage = 0;
-      let cpuLimit = 0;
-      let memoryLimit = 0;
-
-      for (const container of podMetrics.containers) {
-        // CPU is in cores or millicores
-        const cpuUsage = this.parseCpuMetric(container.usage.cpu);
-        totalCpuUsage += cpuUsage;
-
-        // Memory is in bytes
-        const memoryUsage = this.parseMemoryMetric(container.usage.memory);
-        totalMemoryUsage += memoryUsage;
-      }
-
-      // Calculate limits from pod spec
-      for (const container of pod.spec?.containers || []) {
-        if (container.resources?.limits?.cpu) {
-          cpuLimit += this.parseCpuValue(container.resources.limits.cpu);
-        }
-        
-        if (container.resources?.limits?.memory) {
-          memoryLimit += this.parseMemoryValue(container.resources.limits.memory);
-        }
-      }
-
-      return {
-        cpu: {
-          current: totalCpuUsage,
-          limit: cpuLimit,
-          timestamp: new Date().toISOString()
-        },
-        memory: {
-          current: totalMemoryUsage,
-          limit: memoryLimit,
-          timestamp: new Date().toISOString()
-        }
-      };
+      const response = await cluster.coreApi.readNamespacedPodLog(podName, namespace, container);
+      return response.body;
     } catch (error) {
-      console.error(`Error fetching pod metrics for ${namespace}/${podName}:`, error);
-      return null;
+      console.error(`Error getting logs for pod ${namespace}/${podName}:`, error);
+      return `Error getting logs: ${error}`;
     }
   }
 
   /**
    * Get cluster health status
    */
-  async getClusterHealth(clusterId: string): Promise<{ 
-    status: 'Healthy' | 'Degraded' | 'Critical' | 'Unknown';
-    components: { name: string; status: string }[];
-    nodes: { name: string; status: string; capacity: any }[];
-  }> {
+  async getClusterHealth(clusterId: string): Promise<any> {
     const cluster = this.clusters.get(clusterId);
     if (!cluster) {
-      throw new Error(`Cluster ${clusterId} not found`);
+      throw new Error(`Cluster with ID ${clusterId} not found`);
     }
-
+    
     try {
-      // Check component status
-      const { body: componentStatuses } = await cluster.coreApi.listComponentStatus();
+      // Check component status and node status
+      const componentStatus = await this.getComponentStatus(clusterId);
+      const nodeStatus = await this.getNodeStatus(clusterId);
       
-      const components = componentStatuses.items.map(component => ({
-        name: component.metadata?.name || 'unknown',
-        status: component.conditions?.[0]?.type || 'Unknown'
-      }));
-
-      // Check nodes status
-      const { body: nodes } = await cluster.coreApi.listNode();
-      
-      const nodeStatuses = nodes.items.map(node => ({
-        name: node.metadata?.name || 'unknown',
-        status: this.getNodeStatus(node),
-        capacity: node.status?.capacity || {}
-      }));
-
-      // Calculate overall status
-      const criticalNodes = nodeStatuses.filter(node => node.status === 'NotReady').length;
-      const degradedComponents = components.filter(component => component.status !== 'Healthy').length;
-
-      let status: 'Healthy' | 'Degraded' | 'Critical' | 'Unknown' = 'Healthy';
-      
-      if (criticalNodes > 0) {
-        status = 'Critical';
-      } else if (degradedComponents > 0) {
-        status = 'Degraded';
-      }
-
       return {
-        status,
-        components,
-        nodes: nodeStatuses
+        status: this.aggregateHealthStatus(componentStatus, nodeStatus),
+        components: componentStatus,
+        nodes: nodeStatus
       };
     } catch (error) {
-      console.error(`Error checking cluster health for ${cluster.config.name}:`, error);
+      console.error(`Error getting health for cluster ${clusterId}:`, error);
       return {
-        status: 'Unknown',
+        status: 'unknown',
         components: [],
         nodes: []
       };
@@ -345,150 +400,117 @@ export class KubernetesService extends EventEmitter {
   }
 
   /**
-   * Helper methods for resource processing
+   * Get component status
    */
-  private getNodeStatus(node: k8s.V1Node): string {
-    if (!node.status?.conditions) {
-      return 'Unknown';
+  private async getComponentStatus(clusterId: string): Promise<any[]> {
+    const cluster = this.clusters.get(clusterId);
+    if (!cluster) {
+      throw new Error(`Cluster with ID ${clusterId} not found`);
     }
-
-    const readyCondition = node.status.conditions.find(
-      condition => condition.type === 'Ready'
-    );
-
-    return readyCondition?.status === 'True' ? 'Ready' : 'NotReady';
+    
+    try {
+      const response = await cluster.coreApi.listComponentStatus();
+      const components: any[] = [];
+      
+      if (response && response.body && response.body.items) {
+        for (const component of response.body.items) {
+          const status = component.conditions?.[0]?.type || 'Unknown';
+          components.push({
+            name: component.metadata?.name || 'unknown',
+            status: status
+          });
+        }
+      }
+      
+      return components;
+    } catch (error) {
+      console.error(`Error getting component status for cluster ${clusterId}:`, error);
+      return [];
+    }
   }
 
-  private getDeploymentStatus(deployment: k8s.V1Deployment): string {
+  /**
+   * Get node status
+   */
+  private async getNodeStatus(clusterId: string): Promise<any[]> {
+    const cluster = this.clusters.get(clusterId);
+    if (!cluster) {
+      throw new Error(`Cluster with ID ${clusterId} not found`);
+    }
+    
+    try {
+      const response = await cluster.coreApi.listNode();
+      const nodes: any[] = [];
+      
+      if (response && response.body && response.body.items) {
+        for (const node of response.body.items) {
+          // Determine node readiness
+          const readyCondition = node.status?.conditions?.find(
+            (condition) => condition.type === 'Ready'
+          );
+          const isReady = readyCondition?.status === 'True';
+          
+          nodes.push({
+            name: node.metadata?.name || 'unknown',
+            status: isReady ? 'Ready' : 'NotReady',
+            version: node.status?.nodeInfo?.kubeletVersion || 'unknown',
+            address: node.status?.addresses?.find(addr => addr.type === 'InternalIP')?.address || 'unknown'
+          });
+        }
+      }
+      
+      return nodes;
+    } catch (error) {
+      console.error(`Error getting node status for cluster ${clusterId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Helper method to determine deployment status
+   */
+  private getDeploymentStatus(deployment: any): string {
     if (!deployment.status) {
       return 'Unknown';
     }
-
-    const { availableReplicas = 0, replicas = 0 } = deployment.status;
     
-    if (availableReplicas === replicas && replicas > 0) {
+    const desiredReplicas = deployment.spec?.replicas || 0;
+    const readyReplicas = deployment.status.readyReplicas || 0;
+    const updatedReplicas = deployment.status.updatedReplicas || 0;
+    const availableReplicas = deployment.status.availableReplicas || 0;
+    
+    if (readyReplicas === desiredReplicas && updatedReplicas === desiredReplicas) {
       return 'Available';
-    } else if (availableReplicas < replicas && availableReplicas > 0) {
-      return 'Degraded';
-    } else {
+    } else if (updatedReplicas < desiredReplicas) {
+      return 'Updating';
+    } else if (availableReplicas < desiredReplicas) {
       return 'Unavailable';
-    }
-  }
-
-  private calculatePodCpuRequests(pod: k8s.V1Pod): string {
-    let totalCpu = 0;
-    
-    for (const container of pod.spec?.containers || []) {
-      if (container.resources?.requests?.cpu) {
-        totalCpu += this.parseCpuValue(container.resources.requests.cpu);
-      }
-    }
-    
-    return totalCpu ? `${totalCpu}m` : '';
-  }
-
-  private calculatePodCpuLimits(pod: k8s.V1Pod): string {
-    let totalCpu = 0;
-    
-    for (const container of pod.spec?.containers || []) {
-      if (container.resources?.limits?.cpu) {
-        totalCpu += this.parseCpuValue(container.resources.limits.cpu);
-      }
-    }
-    
-    return totalCpu ? `${totalCpu}m` : '';
-  }
-
-  private calculatePodMemoryRequests(pod: k8s.V1Pod): string {
-    let totalMemory = 0;
-    
-    for (const container of pod.spec?.containers || []) {
-      if (container.resources?.requests?.memory) {
-        totalMemory += this.parseMemoryValue(container.resources.requests.memory);
-      }
-    }
-    
-    return totalMemory ? `${this.formatMemoryValue(totalMemory)}` : '';
-  }
-
-  private calculatePodMemoryLimits(pod: k8s.V1Pod): string {
-    let totalMemory = 0;
-    
-    for (const container of pod.spec?.containers || []) {
-      if (container.resources?.limits?.memory) {
-        totalMemory += this.parseMemoryValue(container.resources.limits.memory);
-      }
-    }
-    
-    return totalMemory ? `${this.formatMemoryValue(totalMemory)}` : '';
-  }
-
-  private parseCpuValue(cpu: string): number {
-    if (cpu.endsWith('m')) {
-      return parseInt(cpu.slice(0, -1), 10);
-    } else if (cpu.endsWith('n')) {
-      return parseInt(cpu.slice(0, -1), 10) / 1000000;
     } else {
-      return parseFloat(cpu) * 1000; // Convert cores to millicores
+      return 'Progressing';
     }
   }
 
-  private parseMemoryValue(memory: string): number {
-    const suffixes: Record<string, number> = {
-      'Ki': 1024,
-      'Mi': 1024 * 1024,
-      'Gi': 1024 * 1024 * 1024,
-      'Ti': 1024 * 1024 * 1024 * 1024,
-      'Pi': 1024 * 1024 * 1024 * 1024 * 1024,
-      'Ei': 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
-      'K': 1000,
-      'M': 1000 * 1000,
-      'G': 1000 * 1000 * 1000,
-      'T': 1000 * 1000 * 1000 * 1000,
-      'P': 1000 * 1000 * 1000 * 1000 * 1000,
-      'E': 1000 * 1000 * 1000 * 1000 * 1000 * 1000,
-    };
-
-    for (const [suffix, multiplier] of Object.entries(suffixes)) {
-      if (memory.endsWith(suffix)) {
-        return parseFloat(memory.slice(0, -suffix.length)) * multiplier;
-      }
+  /**
+   * Aggregate health status from components and nodes
+   */
+  private aggregateHealthStatus(components: any[], nodes: any[]): string {
+    // Check if we have any data
+    if (components.length === 0 && nodes.length === 0) {
+      return 'unknown';
     }
-
-    return parseInt(memory, 10);
-  }
-
-  private formatMemoryValue(bytes: number): string {
-    const units = ['B', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei'];
-    let value = bytes;
-    let unitIndex = 0;
-
-    while (value >= 1024 && unitIndex < units.length - 1) {
-      value /= 1024;
-      unitIndex++;
-    }
-
-    return `${value.toFixed(2)}${units[unitIndex]}`;
-  }
-
-  private parseCpuMetric(cpu: string): number {
-    // CPU metrics can be in format like "125m" (millicores) or "0.125" (cores)
-    if (cpu.endsWith('n')) {
-      return parseInt(cpu.slice(0, -1), 10) / 1000000;
-    } else if (cpu.endsWith('u')) {
-      return parseInt(cpu.slice(0, -1), 10) / 1000;
-    } else if (cpu.endsWith('m')) {
-      return parseInt(cpu.slice(0, -1), 10);
+    
+    // Check node health
+    const nodeHealth = nodes.every(node => node.status === 'Ready');
+    
+    // Check component health
+    const componentHealth = components.every(component => component.status === 'Healthy');
+    
+    if (nodeHealth && componentHealth) {
+      return 'ok';
+    } else if (!nodeHealth && !componentHealth) {
+      return 'critical';
     } else {
-      return parseFloat(cpu) * 1000; // Convert cores to millicores
+      return 'warning';
     }
-  }
-
-  private parseMemoryMetric(memory: string): number {
-    // Memory metrics can be in various formats like "128974848", "123Mi", etc.
-    return this.parseMemoryValue(memory);
   }
 }
-
-// Create singleton instance
-export const kubernetesService = new KubernetesService();
