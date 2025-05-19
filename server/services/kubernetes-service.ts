@@ -22,9 +22,13 @@ export interface KubernetesResource {
   kind: string;
   creationTimestamp: string;
   status: string;
+  cost?: number;
+  costPerMonth?: number;
+  utilization?: number;
   cpu?: {
     requests?: string;
     limits?: string;
+    usage?: string;
   };
   memory?: {
     requests?: string;
