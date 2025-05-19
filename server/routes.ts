@@ -18,6 +18,7 @@ import { scanRouter } from "./routes/scan";
 import { subscriptionsRouter } from "./routes/subscriptions";
 import { costPredictionRouter } from "./routes/cost-prediction";
 import { billingImportRouter } from "./routes/billing-import";
+import kubernetesRouter from "./routes/kubernetes";
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
