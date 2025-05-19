@@ -15,7 +15,8 @@ import {
   CreditCard,
   TrendingUp,
   FileSpreadsheet,
-  Zap
+  Zap,
+  Server
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -123,6 +124,18 @@ export function Navbar() {
                 <span>Providers</span>
               </Link>
               <Link 
+                href="/kubernetes" 
+                id="kubernetes-nav"
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+                  location === "/kubernetes" 
+                    ? "text-foreground font-medium" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Server className="h-4 w-4 flex-shrink-0" />
+                <span>Kubernetes</span>
+              </Link>
+              <Link 
                 href="/subscription" 
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
                   location === "/subscription" 
@@ -136,31 +149,35 @@ export function Navbar() {
             </>
           )}
           
-          {/* Public links for all users */}
-          <a 
-            href="/#features" 
-            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
-          >
-            Features
-          </a>
-          <a 
-            href="/#pricing" 
-            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
-          >
-            Pricing
-          </a>
-          <a 
-            href="/#testimonials" 
-            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
-          >
-            Testimonials
-          </a>
-          <a 
-            href="/#faq" 
-            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
-          >
-            FAQ
-          </a>
+          {/* Public links for non-authenticated users */}
+          {!user && (
+            <>
+              <a 
+                href="/#features" 
+                className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
+              >
+                Features
+              </a>
+              <a 
+                href="/#pricing" 
+                className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
+              >
+                Pricing
+              </a>
+              <a 
+                href="/#testimonials" 
+                className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
+              >
+                Testimonials
+              </a>
+              <a 
+                href="/#faq" 
+                className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
+              >
+                FAQ
+              </a>
+            </>
+          )}
         </div>
 
         {/* User controls and mobile menu */}
@@ -291,6 +308,19 @@ export function Navbar() {
                   >
                     <Cloud className="h-4 w-4 flex-shrink-0" />
                     <span>Providers</span>
+                  </div>
+                </Link>
+                <Link href="/kubernetes">
+                  <div 
+                    id="kubernetes-nav-mobile"
+                    className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                      location === "/kubernetes" 
+                        ? "text-foreground font-medium" 
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Server className="h-4 w-4 flex-shrink-0" />
+                    <span>Kubernetes</span>
                   </div>
                 </Link>
                 <Link href="/subscription">
