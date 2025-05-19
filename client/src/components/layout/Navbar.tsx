@@ -115,25 +115,13 @@ export function Navbar() {
                 href="/cloud-providers" 
                 id="cloud-providers-nav"
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  location === "/cloud-providers" 
+                  location === "/cloud-providers" || location === "/cloud-providers/kubernetes"
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <Cloud className="h-4 w-4 flex-shrink-0" />
-                <span>Providers</span>
-              </Link>
-              <Link 
-                href="/kubernetes" 
-                id="kubernetes-nav"
-                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  location === "/kubernetes" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Server className="h-4 w-4 flex-shrink-0" />
-                <span>Kubernetes</span>
+                <span>Cloud & K8s</span>
               </Link>
               <Link 
                 href="/subscription" 
