@@ -16,7 +16,8 @@ import {
   TrendingUp,
   FileSpreadsheet,
   Zap,
-  Server
+  Server,
+  Layers
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -122,6 +123,18 @@ export function Navbar() {
               >
                 <Cloud className="h-4 w-4 flex-shrink-0" />
                 <span>Cloud & K8s</span>
+              </Link>
+              <Link 
+                href="/architecture-playground" 
+                id="architecture-playground-nav"
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+                  location === "/architecture-playground"
+                    ? "text-foreground font-medium" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Layers className="h-4 w-4 flex-shrink-0" />
+                <span>Designer</span>
               </Link>
               <Link 
                 href="/subscription" 
@@ -295,7 +308,20 @@ export function Navbar() {
                     }`}
                   >
                     <Cloud className="h-4 w-4 flex-shrink-0" />
-                    <span>Providers</span>
+                    <span>Cloud & K8s</span>
+                  </div>
+                </Link>
+                <Link href="/architecture-playground">
+                  <div 
+                    id="architecture-playground-nav-mobile"
+                    className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                      location === "/architecture-playground" 
+                        ? "text-foreground font-medium" 
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Layers className="h-4 w-4 flex-shrink-0" />
+                    <span>Designer</span>
                   </div>
                 </Link>
                 <Link href="/kubernetes">

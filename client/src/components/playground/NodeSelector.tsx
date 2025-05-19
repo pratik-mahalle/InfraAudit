@@ -30,7 +30,7 @@ const azureResources = [
   { type: 'Blob', icon: <HardDrive className="h-5 w-5 text-green-500" />, category: 'storage' },
   { type: 'SQL', icon: <Database className="h-5 w-5 text-purple-500" />, category: 'database' },
   { type: 'VNet', icon: <Network className="h-5 w-5 text-orange-500" />, category: 'network' },
-  { type: 'Functions', icon: <Function className="h-5 w-5 text-indigo-500" />, category: 'serverless' },
+  { type: 'Functions', icon: <FunctionSquare className="h-5 w-5 text-indigo-500" />, category: 'serverless' },
   { type: 'LB', icon: <Globe className="h-5 w-5 text-cyan-500" />, category: 'loadbalancer' },
 ];
 
@@ -39,7 +39,7 @@ const gcpResources = [
   { type: 'Storage', icon: <HardDrive className="h-5 w-5 text-green-500" />, category: 'storage' },
   { type: 'SQL', icon: <Database className="h-5 w-5 text-purple-500" />, category: 'database' },
   { type: 'VPC', icon: <Network className="h-5 w-5 text-orange-500" />, category: 'network' },
-  { type: 'Functions', icon: <Function className="h-5 w-5 text-indigo-500" />, category: 'serverless' },
+  { type: 'Functions', icon: <FunctionSquare className="h-5 w-5 text-indigo-500" />, category: 'serverless' },
   { type: 'LB', icon: <Globe className="h-5 w-5 text-cyan-500" />, category: 'loadbalancer' },
 ];
 
