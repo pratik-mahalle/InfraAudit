@@ -9,8 +9,8 @@ import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
-// Create a type for the login data that only has username and password
-type LoginData = Pick<z.infer<typeof insertUserSchema>, "username" | "password">;
+// Create a type for the login data that only has email and password
+type LoginData = Pick<z.infer<typeof insertUserSchema>, "email" | "password">;
 // Use the entire insert schema for registration
 type RegisterData = z.infer<typeof insertUserSchema>;
 
