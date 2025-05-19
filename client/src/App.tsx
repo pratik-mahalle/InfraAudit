@@ -23,6 +23,7 @@ import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import SubscriptionCancel from "@/pages/SubscriptionCancel";
 import PricingPage from "@/pages/pricing";
 import KubernetesPage from "@/pages/KubernetesPage";
+import ArchitecturePlaygroundPage from "@/pages/architecture-playground";
 // Removed BillingImport as we've integrated it into CostOptimization
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -102,6 +103,12 @@ function Router() {
     </ExpiredTrialRedirect>
   );
   
+  const ProtectedArchitecturePlayground = () => (
+    <ExpiredTrialRedirect>
+      <ArchitecturePlaygroundPage />
+    </ExpiredTrialRedirect>
+  );
+  
   return (
     <Switch>
       {/* Protected routes - require authentication and active trial */}
@@ -116,6 +123,7 @@ function Router() {
       <ProtectedRoute path="/cloud-providers" component={ProtectedCloudProviders} />
       <ProtectedRoute path="/kubernetes" component={ProtectedKubernetes} />
       {/* Billing import has been integrated into the cost optimization page */}
+      <ProtectedRoute path="/architecture-playground" component={ProtectedArchitecturePlayground} />
       <ProtectedRoute path="/subscription" component={ProtectedSubscription} />
       <ProtectedRoute path="/subscription/success" component={ProtectedSubscriptionSuccess} />
       <ProtectedRoute path="/subscription/cancel" component={ProtectedSubscriptionCancel} />
