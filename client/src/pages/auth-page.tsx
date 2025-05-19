@@ -22,6 +22,7 @@ const loginSchema = z.object({
 const registerSchema = insertUserSchema.extend({
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
+  email: z.string().email("Please enter a valid email address"),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -46,6 +47,7 @@ export default function AuthPage() {
       password: "",
       confirmPassword: "",
       fullName: "",
+      email: "",
       role: "user",
     },
   });
@@ -155,6 +157,19 @@ export default function AuthPage() {
                           <FormLabel>Full Name</FormLabel>
                           <FormControl>
                             <Input placeholder="John Smith" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="you@example.com" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
