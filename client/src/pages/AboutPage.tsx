@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import { Shield, Award, Users, BarChart4 } from 'lucide-react';
+import { Zap, Award, Users, BarChart4, Shield, Cloud, Check } from 'lucide-react';
 
 export default function AboutPage() {
   return (
@@ -14,11 +14,11 @@ export default function AboutPage() {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <div className="flex justify-center mb-4">
-            <Shield className="h-16 w-16 text-blue-600" />
+            <Zap className="h-16 w-16 text-primary" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">About InfraAudit</h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            A comprehensive multi-cloud infrastructure monitoring platform leveraging AI to provide intelligent insights, proactive anomaly detection, and simplified management.
+            The intelligent cloud cost optimization and security platform that helps you take control of your multi-cloud infrastructure.
           </p>
         </div>
 
@@ -27,18 +27,99 @@ export default function AboutPage() {
           <h2 className="text-3xl font-bold tracking-tight mb-6">Our Mission</h2>
           <div className="bg-muted/50 rounded-lg p-8">
             <p className="text-lg">
-              At InfraAudit, our mission is to simplify the complexity of cloud infrastructure management. We believe that 
-              organizations should be able to harness the full power of multi-cloud environments without the overhead of 
-              manual monitoring, security concerns, or unexpected costs. By providing real-time visibility, proactive anomaly detection, 
-              and actionable recommendations, we help businesses optimize their cloud infrastructure, minimize risks, 
-              and maximize ROI.
+              InfraAudit is on a mission to give businesses complete visibility and control over their cloud environments. 
+              We believe that organizations should be able to harness the full power of multi-cloud environments without dealing 
+              with runaway costs, security vulnerabilities, or operational chaos. Our AI-powered platform makes cloud complexity 
+              manageable—with automated monitoring, intelligent recommendations, and a unified view of your entire cloud ecosystem.
             </p>
           </div>
         </div>
 
-        {/* Features & Benefits */}
+        {/* Value Proposition */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold tracking-tight mb-8">Why Choose InfraAudit</h2>
+          <h2 className="text-3xl font-bold tracking-tight mb-8">Why Businesses Choose InfraAudit</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <div className="flex items-start">
+                <div className="mr-4 mt-1 flex-shrink-0">
+                  <Check className="h-6 w-6 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Reduce Cloud Costs by 30%+</h3>
+                  <p className="text-muted-foreground">
+                    Our automated cost optimization engine identifies wasteful spending and recommends immediate actions to reduce your cloud bill.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <div className="mr-4 mt-1 flex-shrink-0">
+                  <Check className="h-6 w-6 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Prevent Security Breaches</h3>
+                  <p className="text-muted-foreground">
+                    Continuous security scanning detects vulnerabilities and misconfigurations before they can be exploited.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <div className="mr-4 mt-1 flex-shrink-0">
+                  <Check className="h-6 w-6 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Unify Multi-Cloud Management</h3>
+                  <p className="text-muted-foreground">
+                    Single dashboard to manage AWS, Azure, Google Cloud, and Kubernetes resources with consistent policies and controls.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="flex items-start">
+                <div className="mr-4 mt-1 flex-shrink-0">
+                  <Check className="h-6 w-6 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">AI-Powered Insights</h3>
+                  <p className="text-muted-foreground">
+                    Machine learning algorithms continuously analyze your infrastructure to predict issues and recommend optimizations.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <div className="mr-4 mt-1 flex-shrink-0">
+                  <Check className="h-6 w-6 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Fast Time-to-Value</h3>
+                  <p className="text-muted-foreground">
+                    Connect your cloud accounts in minutes, not days. See valuable insights and start saving immediately.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <div className="mr-4 mt-1 flex-shrink-0">
+                  <Check className="h-6 w-6 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Smart Architecture Design</h3>
+                  <p className="text-muted-foreground">
+                    Drag-and-drop cloud architecture designer helps you plan and optimize your infrastructure before deployment.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Key Solutions */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold tracking-tight mb-8">Our Key Solutions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
               <div className="flex items-center mb-4">
@@ -46,7 +127,7 @@ export default function AboutPage() {
                 <h3 className="text-xl font-semibold">Cost Optimization</h3>
               </div>
               <p className="text-muted-foreground">
-                Identify cost anomalies, optimize resource usage, and receive actionable recommendations to reduce your cloud spending.
+                Automatically identify idle resources, right-size instances, and get actionable recommendations to cut wasteful spending.
               </p>
             </div>
             
@@ -56,17 +137,17 @@ export default function AboutPage() {
                 <h3 className="text-xl font-semibold">Security Monitoring</h3>
               </div>
               <p className="text-muted-foreground">
-                Detect security configuration drifts, identify vulnerabilities, and ensure compliance across all your cloud resources.
+                Continuous scanning for misconfigurations, compliance violations, and security vulnerabilities with prioritized remediation guidance.
               </p>
             </div>
             
             <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
               <div className="flex items-center mb-4">
-                <Users className="h-8 w-8 text-purple-600 mr-3" />
-                <h3 className="text-xl font-semibold">Multi-Cloud Support</h3>
+                <Cloud className="h-8 w-8 text-purple-600 mr-3" />
+                <h3 className="text-xl font-semibold">Multi-Cloud Management</h3>
               </div>
               <p className="text-muted-foreground">
-                Manage AWS, Azure, Google Cloud, and Kubernetes workloads from a single unified dashboard with consistent workflows.
+                Unified dashboard for AWS, Azure, Google Cloud, and Kubernetes with standardized policies and complete visibility.
               </p>
             </div>
           </div>
@@ -78,26 +159,26 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-lg mb-4">
-                InfraAudit was founded in 2023 by a team of cloud infrastructure experts who experienced firsthand the challenges of 
-                managing complex multi-cloud environments. We noticed that organizations were struggling with visibility across clouds, 
-                unexpected cost spikes, and security vulnerabilities that often went undetected until it was too late.
+                InfraAudit was born from frustration. Our founders were managing cloud infrastructure for Fortune 500 companies
+                and struggling with the same challenges: unexpected cost overruns, security vulnerabilities discovered too late, 
+                and the growing complexity of multi-cloud environments.
               </p>
               <p className="text-lg mb-4">
-                We set out to build a solution that would provide real-time insights and proactive recommendations, leveraging 
-                the power of AI to detect anomalies before they become problems. Today, InfraAudit helps organizations of all sizes 
-                optimize their cloud infrastructure, reduce costs, and strengthen their security posture.
+                They realized that existing tools were disconnected, requiring teams to use dozens of separate dashboards and tools 
+                to get a complete picture. So in 2023, they set out to build a comprehensive solution that would unify cloud management 
+                and leverage AI to provide truly useful insights and automations.
               </p>
               <p className="text-lg">
-                Our team of cloud engineers, security experts, and data scientists continually enhances our platform to address the 
-                evolving challenges of modern cloud infrastructure management.
+                Today, InfraAudit helps organizations of all sizes gain control over their cloud environments, typically reducing costs 
+                by 30% or more while strengthening security and streamlining operations.
               </p>
             </div>
             <div className="bg-muted rounded-lg p-6">
               <div className="flex flex-col items-center justify-center h-full">
                 <Award className="h-16 w-16 text-blue-600 mb-4" />
-                <p className="text-center font-medium text-xl mb-2">Trusted by organizations worldwide</p>
+                <p className="text-center font-medium text-xl mb-2">Making an Impact</p>
                 <p className="text-center text-muted-foreground">
-                  Monitoring over 10,000 cloud resources and helping companies save an average of 32% on their cloud bills.
+                  Monitoring over 10,000 cloud resources across AWS, Azure, GCP and Kubernetes environments, helping companies save an average of 32% on their cloud bills.
                 </p>
               </div>
             </div>
@@ -107,15 +188,15 @@ export default function AboutPage() {
         {/* Team or Leadership */}
         <div>
           <h2 className="text-3xl font-bold tracking-tight mb-8">Leadership Team</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex flex-col items-center">
               <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Users className="h-16 w-16 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-semibold mb-1">Alex Johnson</h3>
+              <h3 className="text-xl font-semibold mb-1">Sarah Chen</h3>
               <p className="text-muted-foreground mb-2">CEO & Co-Founder</p>
               <p className="text-sm text-center text-muted-foreground">
-                Former Cloud Architect at AWS with 15 years of experience in cloud infrastructure and DevOps.
+                Former Cloud Architect at AWS with 15+ years of experience in cloud infrastructure and security. Led cloud transformation for Fortune 100 companies.
               </p>
             </div>
             
@@ -123,10 +204,10 @@ export default function AboutPage() {
               <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Users className="h-16 w-16 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-semibold mb-1">Sarah Chen</h3>
+              <h3 className="text-xl font-semibold mb-1">Alex Johnson</h3>
               <p className="text-muted-foreground mb-2">CTO & Co-Founder</p>
               <p className="text-sm text-center text-muted-foreground">
-                Security expert with background in cloud-native technology and 12 years at Microsoft Azure.
+                Machine learning expert and cloud optimization specialist with 10+ years at Google Cloud. Pioneer in applying AI to infrastructure management.
               </p>
             </div>
             
@@ -135,9 +216,9 @@ export default function AboutPage() {
                 <Users className="h-16 w-16 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold mb-1">Michael Okonjo</h3>
-              <p className="text-muted-foreground mb-2">Chief AI Officer</p>
+              <p className="text-muted-foreground mb-2">Chief Product Officer</p>
               <p className="text-sm text-center text-muted-foreground">
-                PhD in Machine Learning with focus on anomaly detection and pattern recognition in large datasets.
+                PhD in Machine Learning with 8+ years of product leadership at cloud-native companies. Passionate about solving complex infrastructure challenges.
               </p>
             </div>
           </div>
