@@ -1,6 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import { Zap, Award, Users, BarChart4, Shield, Cloud, Check } from 'lucide-react';
+import { Zap, Award, Users, BarChart4, Shield, Cloud, Check, Quote } from 'lucide-react';
+import founderPhoto from '@assets/me.jpg';
 
 export default function AboutPage() {
   return (
@@ -188,35 +189,90 @@ export default function AboutPage() {
         {/* Team or Leadership */}
         <div>
           <h2 className="text-3xl font-bold tracking-tight mb-8">Leadership Team</h2>
+          
+          {/* Founder Featured Section */}
+          <div className="mb-12 overflow-hidden relative">
+            <div className="p-8 md:p-10 lg:p-12 rounded-xl bg-muted/50 backdrop-blur-sm border border-border/50 relative z-10">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="md:w-1/3">
+                  <div className="relative group">
+                    <div className="relative">
+                      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-[6px] border-background shadow-xl mx-auto 
+                                  group-hover:scale-105 transition-transform duration-500 ease-out">
+                        <img 
+                          src={founderPhoto} 
+                          alt="Pratik Mahalle" 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs py-1 px-3 rounded-full shadow-lg
+                              z-20 hover:scale-110 transition-transform duration-300">
+                      Founder
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="md:w-2/3 text-center md:text-left">
+                  <div className="flex items-center mb-4">
+                    <Quote className="h-10 w-10 text-blue-300 dark:text-blue-500 mr-2 shrink-0" />
+                    <div>
+                      <h3 className="text-2xl font-bold">Pratik Mahalle</h3>
+                      <p className="text-blue-600 dark:text-blue-400">Founder & CEO</p>
+                    </div>
+                  </div>
+                  
+                  <p className="text-muted-foreground text-lg mb-4 pl-4 border-l-4 border-blue-300 dark:border-blue-500/50 italic">
+                    Hi, I'm Pratik, Founder and DevOps Engineer behind InfraAudit — a cloud observability and security tool that eliminates hours of manual effort for cloud teams. With InfraAudit, we've automated compliance checks, surfaced critical misconfigurations, and reduced cloud overspend with smart, real-time insights. It's now an operational prototype and actively evolving into a must-have tool for modern DevOps and FinOps workflows
+                  </p>
+                  
+                  <div className="mt-6 flex flex-wrap gap-4">
+                    <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm">
+                      DevOps Engineer
+                    </span>
+                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm">
+                      DevRel
+                    </span>
+                    <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-sm">
+                      Cloud Infrastructure Expert
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Other Team Members */}
+          <h3 className="text-2xl font-bold tracking-tight mb-6">Executive Team</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex flex-col items-center">
-              <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Users className="h-16 w-16 text-muted-foreground" />
+            <div className="bg-card rounded-lg p-6 border border-border flex flex-col items-center">
+              <div className="w-28 h-28 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Users className="h-14 w-14 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold mb-1">Sarah Chen</h3>
-              <p className="text-muted-foreground mb-2">CEO & Co-Founder</p>
+              <p className="text-muted-foreground mb-2">CTO</p>
               <p className="text-sm text-center text-muted-foreground">
                 Former Cloud Architect at AWS with 15+ years of experience in cloud infrastructure and security. Led cloud transformation for Fortune 100 companies.
               </p>
             </div>
             
-            <div className="flex flex-col items-center">
-              <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Users className="h-16 w-16 text-muted-foreground" />
+            <div className="bg-card rounded-lg p-6 border border-border flex flex-col items-center">
+              <div className="w-28 h-28 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Users className="h-14 w-14 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold mb-1">Alex Johnson</h3>
-              <p className="text-muted-foreground mb-2">CTO & Co-Founder</p>
+              <p className="text-muted-foreground mb-2">Chief Product Officer</p>
               <p className="text-sm text-center text-muted-foreground">
                 Machine learning expert and cloud optimization specialist with 10+ years at Google Cloud. Pioneer in applying AI to infrastructure management.
               </p>
             </div>
             
-            <div className="flex flex-col items-center">
-              <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Users className="h-16 w-16 text-muted-foreground" />
+            <div className="bg-card rounded-lg p-6 border border-border flex flex-col items-center">
+              <div className="w-28 h-28 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Users className="h-14 w-14 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold mb-1">Michael Okonjo</h3>
-              <p className="text-muted-foreground mb-2">Chief Product Officer</p>
+              <p className="text-muted-foreground mb-2">Chief Security Officer</p>
               <p className="text-sm text-center text-muted-foreground">
                 PhD in Machine Learning with 8+ years of product leadership at cloud-native companies. Passionate about solving complex infrastructure challenges.
               </p>
