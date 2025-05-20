@@ -24,6 +24,11 @@ import SubscriptionCancel from "@/pages/SubscriptionCancel";
 import PricingPage from "@/pages/pricing";
 import KubernetesPage from "@/pages/KubernetesPage";
 import ArchitecturePlaygroundPage from "@/pages/architecture-playground";
+// Footer pages
+import AboutPage from "@/pages/AboutPage";
+import ContactPage from "@/pages/ContactPage";
+import PrivacyPolicyPage from "@/pages/legal/PrivacyPolicyPage";
+import TermsOfServicePage from "@/pages/legal/TermsOfServicePage";
 // Removed BillingImport as we've integrated it into CostOptimization
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -133,6 +138,12 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/documentation" component={Documentation} />
       <Route path="/pricing" component={PricingPage} />
+      
+      {/* Footer pages */}
+      <Route path="/about" component={AboutPage} />
+      <Route path="/contact" component={ContactPage} />
+      <Route path="/privacy" component={PrivacyPolicyPage} />
+      <Route path="/terms" component={TermsOfServicePage} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
