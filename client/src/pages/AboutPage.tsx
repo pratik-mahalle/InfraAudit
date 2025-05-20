@@ -160,27 +160,39 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-lg mb-4">
-                InfraAudit was born from frustration. Our founders were managing cloud infrastructure for Fortune 500 companies
-                and struggling with the same challenges: unexpected cost overruns, security vulnerabilities discovered too late, 
-                and the growing complexity of multi-cloud environments.
+                It all started with a simple observation: cloud bills were rising, and no one really knew why. As engineers building and scaling infrastructure, we kept noticing the same pattern — unused resources, misconfigured setups, and teams struggling to understand their cloud costs.
               </p>
               <p className="text-lg mb-4">
-                They realized that existing tools were disconnected, requiring teams to use dozens of separate dashboards and tools 
-                to get a complete picture. So in 2023, they set out to build a comprehensive solution that would unify cloud management 
-                and leverage AI to provide truly useful insights and automations.
+                So we asked ourselves: What if we could fix this?
+              </p>
+              <p className="text-lg mb-4">
+                That's how InfraAudit was born.
+              </p>
+              <p className="text-lg mb-4">
+                InfraAudit is more than a dashboard. It's a smart platform built to automatically detect cloud waste, offer actionable insights, and help teams save money — without slowing down innovation.
+              </p>
+              <p className="text-lg mb-4">
+                We're using modern technologies like TypeScript, Node.js, and NeonDB to build a fast, scalable, and developer-first platform that helps engineering and finance teams stay in sync.
               </p>
               <p className="text-lg">
-                Today, InfraAudit helps organizations of all sizes gain control over their cloud environments, typically reducing costs 
-                by 30% or more while strengthening security and streamlining operations.
+                We're still early in our journey, but our mission is clear:
+                Help every company take control of their cloud spend and grow efficiently.
               </p>
             </div>
-            <div className="bg-muted rounded-lg p-6">
+            <div className="bg-muted rounded-lg p-8">
               <div className="flex flex-col items-center justify-center h-full">
-                <Award className="h-16 w-16 text-blue-600 mb-4" />
-                <p className="text-center font-medium text-xl mb-2">Making an Impact</p>
-                <p className="text-center text-muted-foreground">
-                  Monitoring over 10,000 cloud resources across AWS, Azure, GCP and Kubernetes environments, helping companies save an average of 32% on their cloud bills.
-                </p>
+                <Award className="h-16 w-16 text-blue-600 mb-6" />
+                <p className="text-center font-medium text-xl mb-4">Join us as we build the future of cloud cost intelligence.</p>
+                <div className="grid grid-cols-2 gap-4 w-full mt-2">
+                  <div className="bg-background p-4 rounded-lg border border-border/50 text-center">
+                    <p className="text-3xl font-bold text-blue-600 mb-2">32%</p>
+                    <p className="text-sm text-muted-foreground">Average cost savings</p>
+                  </div>
+                  <div className="bg-background p-4 rounded-lg border border-border/50 text-center">
+                    <p className="text-3xl font-bold text-green-600 mb-2">10k+</p>
+                    <p className="text-sm text-muted-foreground">Resources monitored</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
