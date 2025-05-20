@@ -242,42 +242,7 @@ export default function AboutPage() {
             </div>
           </div>
           
-          {/* Other Team Members */}
-          <h3 className="text-2xl font-bold tracking-tight mb-6">Executive Team</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-card rounded-lg p-6 border border-border flex flex-col items-center">
-              <div className="w-28 h-28 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Users className="h-14 w-14 text-muted-foreground" />
-              </div>
-              <h3 className="text-xl font-semibold mb-1">Sarah Chen</h3>
-              <p className="text-muted-foreground mb-2">CTO</p>
-              <p className="text-sm text-center text-muted-foreground">
-                Former Cloud Architect at AWS with 15+ years of experience in cloud infrastructure and security. Led cloud transformation for Fortune 100 companies.
-              </p>
-            </div>
-            
-            <div className="bg-card rounded-lg p-6 border border-border flex flex-col items-center">
-              <div className="w-28 h-28 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Users className="h-14 w-14 text-muted-foreground" />
-              </div>
-              <h3 className="text-xl font-semibold mb-1">Alex Johnson</h3>
-              <p className="text-muted-foreground mb-2">Chief Product Officer</p>
-              <p className="text-sm text-center text-muted-foreground">
-                Machine learning expert and cloud optimization specialist with 10+ years at Google Cloud. Pioneer in applying AI to infrastructure management.
-              </p>
-            </div>
-            
-            <div className="bg-card rounded-lg p-6 border border-border flex flex-col items-center">
-              <div className="w-28 h-28 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Users className="h-14 w-14 text-muted-foreground" />
-              </div>
-              <h3 className="text-xl font-semibold mb-1">Michael Okonjo</h3>
-              <p className="text-muted-foreground mb-2">Chief Security Officer</p>
-              <p className="text-sm text-center text-muted-foreground">
-                PhD in Machine Learning with 8+ years of product leadership at cloud-native companies. Passionate about solving complex infrastructure challenges.
-              </p>
-            </div>
-          </div>
+
         </div>
       </div>
     </>
