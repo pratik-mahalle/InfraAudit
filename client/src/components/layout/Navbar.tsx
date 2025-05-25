@@ -147,17 +147,7 @@ export function Navbar() {
                 <CreditCard className="h-4 w-4 flex-shrink-0" />
                 <span>Subscription</span>
               </Link>
-              <Link 
-                href="/roi-calculator" 
-                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  location === "/roi-calculator" 
-                    ? "text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground"
-                } bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-full`}
-              >
-                <TrendingUp className="h-4 w-4 flex-shrink-0 text-green-600 dark:text-green-400" />
-                <span className="font-medium text-green-700 dark:text-green-400">ROI Calculator</span>
-              </Link>
+
             </>
           )}
           
@@ -362,19 +352,7 @@ export function Navbar() {
                   </div>
                 </Link>
                 
-                <Link href="/roi-calculator">
-                  <div 
-                    id="roi-calculator-nav-mobile"
-                    className={`flex items-center gap-2 py-2 px-3 my-2 rounded-md transition-colors cursor-pointer bg-green-50 dark:bg-green-900/20 ${
-                      location === "/roi-calculator" 
-                        ? "text-green-700 dark:text-green-400 font-medium" 
-                        : "text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
-                    }`}
-                  >
-                    <TrendingUp className="h-4 w-4 flex-shrink-0 text-green-600 dark:text-green-400" />
-                    <span className="font-medium">ROI Calculator</span>
-                  </div>
-                </Link>
+
               </>
             )}
             
