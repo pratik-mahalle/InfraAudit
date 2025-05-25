@@ -107,99 +107,115 @@ export default function RoiCalculator() {
     
     // Simulate calculation delay
     setTimeout(() => {
-      // Base savings percentage based on company size and cloud provider
-      let baseSavingsPercentage = 0;
-      
-      switch (inputs.companySize) {
-        case 'startup':
-          baseSavingsPercentage = 25; // 25% baseline savings for startups
-          break;
-        case 'smb':
-          baseSavingsPercentage = 22; // 22% baseline savings for SMBs
-          break;
-        case 'enterprise':
-          baseSavingsPercentage = 18; // 18% baseline savings for enterprises (already have some optimizations)
-          break;
+      try {
+        // Base savings percentage based on company size and cloud provider
+        let baseSavingsPercentage = 0;
+        
+        switch (inputs.companySize) {
+          case 'startup':
+            baseSavingsPercentage = 25; // 25% baseline savings for startups
+            break;
+          case 'smb':
+            baseSavingsPercentage = 22; // 22% baseline savings for SMBs
+            break;
+          case 'enterprise':
+            baseSavingsPercentage = 18; // 18% baseline savings for enterprises (already have some optimizations)
+            break;
+        }
+        
+        // Adjust for cloud provider
+        switch (inputs.cloudProvider) {
+          case 'aws':
+            // Base case, no adjustment
+            break;
+          case 'azure':
+            baseSavingsPercentage *= 1.05; // 5% more savings potential
+            break;
+          case 'gcp':
+            baseSavingsPercentage *= 1.02; // 2% more savings potential
+            break;
+          case 'multi':
+            baseSavingsPercentage *= 1.15; // 15% more savings potential for multi-cloud
+            break;
+        }
+        
+        // Adjust for resource count (more resources = more optimization opportunities)
+        const resourceFactor = Math.min(1.3, 1 + (inputs.resourceCount / 1000) * 0.3);
+        baseSavingsPercentage *= resourceFactor;
+        
+        // Adjust for AI enablement
+        if (inputs.enableAI) {
+          baseSavingsPercentage *= 1.2; // 20% more savings with AI-powered recommendations
+        }
+        
+        // Adjust for optimization level
+        baseSavingsPercentage *= (0.8 + (inputs.optimizationLevel * 0.2));
+        
+        // Cap at 45% maximum savings
+        baseSavingsPercentage = Math.min(45, baseSavingsPercentage);
+        
+        // Calculate cost savings
+        const monthlySavings = inputs.monthlyCloudSpend * (baseSavingsPercentage / 100);
+        const yearlySavings = monthlySavings * 12;
+        const threeYearSavings = yearlySavings * 3;
+        
+        // Calculate security savings
+        const incidentReduction = inputs.securityIncidents * 0.6; // 60% reduction in security incidents
+        const costPerIncident = inputs.companySize === 'enterprise' ? 150000 : 
+                                inputs.companySize === 'smb' ? 50000 : 20000;
+        const securityCostAvoidance = incidentReduction * costPerIncident;
+        
+        // Calculate ROI metrics
+        // Assume annual InfraAudit cost is 10% of annual savings
+        const annualCost = yearlySavings * 0.1;
+        const threeYearCost = annualCost * 3;
+        const roi = ((threeYearSavings + securityCostAvoidance) / threeYearCost - 1) * 100;
+        const paybackPeriod = (annualCost / yearlySavings) * 12; // in months
+        
+        // Time to value based on company size
+        const timeToValue = inputs.companySize === 'enterprise' ? 21 : 
+                           inputs.companySize === 'smb' ? 14 : 7; // days
+        
+        // First update the results state
+        setResults({
+          costSavings: {
+            monthly: monthlySavings,
+            yearly: yearlySavings,
+            threeYear: threeYearSavings,
+            percentage: baseSavingsPercentage,
+          },
+          securitySavings: {
+            incidentReduction: incidentReduction,
+            costAvoidance: securityCostAvoidance,
+          },
+          timeToValue: timeToValue,
+          roi: roi,
+          paybackPeriod: paybackPeriod,
+        });
+        
+        // Then update UI states in the correct order
+        setShowResults(true);
+        setCalculating(false);
+        
+        // Use a small delay to ensure state updates have propagated before switching tabs
+        setTimeout(() => {
+          setActiveTab('results');
+          
+          toast({
+            title: "ROI Analysis Complete",
+            description: `Estimated ${formatPercentage(baseSavingsPercentage)} cost reduction with InfraAudit`,
+          });
+        }, 100);
+        
+      } catch (error) {
+        console.error("Error calculating savings:", error);
+        setCalculating(false);
+        toast({
+          title: "Calculation Error",
+          description: "There was an error calculating your potential savings. Please try again.",
+          variant: "destructive"
+        });
       }
-      
-      // Adjust for cloud provider
-      switch (inputs.cloudProvider) {
-        case 'aws':
-          // Base case, no adjustment
-          break;
-        case 'azure':
-          baseSavingsPercentage *= 1.05; // 5% more savings potential
-          break;
-        case 'gcp':
-          baseSavingsPercentage *= 1.02; // 2% more savings potential
-          break;
-        case 'multi':
-          baseSavingsPercentage *= 1.15; // 15% more savings potential for multi-cloud
-          break;
-      }
-      
-      // Adjust for resource count (more resources = more optimization opportunities)
-      const resourceFactor = Math.min(1.3, 1 + (inputs.resourceCount / 1000) * 0.3);
-      baseSavingsPercentage *= resourceFactor;
-      
-      // Adjust for AI enablement
-      if (inputs.enableAI) {
-        baseSavingsPercentage *= 1.2; // 20% more savings with AI-powered recommendations
-      }
-      
-      // Adjust for optimization level
-      baseSavingsPercentage *= (0.8 + (inputs.optimizationLevel * 0.2));
-      
-      // Cap at 45% maximum savings
-      baseSavingsPercentage = Math.min(45, baseSavingsPercentage);
-      
-      // Calculate cost savings
-      const monthlySavings = inputs.monthlyCloudSpend * (baseSavingsPercentage / 100);
-      const yearlySavings = monthlySavings * 12;
-      const threeYearSavings = yearlySavings * 3;
-      
-      // Calculate security savings
-      const incidentReduction = inputs.securityIncidents * 0.6; // 60% reduction in security incidents
-      const costPerIncident = inputs.companySize === 'enterprise' ? 150000 : 
-                              inputs.companySize === 'smb' ? 50000 : 20000;
-      const securityCostAvoidance = incidentReduction * costPerIncident;
-      
-      // Calculate ROI metrics
-      // Assume annual InfraAudit cost is 10% of annual savings
-      const annualCost = yearlySavings * 0.1;
-      const threeYearCost = annualCost * 3;
-      const roi = ((threeYearSavings + securityCostAvoidance) / threeYearCost - 1) * 100;
-      const paybackPeriod = (annualCost / yearlySavings) * 12; // in months
-      
-      // Time to value based on company size
-      const timeToValue = inputs.companySize === 'enterprise' ? 21 : 
-                         inputs.companySize === 'smb' ? 14 : 7; // days
-      
-      // Set results
-      setResults({
-        costSavings: {
-          monthly: monthlySavings,
-          yearly: yearlySavings,
-          threeYear: threeYearSavings,
-          percentage: baseSavingsPercentage,
-        },
-        securitySavings: {
-          incidentReduction: incidentReduction,
-          costAvoidance: securityCostAvoidance,
-        },
-        timeToValue: timeToValue,
-        roi: roi,
-        paybackPeriod: paybackPeriod,
-      });
-      
-      setShowResults(true);
-      setActiveTab('results');
-      setCalculating(false);
-      
-      toast({
-        title: "ROI Analysis Complete",
-        description: `Estimated ${formatPercentage(baseSavingsPercentage)} cost reduction with InfraAudit`,
-      });
     }, 1500);
   };
   

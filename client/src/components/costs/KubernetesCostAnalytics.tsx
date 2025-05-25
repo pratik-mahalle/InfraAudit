@@ -83,12 +83,18 @@ export default function KubernetesCostAnalytics() {
     );
   }
 
-  // Check if data contains the expected structure
-  const hasValidData = data && data.currentCost && data.projectedCost && 
-                       data.potentialSavings && data.utilization && data.recommendations;
+  // Define a type for the API response that might contain a message
+  interface ApiErrorResponse {
+    message: string;
+  }
   
-  // If the API response doesn't contain Kubernetes cost data, display a message
-  if (!hasValidData) {
+  // Type guard to check if the response is an error message
+  function isErrorResponse(data: any): data is ApiErrorResponse {
+    return data && typeof data === 'object' && 'message' in data;
+  }
+  
+  // Check if we received a message indicating no clusters
+  if (isErrorResponse(data) && data.message === 'No Kubernetes clusters connected') {
     return (
       <div className="p-6 text-center border rounded-md">
         <div className="mb-4 text-amber-600 font-medium">No Kubernetes Cost Data Available</div>
@@ -100,8 +106,9 @@ export default function KubernetesCostAnalytics() {
     );
   }
   
-  // If we have valid data, use it
-  const costData: KubernetesCostData = data;
+  // Use the actual data from the API response with a type assertion
+  // We've already checked for error responses, so this is safe
+  const costData: KubernetesCostData = data as KubernetesCostData;
 
   return (
     <div>
