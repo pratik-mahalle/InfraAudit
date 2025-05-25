@@ -4,7 +4,7 @@ import {
   analyzeCostAnomalies,
   analyzeSecurityDrifts,
   generateOptimizationRecommendations
-} from "../services/openai-service";
+} from "../services/ai-service";
 import {
   costAnomalies,
   securityDrifts,
@@ -102,11 +102,11 @@ router.post("/analyze/cost/:resourceId", async (req: Request, res: Response) => 
       message: "No cost anomalies detected",
       analysis: analysisResult
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error analyzing cost anomalies:", error);
     return res.status(500).json({ 
       message: "Error analyzing cost anomalies", 
-      error: error.message 
+      error: error?.message || "Unknown error" 
     });
   }
 });
@@ -185,11 +185,11 @@ router.post("/analyze/security/:resourceId", async (req: Request, res: Response)
       message: "No security drifts detected",
       analysis: analysisResult
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error analyzing security drifts:", error);
     return res.status(500).json({ 
       message: "Error analyzing security drifts", 
-      error: error.message 
+      error: error?.message || "Unknown error" 
     });
   }
 });
@@ -242,11 +242,11 @@ router.post("/recommendations/:resourceId", async (req: Request, res: Response) 
       message: "No recommendations generated",
       recommendations: []
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating recommendations:", error);
     return res.status(500).json({ 
       message: "Error generating recommendations", 
-      error: error.message 
+      error: error?.message || "Unknown error" 
     });
   }
 });

@@ -5,7 +5,7 @@ import { CloudProvider } from "@shared/cloud-providers";
 // Initialize the OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
-// The newest OpenAI model is "gpt-4o" which was released May 13, 2024. Do not change this unless explicitly requested by the user
+// The newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const MODEL = "gpt-4o";
 
 export interface CostAnomalyAnalysisResult {
@@ -34,7 +34,7 @@ export async function analyzeCostAnomalies(
   provider: CloudProvider
 ): Promise<CostAnomalyAnalysisResult> {
   try {
-    const prompt = `
+    const promptText = `
       You are an expert cloud cost optimization specialist. Analyze the following cloud resource data and its cost history to identify potential cost anomalies, inefficiencies, or waste.
 
       RESOURCE DATA:
@@ -64,11 +64,11 @@ export async function analyzeCostAnomalies(
 
     const response = await openai.chat.completions.create({
       model: MODEL,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: promptText }],
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message.content) as CostAnomalyAnalysisResult;
+    const result = JSON.parse(response.choices[0].message.content || "{}") as CostAnomalyAnalysisResult;
     return result;
   } catch (error) {
     console.error("Error analyzing cost anomalies:", error);
@@ -90,7 +90,7 @@ export async function analyzeSecurityDrifts(
   provider: CloudProvider
 ): Promise<SecurityDriftAnalysisResult> {
   try {
-    const prompt = `
+    const promptText = `
       You are an expert cloud security specialist. Analyze the following cloud resource data to identify potential security configuration drifts, vulnerabilities, or compliance issues.
 
       RESOURCE DATA:
@@ -119,11 +119,11 @@ export async function analyzeSecurityDrifts(
 
     const response = await openai.chat.completions.create({
       model: MODEL,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: promptText }],
       response_format: { type: "json_object" }
     });
 
-    const result = JSON.parse(response.choices[0].message.content) as SecurityDriftAnalysisResult;
+    const result = JSON.parse(response.choices[0].message.content || "{}") as SecurityDriftAnalysisResult;
     return result;
   } catch (error) {
     console.error("Error analyzing security drifts:", error);
@@ -147,7 +147,7 @@ export async function generateOptimizationRecommendations(
   provider: CloudProvider
 ): Promise<InsertRecommendation[]> {
   try {
-    const prompt = `
+    const promptText = `
       You are an expert cloud optimization specialist. Generate detailed optimization recommendations for the following cloud resources.
 
       RESOURCE DATA:
@@ -181,16 +181,16 @@ export async function generateOptimizationRecommendations(
 
     const response = await openai.chat.completions.create({
       model: MODEL,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: promptText }],
       response_format: { type: "json_object" }
     });
 
-    const recommendations = JSON.parse(response.choices[0].message.content);
+    const recommendations = JSON.parse(response.choices[0].message.content || "[]");
     
     // Validate and format the recommendations according to the schema
     return recommendations.map((rec: any) => {
       // Handle null resourceId by ensuring it's a number or null
-      const resourceId = rec.resourceId ? parseInt(rec.resourceId) : null;
+      const resourceId = rec.resourceId ? parseInt(String(rec.resourceId)) : null;
       
       return insertRecommendationSchema.parse({
         title: rec.title,
