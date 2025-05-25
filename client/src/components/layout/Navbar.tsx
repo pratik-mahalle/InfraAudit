@@ -147,6 +147,17 @@ export function Navbar() {
                 <CreditCard className="h-4 w-4 flex-shrink-0" />
                 <span>Subscription</span>
               </Link>
+              <Link 
+                href="/roi-calculator" 
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+                  location === "/roi-calculator" 
+                    ? "text-foreground font-medium" 
+                    : "text-muted-foreground hover:text-foreground"
+                } bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-full`}
+              >
+                <TrendingUp className="h-4 w-4 flex-shrink-0 text-green-600 dark:text-green-400" />
+                <span className="font-medium text-green-700 dark:text-green-400">ROI Calculator</span>
+              </Link>
             </>
           )}
           
