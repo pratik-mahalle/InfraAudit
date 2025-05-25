@@ -83,19 +83,25 @@ export default function KubernetesCostAnalytics() {
     );
   }
 
-  // Get data or use fallback (for safety, though we'll have real data)
-  const costData: KubernetesCostData = data || {
-    currentCost: {
-      totalCost: 0,
-      breakdown: { compute: 0, memory: 0, storage: 0, networking: 0 },
-      percentChange: 0,
-      changeDirection: 'increase'
-    },
-    projectedCost: { totalCost: 0, percentChange: 0 },
-    potentialSavings: { totalSavings: 0, recommendationCount: 0 },
-    utilization: { cpu: 0, memory: 0, storage: 0, network: 0 },
-    recommendations: []
-  };
+  // Check if data contains the expected structure
+  const hasValidData = data && data.currentCost && data.projectedCost && 
+                       data.potentialSavings && data.utilization && data.recommendations;
+  
+  // If the API response doesn't contain Kubernetes cost data, display a message
+  if (!hasValidData) {
+    return (
+      <div className="p-6 text-center border rounded-md">
+        <div className="mb-4 text-amber-600 font-medium">No Kubernetes Cost Data Available</div>
+        <p className="text-muted-foreground mb-4">
+          Please connect a Kubernetes cluster to view detailed cost analytics and optimization recommendations.
+        </p>
+        <Button>Connect Kubernetes Cluster</Button>
+      </div>
+    );
+  }
+  
+  // If we have valid data, use it
+  const costData: KubernetesCostData = data;
 
   return (
     <div>
