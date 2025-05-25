@@ -25,6 +25,7 @@ import PricingPage from "@/pages/pricing";
 import KubernetesPage from "@/pages/KubernetesPage";
 import ArchitecturePlaygroundPage from "@/pages/architecture-playground";
 import AiAnalysisDemo from "@/pages/AiAnalysisDemo";
+import RoiCalculator from "@/pages/RoiCalculator";
 // Footer pages
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
@@ -146,6 +147,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPolicyPage} />
       <Route path="/terms" component={TermsOfServicePage} />
       <Route path="/ai-demo" component={AiAnalysisDemo} />
+      <Route path="/roi-calculator" component={RoiCalculator} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
