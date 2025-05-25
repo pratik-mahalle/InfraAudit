@@ -116,6 +116,12 @@ function Router() {
     </ExpiredTrialRedirect>
   );
   
+  const ProtectedRoiCalculator = () => (
+    <ExpiredTrialRedirect>
+      <RoiCalculator />
+    </ExpiredTrialRedirect>
+  );
+  
   return (
     <Switch>
       {/* Protected routes - require authentication and active trial */}
@@ -134,6 +140,7 @@ function Router() {
       <ProtectedRoute path="/subscription" component={ProtectedSubscription} />
       <ProtectedRoute path="/subscription/success" component={ProtectedSubscriptionSuccess} />
       <ProtectedRoute path="/subscription/cancel" component={ProtectedSubscriptionCancel} />
+      <ProtectedRoute path="/roi-calculator" component={ProtectedRoiCalculator} />
       
       {/* Public routes */}
       <Route path="/" component={HomePage} /> {/* Landing page for non-authenticated users */}
@@ -147,7 +154,6 @@ function Router() {
       <Route path="/privacy" component={PrivacyPolicyPage} />
       <Route path="/terms" component={TermsOfServicePage} />
       <Route path="/ai-demo" component={AiAnalysisDemo} />
-      <Route path="/roi-calculator" component={RoiCalculator} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
