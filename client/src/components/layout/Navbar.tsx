@@ -361,6 +361,20 @@ export function Navbar() {
                     <span>Subscription</span>
                   </div>
                 </Link>
+                
+                <Link href="/roi-calculator">
+                  <div 
+                    id="roi-calculator-nav-mobile"
+                    className={`flex items-center gap-2 py-2 px-3 my-2 rounded-md transition-colors cursor-pointer bg-green-50 dark:bg-green-900/20 ${
+                      location === "/roi-calculator" 
+                        ? "text-green-700 dark:text-green-400 font-medium" 
+                        : "text-green-700 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
+                    }`}
+                  >
+                    <TrendingUp className="h-4 w-4 flex-shrink-0 text-green-600 dark:text-green-400" />
+                    <span className="font-medium">ROI Calculator</span>
+                  </div>
+                </Link>
               </>
             )}
             
