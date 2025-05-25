@@ -56,20 +56,15 @@ export function setupAuth(app: Express) {
 
   passport.use(
     new LocalStrategy({
-      usernameField: 'username',
+      usernameField: 'email',
       passwordField: 'password'
-    }, async (username, password, done) => {
+    }, async (email, password, done) => {
       try {
-        // Try to find user by username first
-        let user = await storage.getUserByUsername(username);
-        
-        // If not found, try by email (supports both username and email login)
-        if (!user) {
-          user = await storage.getUserByEmail(username);
-        }
+        // Find user by email
+        let user = await storage.getUserByEmail(email);
         
         if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false, { message: 'Invalid username/email or password' });
+          return done(null, false, { message: 'Invalid email or password' });
         } else {
           // Update last login time
           await storage.updateUser(user.id, { 
@@ -154,7 +149,7 @@ export function setupAuth(app: Express) {
       if (err) return next(err);
       if (!user) {
         return res.status(401).json({ 
-          message: info?.message || "Invalid username/email or password"
+          message: info?.message || "Invalid email or password"
         });
       }
       

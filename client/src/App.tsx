@@ -22,6 +22,15 @@ import SubscriptionPage from "@/pages/SubscriptionPage";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import SubscriptionCancel from "@/pages/SubscriptionCancel";
 import PricingPage from "@/pages/pricing";
+import KubernetesPage from "@/pages/KubernetesPage";
+import ArchitecturePlaygroundPage from "@/pages/architecture-playground";
+import AiAnalysisDemo from "@/pages/AiAnalysisDemo";
+import RoiCalculator from "@/pages/RoiCalculator";
+// Footer pages
+import AboutPage from "@/pages/AboutPage";
+import ContactPage from "@/pages/ContactPage";
+import PrivacyPolicyPage from "@/pages/legal/PrivacyPolicyPage";
+import TermsOfServicePage from "@/pages/legal/TermsOfServicePage";
 // Removed BillingImport as we've integrated it into CostOptimization
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -77,6 +86,12 @@ function Router() {
     </ExpiredTrialRedirect>
   );
   
+  const ProtectedKubernetes = () => (
+    <ExpiredTrialRedirect>
+      <KubernetesPage />
+    </ExpiredTrialRedirect>
+  );
+  
   const ProtectedSubscription = () => (
     <ExpiredTrialRedirect>
       <SubscriptionPage />
@@ -95,6 +110,18 @@ function Router() {
     </ExpiredTrialRedirect>
   );
   
+  const ProtectedArchitecturePlayground = () => (
+    <ExpiredTrialRedirect>
+      <ArchitecturePlaygroundPage />
+    </ExpiredTrialRedirect>
+  );
+  
+  const ProtectedRoiCalculator = () => (
+    <ExpiredTrialRedirect>
+      <RoiCalculator />
+    </ExpiredTrialRedirect>
+  );
+  
   return (
     <Switch>
       {/* Protected routes - require authentication and active trial */}
@@ -107,16 +134,26 @@ function Router() {
       <ProtectedRoute path="/settings" component={ProtectedSettings} />
       <ProtectedRoute path="/profile" component={ProtectedProfile} />
       <ProtectedRoute path="/cloud-providers" component={ProtectedCloudProviders} />
+      <ProtectedRoute path="/kubernetes" component={ProtectedKubernetes} />
       {/* Billing import has been integrated into the cost optimization page */}
+      <ProtectedRoute path="/architecture-playground" component={ProtectedArchitecturePlayground} />
       <ProtectedRoute path="/subscription" component={ProtectedSubscription} />
       <ProtectedRoute path="/subscription/success" component={ProtectedSubscriptionSuccess} />
       <ProtectedRoute path="/subscription/cancel" component={ProtectedSubscriptionCancel} />
+      <ProtectedRoute path="/roi-calculator" component={ProtectedRoiCalculator} />
       
       {/* Public routes */}
       <Route path="/" component={HomePage} /> {/* Landing page for non-authenticated users */}
       <Route path="/auth" component={AuthPage} />
       <Route path="/documentation" component={Documentation} />
       <Route path="/pricing" component={PricingPage} />
+      
+      {/* Footer pages */}
+      <Route path="/about" component={AboutPage} />
+      <Route path="/contact" component={ContactPage} />
+      <Route path="/privacy" component={PrivacyPolicyPage} />
+      <Route path="/terms" component={TermsOfServicePage} />
+      <Route path="/ai-demo" component={AiAnalysisDemo} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

@@ -15,7 +15,9 @@ import {
   CreditCard,
   TrendingUp,
   FileSpreadsheet,
-  Zap
+  Zap,
+  Server,
+  Layers
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -114,13 +116,25 @@ export function Navbar() {
                 href="/cloud-providers" 
                 id="cloud-providers-nav"
                 className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  location === "/cloud-providers" 
+                  location === "/cloud-providers" || location === "/cloud-providers/kubernetes"
                     ? "text-foreground font-medium" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <Cloud className="h-4 w-4 flex-shrink-0" />
-                <span>Providers</span>
+                <span>Cloud & K8s</span>
+              </Link>
+              <Link 
+                href="/architecture-playground" 
+                id="architecture-playground-nav"
+                className={`flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap ${
+                  location === "/architecture-playground"
+                    ? "text-foreground font-medium" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Layers className="h-4 w-4 flex-shrink-0" />
+                <span>Designer</span>
               </Link>
               <Link 
                 href="/subscription" 
@@ -133,34 +147,39 @@ export function Navbar() {
                 <CreditCard className="h-4 w-4 flex-shrink-0" />
                 <span>Subscription</span>
               </Link>
+
             </>
           )}
           
-          {/* Public links for all users */}
-          <a 
-            href="/#features" 
-            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
-          >
-            Features
-          </a>
-          <a 
-            href="/#pricing" 
-            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
-          >
-            Pricing
-          </a>
-          <a 
-            href="/#testimonials" 
-            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
-          >
-            Testimonials
-          </a>
-          <a 
-            href="/#faq" 
-            className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
-          >
-            FAQ
-          </a>
+          {/* Public links for non-authenticated users */}
+          {!user && (
+            <>
+              <a 
+                href="/#features" 
+                className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
+              >
+                Features
+              </a>
+              <a 
+                href="/#pricing" 
+                className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
+              >
+                Pricing
+              </a>
+              <a 
+                href="/#testimonials" 
+                className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
+              >
+                Testimonials
+              </a>
+              <a 
+                href="/#faq" 
+                className="text-md font-medium transition-colors cursor-pointer whitespace-nowrap text-gray-700 dark:text-gray-200 hover:text-primary"
+              >
+                FAQ
+              </a>
+            </>
+          )}
         </div>
 
         {/* User controls and mobile menu */}
@@ -290,7 +309,33 @@ export function Navbar() {
                     }`}
                   >
                     <Cloud className="h-4 w-4 flex-shrink-0" />
-                    <span>Providers</span>
+                    <span>Cloud & K8s</span>
+                  </div>
+                </Link>
+                <Link href="/architecture-playground">
+                  <div 
+                    id="architecture-playground-nav-mobile"
+                    className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                      location === "/architecture-playground" 
+                        ? "text-foreground font-medium" 
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Layers className="h-4 w-4 flex-shrink-0" />
+                    <span>Designer</span>
+                  </div>
+                </Link>
+                <Link href="/kubernetes">
+                  <div 
+                    id="kubernetes-nav-mobile"
+                    className={`flex items-center gap-2 py-2 transition-colors cursor-pointer ${
+                      location === "/kubernetes" 
+                        ? "text-foreground font-medium" 
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Server className="h-4 w-4 flex-shrink-0" />
+                    <span>Kubernetes</span>
                   </div>
                 </Link>
                 <Link href="/subscription">
@@ -306,6 +351,8 @@ export function Navbar() {
                     <span>Subscription</span>
                   </div>
                 </Link>
+                
+
               </>
             )}
             

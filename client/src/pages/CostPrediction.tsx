@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, TrendingUp, ArrowUp, Zap } from "lucide-react";
+import { Loader2, TrendingUp, ArrowUp, Zap, Server } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet";
+import KubernetesCostAnalytics from "@/components/costs/KubernetesCostAnalytics";
 
 export default function CostPrediction() {
   const [predictionModel, setPredictionModel] = useState<"linear" | "movingAverage" | "weightedMovingAverage">("linear");
@@ -324,6 +325,22 @@ export default function CostPrediction() {
           </Card>
         </div>
         
+        {/* Kubernetes Cost Analytics */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl flex items-center">
+              <Server className="mr-2 h-5 w-5 text-blue-600" />
+              Kubernetes Cost Analytics
+            </CardTitle>
+            <CardDescription>
+              Real-time cost analysis and optimization for Kubernetes clusters
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <KubernetesCostAnalytics />
+          </CardContent>
+        </Card>
+        
         {/* Historical Cost Analysis */}
         <Card>
           <CardHeader>
@@ -368,6 +385,37 @@ export default function CostPrediction() {
                 </div>
               </TabsContent>
             </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* ROI Calculator Card */}
+        <Card className="mt-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl flex items-center">
+              <TrendingUp className="mr-2 h-5 w-5 text-green-600" />
+              ROI Calculator
+            </CardTitle>
+            <CardDescription>
+              Calculate potential savings and return on investment for cloud optimization
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-900/30">
+              <p className="text-sm mb-4">
+                Use our advanced ROI Calculator to demonstrate the financial impact of implementing InfraAudit's cloud optimization recommendations.
+              </p>
+              <div className="flex items-center space-x-2">
+                <Button asChild variant="default" className="bg-green-600 hover:bg-green-700">
+                  <a href="/roi-calculator" className="flex items-center">
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Open ROI Calculator
+                  </a>
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Companies using InfraAudit save an average of 32% on cloud costs
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

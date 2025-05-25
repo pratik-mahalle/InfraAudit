@@ -100,11 +100,32 @@ export default function HomePage() {
                 AI-powered platform to monitor, secure, and optimize your cloud infrastructure across all providers.
               </p>
               
-              <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-8">
+              <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-4">
                 Tailor-made for DevOps and Cloud Engineering teams
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-3 mb-8">
+              <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-900/50">
+                <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center">
+                  <Check className="h-4 w-4 mr-2 text-green-500 flex-shrink-0" />
+                  Companies using InfraAudit save an average of <span className="font-bold">32%</span> on cloud costs
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                <Button asChild size="lg" className="h-12 px-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600">
+                  <Link href="/roi-calculator" className="flex items-center">
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Calculate Your Cloud Savings
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="h-12 px-6">
+                  <Link href="/auth">
+                    Get Started
+                  </Link>
+                </Button>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 mb-8 mt-6">
                 <div className="flex-grow group">
                   <Input 
                     type="email" 

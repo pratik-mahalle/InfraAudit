@@ -18,6 +18,8 @@ import { scanRouter } from "./routes/scan";
 import { subscriptionsRouter } from "./routes/subscriptions";
 import { costPredictionRouter } from "./routes/cost-prediction";
 import { billingImportRouter } from "./routes/billing-import";
+import kubernetesRouter from "./routes/kubernetes";
+import aiAnalysisRouter from "./routes/ai-analysis";
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -44,6 +46,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Setup billing import routes
   app.use('/api/billing-import', billingImportRouter);
+  
+  // Setup Kubernetes routes
+  app.use('/api/kubernetes', kubernetesRouter);
+  
+  // Setup AI analysis routes for cost anomalies and security drifts
+  app.use('/api/ai-analysis', aiAnalysisRouter);
   
   // Setup a simplified cost analysis endpoint
   app.get('/api/cost-analysis', async (req, res) => {
