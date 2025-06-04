@@ -83,19 +83,32 @@ export default function KubernetesCostAnalytics() {
     );
   }
 
-  // Get data or use fallback (for safety, though we'll have real data)
-  const costData: KubernetesCostData = data || {
-    currentCost: {
-      totalCost: 0,
-      breakdown: { compute: 0, memory: 0, storage: 0, networking: 0 },
-      percentChange: 0,
-      changeDirection: 'increase'
-    },
-    projectedCost: { totalCost: 0, percentChange: 0 },
-    potentialSavings: { totalSavings: 0, recommendationCount: 0 },
-    utilization: { cpu: 0, memory: 0, storage: 0, network: 0 },
-    recommendations: []
-  };
+  // Define a type for the API response that might contain a message
+  interface ApiErrorResponse {
+    message: string;
+  }
+  
+  // Type guard to check if the response is an error message
+  function isErrorResponse(data: any): data is ApiErrorResponse {
+    return data && typeof data === 'object' && 'message' in data;
+  }
+  
+  // Check if we received a message indicating no clusters
+  if (isErrorResponse(data) && data.message === 'No Kubernetes clusters connected') {
+    return (
+      <div className="p-6 text-center border rounded-md">
+        <div className="mb-4 text-amber-600 font-medium">No Kubernetes Cost Data Available</div>
+        <p className="text-muted-foreground mb-4">
+          Please connect a Kubernetes cluster to view detailed cost analytics and optimization recommendations.
+        </p>
+        <Button>Connect Kubernetes Cluster</Button>
+      </div>
+    );
+  }
+  
+  // Use the actual data from the API response with a type assertion
+  // We've already checked for error responses, so this is safe
+  const costData: KubernetesCostData = data as KubernetesCostData;
 
   return (
     <div>

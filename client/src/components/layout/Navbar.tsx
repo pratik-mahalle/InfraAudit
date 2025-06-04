@@ -147,6 +147,7 @@ export function Navbar() {
                 <CreditCard className="h-4 w-4 flex-shrink-0" />
                 <span>Subscription</span>
               </Link>
+
             </>
           )}
           
@@ -350,6 +351,8 @@ export function Navbar() {
                     <span>Subscription</span>
                   </div>
                 </Link>
+                
+
               </>
             )}
             

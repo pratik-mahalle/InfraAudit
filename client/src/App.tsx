@@ -24,6 +24,8 @@ import SubscriptionCancel from "@/pages/SubscriptionCancel";
 import PricingPage from "@/pages/pricing";
 import KubernetesPage from "@/pages/KubernetesPage";
 import ArchitecturePlaygroundPage from "@/pages/architecture-playground";
+import AiAnalysisDemo from "@/pages/AiAnalysisDemo";
+import RoiCalculator from "@/pages/RoiCalculator";
 // Footer pages
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
@@ -114,6 +116,12 @@ function Router() {
     </ExpiredTrialRedirect>
   );
   
+  const ProtectedRoiCalculator = () => (
+    <ExpiredTrialRedirect>
+      <RoiCalculator />
+    </ExpiredTrialRedirect>
+  );
+  
   return (
     <Switch>
       {/* Protected routes - require authentication and active trial */}
@@ -132,6 +140,7 @@ function Router() {
       <ProtectedRoute path="/subscription" component={ProtectedSubscription} />
       <ProtectedRoute path="/subscription/success" component={ProtectedSubscriptionSuccess} />
       <ProtectedRoute path="/subscription/cancel" component={ProtectedSubscriptionCancel} />
+      <ProtectedRoute path="/roi-calculator" component={ProtectedRoiCalculator} />
       
       {/* Public routes */}
       <Route path="/" component={HomePage} /> {/* Landing page for non-authenticated users */}
@@ -144,6 +153,7 @@ function Router() {
       <Route path="/contact" component={ContactPage} />
       <Route path="/privacy" component={PrivacyPolicyPage} />
       <Route path="/terms" component={TermsOfServicePage} />
+      <Route path="/ai-demo" component={AiAnalysisDemo} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
