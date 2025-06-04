@@ -1,2 +1,0 @@
-id,name,display_name,billing_email,billing_address,plan_type,resource_limit,user_limit,stripe_customer_id,stripe_subscription_id,subscription_status,created_at,updated_at
-1,"demo-org","Demo Organization","demo@example.com",,"free",10,2,"cus_SHmGANG9HONaSY",,"inactive","""2025-05-10T09:49:55.676Z""","""2025-05-10T09:49:55.676Z"""

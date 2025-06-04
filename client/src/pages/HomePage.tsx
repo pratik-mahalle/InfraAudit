@@ -14,7 +14,10 @@ import {
   CloudLightning,
   ChevronRight,
   Plus,
-  Quote
+  Quote,
+  Layers,
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 // Import founder photo
@@ -114,7 +117,11 @@ export default function HomePage() {
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
-                <Button className="h-12 px-6 relative overflow-hidden group">
+                <Button className="h-12 px-6 relative overflow-hidden group"
+                  onClick={() => {
+                    window.location.href = "mailto:contact@infraaudit.in?subject=Schedule InfraAudit Demo";
+                  }}
+                >
                   <span className="relative z-10 flex items-center">
                     Schedule Demo
                     <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -151,7 +158,7 @@ export default function HomePage() {
                         <CardContent className="p-0">
                           <div className="flex flex-col">
                             <span className="text-sm text-gray-500 dark:text-gray-400">Resources</span>
-                            <span className="text-xl font-bold">248</span>
+                            <span className="text-xl font-bold dark:text-white">248</span>
                             <div className="w-full h-8 mt-2">
                               <div className="w-full h-[2px] bg-gray-200 dark:bg-gray-700 relative">
                                 <div className="absolute h-[2px] bg-blue-500 left-0 top-0 w-3/4"></div>
@@ -165,7 +172,7 @@ export default function HomePage() {
                         <CardContent className="p-0">
                           <div className="flex flex-col">
                             <span className="text-sm text-gray-500 dark:text-gray-400">Compliance</span>
-                            <span className="text-xl font-bold">94%</span>
+                            <span className="text-xl font-bold dark:text-white">94%</span>
                             <div className="w-full h-8 mt-2">
                               <div className="w-full h-[2px] bg-gray-200 dark:bg-gray-700 relative">
                                 <div className="absolute h-[2px] bg-green-500 left-0 top-0 w-[94%]"></div>
@@ -179,7 +186,7 @@ export default function HomePage() {
                         <CardContent className="p-0">
                           <div className="flex flex-col">
                             <span className="text-sm text-gray-500 dark:text-gray-400">Savings</span>
-                            <span className="text-xl font-bold">$3,240</span>
+                            <span className="text-xl font-bold dark:text-white">$3,240</span>
                             <div className="w-full h-8 mt-2">
                               <div className="w-full h-[2px] bg-gray-200 dark:bg-gray-700 relative">
                                 <div className="absolute h-[2px] bg-amber-500 left-0 top-0 w-1/2"></div>

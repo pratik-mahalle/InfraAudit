@@ -1,6 +1,0 @@
-id,name,type,provider,region,status,tags,cost,organization_id,user_id,created_at,updated_at
-1,"web-server-prod","EC2","AWS","us-east-1","running","{""app"":""web"",""environment"":""production""}",8400,1,1,"""2025-05-10T09:49:55.903Z""","""2025-05-10T09:49:55.903Z"""
-2,"api-server-prod","EC2","AWS","us-east-1","running","{""app"":""api"",""environment"":""production""}",6200,1,1,"""2025-05-10T09:49:55.977Z""","""2025-05-10T09:49:55.977Z"""
-3,"s3-customer-data","S3","AWS","us-east-1","active","{""data"":""customer"",""environment"":""production""}",2500,1,1,"""2025-05-10T09:49:56.052Z""","""2025-05-10T09:49:56.052Z"""
-4,"rds-analytics-cluster","RDS","AWS","us-east-1","running","{""app"":""analytics"",""environment"":""production""}",12000,1,1,"""2025-05-10T09:49:56.125Z""","""2025-05-10T09:49:56.125Z"""
-5,"api-gateway-prod","ApiGateway","AWS","us-east-1","active","{""app"":""api"",""environment"":""production""}",1800,1,1,"""2025-05-10T09:49:56.195Z""","""2025-05-10T09:49:56.195Z"""
