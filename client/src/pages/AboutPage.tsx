@@ -1,7 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { Zap, Award, Users, BarChart4, Shield, Cloud, Check, Quote } from 'lucide-react';
-import founderPhoto from '@assets/me.jpg';
+import founderPhoto from '../assets/founder.jpg'; // Adjust the path as necessary
 
 export default function AboutPage() {
   return (

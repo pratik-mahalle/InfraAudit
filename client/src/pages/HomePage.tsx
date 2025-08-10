@@ -601,7 +601,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-bold mb-2">Starter</h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-4">For small teams getting started with cloud management</p>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold">$299</span>
+                  <span className="text-4xl font-bold">$49</span>
                   <span className="text-gray-500 dark:text-gray-400">/month</span>
                 </div>
                 
@@ -648,7 +648,7 @@ export default function HomePage() {
                 <h3 className="text-xl font-bold mb-2">Professional</h3>
                 <p className="text-gray-500 dark:text-gray-400 mb-4">For growing teams with advanced monitoring needs</p>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold">$699</span>
+                  <span className="text-4xl font-bold">$299</span>
                   <span className="text-gray-500 dark:text-gray-400">/month</span>
                 </div>
                 
