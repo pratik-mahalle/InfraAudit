@@ -60,7 +60,8 @@ const OAuthButton = ({ provider, icon, onClick }: { provider: string; icon: Reac
 );
 
 const handleOAuthLogin = (provider: 'google' | 'github') => {
-  window.location.href = `/api/auth/${provider}`;
+  const base = (import.meta as any).env?.VITE_OAUTH_BACKEND_BASE || (import.meta as any).env?.VITE_API_BASE_URL || '';
+  window.location.href = `${base}/api/auth/${provider}`;
 };
 
 export default function AuthPage() {

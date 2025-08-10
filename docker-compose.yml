@@ -1,34 +1,16 @@
-version: '3.8'
-
+version: '3.9'
 services:
-  app:
-    build: .
-    env_file: .env
-    expose:
-      - "5000"
-    restart: always
-
-  nginx:
-    image: nginx:alpine
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Override at deploy time as needed
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL-http://localhost:5000}
+        VITE_OAUTH_BACKEND_BASE: ${VITE_OAUTH_BACKEND_BASE-http://localhost:5000}
+    image: infraaudit-frontend:latest
     ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - app
-    restart: always
-
-  db:
-    image: postgres:15-alpine
-    ports:
-      - "5432:5432"
+      - "8080:80"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=infraaudit
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
+      - NODE_ENV=production
+    restart: unless-stopped 
