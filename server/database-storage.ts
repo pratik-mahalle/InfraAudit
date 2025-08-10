@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import type { IStorage } from "./storage";
 import {
   users, resources, securityDrifts, costAnomalies, alerts, recommendations, organizations,
@@ -41,6 +41,14 @@ export class DatabaseStorage implements IStorage {
   
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async getUserByOAuth(provider: string, oauthId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.oauthProvider, provider), eq(users.oauthId, oauthId)));
     return user;
   }
 
