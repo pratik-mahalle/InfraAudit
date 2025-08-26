@@ -76,7 +76,7 @@ export default function ResourceDetailPage() {
   return (
     <>
       <Helmet>
-        <title>{resource.name} | InfraAudit</title>
+        <title>{resource.name} | InfrAudit</title>
       </Helmet>
 
       <div className="container max-w-7xl mx-auto py-8 px-4">

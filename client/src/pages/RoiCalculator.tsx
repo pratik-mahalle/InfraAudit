@@ -166,7 +166,7 @@ export default function RoiCalculator() {
         const securityCostAvoidance = incidentReduction * costPerIncident;
         
         // Calculate ROI metrics
-        // Assume annual InfraAudit cost is 10% of annual savings
+        // Assume annual InfrAudit cost is 10% of annual savings
         const annualCost = yearlySavings * 0.1;
         const threeYearCost = annualCost * 3;
         const roi = ((threeYearSavings + securityCostAvoidance) / threeYearCost - 1) * 100;
@@ -203,7 +203,7 @@ export default function RoiCalculator() {
           
           toast({
             title: "ROI Analysis Complete",
-            description: `Estimated ${formatPercentage(baseSavingsPercentage)} cost reduction with InfraAudit`,
+            description: `Estimated ${formatPercentage(baseSavingsPercentage)} cost reduction with InfrAudit`,
           });
         }, 100);
         
@@ -253,8 +253,8 @@ export default function RoiCalculator() {
   return (
     <>
       <Helmet>
-        <title>ROI Calculator | InfraAudit</title>
-        <meta name="description" content="Calculate your potential cost savings and ROI with InfraAudit's cloud optimization platform." />
+        <title>ROI Calculator | InfrAudit</title>
+        <meta name="description" content="Calculate your potential cost savings and ROI with InfrAudit's cloud optimization platform." />
       </Helmet>
       
       <div className="container max-w-7xl mx-auto py-12 px-4 md:px-6">
@@ -264,7 +264,7 @@ export default function RoiCalculator() {
           </div>
           <h1 className="text-4xl font-bold tracking-tight mb-4">Cloud Savings Calculator</h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Estimate how much your organization could save with InfraAudit's AI-powered cloud optimization platform.
+            Estimate how much your organization could save with InfrAudit's AI-powered cloud optimization platform.
           </p>
         </div>
         
@@ -592,7 +592,7 @@ export default function RoiCalculator() {
                 <li>Typical resource utilization patterns for your industry and company size</li>
                 <li>Cost optimization opportunities across compute, storage, networking, and database resources</li>
                 <li>Potential security incident reduction and associated cost avoidance</li>
-                <li>Implementation and management costs of the InfraAudit platform</li>
+                <li>Implementation and management costs of the InfrAudit platform</li>
               </ul>
               <p className="text-sm text-muted-foreground mt-4">
                 Note: Actual results may vary based on your specific cloud environment and implementation approach. Contact us for a detailed analysis.

@@ -8,8 +8,8 @@ export default function TermsOfServicePage() {
   return (
     <>
       <Helmet>
-        <title>Terms of Service | InfraAudit</title>
-        <meta name="description" content="Review the Terms of Service for InfraAudit's multi-cloud infrastructure monitoring platform, including user responsibilities, acceptable use, and licensing terms." />
+        <title>Terms of Service | InfrAudit</title>
+        <meta name="description" content="Review the Terms of Service for InfrAudit's multi-cloud infrastructure monitoring platform, including user responsibilities, acceptable use, and licensing terms." />
       </Helmet>
 
       <div className="container max-w-4xl mx-auto py-12 px-4 md:px-6">
@@ -23,7 +23,7 @@ export default function TermsOfServicePage() {
         {/* Introduction */}
         <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
           <p>
-            These Terms of Service ("Terms") govern your access to and use of InfraAudit's platform and services. 
+            These Terms of Service ("Terms") govern your access to and use of InfrAudit's platform and services. 
             Please read these Terms carefully before using our services. By accessing or using our services, 
             you agree to be bound by these Terms and our Privacy Policy. If you disagree with any part of the terms, 
             you may not access our services.
@@ -79,7 +79,7 @@ export default function TermsOfServicePage() {
             <h2 className="text-2xl font-bold">1. Account Terms</h2>
             <p>
               You must be at least 18 years old to use this service. You are responsible for maintaining the security of your 
-              account and password. InfraAudit cannot and will not be liable for any loss or damage from your failure to comply 
+              account and password. InfrAudit cannot and will not be liable for any loss or damage from your failure to comply 
               with this security obligation.
             </p>
             <p>
@@ -94,7 +94,7 @@ export default function TermsOfServicePage() {
           <section id="service-license">
             <h2 className="text-2xl font-bold">2. Service License and Restrictions</h2>
             <p>
-              Subject to your compliance with these Terms, InfraAudit grants you a limited, non-exclusive, non-transferable, 
+              Subject to your compliance with these Terms, InfrAudit grants you a limited, non-exclusive, non-transferable, 
               non-sublicensable license to access and use the services for your internal business purposes.
             </p>
             <p>
@@ -104,7 +104,7 @@ export default function TermsOfServicePage() {
               <li>Modify, copy, or create derivative works based on the services or their content</li>
               <li>Reverse engineer, decompile, or disassemble any portion of the services</li>
               <li>Access the services to build a competitive product or service</li>
-              <li>Use the services in a way that could damage, disable, overburden, or impair InfraAudit systems</li>
+              <li>Use the services in a way that could damage, disable, overburden, or impair InfrAudit systems</li>
               <li>Use automated means (including bots, scrapers, or similar technologies) to access the services</li>
               <li>Circumvent or disrupt security-related features of the services</li>
               <li>Use the services in a manner that violates applicable laws or regulations</li>
@@ -133,7 +133,7 @@ export default function TermsOfServicePage() {
           <section id="acceptable-use">
             <h2 className="text-2xl font-bold">4. Acceptable Use</h2>
             <p>
-              You agree not to misuse the InfraAudit services. Prohibited activities include but are not limited to:
+              You agree not to misuse the InfrAudit services. Prohibited activities include but are not limited to:
             </p>
             <ul>
               <li>Harassing, threatening, or causing harm to others</li>
@@ -222,7 +222,7 @@ export default function TermsOfServicePage() {
           <section id="indemnification">
             <h2 className="text-2xl font-bold">8. Indemnification</h2>
             <p>
-              You agree to defend, indemnify, and hold harmless InfraAudit, its affiliates, licensors, and service providers, and its and 
+              You agree to defend, indemnify, and hold harmless InfrAudit, its affiliates, licensors, and service providers, and its and 
               their respective officers, directors, employees, contractors, agents, licensors, suppliers, successors, and assigns from and 
               against any claims, liabilities, damages, judgments, awards, losses, costs, expenses, or fees (including reasonable attorneys' 
               fees) arising out of or relating to:
@@ -281,11 +281,11 @@ export default function TermsOfServicePage() {
               If you have any questions about these Terms, please contact us at:
             </p>
             <div className="mt-4">
-              <p><strong>InfraAudit, Inc.</strong></p>
+              <p><strong>InfrAudit, Inc.</strong></p>
               <p>350 California St</p>
               <p>San Francisco, CA 94104</p>
               <p>United States</p>
-              <p>Email: legal@infraaudit.com</p>
+              <p>Email: legal@infraudit.com</p>
               <p>Phone: +1 (800) 555-1234</p>
             </div>
           </section>
@@ -297,7 +297,7 @@ export default function TermsOfServicePage() {
           <div>
             <h3 className="text-lg font-semibold mb-2">Important Notice</h3>
             <p className="text-muted-foreground">
-              By using InfraAudit's services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. 
+              By using InfrAudit's services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. 
               If you do not agree to these terms, please discontinue use of our services immediately.
             </p>
           </div>

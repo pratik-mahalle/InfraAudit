@@ -23,8 +23,8 @@ export default function ContactPage() {
   return (
     <>
       <Helmet>
-        <title>Contact Us | InfraAudit</title>
-        <meta name="description" content="Get in touch with the InfraAudit team for questions about our multi-cloud infrastructure monitoring platform, sales inquiries, or support requests." />
+        <title>Contact Us | InfrAudit</title>
+        <meta name="description" content="Get in touch with the InfrAudit team for questions about our multi-cloud infrastructure monitoring platform, sales inquiries, or support requests." />
       </Helmet>
 
       <div className="container max-w-6xl mx-auto py-12 px-4 md:px-6">
@@ -35,7 +35,7 @@ export default function ContactPage() {
           </div>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Contact Us</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Have questions about InfraAudit? We're here to help. Reach out to our team and we'll get back to you as soon as possible.
+            Have questions about InfrAudit? We're here to help. Reach out to our team and we'll get back to you as soon as possible.
           </p>
         </div>
 
@@ -52,10 +52,10 @@ export default function ContactPage() {
                   For general inquiries and questions
                 </p>
                 <a 
-                  href="mailto:contact@infraaudit.io" 
+                  href="mailto:contact@infraudit.io" 
                   className="text-blue-600 hover:text-blue-800 dark:hover:text-blue-400 font-medium"
                 >
-                  contact@infraaudit.io
+                  contact@infraudit.io
                 </a>
               </div>
             </CardContent>
@@ -88,14 +88,14 @@ export default function ContactPage() {
             <h2 className="text-3xl font-bold tracking-tight mb-6">Get in Touch</h2>
             <p className="text-muted-foreground mb-8">
               Fill out the form below and our team will get back to you within 24 hours. We're here to answer any questions
-              you might have about our platform, pricing, features, or how InfraAudit can help your organization optimize
+              you might have about our platform, pricing, features, or how InfrAudit can help your organization optimize
               cloud costs and enhance security.
             </p>
             
             <div className="space-y-4">
               <div className="flex items-center">
                 <Mail className="h-5 w-5 text-muted-foreground mr-3" />
-                <span>contact@infraaudit.io</span>
+                <span>contact@infraudit.io</span>
               </div>
               <div className="flex items-center">
                 <Phone className="h-5 w-5 text-muted-foreground mr-3" />
@@ -181,7 +181,7 @@ export default function ContactPage() {
               <p className="text-xs text-muted-foreground text-center mt-4">
                 By submitting this form, you agree to our 
                 <a href="/privacy" className="text-primary hover:underline mx-1">Privacy Policy</a>
-                and consent to being contacted about InfraAudit services.
+                and consent to being contacted about InfrAudit services.
               </p>
             </form>
           </div>

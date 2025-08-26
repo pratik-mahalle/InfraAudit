@@ -402,7 +402,7 @@ export default function CostPrediction() {
           <CardContent>
             <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-900/30">
               <p className="text-sm mb-4">
-                Use our advanced ROI Calculator to demonstrate the financial impact of implementing InfraAudit's cloud optimization recommendations.
+                Use our advanced ROI Calculator to demonstrate the financial impact of implementing InfrAudit's cloud optimization recommendations.
               </p>
               <div className="flex items-center space-x-2">
                 <Button asChild variant="default" className="bg-green-600 hover:bg-green-700">
@@ -412,7 +412,7 @@ export default function CostPrediction() {
                   </a>
                 </Button>
                 <p className="text-sm text-muted-foreground">
-                  Companies using InfraAudit save an average of 32% on cloud costs
+                  Companies using InfrAudit save an average of 32% on cloud costs
                 </p>
               </div>
             </div>

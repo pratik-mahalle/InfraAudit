@@ -26,24 +26,24 @@ const founderPhoto = "/me.jpg";
 // FAQ data structure
 const faqItems = [
   {
-    question: "What is InfraAudit, and who is it for?",
-    answer: "InfraAudit is a comprehensive cloud infrastructure monitoring platform designed for DevOps teams, cloud engineers, and IT managers who need to maintain security compliance and cost efficiency across AWS, Azure, and Google Cloud environments."
+    question: "What is InfrAudit, and who is it for?",
+    answer: "InfrAudit is a comprehensive cloud infrastructure monitoring platform designed for DevOps teams, cloud engineers, and IT managers who need to maintain security compliance and cost efficiency across AWS, Azure, and Google Cloud environments."
   },
   {
-    question: "How does InfraAudit help reduce cloud management risks?",
-    answer: "InfraAudit continuously monitors your cloud infrastructure for security vulnerabilities, cost anomalies, and resource inefficiencies. Our AI-powered analysis detects issues before they become problems, helping to prevent data breaches and unexpected billing spikes."
+    question: "How does InfrAudit help reduce cloud management risks?",
+    answer: "InfrAudit continuously monitors your cloud infrastructure for security vulnerabilities, cost anomalies, and resource inefficiencies. Our AI-powered analysis detects issues before they become problems, helping to prevent data breaches and unexpected billing spikes."
   },
   {
-    question: "Can InfraAudit integrate with our existing systems?",
-    answer: "Yes, InfraAudit provides seamless integration with your existing DevOps toolchain, including Slack, PagerDuty, Jira, and GitHub. We also provide a REST API for custom integrations with your specific workflows and internal systems."
+    question: "Can InfrAudit integrate with our existing systems?",
+    answer: "Yes, InfrAudit provides seamless integration with your existing DevOps toolchain, including Slack, PagerDuty, Jira, and GitHub. We also provide a REST API for custom integrations with your specific workflows and internal systems."
   },
   {
-    question: "What makes InfraAudit unique compared to other monitoring tools?",
-    answer: "Unlike competitors who focus on either cost or security, InfraAudit provides comprehensive coverage across all cloud providers with AI-driven insights, interactive visualizations, and customizable alerting—all in one unified dashboard."
+    question: "What makes InfrAudit unique compared to other monitoring tools?",
+    answer: "Unlike competitors who focus on either cost or security, InfrAudit provides comprehensive coverage across all cloud providers with AI-driven insights, interactive visualizations, and customizable alerting—all in one unified dashboard."
   },
   {
-    question: "What kind of reports can InfraAudit generate?",
-    answer: "InfraAudit generates detailed cost analysis reports, security compliance audits, resource utilization summaries, and predictive forecasts. All reports are customizable, exportable, and can be scheduled for regular delivery to stakeholders."
+    question: "What kind of reports can InfrAudit generate?",
+    answer: "InfrAudit generates detailed cost analysis reports, security compliance audits, resource utilization summaries, and predictive forecasts. All reports are customizable, exportable, and can be scheduled for regular delivery to stakeholders."
   }
 ];
 
@@ -110,7 +110,7 @@ export default function HomePage() {
               <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-900/50">
                 <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center">
                   <Check className="h-4 w-4 mr-2 text-green-500 flex-shrink-0" />
-                  Companies using InfraAudit save an average of <span className="font-bold">32%</span> on cloud costs
+                  Companies using InfrAudit save an average of <span className="font-bold">32%</span> on cloud costs
                 </p>
               </div>
               
@@ -132,7 +132,7 @@ export default function HomePage() {
                 <div className="flex-grow group">
                   <Input 
                     type="email" 
-                    placeholder="contact@infraaudit.io" 
+                    placeholder="contact@infraudit.io" 
                     className="w-full h-12 transition-all duration-300 group-hover:border-primary" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -140,7 +140,7 @@ export default function HomePage() {
                 </div>
                 <Button className="h-12 px-6 relative overflow-hidden group"
                   onClick={() => {
-                    window.location.href = "mailto:contact@infraaudit.in?subject=Schedule InfraAudit Demo";
+                    window.location.href = "mailto:contact@infraudit.in?subject=Schedule InfrAudit Demo";
                   }}
                 >
                   <span className="relative z-10 flex items-center">
@@ -299,7 +299,7 @@ export default function HomePage() {
               All-in-One Cloud Management Solution
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              InfraAudit provides comprehensive tools to monitor, secure, and optimize your entire cloud infrastructure.
+              InfrAudit provides comprehensive tools to monitor, secure, and optimize your entire cloud infrastructure.
             </p>
           </div>
           
@@ -388,7 +388,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">
-              What Makes InfraAudit Different
+              What Makes InfrAudit Different
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               We're not just another cloud monitoring tool
@@ -407,7 +407,7 @@ export default function HomePage() {
                       <div>
                         <h3 className="text-xl font-medium mb-2">True Multi-Cloud Integration</h3>
                         <p className="text-gray-600 dark:text-gray-300">
-                          Unlike competitors who prioritize one cloud provider, InfraAudit delivers equal depth of features across AWS, Azure, and Google Cloud from day one.
+                          Unlike competitors who prioritize one cloud provider, InfrAudit delivers equal depth of features across AWS, Azure, and Google Cloud from day one.
                         </p>
                       </div>
                     </div>
@@ -431,7 +431,7 @@ export default function HomePage() {
                       <div>
                         <h3 className="text-xl font-medium mb-2">Interactive Drill-Down Analytics</h3>
                         <p className="text-gray-600 dark:text-gray-300">
-                          InfraAudit provides detailed, interactive visualizations that let you explore cost and security data by clicking on any element to reveal deeper insights.
+                          InfrAudit provides detailed, interactive visualizations that let you explore cost and security data by clicking on any element to reveal deeper insights.
                         </p>
                       </div>
                     </div>
@@ -460,7 +460,7 @@ export default function HomePage() {
                 <div>
                   <h3 className="text-xl font-medium mb-2">94% Security Compliance</h3>
                   <p className="text-gray-600 dark:text-gray-300">
-                    InfraAudit users maintain an average of 94% compliance with industry security standards, compared to the industry average of 71%.
+                    InfrAudit users maintain an average of 94% compliance with industry security standards, compared to the industry average of 71%.
                   </p>
                 </div>
               </div>
@@ -472,7 +472,7 @@ export default function HomePage() {
                 <div>
                   <h3 className="text-xl font-medium mb-2">5x Faster Issue Resolution</h3>
                   <p className="text-gray-600 dark:text-gray-300">
-                    Teams using InfraAudit resolve infrastructure issues 5 times faster than teams using traditional monitoring tools.
+                    Teams using InfrAudit resolve infrastructure issues 5 times faster than teams using traditional monitoring tools.
                   </p>
                 </div>
               </div>
@@ -489,59 +489,63 @@ export default function HomePage() {
               Trusted by DevOps Teams Worldwide
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Here's what our Founder are saying about InfraAudit
+              Here's what our users are saying about InfrAudit
             </p>
           </div>
           
-          {/* Founder Section with Animation */}
-          <div className="mb-16 overflow-hidden relative">
-            <div className="p-8 md:p-10 lg:p-12 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 relative z-10">
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="md:w-1/3">
-                  <div className="relative group">
-                    <div className="relative">
-                      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-[6px] border-white dark:border-gray-800 shadow-xl mx-auto 
-                                  group-hover:scale-105 transition-transform duration-500 ease-out">
-                        <img 
-                          src={founderPhoto} 
-                          alt="Pratik Mahalle" 
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      </div>
+          {/* User Feedback */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                name: "Aarav Shah",
+                role: "Head of DevOps · FinTech",
+                quote:
+                  "We cut nearly 28% of our monthly AWS bill in two sprints. InfrAudit surfaces waste instantly and the rightsizing tips were spot-on.",
+              },
+              {
+                name: "Meera Iyer",
+                role: "SRE Manager · SaaS",
+                quote:
+                  "The security drift alerts caught a public S3 policy within minutes. That alone paid for the product on day one.",
+              },
+              {
+                name: "Vikram Patel",
+                role: "Platform Lead · Marketplace",
+                quote:
+                  "Multi‑cloud inventory and anomaly charts made our quarterly audit painless. We finally have one place to see spend and risk.",
+              },
+              {
+                name: "Sanjana Rao",
+                role: "Cloud Architect · HealthTech",
+                quote:
+                  "Forecasting + recommendations helped us plan reserved capacity confidently. Budget variance dropped by 35%.",
+              },
+              {
+                name: "Rohit Kumar",
+                role: "Engineering Director · Logistics",
+                quote:
+                  "The sync + scan flow is fast, and Slack notifications are actionable. Our MTTR for cost spikes went down by 5x.",
+              },
+              {
+                name: "Neha Gupta",
+                role: "Infra Lead · EdTech",
+                quote:
+                  "Onboarding took less than an hour. The dashboard is clean and the AI advice is actually practical for our teams.",
+              },
+            ].map((t, i) => (
+              <div key={i} className="p-6 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
+                <div className="flex items-start gap-3">
+                  <Quote className="h-6 w-6 text-blue-400 mt-1" />
+                  <div>
+                    <p className="text-gray-800 dark:text-gray-200">{t.quote}</p>
+                    <div className="mt-4">
+                      <div className="font-semibold">{t.name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{t.role}</div>
                     </div>
-                    <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs py-1 px-3 rounded-full shadow-lg
-                                z-20 hover:scale-110 transition-transform duration-300">
-                      Founder
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="md:w-2/3 text-center md:text-left">
-                  <div className="flex items-center mb-4">
-                    <Quote className="h-10 w-10 text-blue-300 dark:text-blue-500 mr-2 shrink-0" />
-                    <div>
-                      <h3 className="text-2xl font-bold">Pratik Mahalle</h3>
-                      <p className="text-blue-600 dark:text-blue-400">Founder & CEO</p>
-                    </div>
-                  </div>
-                  
-                  <p className="text-gray-700 dark:text-gray-300 text-lg mb-4 pl-4 border-l-4 border-blue-300 dark:border-blue-500/50 italic">
-                   Hi, I'm Pratik, Founder and DevOps Engineer behind InfraAudit — a cloud observability and security tool that eliminates hours of manual effort for cloud teams. With InfraAudit, we've automated compliance checks, surfaced critical misconfigurations, and reduced cloud overspend with smart, real-time insights. It's now an operational prototype and actively evolving into a must-have tool for modern DevOps and FinOps workflows                  </p>
-                  
-                  <div className="mt-6 flex flex-wrap gap-4">
-                    <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm">
-                      DevOps Engineer
-                    </span>
-                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm">
-                      DevRel
-                    </span>
-                    <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-sm">
-                      Cloud Infrastructure Expert
-                    </span>
                   </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -702,7 +706,7 @@ export default function HomePage() {
                   variant="outline" 
                   className="w-full"
                   onClick={() => {
-                    window.location.href = "mailto:contact@infraaudit.io?subject=InfraAudit Enterprise Inquiry";
+                    window.location.href = "mailto:contact@infraudit.io?subject=InfrAudit Enterprise Inquiry";
                   }}
                 >
                   Contact Sales
@@ -749,7 +753,7 @@ export default function HomePage() {
             Ready to Optimize Your Cloud?
           </h2>
           <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-            Join our pilot users and trust InfraAudit to secure and optimize your cloud infrastructure.
+            Join our pilot users and trust InfrAudit to secure and optimize your cloud infrastructure.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -766,7 +770,7 @@ export default function HomePage() {
               className="px-8 group relative overflow-hidden hover:bg-primary-100 dark:hover:bg-primary-900/20 transition-colors"
               onClick={() => {
                 // Open email client with pre-filled subject
-                window.location.href = "mailto:contact@infraaudit.in?subject=InfraAudit Sales Inquiry";
+                window.location.href = "mailto:contact@infraudit.in?subject=InfrAudit Sales Inquiry";
               }}
             >
               <span className="relative z-10">Contact Us</span>

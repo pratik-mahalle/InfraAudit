@@ -29,7 +29,7 @@ export default function Profile() {
 
   // Mock API keys that would come from the backend
   const [apiKeys] = useState([
-    { id: 1, name: "InfraAudit CLI", created: "2023-06-15", lastUsed: "2023-12-01" },
+    { id: 1, name: "InfrAudit CLI", created: "2023-06-15", lastUsed: "2023-12-01" },
     { id: 2, name: "Terraform Integration", created: "2023-08-22", lastUsed: "2023-12-10" },
   ]);
 
@@ -334,7 +334,7 @@ export default function Profile() {
               <CardHeader>
                 <CardTitle>API Keys</CardTitle>
                 <CardDescription>
-                  Manage your API keys for programmatic access to InfraAudit
+                  Manage your API keys for programmatic access to InfrAudit
                 </CardDescription>
               </CardHeader>
               <CardContent>

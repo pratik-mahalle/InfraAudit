@@ -114,7 +114,7 @@ export default function AuthPage() {
             <div className="flex items-center justify-center mb-4">
               <Shield className="h-10 w-10 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center">InfraAudit</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">InfrAudit</CardTitle>
             <CardDescription className="text-center">
               Sign in to your account or create a new one
             </CardDescription>
@@ -293,7 +293,7 @@ export default function AuthPage() {
       {/* Right side - Hero section */}
       <div className="lg:w-1/2 bg-gradient-to-br from-primary to-primary-foreground text-primary-foreground p-12 hidden lg:flex flex-col justify-center">
         <div className="max-w-md mx-auto">
-          <h1 className="text-4xl font-bold mb-6 text-white">InfraAudit Infrastructure Monitoring</h1>
+          <h1 className="text-4xl font-bold mb-6 text-white">InfrAudit Infrastructure Monitoring</h1>
           <p className="text-lg mb-8 text-white">
             Monitor your cloud infrastructure for cost anomalies and security configuration drifts.
             Stay on top of resource utilization and get actionable insights.

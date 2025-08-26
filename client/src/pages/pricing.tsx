@@ -68,12 +68,12 @@ export default function PricingPage() {
     <div className="container max-w-6xl py-10">
       <div className="mb-10 text-center">
         <h1 className="text-3xl font-extrabold tracking-tight lg:text-4xl mb-4">
-          Upgrade to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">InfraAudit Pro</span>
+          Upgrade to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">InfrAudit Pro</span>
         </h1>
         
         {user?.trialStatus === "expired" ? (
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
-            Your free trial has expired. Choose a plan to continue using InfraAudit.
+            Your free trial has expired. Choose a plan to continue using InfrAudit.
           </p>
         ) : (
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">

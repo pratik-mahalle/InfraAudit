@@ -7,8 +7,8 @@ export default function AboutPage() {
   return (
     <>
       <Helmet>
-        <title>About InfraAudit | Multi-Cloud Infrastructure Monitoring</title>
-        <meta name="description" content="Learn about InfraAudit, a comprehensive multi-cloud infrastructure monitoring platform leveraging AI for intelligent insights, proactive anomaly detection, and simplified management." />
+        <title>About InfrAudit | Multi-Cloud Infrastructure Monitoring</title>
+        <meta name="description" content="Learn about InfrAudit, a comprehensive multi-cloud infrastructure monitoring platform leveraging AI for intelligent insights, proactive anomaly detection, and simplified management." />
       </Helmet>
 
       <div className="container max-w-6xl mx-auto py-12 px-4 md:px-6">
@@ -17,7 +17,7 @@ export default function AboutPage() {
           <div className="flex justify-center mb-4">
             <Zap className="h-16 w-16 text-primary" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">About InfraAudit</h1>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">About InfrAudit</h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             The intelligent cloud cost optimization and security platform that helps you take control of your multi-cloud infrastructure.
           </p>
@@ -28,7 +28,7 @@ export default function AboutPage() {
           <h2 className="text-3xl font-bold tracking-tight mb-6">Our Mission</h2>
           <div className="bg-muted/50 rounded-lg p-8">
             <p className="text-lg">
-              InfraAudit is on a mission to give businesses complete visibility and control over their cloud environments. 
+              InfrAudit is on a mission to give businesses complete visibility and control over their cloud environments. 
               We believe that organizations should be able to harness the full power of multi-cloud environments without dealing 
               with runaway costs, security vulnerabilities, or operational chaos. Our AI-powered platform makes cloud complexity 
               manageable—with automated monitoring, intelligent recommendations, and a unified view of your entire cloud ecosystem.
@@ -38,7 +38,7 @@ export default function AboutPage() {
 
         {/* Value Proposition */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold tracking-tight mb-8">Why Businesses Choose InfraAudit</h2>
+          <h2 className="text-3xl font-bold tracking-tight mb-8">Why Businesses Choose InfrAudit</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6">
               <div className="flex items-start">
@@ -166,10 +166,10 @@ export default function AboutPage() {
                 So we asked ourselves: What if we could fix this?
               </p>
               <p className="text-lg mb-4">
-                That's how InfraAudit was born.
+                That's how InfrAudit was born.
               </p>
               <p className="text-lg mb-4">
-                InfraAudit is more than a dashboard. It's a smart platform built to automatically detect cloud waste, offer actionable insights, and help teams save money — without slowing down innovation.
+                InfrAudit is more than a dashboard. It's a smart platform built to automatically detect cloud waste, offer actionable insights, and help teams save money — without slowing down innovation.
               </p>
               <p className="text-lg mb-4">
                 We're using modern technologies like TypeScript, Node.js, and NeonDB to build a fast, scalable, and developer-first platform that helps engineering and finance teams stay in sync.
@@ -235,7 +235,7 @@ export default function AboutPage() {
                   </div>
                   
                   <p className="text-muted-foreground text-lg mb-4 pl-4 border-l-4 border-blue-300 dark:border-blue-500/50 italic">
-                    Hi, I'm Pratik, Founder and DevOps Engineer behind InfraAudit — a cloud observability and security tool that eliminates hours of manual effort for cloud teams. With InfraAudit, we've automated compliance checks, surfaced critical misconfigurations, and reduced cloud overspend with smart, real-time insights. It's now an operational prototype and actively evolving into a must-have tool for modern DevOps and FinOps workflows
+                    Hi, I'm Pratik, Founder and DevOps Engineer behind InfrAudit — a cloud observability and security tool that eliminates hours of manual effort for cloud teams. With InfrAudit, we've automated compliance checks, surfaced critical misconfigurations, and reduced cloud overspend with smart, real-time insights. It's now an operational prototype and actively evolving into a must-have tool for modern DevOps and FinOps workflows
                   </p>
                   
                   <div className="mt-6 flex flex-wrap gap-4">

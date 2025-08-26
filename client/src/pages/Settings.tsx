@@ -93,7 +93,7 @@ export default function Settings() {
     <DashboardLayout>
       <PageHeader
         title="Settings"
-        description="Configure and customize your InfraAudit experience"
+        description="Configure and customize your InfrAudit experience"
       />
 
       <Tabs defaultValue="general" className="space-y-6">
