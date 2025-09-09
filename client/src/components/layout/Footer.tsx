@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "wouter";
-import { Shield, Github, Twitter, Linkedin, Mail, Heart } from "lucide-react";
+import { Zap, Github, Twitter, Linkedin, Mail, Heart } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -11,7 +11,7 @@ export function Footer() {
         <div className="space-y-4">
           <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer">
-              <Shield className="h-6 w-6 text-blue-600" />
+              <Zap className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 InfrAudit
               </span>

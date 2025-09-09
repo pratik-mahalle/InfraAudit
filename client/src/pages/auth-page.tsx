@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
 import { insertUserSchema } from "@shared/schema";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 
 // Extended schema for client-side validation
 const loginSchema = z.object({
@@ -112,7 +112,7 @@ export default function AuthPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-center mb-4">
-              <Shield className="h-10 w-10 text-primary" />
+              <Zap className="h-10 w-10 text-primary" />
             </div>
             <CardTitle className="text-2xl font-bold text-center">InfrAudit</CardTitle>
             <CardDescription className="text-center">

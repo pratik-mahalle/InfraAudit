@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/layouts/MainLayout";
+import { AuthLayout } from "@/layouts/AuthLayout";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import SecurityMonitoring from "@/pages/SecurityMonitoring";
@@ -124,39 +125,52 @@ function Router() {
   
   return (
     <Switch>
-      {/* Protected routes - require authentication and active trial */}
-      <ProtectedRoute path="/dashboard" component={ProtectedDashboard} />
-      <ProtectedRoute path="/security" component={ProtectedSecurity} />
-      <ProtectedRoute path="/cost" component={ProtectedCost} />
-      <ProtectedRoute path="/cost-prediction" component={ProtectedCostPrediction} />
-      <ProtectedRoute path="/resources" component={ProtectedResources} />
-      {/* Alerts have been integrated into the Security page */}
-      <ProtectedRoute path="/settings" component={ProtectedSettings} />
-      <ProtectedRoute path="/profile" component={ProtectedProfile} />
-      <ProtectedRoute path="/cloud-providers" component={ProtectedCloudProviders} />
-      <ProtectedRoute path="/kubernetes" component={ProtectedKubernetes} />
-      {/* Billing import has been integrated into the cost optimization page */}
-      <ProtectedRoute path="/architecture-playground" component={ProtectedArchitecturePlayground} />
-      <ProtectedRoute path="/subscription" component={ProtectedSubscription} />
-      <ProtectedRoute path="/subscription/success" component={ProtectedSubscriptionSuccess} />
-      <ProtectedRoute path="/subscription/cancel" component={ProtectedSubscriptionCancel} />
-      <ProtectedRoute path="/roi-calculator" component={ProtectedRoiCalculator} />
+      {/* Auth page - no footer */}
+      <Route path="/auth">
+        <AuthLayout>
+          <AuthPage />
+        </AuthLayout>
+      </Route>
       
-      {/* Public routes */}
-      <Route path="/" component={HomePage} /> {/* Landing page for non-authenticated users */}
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/documentation" component={Documentation} />
-      <Route path="/pricing" component={PricingPage} />
-      
-      {/* Footer pages */}
-      <Route path="/about" component={AboutPage} />
-      <Route path="/contact" component={ContactPage} />
-      <Route path="/privacy" component={PrivacyPolicyPage} />
-      <Route path="/terms" component={TermsOfServicePage} />
-      <Route path="/ai-demo" component={AiAnalysisDemo} />
-      
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
+      {/* All other routes - with footer */}
+      <Route path="*">
+        <MainLayout>
+          <Switch>
+            {/* Protected routes - require authentication and active trial */}
+            <ProtectedRoute path="/dashboard" component={ProtectedDashboard} />
+            <ProtectedRoute path="/security" component={ProtectedSecurity} />
+            <ProtectedRoute path="/cost" component={ProtectedCost} />
+            <ProtectedRoute path="/cost-prediction" component={ProtectedCostPrediction} />
+            <ProtectedRoute path="/resources" component={ProtectedResources} />
+            {/* Alerts have been integrated into the Security page */}
+            <ProtectedRoute path="/settings" component={ProtectedSettings} />
+            <ProtectedRoute path="/profile" component={ProtectedProfile} />
+            <ProtectedRoute path="/cloud-providers" component={ProtectedCloudProviders} />
+            <ProtectedRoute path="/kubernetes" component={ProtectedKubernetes} />
+            {/* Billing import has been integrated into the cost optimization page */}
+            <ProtectedRoute path="/architecture-playground" component={ProtectedArchitecturePlayground} />
+            <ProtectedRoute path="/subscription" component={ProtectedSubscription} />
+            <ProtectedRoute path="/subscription/success" component={ProtectedSubscriptionSuccess} />
+            <ProtectedRoute path="/subscription/cancel" component={ProtectedSubscriptionCancel} />
+            <ProtectedRoute path="/roi-calculator" component={ProtectedRoiCalculator} />
+            
+            {/* Public routes */}
+            <Route path="/" component={HomePage} /> {/* Landing page for non-authenticated users */}
+            <Route path="/documentation" component={Documentation} />
+            <Route path="/pricing" component={PricingPage} />
+            
+            {/* Footer pages */}
+            <Route path="/about" component={AboutPage} />
+            <Route path="/contact" component={ContactPage} />
+            <Route path="/privacy" component={PrivacyPolicyPage} />
+            <Route path="/terms" component={TermsOfServicePage} />
+            <Route path="/ai-demo" component={AiAnalysisDemo} />
+            
+            {/* Fallback to 404 */}
+            <Route component={NotFound} />
+          </Switch>
+        </MainLayout>
+      </Route>
     </Switch>
   );
 }
@@ -167,10 +181,8 @@ function App() {
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <AuthProvider>
           <TooltipProvider>
-            <MainLayout>
-              <Toaster />
-              <Router />
-            </MainLayout>
+            <Toaster />
+            <Router />
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
