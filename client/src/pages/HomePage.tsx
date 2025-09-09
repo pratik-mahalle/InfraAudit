@@ -528,7 +528,7 @@ export default function HomePage() {
               },
               {
                 name: "Neha Gupta",
-                role: "Infra Lead · EdTech",
+                role: "CEO · Keploy",
                 quote:
                   "Onboarding took less than an hour. The dashboard is clean and the AI advice is actually practical for our teams.",
               },
