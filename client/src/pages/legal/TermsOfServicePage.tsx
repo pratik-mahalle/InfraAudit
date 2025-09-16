@@ -285,7 +285,7 @@ export default function TermsOfServicePage() {
               <p>350 California St</p>
               <p>San Francisco, CA 94104</p>
               <p>United States</p>
-              <p>Email: legal@infraudit.com</p>
+              <p>Email: legal@infraudit.dev</p>
               <p>Phone: +1 (800) 555-1234</p>
             </div>
           </section>

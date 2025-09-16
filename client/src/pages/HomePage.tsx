@@ -110,7 +110,7 @@ export default function HomePage() {
               <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-900/50">
                 <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center">
                   <Check className="h-4 w-4 mr-2 text-green-500 flex-shrink-0" />
-                  Companies using InfrAudit save an average of <span className="font-bold">32%</span> on cloud costs
+                  Companies using InfrAudit save an average of{' '}<span tabIndex={0} className="font-bold">32%</span>{' '}on cloud costs
                 </p>
               </div>
               
@@ -140,7 +140,7 @@ export default function HomePage() {
                 </div>
                 <Button className="h-12 px-6 relative overflow-hidden group"
                   onClick={() => {
-                    window.location.href = "mailto:contact@infraudit.in?subject=Schedule InfrAudit Demo";
+                    window.location.href = "mailto:info@infraudit.dev?subject=Schedule InfrAudit Demo";
                   }}
                 >
                   <span className="relative z-10 flex items-center">
@@ -706,7 +706,7 @@ export default function HomePage() {
                   variant="outline" 
                   className="w-full"
                   onClick={() => {
-                    window.location.href = "mailto:contact@infraudit.io?subject=InfrAudit Enterprise Inquiry";
+                    window.location.href = "mailto:info@infraudit.dev?subject=InfrAudit Enterprise Inquiry";
                   }}
                 >
                   Contact Sales
@@ -770,7 +770,7 @@ export default function HomePage() {
               className="px-8 group relative overflow-hidden hover:bg-primary-100 dark:hover:bg-primary-900/20 transition-colors"
               onClick={() => {
                 // Open email client with pre-filled subject
-                window.location.href = "mailto:contact@infraudit.in?subject=InfrAudit Sales Inquiry";
+                window.location.href = "mailto:info@infraudit.dev?subject=InfrAudit Sales Inquiry";
               }}
             >
               <span className="relative z-10">Contact Us</span>

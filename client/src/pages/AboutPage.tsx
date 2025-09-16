@@ -185,7 +185,7 @@ export default function AboutPage() {
                 <p className="text-center font-medium text-xl mb-4">Join us as we build the future of cloud cost intelligence.</p>
                 <div className="grid grid-cols-2 gap-4 w-full mt-2">
                   <div className="bg-background p-4 rounded-lg border border-border/50 text-center">
-                    <p className="text-3xl font-bold text-blue-600 mb-2">32%</p>
+                    <p className="text-3xl font-bold text-blue-600 mb-2"> 32%</p>
                     <p className="text-sm text-muted-foreground">Average cost savings</p>
                   </div>
                   <div className="bg-background p-4 rounded-lg border border-border/50 text-center">

@@ -55,7 +55,7 @@ export default function ContactPage() {
                   href="mailto:contact@infraudit.io" 
                   className="text-blue-600 hover:text-blue-800 dark:hover:text-blue-400 font-medium"
                 >
-                  contact@infraudit.io
+                  info@infraudit.dev
                 </a>
               </div>
             </CardContent>

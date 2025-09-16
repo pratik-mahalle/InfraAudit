@@ -173,7 +173,7 @@ export function Footer() {
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           Made with <Heart className="h-3 w-3 text-red-500" /> by{" "}
           <a 
-            href="https://github.com/thedevopsguy" 
+            href="https://github.com/pratik-mahalle" 
             target="_blank" 
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors"
