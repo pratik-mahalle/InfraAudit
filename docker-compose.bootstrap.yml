@@ -1,0 +1,25 @@
+version: '3.9'
+services:
+  web:
+    environment:
+      - NODE_ENV=production
+    command: ["nginx", "-g", "daemon off;", "-c", "/etc/nginx/nginx.http.conf"]
+    ports:
+      - "80:80"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+
+  certbot_init:
+    image: certbot/certbot:latest
+    depends_on:
+      - web
+    # Run once to issue certs; invoke with `docker compose -f docker-compose.yml -f docker-compose.bootstrap.yml run --rm certbot_init`
+    entrypoint: sh -c "certbot certonly --webroot -w /var/www/certbot -d infraudit.dev -d www.infraudit.dev --email admin@infraudit.dev --agree-tos --no-eff-email --rsa-key-size 4096"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+
+volumes:
+  certbot-webroot:
+

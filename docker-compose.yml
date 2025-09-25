@@ -9,8 +9,26 @@ services:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL-http://localhost:5000}
         VITE_OAUTH_BACKEND_BASE: ${VITE_OAUTH_BACKEND_BASE-http://localhost:5000}
     image: infraudit-frontend:latest
+    container_name: infraudit-nginx
     ports:
-      - "8080:80"
+      - "80:80"
+      - "443:443"
     environment:
       - NODE_ENV=production
-    restart: unless-stopped 
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    entrypoint: sh -c "trap 'exit 0' TERM; while :; do sleep 12h & wait $!; certbot renew --webroot -w /var/www/certbot --quiet --deploy-hook 'docker exec infraudit-nginx nginx -s reload'; done"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  certbot-webroot:
