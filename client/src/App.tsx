@@ -17,7 +17,7 @@ import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import CloudProviders from "@/pages/CloudProviders";
 import Documentation from "@/pages/documentation";
-import AuthDisabled from "@/pages/AuthDisabled";
+import AuthPage from "@/pages/auth-page";
 import HomePage from "@/pages/HomePage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
@@ -125,10 +125,10 @@ function Router() {
   
   return (
     <Switch>
-      {/* Auth page - temporarily disabled */}
+      {/* Auth page */}
       <Route path="/auth">
         <AuthLayout>
-          <AuthDisabled />
+          <AuthPage />
         </AuthLayout>
       </Route>
       

@@ -2,7 +2,6 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { 
   LayoutDashboard, 
   Settings, 
@@ -32,18 +31,14 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export function Navbar() {
   const { user, logoutMutation } = useAuth();
-  const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
 
   const handleLogout = () => {
     logoutMutation.mutate();
   };
 
-  const handleAuthNotLive = () => {
-    toast({ title: "This is not live yet", description: "Sign in and sign up are disabled right now." });
-    setLocation("/auth");
-  };
+  
 
   const getInitials = (name: string) => {
     if (!name) return "U";
@@ -230,11 +225,11 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleAuthNotLive}>
-                Login
+              <Button asChild variant="outline" size="sm">
+                <Link href="/auth">Login</Link>
               </Button>
-              <Button variant="default" size="sm" onClick={handleAuthNotLive}>
-                Start Free Trial
+              <Button asChild variant="default" size="sm">
+                <Link href="/auth">Start Free Trial</Link>
               </Button>
             </div>
           )}
