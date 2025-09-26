@@ -1,5 +1,4 @@
 import React from 'react';
-import { MainLayout } from '@/layouts/MainLayout';
 import { 
   Cloud, 
   Shield, 
@@ -14,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Documentation = () => {
   return (
-    <MainLayout>
       <div className="container mx-auto py-8 px-4 max-w-7xl">
         <div className="flex flex-col md:flex-row items-start justify-between gap-4 mb-8">
           <div>
@@ -261,7 +259,6 @@ const Documentation = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </MainLayout>
   );
 };
 

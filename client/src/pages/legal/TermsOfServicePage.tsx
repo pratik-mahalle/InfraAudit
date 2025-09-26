@@ -282,11 +282,10 @@ export default function TermsOfServicePage() {
             </p>
             <div className="mt-4">
               <p><strong>InfrAudit, Inc.</strong></p>
-              <p>350 California St</p>
-              <p>San Francisco, CA 94104</p>
-              <p>United States</p>
-              <p>Email: legal@infraudit.dev</p>
-              <p>Phone: +1 (800) 555-1234</p>
+              <p>Pune, Maharashtra</p>
+              <p>India</p>
+              <p>Email: info@infraudit.dev</p>
+              <p>Phone: +91 9322338943</p>
             </div>
           </section>
         </div>

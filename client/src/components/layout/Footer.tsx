@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "wouter";
-import { Zap, Github, Twitter, Linkedin, Mail, Heart } from "lucide-react";
+import { Github, Twitter, Linkedin, Mail, Heart } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -10,12 +10,11 @@ export function Footer() {
       <div className="container grid gap-8 px-4 md:px-6 lg:grid-cols-4 max-w-6xl mx-auto">
         <div className="space-y-4">
           <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer">
-              <Zap className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                InfrAudit
-              </span>
-            </div>
+            <img
+              src="/logo.png"
+              alt="InfraAudit logo"
+              className="h-12 w-auto cursor-pointer select-none"
+            />
           </Link>
           <p className="text-sm text-muted-foreground max-w-xs">
             A multi-cloud infrastructure monitoring platform that leverages AI to detect cost anomalies and security configuration drifts.
@@ -151,7 +150,7 @@ export function Footer() {
       </div>
       <div className="container max-w-6xl mx-auto flex flex-col items-center justify-center gap-4 border-t border-border/40 py-6 mt-6 md:flex-row px-4 md:px-6">
         <p className="text-xs text-muted-foreground text-center md:text-left">
-          &copy; {currentYear} InfrAudit. All rights reserved.
+          &copy; {currentYear} InfraAudit. All rights reserved.
         </p>
         <div className="flex gap-4 text-xs text-muted-foreground">
           <Link href="/privacy">
