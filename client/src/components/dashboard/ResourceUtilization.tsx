@@ -31,7 +31,7 @@ export function ResourceUtilization({
   const [timeframe, setTimeframe] = useState("7d");
 
   return (
-    <Card>
+    <Card className="bg-white/70 dark:bg-slate-900/50 backdrop-blur border border-gray-200/60 dark:border-slate-800/60 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold font-inter">
           Resource Utilization
@@ -41,25 +41,25 @@ export function ResourceUtilization({
             value={resourceType}
             onValueChange={setResourceType}
           >
-            <SelectTrigger className="h-8 text-xs border-gray-300 w-[140px]">
+            <SelectTrigger className="h-8 text-xs w-[140px] bg-white/60 dark:bg-slate-800/60 border border-gray-300/60 dark:border-slate-700/60">
               <SelectValue placeholder="All Resources" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800">
               <SelectItem value="all">All Resources</SelectItem>
               <SelectItem value="ec2">EC2 Instances</SelectItem>
               <SelectItem value="s3">S3 Buckets</SelectItem>
               <SelectItem value="rds">RDS Databases</SelectItem>
             </SelectContent>
           </Select>
-          <span className="text-xs text-gray-500">Last {timeframe === "7d" ? "7 days" : timeframe === "30d" ? "30 days" : "90 days"}</span>
+          <span className="text-xs text-gray-600 dark:text-slate-400">Last {timeframe === "7d" ? "7 days" : timeframe === "30d" ? "30 days" : "90 days"}</span>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="aspect-w-16 aspect-h-9 mb-6 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+        <div className="aspect-w-16 aspect-h-9 mb-6 rounded-lg flex items-center justify-center overflow-hidden bg-gray-100 dark:bg-slate-800">
           {isLoading ? (
-            <Skeleton className="w-full h-full" />
+            <Skeleton className="w-full h-full bg-gray-200 dark:bg-slate-700" />
           ) : (
-            <div className="flex flex-col items-center justify-center text-gray-500">
+            <div className="flex flex-col items-center justify-center text-gray-500 dark:text-slate-400">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-16 w-16 mb-2"
@@ -83,32 +83,32 @@ export function ResourceUtilization({
             ? Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={index}
-                  className="bg-gray-100 bg-opacity-40 rounded-lg p-4"
+                  className="rounded-lg p-4 bg-gray-100 dark:bg-slate-800"
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <Skeleton className="h-5 w-[120px]" />
-                    <Skeleton className="h-5 w-[60px]" />
+                    <Skeleton className="h-5 w-[120px] bg-gray-200 dark:bg-slate-700" />
+                    <Skeleton className="h-5 w-[60px] bg-gray-200 dark:bg-slate-700" />
                   </div>
                   <div className="flex items-end space-x-2">
-                    <Skeleton className="h-8 w-[60px]" />
-                    <Skeleton className="h-5 w-[100px]" />
+                    <Skeleton className="h-8 w-[60px] bg-gray-200 dark:bg-slate-700" />
+                    <Skeleton className="h-5 w-[100px] bg-gray-200 dark:bg-slate-700" />
                   </div>
                 </div>
               ))
             : metrics.map((metric, index) => (
                 <div
                   key={index}
-                  className="bg-gray-100 bg-opacity-40 rounded-lg p-4"
+                  className="rounded-lg p-4 bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-700"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-sm font-medium">{metric.name}</span>
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full ${
                         metric.status === "healthy"
-                          ? "bg-secondary bg-opacity-10 text-secondary"
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                           : metric.status === "warning"
-                          ? "bg-warning bg-opacity-10 text-warning"
-                          : "bg-danger bg-opacity-10 text-danger"
+                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                          : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                       }`}
                     >
                       {metric.status.charAt(0).toUpperCase() + metric.status.slice(1)}
@@ -121,8 +121,8 @@ export function ResourceUtilization({
                     <span
                       className={`text-xs flex items-center pb-1 ${
                         metric.trend === "down"
-                          ? "text-secondary"
-                          : "text-danger"
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-rose-600 dark:text-rose-400"
                       }`}
                     >
                       {metric.trend === "down" ? (
@@ -141,27 +141,27 @@ export function ResourceUtilization({
         {awsResources && awsResources.length > 0 && (
           <div className="mt-6">
             <h3 className="text-base font-medium mb-3">Real-time AWS Resources ({awsResources.length})</h3>
-            <div className="border rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-slate-800">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+                <thead className="bg-gray-50 dark:bg-slate-800/60">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Region</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                   {awsResources.slice(0, 5).map((resource, index) => (
                     <tr key={index}>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{resource.name}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{resource.type}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">{resource.region}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-200">{resource.name}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">{resource.type}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">{resource.region}</td>
                       <td className="px-4 py-2 whitespace-nowrap text-sm">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           resource.status === 'running' || resource.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
+                            ? 'bg-green-100 text-green-800 dark:bg-emerald-500/10 dark:text-emerald-400' 
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-amber-500/10 dark:text-amber-400'
                         }`}>
                           {resource.status}
                         </span>
@@ -171,7 +171,7 @@ export function ResourceUtilization({
                 </tbody>
               </table>
               {awsResources.length > 5 && (
-                <div className="px-4 py-2 bg-gray-50 text-right text-xs text-blue-600">
+                <div className="px-4 py-2 bg-gray-50 dark:bg-slate-800/60 text-right text-xs text-blue-600 dark:text-blue-400">
                   + {awsResources.length - 5} more resources
                 </div>
               )}

@@ -121,11 +121,40 @@ export default function SecurityMonitoring() {
   const highCount = securityDrifts?.filter(d => d.severity === 'high').length || 0;
   const mediumCount = securityDrifts?.filter(d => d.severity === 'medium').length || 0;
   const openCount = securityDrifts?.filter(d => d.status === 'open').length || 0;
+  const remediatedCount = securityDrifts?.filter(d => d.status === 'remediated').length || 0;
+  const totalDrifts = securityDrifts?.length || 0;
+  const compliancePercent = totalDrifts ? Math.round((remediatedCount / totalDrifts) * 100) : 100;
   
   // Alert summary counts
   const alertsCount = alerts?.length || 0;
   const criticalAlertsCount = alerts?.filter(a => a.severity === 'critical').length || 0;
+  const highAlertsCount = alerts?.filter(a => a.severity === 'high').length || 0;
+  const mediumAlertsCount = alerts?.filter(a => a.severity === 'medium').length || 0;
   const openAlertsCount = alerts?.filter(a => a.status === 'open').length || 0;
+
+  // Non-compliant resources breakdown (based on open drifts by resource type)
+  const typeForResource = (id: number) => {
+    const r = resources?.find(r => r.id === id);
+    const t = (r as any)?.type as string | undefined;
+    return t ? t.toLowerCase() : "other";
+  };
+  const openDrifts = securityDrifts?.filter(d => d.status === 'open') || [];
+  const nodesCount = openDrifts.filter(d => typeForResource(d.resourceId).includes('node')).length;
+  const workloadsCount = openDrifts.filter(d => typeForResource(d.resourceId).includes('work')).length;
+  const otherCount = Math.max(0, openDrifts.length - nodesCount - workloadsCount);
+
+  // Vulnerable image repositories (derived from alerts by resource)
+  const repoRows = (alerts || [])
+    .filter(a => a.type === 'security')
+    .reduce<Record<string, { name: string; critical: number; high: number; medium: number; fixes: number }>>((acc, a) => {
+      const name = getResourceName(a.resourceId);
+      if (!acc[name]) acc[name] = { name, critical: 0, high: 0, medium: 0, fixes: 0 };
+      if (a.severity === 'critical') acc[name].critical += 1;
+      else if (a.severity === 'high') acc[name].high += 1;
+      else if (a.severity === 'medium') acc[name].medium += 1;
+      return acc;
+    }, {});
+  const repoList = Object.values(repoRows).slice(0, 3);
 
   // Update search placeholder based on active tab
   const searchPlaceholder = activeMainTab === "drifts" 
@@ -141,58 +170,118 @@ export default function SecurityMonitoring() {
         </p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-danger bg-opacity-10 p-3 rounded-full">
-                <ShieldAlert className="h-6 w-6 text-danger" />
+      {/* Compliance + Vulnerabilities (revamped header) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Compliance */}
+        <Card className="bg-white/70 dark:bg-slate-900/50 backdrop-blur border border-gray-200/60 dark:border-slate-800/60 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Compliance</CardTitle>
+            <CardDescription>Compliance with InfrAudit checks</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex items-center gap-6">
+                <div className="relative w-28 h-28">
+                  <div
+                    className="w-28 h-28 rounded-full"
+                    style={{
+                      background: `conic-gradient(var(--color-primary) ${compliancePercent * 3.6}deg, rgba(2,132,199,0.15) 0deg)`
+                    }}
+                  />
+                  <div className="absolute inset-2 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
+                    <div className="text-3xl font-bold">{compliancePercent}%</div>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">{remediatedCount}/{totalDrifts || 1} checks passed</p>
+                  <p className="text-xs text-muted-foreground mt-1">{openCount} open issues</p>
+                </div>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Critical Drifts</p>
-                <p className="text-2xl font-bold">{criticalCount}</p>
+                <div className="text-xs font-medium text-muted-foreground mb-2">Non-compliant resources</div>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-xs mb-1"><span>Nodes</span><span>{nodesCount}</span></div>
+                    <div className="h-2 rounded-full bg-gray-200 dark:bg-slate-800 overflow-hidden">
+                      <div className="h-full bg-rose-600" style={{ width: `${Math.min(100, (nodesCount / Math.max(1, openDrifts.length)) * 100)}%` }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs mb-1"><span>Workloads</span><span>{workloadsCount}</span></div>
+                    <div className="h-2 rounded-full bg-gray-200 dark:bg-slate-800 overflow-hidden">
+                      <div className="h-full bg-amber-600" style={{ width: `${Math.min(100, (workloadsCount / Math.max(1, openDrifts.length)) * 100)}%` }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs mb-1"><span>Other</span><span>{otherCount}</span></div>
+                    <div className="h-2 rounded-full bg-gray-200 dark:bg-slate-800 overflow-hidden">
+                      <div className="h-full bg-slate-500" style={{ width: `${Math.min(100, (otherCount / Math.max(1, openDrifts.length)) * 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div>
-              <Button variant="outline" size="sm" className="text-xs">
-                Remediate All
-              </Button>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-warning bg-opacity-10 p-3 rounded-full">
-                <BellRing className="h-6 w-6 text-warning" />
+        {/* Vulnerability management */}
+        <Card className="bg-white/70 dark:bg-slate-900/50 backdrop-blur border border-gray-200/60 dark:border-slate-800/60 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Vulnerability management</CardTitle>
+            <CardDescription>Vulnerabilities by severity</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="rounded-lg border border-rose-200/60 dark:border-rose-800/40 p-3">
+                <div className="text-xs text-muted-foreground mb-1">Critical</div>
+                <div className="text-2xl font-bold">{criticalAlertsCount}</div>
+                <div className="text-[11px] text-muted-foreground">alerts</div>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Open Alerts</p>
-                <p className="text-2xl font-bold">{openAlertsCount}</p>
+              <div className="rounded-lg border border-amber-200/60 dark:border-amber-800/40 p-3">
+                <div className="text-xs text-muted-foreground mb-1">High</div>
+                <div className="text-2xl font-bold">{highAlertsCount}</div>
+                <div className="text-[11px] text-muted-foreground">alerts</div>
+              </div>
+              <div className="rounded-lg border border-yellow-200/60 dark:border-yellow-800/40 p-3">
+                <div className="text-xs text-muted-foreground mb-1">Medium</div>
+                <div className="text-2xl font-bold">{mediumAlertsCount}</div>
+                <div className="text-[11px] text-muted-foreground">alerts</div>
               </div>
             </div>
-            <div>
-              <p className="text-sm text-gray-400">{alertsCount} total alerts</p>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-primary bg-opacity-10 p-3 rounded-full">
-                <ShieldCheck className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Security Issues</p>
-                <p className="text-2xl font-bold">{openCount}</p>
-              </div>
+            <div className="text-xs font-medium text-muted-foreground mb-2">Most vulnerable image repositories</div>
+            <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-slate-800">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-slate-800/60">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Repository</th>
+                    <th className="px-3 py-2 text-center">C</th>
+                    <th className="px-3 py-2 text-center">H</th>
+                    <th className="px-3 py-2 text-center">M</th>
+                    <th className="px-3 py-2 text-right">Fixes</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
+                  {repoList.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-4 text-center text-muted-foreground">No repositories detected</td>
+                    </tr>
+                  ) : (
+                    repoList.map((r) => (
+                      <tr key={r.name}>
+                        <td className="px-3 py-2 text-blue-600 dark:text-blue-400 truncate max-w-[260px]">{r.name}</td>
+                        <td className="px-3 py-2 text-center">{r.critical}</td>
+                        <td className="px-3 py-2 text-center">{r.high}</td>
+                        <td className="px-3 py-2 text-center">{r.medium}</td>
+                        <td className="px-3 py-2 text-right">{r.fixes}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-            <div>
-              <p className="text-sm text-gray-400">{securityDrifts?.length || 0} total drifts</p>
-            </div>
+
+            <div className="mt-3 text-right text-sm text-blue-600 dark:text-blue-400 cursor-pointer">Report →</div>
           </CardContent>
         </Card>
       </div>
