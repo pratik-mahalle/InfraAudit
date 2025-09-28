@@ -61,7 +61,7 @@ const OAuthButton = ({ provider, icon, onClick }: { provider: string; icon: Reac
 
 const handleOAuthLogin = (provider: 'google' | 'github') => {
   const envBase = (import.meta as any).env?.VITE_OAUTH_BACKEND_BASE || (import.meta as any).env?.VITE_API_BASE_URL;
-  const base = envBase && typeof envBase === 'string' && envBase.length > 0 ? envBase : 'http://localhost:5000';
+  const base = envBase && typeof envBase === 'string' && envBase.length > 0 ? envBase : 'http://localhost:8080';
   const url = new URL(`/api/auth/${provider}`, base).toString();
   window.location.assign(url);
 };

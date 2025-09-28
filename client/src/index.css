@@ -56,3 +56,162 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Animated hero utilities */
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateX(var(--orbit-radius)) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(var(--orbit-radius)) rotate(-360deg);
+  }
+}
+
+.hero-orbit {
+  position: relative;
+  width: 0;
+  height: 0;
+}
+
+.hero-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #60a5fa; /* blue-400 */
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.9), 0 0 24px rgba(96, 165, 250, 0.35);
+  transform-origin: 0 0;
+  animation: orbit var(--speed, 28s) linear infinite;
+  opacity: 0.95;
+}
+
+.hero-dot--emerald {
+  background: #34d399; /* emerald-400 */
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.9), 0 0 24px rgba(52, 211, 153, 0.35);
+}
+
+.hero-dot--violet {
+  background: #a78bfa; /* violet-400 */
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.9), 0 0 24px rgba(167, 139, 250, 0.35);
+}
+
+/* Floating particles */
+@keyframes floaty {
+  0% { transform: translateY(0px); opacity: .7; }
+  50% { transform: translateY(-12px); opacity: 1; }
+  100% { transform: translateY(0px); opacity: .7; }
+}
+
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(147, 197, 253, 0.8); /* blue-300 */
+  box-shadow: 0 0 8px rgba(147, 197, 253, 0.7);
+  animation: floaty var(--dur, 7s) ease-in-out var(--delay, 0s) infinite;
+}
+.particle--violet { background: rgba(196, 181, 253, .85); box-shadow: 0 0 8px rgba(196, 181, 253, .7); }
+.particle--emerald { background: rgba(110, 231, 183, .85); box-shadow: 0 0 8px rgba(110, 231, 183, .7); }
+
+/* Bowl grid behind hero */
+.hero-bowl {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(1100px, 95%);
+  height: 360px;
+  pointer-events: none;
+  opacity: .6;
+  background:
+    radial-gradient(ellipse at 50% 85%, rgba(59,130,246,.25), transparent 60%),
+    repeating-radial-gradient(ellipse at 50% 85%, rgba(255,255,255,.06) 0 1px, transparent 2px 40px);
+  -webkit-mask-image: radial-gradient(120% 100% at 50% 100%, black 40%, transparent 75%);
+          mask-image: radial-gradient(120% 100% at 50% 100%, black 40%, transparent 75%);
+}
+.dark .hero-bowl {
+  background:
+    radial-gradient(ellipse at 50% 85%, rgba(59,130,246,.35), transparent 60%),
+    repeating-radial-gradient(ellipse at 50% 85%, rgba(255,255,255,.07) 0 1px, transparent 2px 40px);
+}
+
+/* Integrations arc animations */
+@keyframes slideToCenter {
+  0% {
+    left: var(--left);
+    top: var(--top);
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.95;
+  }
+  70% {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(.9);
+    opacity: 1;
+  }
+  80% {
+    opacity: 0;
+  }
+  100% {
+    left: var(--left);
+    top: var(--top);
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+.integration-stage { position: relative; }
+.integration-icon {
+  position: absolute;
+  left: var(--left);
+  top: var(--top);
+  transform: translate(-50%, -50%);
+  animation: slideToCenter var(--dur, 8s) ease-in-out var(--delay, 0s) infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+.integration-chip {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.08);
+}
+
+.integration-chip--circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.2), transparent 40%);
+  border: 1px solid rgba(255,255,255,.15);
+}
+
+.integration-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: rgba(59,130,246,.08);
+  border: 1px solid rgba(59,130,246,.35);
+  box-shadow: 0 10px 40px rgba(59,130,246,.25), inset 0 0 20px rgba(59,130,246,.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.integration-fade {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%);
+}

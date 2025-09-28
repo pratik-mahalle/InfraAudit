@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,439 +9,428 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Key, Lock, LogOut, Mail, Shield, User } from "lucide-react";
+import { Bell, Key, Lock, LogOut, Shield, User } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+type ApiKey = { id: number; name: string; created: string; lastUsed: string };
+type Session = { id: number; device: string; ip: string; lastActive: string };
+type CloudAccount = { id: number; provider: "AWS" | "GCP" | "Azure"; account: string; status: "connected" | "error" };
+type Cluster = { id: number; name: string; provider: string; region: string };
+type TeamUser = { id: number; name: string; email: string; role: "Admin" | "Editor" | "Viewer" };
 
 export default function Profile() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
-  
-  // Mock user preferences that would come from the backend
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    slackNotifications: true,
-    dailyReports: true,
-    weeklyReports: true,
-    criticalAlerts: true,
-    securityAlerts: true,
-    costAlerts: true,
-  });
-
-  // Mock API keys that would come from the backend
-  const [apiKeys] = useState([
-    { id: 1, name: "InfrAudit CLI", created: "2023-06-15", lastUsed: "2023-12-01" },
-    { id: 2, name: "Terraform Integration", created: "2023-08-22", lastUsed: "2023-12-10" },
-  ]);
-
-  // Mock access tokens that would come from the backend
-  const [accessTokens] = useState([
-    { id: 1, name: "AWS Integration", expires: "2024-01-15" },
-    { id: 2, name: "GCP Integration", expires: "2024-02-20" },
-    { id: 3, name: "Azure Integration", expires: "2024-03-10" },
-  ]);
-
-  const handleLogout = () => {
-    logoutMutation.mutate();
-  };
-
-  const handleSaveProfile = () => {
-    // In a real app, this would update the user profile via an API call
-    setIsEditing(false);
-    toast({
-      title: "Profile Updated",
-      description: "Your profile changes have been saved.",
-    });
-  };
-
-  const handleTogglePreference = (key: keyof typeof preferences) => {
-    setPreferences(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-    toast({
-      title: "Preference Updated",
-      description: `${key} has been ${preferences[key] ? "disabled" : "enabled"}.`,
-    });
-  };
-
-  const createNewAPIKey = () => {
-    // In a real app, this would create a new API key via an API call
-    toast({
-      title: "New API Key",
-      description: "A new API key has been generated and copied to your clipboard.",
-    });
-  };
-
-  const revokeAPIKey = (id: number) => {
-    // In a real app, this would revoke the API key via an API call
-    toast({
-      title: "API Key Revoked",
-      description: "The API key has been revoked and can no longer be used.",
-    });
-  };
 
   if (!user) return null;
 
+  // Profile Settings
+  const [fullName, setFullName] = useState(user.fullName || "");
+  const [email] = useState("user@example.com");
+  const [jobTitle, setJobTitle] = useState("Cloud Administrator");
+  const [company, setCompany] = useState("InfraAudit");
+  const [avatar, setAvatar] = useState<File | null>(null);
+
+  // Account Settings
+  const [timezone, setTimezone] = useState("UTC");
+  const [language, setLanguage] = useState("en");
+  const [theme, setTheme] = useState<"light" | "dark" | "auto">("auto");
+
+  // Notification Settings
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [slackConnected, setSlackConnected] = useState(false);
+  const [costThreshold, setCostThreshold] = useState(20);
+  const [criticalAlerts, setCriticalAlerts] = useState(true);
+
+  // Security Settings
+  const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([
+    { id: 1, name: "InfrAudit CLI", created: "2025-01-15", lastUsed: "2025-09-01" },
+    { id: 2, name: "Terraform Integration", created: "2025-02-02", lastUsed: "2025-09-23" },
+  ]);
+  const [sessions, setSessions] = useState<Session[]>([
+    { id: 1, device: "Chrome · macOS", ip: "73.182.10.5", lastActive: "2 hours ago" },
+    { id: 2, device: "Safari · iOS", ip: "10.0.1.3", lastActive: "Yesterday" },
+  ]);
+
+  // Cloud & Integrations
+  const [cloudAccounts, setCloudAccounts] = useState<CloudAccount[]>([
+    { id: 1, provider: "AWS", account: "1234-5678-9012", status: "connected" },
+    { id: 2, provider: "GCP", account: "proj-infraudit", status: "connected" },
+  ]);
+  const [clusters] = useState<Cluster[]>([
+    { id: 1, name: "prod-cluster", provider: "EKS", region: "us-east-1" },
+    { id: 2, name: "staging-k8s", provider: "GKE", region: "us-central1" },
+  ]);
+  const [vcsConnected, setVcsConnected] = useState<{ github: boolean; gitlab: boolean }>({ github: false, gitlab: false });
+
+  // Team & Access
+  const [currentRole] = useState<"Admin" | "Editor" | "Viewer">("Admin");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"Admin" | "Editor" | "Viewer">("Viewer");
+  const [teamUsers, setTeamUsers] = useState<TeamUser[]>([
+    { id: 1, name: user.fullName || user.username, email: email, role: "Admin" },
+    { id: 2, name: "Alex Rivera", email: "alex@infraudit.dev", role: "Editor" },
+    { id: 3, name: "Priya Singh", email: "priya@infraudit.dev", role: "Viewer" },
+  ]);
+
+  const save = (section: string) => toast({ title: `${section} saved`, description: "Your changes have been applied." });
+
+  const handleGenerateKey = () => {
+    const newKey: ApiKey = { id: Date.now(), name: "New API Key", created: new Date().toISOString().slice(0, 10), lastUsed: "—" };
+    setApiKeys(prev => [newKey, ...prev]);
+    toast({ title: "API Key generated", description: "Copy it now. You won't see it again." });
+  };
+  const handleRevokeKey = (id: number) => setApiKeys(prev => prev.filter(k => k.id !== id));
+  const handleLogoutSession = (id: number) => setSessions(prev => prev.filter(s => s.id !== id));
+  const handleDisconnectCloud = (id: number) => setCloudAccounts(prev => prev.filter(a => a.id !== id));
+
   return (
     <DashboardLayout>
-      <div className="container py-10">
+      <div className="px-4 md:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">User Profile</h1>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
+          <h1 className="text-3xl font-bold">Settings</h1>
+          <Button variant="outline" size="sm" onClick={() => logoutMutation.mutate()}>
             <LogOut className="mr-2 h-4 w-4" /> Sign Out
           </Button>
         </div>
 
-        <Tabs defaultValue="profile" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="profile">
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="preferences">
-              <Bell className="mr-2 h-4 w-4" />
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger value="security">
-              <Shield className="mr-2 h-4 w-4" />
-              Security
-            </TabsTrigger>
+        <Tabs defaultValue="profile" className="space-y-6">
+          <TabsList className="grid grid-cols-6 w-full">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="account">Account</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="cloud">Cloud</TabsTrigger>
+            <TabsTrigger value="team">Team</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="profile" className="space-y-4">
-            <Card>
+          {/* Profile Settings */}
+          <TabsContent value="profile" className="space-y-6">
+            <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
               <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>
-                  Manage your personal information and account settings
-                </CardDescription>
+                <CardTitle>Profile Settings</CardTitle>
+                <CardDescription>Manage your identity and organization information</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex flex-col md:flex-row gap-6 items-start">
-                  <div className="flex flex-col items-center space-y-2">
+                  <div className="flex flex-col items-center gap-3">
                     <Avatar className="h-24 w-24">
                       <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.username}`} />
-                      <AvatarFallback>{user.username.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      <AvatarFallback>{(user.fullName || user.username).slice(0,2).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <Button variant="outline" size="sm">Change Avatar</Button>
+                    <Input type="file" accept="image/*" onChange={(e) => setAvatar(e.target.files?.[0] || null)} />
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input 
-                        id="username" 
-                        value={user.username} 
-                        readOnly={!isEditing} 
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input 
-                        id="email" 
-                        value={'user@example.com'} 
-                        readOnly={!isEditing} 
-                        disabled={!isEditing}
-                      />
-                    </div>
-                    <div className="space-y-2">
                       <Label htmlFor="fullName">Full Name</Label>
-                      <Input 
-                        id="fullName" 
-                        value={user.fullName || 'Cloud Administrator'} 
-                        readOnly={!isEditing} 
-                        disabled={!isEditing}
-                      />
+                      <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="role">Role</Label>
-                      <Input 
-                        id="role" 
-                        value={user.role || 'Cloud Administrator'} 
-                        readOnly 
-                        disabled
-                      />
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input id="email" value={email} disabled />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="jobTitle">Job Title</Label>
+                      <Input id="jobTitle" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="company">Company / Organization</Label>
+                      <Input id="company" value={company} onChange={(e) => setCompany(e.target.value)} />
                     </div>
                   </div>
                 </div>
-
-                <div className="flex justify-end gap-2">
-                  {isEditing ? (
-                    <>
-                      <Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
-                      <Button onClick={handleSaveProfile}>Save Changes</Button>
-                    </>
-                  ) : (
-                    <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                  )}
+                <div className="flex justify-end">
+                  <Button onClick={() => save("Profile settings")}>Save Changes</Button>
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
-            <Card>
+          {/* Account Settings */}
+          <TabsContent value="account" className="space-y-6">
+            <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
               <CardHeader>
-                <CardTitle>Account Status</CardTitle>
-                <CardDescription>
-                  View your account status and subscription details
-                </CardDescription>
+                <CardTitle>Account Settings</CardTitle>
+                <CardDescription>Preferences for locale, time and theme</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="border rounded-md p-4">
-                    <div className="text-sm font-medium text-muted-foreground mb-1">
-                      Account Type
-                    </div>
-                    <div className="font-medium">
-                      Enterprise Plan
-                      <Badge className="ml-2" variant="secondary">Active</Badge>
-                    </div>
+                  <div className="space-y-2">
+                    <Label>Timezone</Label>
+                    <Select value={timezone} onValueChange={setTimezone}>
+                      <SelectTrigger><SelectValue placeholder="Timezone" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UTC">UTC</SelectItem>
+                        <SelectItem value="America/Los_Angeles">America/Los_Angeles</SelectItem>
+                        <SelectItem value="America/New_York">America/New_York</SelectItem>
+                        <SelectItem value="Europe/London">Europe/London</SelectItem>
+                        <SelectItem value="Asia/Kolkata">Asia/Kolkata</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="border rounded-md p-4">
-                    <div className="text-sm font-medium text-muted-foreground mb-1">
-                      Next Billing Date
-                    </div>
-                    <div className="font-medium">January 15, 2024</div>
+                  <div className="space-y-2">
+                    <Label>Preferred Language</Label>
+                    <Select value={language} onValueChange={setLanguage}>
+                      <SelectTrigger><SelectValue placeholder="Language" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="es">Spanish</SelectItem>
+                        <SelectItem value="de">German</SelectItem>
+                        <SelectItem value="fr">French</SelectItem>
+                        <SelectItem value="ja">Japanese</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="border rounded-md p-4">
-                    <div className="text-sm font-medium text-muted-foreground mb-1">
-                      Resources Monitored
-                    </div>
-                    <div className="font-medium">128 / Unlimited</div>
+                  <div className="space-y-2">
+                    <Label>Theme Mode</Label>
+                    <RadioGroup value={theme} onValueChange={(v) => setTheme(v as any)} className="flex items-center gap-6">
+                      <div className="flex items-center gap-2"><RadioGroupItem value="light" id="theme-light" /><Label htmlFor="theme-light">Light</Label></div>
+                      <div className="flex items-center gap-2"><RadioGroupItem value="dark" id="theme-dark" /><Label htmlFor="theme-dark">Dark</Label></div>
+                      <div className="flex items-center gap-2"><RadioGroupItem value="auto" id="theme-auto" /><Label htmlFor="theme-auto">Auto</Label></div>
+                    </RadioGroup>
                   </div>
+                </div>
+                <div className="flex items-center justify-between border rounded-xl p-4">
+                  <div>
+                    <div className="font-medium">Change Password</div>
+                    <div className="text-sm text-muted-foreground">Set a strong and unique password for your account</div>
+                  </div>
+                  <Button variant="outline"><Lock className="mr-2 h-4 w-4" /> Change Password</Button>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={() => save("Account settings")}>Save Changes</Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="preferences" className="space-y-4">
-            <Card>
+          {/* Notification Settings */}
+          <TabsContent value="notifications" className="space-y-6">
+            <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
               <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>
-                  Configure when and how you want to receive alerts and reports
-                </CardDescription>
+                <CardTitle>Notification Settings</CardTitle>
+                <CardDescription>Control alerts and communication channels</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="font-medium mb-3">Notification Channels</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-center justify-between border rounded-md p-4">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-5 w-5 text-muted-foreground" />
-                          <div>Email Notifications</div>
-                        </div>
-                        <Button 
-                          variant={preferences.emailNotifications ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleTogglePreference('emailNotifications')}
-                        >
-                          {preferences.emailNotifications ? "Enabled" : "Disabled"}
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between border rounded-md p-4">
-                        <div className="flex items-center gap-2">
-                          <svg 
-                            className="h-5 w-5 text-muted-foreground"
-                            xmlns="http://www.w3.org/2000/svg" 
-                            viewBox="0 0 24 24" 
-                            fill="currentColor"
-                          >
-                            <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
-                          </svg>
-                          <div>Slack Notifications</div>
-                        </div>
-                        <Button 
-                          variant={preferences.slackNotifications ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleTogglePreference('slackNotifications')}
-                        >
-                          {preferences.slackNotifications ? "Enabled" : "Disabled"}
-                        </Button>
-                      </div>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between border rounded-xl p-4">
+                    <div>
+                      <div className="font-medium">Email Notifications</div>
+                      <div className="text-sm text-muted-foreground">Receive product and alert emails</div>
                     </div>
+                    <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
                   </div>
-
-                  <div>
-                    <h3 className="font-medium mb-3">Report Frequency</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-center justify-between border rounded-md p-4">
-                        <div>Daily Summary</div>
-                        <Button 
-                          variant={preferences.dailyReports ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleTogglePreference('dailyReports')}
-                        >
-                          {preferences.dailyReports ? "Enabled" : "Disabled"}
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between border rounded-md p-4">
-                        <div>Weekly Digest</div>
-                        <Button 
-                          variant={preferences.weeklyReports ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleTogglePreference('weeklyReports')}
-                        >
-                          {preferences.weeklyReports ? "Enabled" : "Disabled"}
-                        </Button>
-                      </div>
+                  <div className="flex items-center justify-between border rounded-xl p-4">
+                    <div>
+                      <div className="font-medium">Slack / Teams Integration</div>
+                      <div className="text-sm text-muted-foreground">Send alerts to your chat channels</div>
                     </div>
-                  </div>
-
-                  <div>
-                    <h3 className="font-medium mb-3">Alert Types</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="flex items-center justify-between border rounded-md p-4">
-                        <div>Critical Alerts</div>
-                        <Button 
-                          variant={preferences.criticalAlerts ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleTogglePreference('criticalAlerts')}
-                        >
-                          {preferences.criticalAlerts ? "Enabled" : "Disabled"}
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between border rounded-md p-4">
-                        <div>Security Alerts</div>
-                        <Button 
-                          variant={preferences.securityAlerts ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleTogglePreference('securityAlerts')}
-                        >
-                          {preferences.securityAlerts ? "Enabled" : "Disabled"}
-                        </Button>
-                      </div>
-                      <div className="flex items-center justify-between border rounded-md p-4">
-                        <div>Cost Alerts</div>
-                        <Button 
-                          variant={preferences.costAlerts ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleTogglePreference('costAlerts')}
-                        >
-                          {preferences.costAlerts ? "Enabled" : "Disabled"}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="security" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>API Keys</CardTitle>
-                <CardDescription>
-                  Manage your API keys for programmatic access to InfrAudit
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-end">
-                    <Button onClick={createNewAPIKey}>
-                      <Key className="mr-2 h-4 w-4" />
-                      Generate New API Key
+                    <Button variant={slackConnected ? "outline" : "default"} onClick={() => setSlackConnected(!slackConnected)}>
+                      {slackConnected ? "Disconnect" : "Connect"}
                     </Button>
                   </div>
-                  {apiKeys.length === 0 ? (
-                    <div className="text-center py-6 text-muted-foreground">
-                      No API keys found. Generate your first key to get started.
+                  <div className="flex items-center justify-between border rounded-xl p-4">
+                    <div>
+                      <div className="font-medium">Cost Alert Threshold</div>
+                      <div className="text-sm text-muted-foreground">Notify when monthly cost exceeds this value</div>
                     </div>
-                  ) : (
-                    <div className="border rounded-md">
-                      <div className="grid grid-cols-4 font-medium p-4 border-b">
-                        <div>Name</div>
-                        <div>Created</div>
-                        <div>Last Used</div>
-                        <div className="text-right">Actions</div>
-                      </div>
-                      <div className="divide-y">
-                        {apiKeys.map((key) => (
-                          <div key={key.id} className="grid grid-cols-4 p-4 items-center">
-                            <div>{key.name}</div>
-                            <div className="text-sm text-muted-foreground">{key.created}</div>
-                            <div className="text-sm text-muted-foreground">{key.lastUsed}</div>
-                            <div className="flex justify-end">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => revokeAPIKey(key.id)}
-                              >
-                                Revoke
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Input type="number" className="w-24" value={costThreshold} onChange={(e) => setCostThreshold(Number(e.target.value))} />
+                      <span className="text-sm">%</span>
                     </div>
-                  )}
+                  </div>
+                  <div className="flex items-center justify-between border rounded-xl p-4">
+                    <div>
+                      <div className="font-medium">Critical Security Alerts</div>
+                      <div className="text-sm text-muted-foreground">Always on for administrators</div>
+                    </div>
+                    <Switch checked={criticalAlerts} onCheckedChange={setCriticalAlerts} />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={() => save("Notification settings")}>Save Changes</Button>
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
-            <Card>
+          {/* Security Settings */}
+          <TabsContent value="security" className="space-y-6">
+            <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
               <CardHeader>
-                <CardTitle>Access Tokens</CardTitle>
-                <CardDescription>
-                  Manage tokens for accessing cloud provider services
-                </CardDescription>
+                <CardTitle>Security Settings</CardTitle>
+                <CardDescription>Protect your account and API usage</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="border rounded-md">
-                  <div className="grid grid-cols-3 font-medium p-4 border-b">
-                    <div>Integration</div>
-                    <div>Expires</div>
-                    <div className="text-right">Actions</div>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between border rounded-xl p-4">
+                  <div>
+                    <div className="font-medium">Two‑Factor Authentication</div>
+                    <div className="text-sm text-muted-foreground">Add an extra layer of security to your account</div>
                   </div>
-                  <div className="divide-y">
-                    {accessTokens.map((token) => (
-                      <div key={token.id} className="grid grid-cols-3 p-4 items-center">
-                        <div>{token.name}</div>
-                        <div className="text-sm text-muted-foreground">{token.expires}</div>
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm">Refresh</Button>
-                          <Button variant="outline" size="sm">Revoke</Button>
+                  <Switch checked={twoFAEnabled} onCheckedChange={setTwoFAEnabled} />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">API Key Management</div>
+                    <Button onClick={handleGenerateKey}><Key className="mr-2 h-4 w-4" /> Generate</Button>
+                  </div>
+                  <div className="border rounded-xl divide-y">
+                    {apiKeys.map(k => (
+                      <div key={k.id} className="grid grid-cols-4 p-4 items-center">
+                        <div>{k.name}</div>
+                        <div className="text-sm text-muted-foreground">Created {k.created}</div>
+                        <div className="text-sm text-muted-foreground">Last used {k.lastUsed}</div>
+                        <div className="text-right"><Button variant="outline" size="sm" onClick={() => handleRevokeKey(k.id)}>Revoke</Button></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="font-medium">Active Sessions</div>
+                  <div className="border rounded-xl divide-y">
+                    {sessions.map(s => (
+                      <div key={s.id} className="grid grid-cols-4 p-4 items-center">
+                        <div>{s.device}</div>
+                        <div className="text-sm text-muted-foreground">{s.ip}</div>
+                        <div className="text-sm text-muted-foreground">{s.lastActive}</div>
+                        <div className="text-right"><Button variant="outline" size="sm" onClick={() => handleLogoutSession(s.id)}>Logout</Button></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={() => save("Security settings")}>Save Changes</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Cloud & Integrations */}
+          <TabsContent value="cloud" className="space-y-6">
+            <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
+              <CardHeader>
+                <CardTitle>Cloud & Integrations</CardTitle>
+                <CardDescription>Connect providers and developer tools</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <div className="font-medium">Connected Cloud Accounts</div>
+                  <div className="border rounded-xl divide-y">
+                    {cloudAccounts.map(a => (
+                      <div key={a.id} className="grid grid-cols-4 p-4 items-center">
+                        <div className="font-medium">{a.provider}</div>
+                        <div className="text-sm text-muted-foreground">{a.account}</div>
+                        <div>
+                          <Badge variant={a.status === 'connected' ? 'secondary' : 'destructive'} className="capitalize">{a.status}</Badge>
+                        </div>
+                        <div className="text-right space-x-2">
+                          <Button variant="outline" size="sm">Manage</Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDisconnectCloud(a.id)}>Disconnect</Button>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
+                <div className="space-y-3">
+                  <div className="font-medium">Kubernetes Clusters</div>
+                  <div className="border rounded-xl divide-y">
+                    {clusters.map(c => (
+                      <div key={c.id} className="grid grid-cols-3 p-4 items-center">
+                        <div className="font-medium">{c.name}</div>
+                        <div className="text-sm text-muted-foreground">{c.provider} · {c.region}</div>
+                        <div className="text-right"><Button variant="outline" size="sm">Manage</Button></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between border rounded-xl p-4">
+                    <div>
+                      <div className="font-medium">GitHub Integration</div>
+                      <div className="text-sm text-muted-foreground">Link repos for IaC scanning and PR checks</div>
+                    </div>
+                    <Button variant={vcsConnected.github ? 'outline' : 'default'} onClick={() => setVcsConnected(s => ({ ...s, github: !s.github }))}>{vcsConnected.github ? 'Disconnect' : 'Connect'}</Button>
+                  </div>
+                  <div className="flex items-center justify-between border rounded-xl p-4">
+                    <div>
+                      <div className="font-medium">GitLab Integration</div>
+                      <div className="text-sm text-muted-foreground">Enable merge request checks</div>
+                    </div>
+                    <Button variant={vcsConnected.gitlab ? 'outline' : 'default'} onClick={() => setVcsConnected(s => ({ ...s, gitlab: !s.gitlab }))}>{vcsConnected.gitlab ? 'Disconnect' : 'Connect'}</Button>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={() => save("Cloud & integrations")}>Save Changes</Button>
+                </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
-            <Card>
+          {/* Team & Access */}
+          <TabsContent value="team" className="space-y-6">
+            <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
               <CardHeader>
-                <CardTitle>Password</CardTitle>
-                <CardDescription>
-                  Change your password to ensure account security
-                </CardDescription>
+                <CardTitle>Team & Access</CardTitle>
+                <CardDescription>Manage members and permissions</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="max-w-md space-y-4">
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <div className="relative">
-                      <Input id="currentPassword" type="password" />
+                    <Label>Current Role</Label>
+                    <Input value={currentRole} disabled />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Invite Team Member</Label>
+                    <div className="flex gap-2">
+                      <Input placeholder="user@company.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+                      <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as any)}>
+                        <SelectTrigger className="w-36"><SelectValue placeholder="Role" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Admin">Admin</SelectItem>
+                          <SelectItem value="Editor">Editor</SelectItem>
+                          <SelectItem value="Viewer">Viewer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={() => { if (inviteEmail) { setTeamUsers(prev => [...prev, { id: Date.now(), name: inviteEmail.split('@')[0], email: inviteEmail, role: inviteRole }]); setInviteEmail(""); toast({ title: "Invitation sent" }); } }}>Invite</Button>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <div className="relative">
-                      <Input id="newPassword" type="password" />
-                    </div>
+                </div>
+
+                <div className="border rounded-xl divide-y">
+                  <div className="grid grid-cols-4 font-medium p-4">
+                    <div>Name</div>
+                    <div>Email</div>
+                    <div>Role</div>
+                    <div className="text-right">Actions</div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                    <div className="relative">
-                      <Input id="confirmPassword" type="password" />
+                  {teamUsers.map(u => (
+                    <div key={u.id} className="grid grid-cols-4 p-4 items-center">
+                      <div>{u.name}</div>
+                      <div className="text-sm text-muted-foreground">{u.email}</div>
+                      <div>
+                        <Select value={u.role} onValueChange={(v) => setTeamUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: v as any } : x))}>
+                          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Admin">Admin</SelectItem>
+                            <SelectItem value="Editor">Editor</SelectItem>
+                            <SelectItem value="Viewer">Viewer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="text-right space-x-2">
+                        <Button variant="outline" size="sm">Manage</Button>
+                        <Button variant="outline" size="sm" onClick={() => setTeamUsers(prev => prev.filter(x => x.id !== u.id))}>Remove</Button>
+                      </div>
                     </div>
-                  </div>
-                  <Button>
-                    <Lock className="mr-2 h-4 w-4" />
-                    Update Password
-                  </Button>
+                  ))}
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={() => save("Team & access")}>Save Changes</Button>
                 </div>
               </CardContent>
             </Card>

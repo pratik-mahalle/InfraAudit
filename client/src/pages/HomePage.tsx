@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,127 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 // Import founder photo
 const founderPhoto = "/me.jpg";
+
+// Simple brand SVG icons
+const AwsIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <path fill="#FFFFFF" d="M5 7.5c1.2-1 2.8-1.5 4.9-1.5 2.2 0 3.8.5 4.9 1.6.8.8 1.2 1.8 1.2 3 0 1.3-.4 2.3-1.2 3.1-1.1 1.1-2.7 1.7-4.9 1.7-2.1 0-3.7-.5-4.9-1.6C4.3 13 4 12.1 4 10.9c0-1.3.4-2.3 1-3.1zm2 .9c-.4.5-.6 1.1-.6 1.9 0 .8.2 1.5.7 2 .7.7 1.8 1 3.3 1 1.5 0 2.5-.3 3.3-1 .5-.5.7-1.1.7-1.9 0-.8-.2-1.4-.7-1.9-.7-.7-1.8-1-3.3-1-1.5 0-2.6.3-3.4 1z"/>
+  </svg>
+);
+const AzureIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <path fill="#FFFFFF" d="M3 18l8-14 3 5-6 9H3zm10 0l8-4-6-10-2 4 4 6-4 4z"/>
+  </svg>
+);
+const GcpIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <path fill="#FFFFFF" d="M12 2a10 10 0 00-9.33 6.5l3.46.53A6.99 6.99 0 0112 5a7 7 0 015.65 2.87l2.7-2.7A9.97 9.97 0 0012 2zm-9.95 9a10 10 0 001.71 5.51l2.95-1.7A6.99 6.99 0 015 12c0-.33.03-.66.08-.98L2.05 11zm14.3 7.35A7 7 0 017 12H3a10 10 0 0015.17 8.49l-1.77-2.14zM22 12c0-.7-.07-1.38-.21-2.03l-3.46.53c.1.49.15 1 .15 1.5 0 .36-.03.72-.09 1.06l3.48.94c.08-.65.13-1.32.13-2z"/>
+  </svg>
+);
+const TerraformIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <path fill="#FFFFFF" d="M3 4l6 3.5v7L3 11V4zm7 3.5L16 11v7l-6-3.5v-7zM17 11l4 2.3v7L17 18v-7z"/>
+  </svg>
+);
+const HelmIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <path fill="#FFFFFF" d="M12 3l2 3h3l-2 3 2 3h-3l-2 3-2-3H7l2-3-2-3h3l2-3z"/>
+  </svg>
+);
+const GrafanaIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <path fill="#FFFFFF" d="M12 4a8 8 0 108 8 8 8 0 00-8-8zm0 3a5 5 0 11-5 5 5 5 0 015-5z"/>
+  </svg>
+);
+const PrometheusIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <path fill="#FFFFFF" d="M12 2l2 6h4l-3 4 1 6-4-3-4 3 1-6-3-4h4l2-6z"/>
+  </svg>
+);
+const JiraIcon = () => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+    <path fill="#FFFFFF" d="M3 12l6-6h6l-6 6 3 3-6 6 1-5-4-4zM15 6l6 6-6 6-3-3 3-3-3-3 3-3z"/>
+  </svg>
+);
+
+// Integrations data (icons + brand colors)
+const INTEGRATION_ICONS = [
+  { icon: <HelmIcon />, bg: '#0F6CBD' },
+  { icon: <TerraformIcon />, bg: '#7B42BC' },
+  { icon: <GrafanaIcon />, bg: '#F46800' },
+  { icon: <AzureIcon />, bg: '#0078D4' },
+  { icon: <GcpIcon />, bg: '#1A73E8' },
+  { icon: <JiraIcon />, bg: '#2684FF' },
+  { icon: <PrometheusIcon />, bg: '#E6522C' },
+  { icon: <AwsIcon />, bg: '#FF9900' },
+];
+
+function IntegrationsArc() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(800);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const resize = () => setWidth(el.clientWidth);
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const height = 290;
+  const cx = width / 2;
+  const cy = height * 0.85; // vertical placement of arc (near bottom)
+  const r = Math.min(width, 800) * 0.33; // radius tuned for new height
+  const startDeg = 200;
+  const endDeg = -20;
+
+  const normalizeDeg = (deg: number) => {
+    let d = deg % 360;
+    if (d < 0) d += 360;
+    return d;
+  };
+
+  const toXY = (deg: number) => {
+    const rad = (normalizeDeg(deg) * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  };
+
+  // Ensure we traverse the same (clockwise) minor arc as the SVG path
+  const endAdj = endDeg < startDeg ? endDeg + 360 : endDeg;
+  const start = toXY(startDeg);
+  const end = toXY(endAdj);
+  const mid = toXY(startDeg + (endAdj - startDeg) / 2);
+  const pathD = `M ${start.x},${start.y} A ${r},${r} 0 0 1 ${end.x},${end.y}`;
+
+  return (
+    <div ref={ref} className="relative mt-28 md:mt-36 mx-auto max-w-4xl h-[240px]">
+      <svg className="absolute inset-0 w-full h-full integration-fade" viewBox={`0 0 ${width} ${height}`}>
+        <path d={pathD} stroke="rgba(100,116,139,0.25)" className="dark:stroke-[rgba(148,163,184,0.25)]" strokeWidth="2" fill="none" />
+      </svg>
+
+      {/* center logo positioned exactly on the arc midpoint */}
+      <div className="integration-center" style={{ left: `${mid.x}px`, top: `${mid.y}px` }}>
+        <img src="/logo.png" alt="InfraAudit" className="w-10 h-10" />
+      </div>
+
+      {/* evenly spaced icons along the arc */}
+      {INTEGRATION_ICONS.map((b, i) => {
+        const t = i / (INTEGRATION_ICONS.length - 1);
+        const deg = startDeg + (endAdj - startDeg) * t;
+        const p = toXY(deg);
+        return (
+          <div key={i} className="absolute" style={{ left: `${p.x}px`, top: `${p.y}px`, transform: 'translate(-50%, -50%)' }}>
+            <div className="integration-chip integration-chip--circle" style={{ backgroundColor: b.bg }}>
+              {b.icon}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // FAQ data structure
 const faqItems = [
@@ -85,9 +206,30 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
       
-      {/* Hero Section */}
-      <section className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
-        <div className="max-w-6xl mx-auto">
+      {/* Hero Section with animated background */}
+      <section className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 relative overflow-hidden">
+        {/* animated background overlay */}
+        <div className="pointer-events-none absolute inset-0 opacity-70 dark:opacity-40 [mask-image:radial-gradient(50%_50%_at_50%_10%,black,transparent)]">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.15),transparent_60%)] dark:bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.25),transparent_60%)]" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-3xl bg-primary/10" />
+          {/* orbits */}
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 hero-orbit" style={{ ['--orbit-radius' as any]: '200px' }}>
+            <div className="hero-dot" style={{ ['--speed' as any]: '34s' }} />
+          </div>
+          <div className="absolute bottom-14 left-1/2 -translate-x-1/2 hero-orbit" style={{ ['--orbit-radius' as any]: '160px' }}>
+            <div className="hero-dot hero-dot--emerald" style={{ ['--speed' as any]: '26s' }} />
+          </div>
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 hero-orbit" style={{ ['--orbit-radius' as any]: '120px' }}>
+            <div className="hero-dot hero-dot--violet" style={{ ['--speed' as any]: '20s' }} />
+          </div>
+          {/* particles */}
+          <div className="particle" style={{ left: '30%', bottom: '160px', ['--dur' as any]: '9s', ['--delay' as any]: '0.4s' }} />
+          <div className="particle particle--violet" style={{ left: '55%', bottom: '190px', ['--dur' as any]: '7s', ['--delay' as any]: '1.1s' }} />
+          <div className="particle particle--emerald" style={{ left: '48%', bottom: '210px', ['--dur' as any]: '6.5s', ['--delay' as any]: '0.7s' }} />
+          <div className="particle" style={{ left: '65%', bottom: '150px', ['--dur' as any]: '8.5s', ['--delay' as any]: '0.9s' }} />
+          <div className="hero-bowl" />
+        </div>
+        <div className="max-w-6xl mx-auto relative z-10">
           <div className="flex flex-col md:flex-row items-center gap-12">
             <div className="md:w-1/2">
 
@@ -291,6 +433,7 @@ export default function HomePage() {
         </div>
       </section>
       
+
       {/* Features Section */}
       <section id="features" className="w-full py-20 px-6">
         <div className="max-w-6xl mx-auto">
@@ -549,6 +692,22 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Integrations Section */}
+      <section className="w-full py-20 px-6 bg-gray-50 dark:bg-gray-950">
+        <div className="max-w-6xl mx-auto text-center">
+          <p className="uppercase tracking-widest text-xs text-gray-500 dark:text-gray-400 mb-3">Integrations</p>
+          <h2 className="text-3xl md:text-4xl font-bold mb-3">InfrAudit integrates with AWS, GCP, Azure, and on‑prem.</h2>
+          <p className="text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">We also support your favorite tools including Terraform, Grafana, Prometheus, Jira, Helm, and more.</p>
+          <IntegrationsArc />
+          <div className="mt-6">
+            <Link href="/documentation" className="inline-flex items-center text-primary hover:underline">
+              All integrations <ChevronRight className="ml-1 h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+      
       
       {/* FAQ Section */}
       <section id="faq" className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">

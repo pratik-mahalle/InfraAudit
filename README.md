@@ -20,8 +20,8 @@ docker compose up --build -d
 
 ## Environment
 ```env
-VITE_API_BASE_URL=http://localhost:5000
-VITE_OAUTH_BACKEND_BASE=http://localhost:5000
+VITE_API_BASE_URL=http://localhost:8080
+VITE_OAUTH_BACKEND_BASE=http://localhost:8080
 ```
 
 ---

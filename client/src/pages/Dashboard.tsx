@@ -271,14 +271,34 @@ export default function Dashboard() {
       {/* Trial Status Banner */}
       <TrialBanner />
       
-      {/* Enhanced Header with Tabs */}
-      <div className="mb-6 bg-gradient-to-r from-slate-50 to-blue-50/80 dark:from-slate-900/70 dark:to-blue-950/30 p-6 rounded-xl border border-blue-100/50 dark:border-blue-900/20 shadow-sm">
+      {/* Modern Hero Header with Tabs (with animated orbits) */}
+      <div className="mb-8 rounded-2xl p-6 md:p-8 border shadow-sm bg-white/70 dark:bg-slate-900/50 border-gray-200/60 dark:border-slate-800/60 backdrop-blur relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 opacity-70 dark:opacity-40 [mask-image:radial-gradient(50%_50%_at_50%_0%,black,transparent)]">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.15),transparent_60%)] dark:bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.25),transparent_60%)]" />
+          <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-3xl bg-primary/10" />
+          {/* animated orbits */}
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 hero-orbit" style={{ ['--orbit-radius' as any]: '180px' }}>
+            <div className="hero-dot" style={{ ['--speed' as any]: '34s' }} />
+          </div>
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hero-orbit" style={{ ['--orbit-radius' as any]: '140px' }}>
+            <div className="hero-dot hero-dot--emerald" style={{ ['--speed' as any]: '26s' }} />
+          </div>
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 hero-orbit" style={{ ['--orbit-radius' as any]: '100px' }}>
+            <div className="hero-dot hero-dot--violet" style={{ ['--speed' as any]: '20s' }} />
+          </div>
+          {/* floating particles */}
+          <div className="particle" style={{ left: '40%', bottom: '120px', ['--dur' as any]: '8s', ['--delay' as any]: '0.2s' }} />
+          <div className="particle particle--violet" style={{ left: '55%', bottom: '150px', ['--dur' as any]: '7s', ['--delay' as any]: '1.2s' }} />
+          <div className="particle particle--emerald" style={{ left: '48%', bottom: '180px', ['--dur' as any]: '6.5s', ['--delay' as any]: '0.8s' }} />
+          <div className="particle" style={{ left: '60%', bottom: '110px', ['--dur' as any]: '9s', ['--delay' as any]: '0.6s' }} />
+          <div className="hero-bowl" />
+        </div>
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4">
           <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
-              Cloud Infrastructure Dashboard
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              <span className="bg-gradient-to-r from-blue-700 to-indigo-600 dark:from-blue-400 dark:to-indigo-300 bg-clip-text text-transparent">Cloud Infrastructure Dashboard</span>
             </h1>
-            <p className="text-slate-600 dark:text-slate-400">
+            <p className="text-slate-600 dark:text-slate-400 mt-1">
               Last scan completed on <span className="font-medium">{formatDate(lastScanTime)}</span>
             </p>
           </div>
@@ -334,24 +354,24 @@ export default function Dashboard() {
 
         {/* Dashboard Tabs */}
         <Tabs value={dashboardTab} onValueChange={setDashboardTab} className="mt-4">
-          <TabsList className="bg-white/80 dark:bg-slate-900/50 border border-blue-100/50 dark:border-blue-800/30 p-1">
+          <TabsList className="bg-white/60 dark:bg-slate-900/50 border border-gray-200/60 dark:border-slate-800/60 p-1 rounded-xl">
             <TabsTrigger 
               value="overview" 
-              className="data-[state=active]:bg-blue-100/80 data-[state=active]:text-blue-700 dark:data-[state=active]:bg-blue-900/30 dark:data-[state=active]:text-blue-300"
+              className="rounded-lg data-[state=active]:bg-blue-600/10 data-[state=active]:text-blue-700 dark:data-[state=active]:bg-blue-500/10 dark:data-[state=active]:text-blue-300"
             >
               <LayoutDashboard className="h-4 w-4 mr-2" />
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="providers" 
-              className="data-[state=active]:bg-green-100/80 data-[state=active]:text-green-700 dark:data-[state=active]:bg-green-900/30 dark:data-[state=active]:text-green-300"
+              className="rounded-lg data-[state=active]:bg-emerald-600/10 data-[state=active]:text-emerald-700 dark:data-[state=active]:bg-emerald-500/10 dark:data-[state=active]:text-emerald-300"
             >
               <CloudIcon className="h-4 w-4 mr-2" />
               Cloud Providers
             </TabsTrigger>
             <TabsTrigger 
               value="widgets" 
-              className="data-[state=active]:bg-purple-100/80 data-[state=active]:text-purple-700 dark:data-[state=active]:bg-purple-900/30 dark:data-[state=active]:text-purple-300"
+              className="rounded-lg data-[state=active]:bg-purple-600/10 data-[state=active]:text-purple-700 dark:data-[state=active]:bg-purple-500/10 dark:data-[state=active]:text-purple-300"
             >
               <Sparkles className="h-4 w-4 mr-2" />
               Custom Widgets
@@ -400,11 +420,11 @@ export default function Dashboard() {
           </div>
 
           {/* Featured Insights Card */}
-          <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 border-indigo-100 dark:border-indigo-900/20 mb-8">
+          <Card className="mb-8 bg-white/70 dark:bg-slate-900/50 backdrop-blur border border-indigo-100/60 dark:border-slate-800/60">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
                 <CardTitle className="text-lg font-medium text-indigo-900 dark:text-indigo-300">Featured Insights</CardTitle>
-                <Badge variant="outline" className="bg-indigo-100 text-indigo-800 border-indigo-200 font-normal dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700/50">
+                <Badge variant="outline" className="bg-indigo-100/70 text-indigo-800 border-indigo-200 font-normal dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-700/50">
                   <Sparkles className="h-3 w-3 mr-1" />
                   AI-Generated
                 </Badge>
@@ -415,7 +435,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="pt-2">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
+                <div className="rounded-lg border p-4 shadow-sm bg-white/80 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800/30">
                   <div className="flex items-start gap-3">
                     <div className="bg-indigo-100 dark:bg-indigo-800/40 p-2 rounded-md">
                       <Layers className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
@@ -436,7 +456,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
-                <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
+                <div className="rounded-lg border p-4 shadow-sm bg-white/80 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800/30">
                   <div className="flex items-start gap-3">
                     <div className="bg-red-100 dark:bg-red-900/40 p-2 rounded-md">
                       <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -457,7 +477,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
-                <div className="bg-white dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800/30 p-4 shadow-sm">
+                <div className="rounded-lg border p-4 shadow-sm bg-white/80 dark:bg-indigo-900/20 border-indigo-100 dark:border-indigo-800/30">
                   <div className="flex items-start gap-3">
                     <div className="bg-green-100 dark:bg-green-900/40 p-2 rounded-md">
                       <RefreshCw className="h-4 w-4 text-green-600 dark:text-green-400" />
