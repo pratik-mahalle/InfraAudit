@@ -16,7 +16,7 @@ const Documentation = () => {
       <div className="container mx-auto py-8 px-4 max-w-7xl">
         <div className="flex flex-col md:flex-row items-start justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">InfrAudit Documentation</h1>
+            <h1 className="text-3xl font-bold tracking-tight">InfrAudit Overview</h1>
             <p className="text-muted-foreground mt-1">
               Comprehensive guide to monitoring and optimizing your cloud infrastructure
             </p>
@@ -48,6 +48,7 @@ const Documentation = () => {
                   optimization recommendations, and predictive analytics.
                 </p>
                 
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div className="border rounded-lg p-4 bg-card">
                     <div className="flex items-center space-x-3 mb-2">
@@ -68,6 +69,7 @@ const Documentation = () => {
                       Identify cost-saving opportunities with AI-powered recommendations
                     </p>
                   </div>
+                  
                   
                   <div className="border rounded-lg p-4 bg-card">
                     <div className="flex items-center space-x-3 mb-2">

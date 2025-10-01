@@ -702,7 +702,7 @@ export default function HomePage() {
           <IntegrationsArc />
           <div className="mt-6">
             <Link href="/documentation" className="inline-flex items-center text-primary hover:underline">
-              All integrations <ChevronRight className="ml-1 h-4 w-4" />
+              Coming Soon <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
           </div>
         </div>
