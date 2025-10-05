@@ -27,6 +27,9 @@ import KubernetesPage from "@/pages/KubernetesPage";
 import ArchitecturePlaygroundPage from "@/pages/architecture-playground";
 import AiAnalysisDemo from "@/pages/AiAnalysisDemo";
 import RoiCalculator from "@/pages/RoiCalculator";
+import Guide from "@/pages/Guide";
+import APIPage from "@/pages/API";
+import ShareViewer from "@/pages/ShareViewer";
 // Footer pages
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
@@ -157,6 +160,11 @@ function Router() {
             {/* Public routes */}
             <Route path="/" component={HomePage} /> {/* Landing page for non-authenticated users */}
             <Route path="/documentation" component={Documentation} />
+            <Route path="/guide" component={Guide} />
+            <Route path="/guide/" component={Guide} />
+            <Route path="/guides" component={Guide} />
+            <Route path="/share/:token" component={ShareViewer} />
+            <Route path="/api" component={APIPage} />
             <Route path="/pricing" component={PricingPage} />
             
             {/* Footer pages */}

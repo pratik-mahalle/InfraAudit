@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -27,7 +28,10 @@ import {
   ChevronRight, 
   RefreshCw,
   CloudIcon,
-  AlertTriangle
+  AlertTriangle,
+  Share2,
+  Copy,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -50,13 +54,18 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export default function Dashboard() {
+  const [, navigate] = useLocation();
   const [dashboardTab, setDashboardTab] = useState("overview");
   const [hasConnectedProviders, setHasConnectedProviders] = useState(false);
   const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(false); // Changed to false to skip first-time setup by default
   const [isScanning, setIsScanning] = useState(false);
   const [lastScanResult, setLastScanResult] = useState(null);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareLink, setShareLink] = useState("");
   const { toast } = useToast();
   
   // Mutation for running a new scan
@@ -103,6 +112,38 @@ export default function Dashboard() {
   const handleRunScan = () => {
     scanMutation.mutate();
   };
+
+  // Mutation to create a share link
+  const shareMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/dashboard/share");
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      const token = (data && (data.token || data.id)) as string | undefined;
+      const url = (data && data.url) || (token ? `${window.location.origin}/share/${token}` : "");
+      if (!url) {
+        toast({ title: "Unexpected response", description: "Share URL missing", variant: "destructive" });
+        return;
+      }
+      setShareLink(url);
+      setIsShareOpen(true);
+      toast({ title: "Share link created", description: "Anyone with the link can view this snapshot." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to create share link", description: error?.message || "Try again later", variant: "destructive" });
+    },
+  });
+
+  const handleCopyShareLink = async () => {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      toast({ title: "Link copied", description: "Share link copied to clipboard" });
+    } catch (_) {
+      /* no-op */
+    }
+  };
   
   // Handle dashboard action selections
   const handleDashboardAction = (action: string) => {
@@ -136,10 +177,14 @@ export default function Dashboard() {
           description: "Widget customization feature will be available soon",
         });
         break;
+
+      case "share":
+        shareMutation.mutate();
+        break;
       
       case "configureProviders":
-        // Navigate to cloud providers page
-        window.location.href = "/cloud-providers";
+        // Navigate to cloud providers page (SPA)
+        navigate("/cloud-providers");
         break;
       
       case "scheduleScan":
@@ -321,6 +366,10 @@ export default function Dashboard() {
                   <CornerLeftDown className="h-4 w-4 mr-2" />
                   Export Dashboard
                 </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => handleDashboardAction("share")}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Public Link
+                </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer" onClick={() => handleDashboardAction("addWidget")}>
                   <PlusSquare className="h-4 w-4 mr-2" />
                   Add New Widget
@@ -351,6 +400,36 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+      {/* Share dialog */}
+      <Dialog open={isShareOpen} onOpenChange={setIsShareOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Share dashboard snapshot</DialogTitle>
+            <DialogDescription>
+              Anyone with this link can view a read-only snapshot of your dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Input readOnly value={shareLink} onFocus={(e) => e.currentTarget.select()} />
+            <div className="flex gap-2">
+              <Button type="button" onClick={handleCopyShareLink} className="inline-flex items-center gap-2">
+                <Copy className="h-4 w-4" /> Copy link
+              </Button>
+              {shareLink && (
+                <Button type="button" variant="outline" asChild>
+                  <a href={shareLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4" /> Open
+                  </a>
+                </Button>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setIsShareOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
         {/* Dashboard Tabs */}
         <Tabs value={dashboardTab} onValueChange={setDashboardTab} className="mt-4">

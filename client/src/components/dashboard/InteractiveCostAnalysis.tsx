@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Line, Bar } from "react-chartjs-2";
@@ -98,6 +99,7 @@ interface CostAnomaly {
 
 export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCostAnalysisProps) {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [groupBy, setGroupBy] = useState<GroupBy>("service");
   const [chartType, setChartType] = useState<ChartType>("area");
@@ -227,7 +229,7 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
         : Array.from(serviceSet);
     
     // Create datasets
-    const datasets = [];
+    const datasets: any[] = [];
     
     // Add current period datasets
     servicesToShow.forEach((service, index) => {
@@ -589,7 +591,7 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
             <p className="text-gray-600 dark:text-gray-400 max-w-md mb-4">
               Connect your cloud accounts to see real-time cost data and detailed analytics.
             </p>
-            <Button>
+            <Button onClick={() => navigate("/cloud-providers") }>
               Connect Cloud Provider
             </Button>
           </div>
