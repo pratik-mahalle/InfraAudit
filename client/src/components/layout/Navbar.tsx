@@ -16,7 +16,8 @@ import {
   TrendingUp,
   FileSpreadsheet,
   Server,
-  Layers
+  Layers,
+  Github
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -225,6 +226,17 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <div className="flex items-center gap-2">
+              <Button asChild variant="ghost" size="sm">
+                <a
+                  href="https://github.com/thedevopsguy/InfraAudit"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1"
+                >
+                  <Github className="h-4 w-4" />
+                  GitHub
+                </a>
+              </Button>
               <Button asChild variant="outline" size="sm">
                 <Link href="/auth">Login</Link>
               </Button>

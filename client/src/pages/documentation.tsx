@@ -47,6 +47,22 @@ const Documentation = () => {
                   environments. Our platform provides real-time monitoring, security configuration drift detection, cost
                   optimization recommendations, and predictive analytics.
                 </p>
+                <div className="p-4 rounded-lg border bg-card">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                    <div>
+                      <h4 className="font-medium">Open Source</h4>
+                      <p className="text-sm text-muted-foreground">InfraAudit is open source under the MIT License. You can self-host and contribute.</p>
+                    </div>
+                    <a
+                      href="https://github.com/thedevopsguy/InfraAudit"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center h-9 px-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-sm"
+                    >
+                      View on GitHub
+                    </a>
+                  </div>
+                </div>
                 
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -223,6 +239,14 @@ const Documentation = () => {
                   <li>Permissions to read logs and monitoring metrics</li>
                   <li>Optional: permissions to apply recommended changes (for automated remediation)</li>
                 </ul>
+                <div className="mt-8 p-4 rounded-lg border bg-card">
+                  <h4 className="font-medium mb-2">Self-Hosting</h4>
+                  <p className="text-sm text-muted-foreground mb-3">Deploy InfraAudit yourself using Docker Compose:</p>
+                  <pre className="text-xs p-3 rounded bg-muted overflow-auto"><code>git clone https://github.com/thedevopsguy/InfraAudit
+cd InfraAudit
+docker compose up -d</code></pre>
+                  <p className="text-xs text-muted-foreground mt-2">See the repository README for environment variables and advanced options.</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

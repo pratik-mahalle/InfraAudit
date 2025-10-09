@@ -17,10 +17,10 @@ export function Footer() {
             />
           </Link>
           <p className="text-sm text-muted-foreground max-w-xs">
-            A multi-cloud infrastructure monitoring platform that leverages AI to detect cost anomalies and security configuration drifts.
+            Open source multi-cloud monitoring. Detect cost anomalies and security drifts with AI.
           </p>
           <div className="flex gap-4">
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+            <a href="https://github.com/thedevopsguy/InfraAudit" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
               <Github className="h-5 w-5" />
               <span className="sr-only">GitHub</span>
             </a>
@@ -35,6 +35,16 @@ export function Footer() {
             <a href="mailto:contact@infraaudit.com" className="text-muted-foreground hover:text-foreground">
               <Mail className="h-5 w-5" />
               <span className="sr-only">Email</span>
+            </a>
+          </div>
+          <div>
+            <a
+              href="https://github.com/thedevopsguy/InfraAudit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Star on GitHub
             </a>
           </div>
         </div>
@@ -64,7 +74,7 @@ export function Footer() {
               </Link>
             </li>
             <li>
-              <Link href="/alerts">
+              <Link href="/security">
                 <div className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
                   Alerts
                 </div>
@@ -150,7 +160,7 @@ export function Footer() {
       </div>
       <div className="container max-w-6xl mx-auto flex flex-col items-center justify-center gap-4 border-t border-border/40 py-6 mt-6 md:flex-row px-4 md:px-6">
         <p className="text-xs text-muted-foreground text-center md:text-left">
-          &copy; {currentYear} InfraAudit. All rights reserved.
+          &copy; {currentYear} InfraAudit. Open Source under MIT License.
         </p>
         <div className="flex gap-4 text-xs text-muted-foreground">
           <Link href="/privacy">
@@ -172,7 +182,7 @@ export function Footer() {
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           Made with <Heart className="h-3 w-3 text-red-500" /> by{" "}
           <a 
-            href="https://github.com/pratik-mahalle" 
+            href="https://github.com/thedevopsguy" 
             target="_blank" 
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors"
