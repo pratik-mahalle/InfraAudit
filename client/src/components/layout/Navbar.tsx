@@ -672,8 +672,8 @@ export function Navbar() {
                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <CreditCard className="h-5 w-5 text-gray-500" />
                       <span className="font-medium">Billing</span>
-                    </div>
-                  </Link>
+                  </div>
+                </Link>
                 </div>
                 
                 <div className="border-t border-gray-200 dark:border-gray-800 pt-4">
@@ -713,7 +713,7 @@ export function Navbar() {
                     <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <Cpu className="h-5 w-5 text-blue-600" />
-                        <span>Kubernetes</span>
+                    <span>Kubernetes</span>
                       </div>
                     </Link>
                     <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>

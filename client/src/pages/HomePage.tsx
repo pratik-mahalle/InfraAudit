@@ -67,7 +67,7 @@ function Marquee({ children, className }: { children: React.ReactNode; className
 }
 
 // Animated typing effect
-function TypeWriter({ texts }: { texts: string[] }) {
+function TypeWriter({ texts, className }: { texts: string[]; className?: string }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [displayText, setDisplayText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -89,186 +89,23 @@ function TypeWriter({ texts }: { texts: string[] }) {
           setCurrentIndex((prev) => (prev + 1) % texts.length);
         }
       }
-    }, isDeleting ? 30 : 80);
+    }, isDeleting ? 40 : 100);
 
     return () => clearTimeout(timeout);
   }, [displayText, isDeleting, currentIndex, texts]);
 
   return (
-    <span className="text-blue-600">
+    <span className={cn("inline-block", className)}>
       {displayText}
-      <span className="animate-pulse">|</span>
+      <span className="animate-[cursor-blink_1s_infinite] text-current opacity-80">|</span>
     </span>
-  );
-}
-
-// Premium Globe Illustration with Network Effect
-function CloudIllustration() {
-  return (
-    <div className="relative w-full max-w-md mx-auto">
-      <svg viewBox="0 0 400 400" className="w-full h-auto">
-        <defs>
-          {/* Gradient for the globe */}
-          <linearGradient id="globeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.9" />
-            <stop offset="50%" stopColor="#2563eb" stopOpacity="1" />
-            <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.9" />
-          </linearGradient>
-          
-          {/* Glow effect */}
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="8" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          
-          {/* Inner shadow */}
-          <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
-            <feOffset dy="2" dx="2" />
-            <feComposite in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowDiff" />
-            <feFlood floodColor="#1e3a8a" floodOpacity="0.3" />
-            <feComposite in2="shadowDiff" operator="in" />
-            <feComposite in2="SourceGraphic" operator="over" />
-          </filter>
-        </defs>
-        
-        {/* Outer glow ring */}
-        <circle cx="200" cy="200" r="145" fill="none" stroke="#3b82f6" strokeWidth="1" opacity="0.2" />
-        <circle cx="200" cy="200" r="160" fill="none" stroke="#3b82f6" strokeWidth="0.5" opacity="0.1" />
-        
-        {/* Main globe */}
-        <circle cx="200" cy="200" r="130" fill="url(#globeGradient)" filter="url(#innerShadow)" />
-        
-        {/* Grid lines - horizontal */}
-        {[0.3, 0.5, 0.7].map((pos, i) => (
-          <ellipse
-            key={`h-${i}`}
-            cx="200"
-            cy={200 + (pos - 0.5) * 200}
-            rx={130 * Math.sqrt(1 - Math.pow(pos - 0.5, 2) * 4)}
-            ry="8"
-            fill="none"
-            stroke="rgba(255,255,255,0.15)"
-            strokeWidth="1"
-          />
-        ))}
-        
-        {/* Grid lines - vertical */}
-        <ellipse cx="200" cy="200" rx="40" ry="130" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-        <ellipse cx="200" cy="200" rx="80" ry="130" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
-        <ellipse cx="200" cy="200" rx="130" ry="130" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-        
-        {/* Central dashboard card */}
-        <g filter="url(#glow)">
-          <rect x="155" y="155" width="90" height="70" rx="12" fill="#1e40af" />
-          <rect x="155" y="155" width="90" height="70" rx="12" fill="rgba(255,255,255,0.1)" />
-          
-          {/* Card content - lines */}
-          <rect x="167" y="170" width="45" height="6" rx="3" fill="rgba(255,255,255,0.4)" />
-          <rect x="167" y="182" width="55" height="6" rx="3" fill="rgba(255,255,255,0.25)" />
-          <rect x="167" y="194" width="35" height="6" rx="3" fill="rgba(255,255,255,0.25)" />
-          
-          {/* Status indicators */}
-          <circle cx="225" cy="173" r="4" fill="#22c55e" />
-          <circle cx="225" cy="185" r="4" fill="#22c55e" />
-          <circle cx="225" cy="197" r="4" fill="#eab308" />
-        </g>
-        
-        {/* Floating nodes - AWS */}
-        <motion.g
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <circle cx="95" cy="140" r="20" fill="#ff9900" />
-          <text x="95" y="145" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">λ</text>
-        </motion.g>
-        
-        {/* Floating nodes - Azure */}
-        <motion.g
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-        >
-          <circle cx="305" cy="160" r="18" fill="#0078d4" />
-          <path d="M297 160 L305 152 L313 160 L305 168 Z" fill="white" />
-        </motion.g>
-        
-        {/* Floating nodes - GCP */}
-        <motion.g
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        >
-          <circle cx="120" cy="280" r="16" fill="#4285f4" />
-          <circle cx="120" cy="280" r="6" fill="white" />
-        </motion.g>
-        
-        {/* Floating nodes - Kubernetes */}
-        <motion.g
-          animate={{ y: [0, 6, 0] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-        >
-          <circle cx="290" cy="270" r="17" fill="#326ce5" />
-          <path d="M290 258 L296 266 L296 278 L290 286 L284 278 L284 266 Z" fill="white" fillOpacity="0.9" />
-        </motion.g>
-        
-        {/* Connection lines */}
-        <motion.line
-          x1="115" y1="140" x2="155" y2="175"
-          stroke="rgba(255,153,0,0.4)"
-          strokeWidth="2"
-          strokeDasharray="4 4"
-          animate={{ strokeDashoffset: [0, -16] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.line
-          x1="287" y1="160" x2="245" y2="180"
-          stroke="rgba(0,120,212,0.4)"
-          strokeWidth="2"
-          strokeDasharray="4 4"
-          animate={{ strokeDashoffset: [0, -16] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.3 }}
-        />
-        <motion.line
-          x1="136" y1="275" x2="165" y2="220"
-          stroke="rgba(66,133,244,0.4)"
-          strokeWidth="2"
-          strokeDasharray="4 4"
-          animate={{ strokeDashoffset: [0, -16] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.6 }}
-        />
-        <motion.line
-          x1="273" y1="265" x2="240" y2="215"
-          stroke="rgba(50,108,229,0.4)"
-          strokeWidth="2"
-          strokeDasharray="4 4"
-          animate={{ strokeDashoffset: [0, -16] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.9 }}
-        />
-        
-        {/* Orbiting particle */}
-        <motion.circle
-          cx="200"
-          cy="200"
-          r="6"
-          fill="#60a5fa"
-          filter="url(#glow)"
-          animate={{
-            cx: [200, 330, 200, 70, 200],
-            cy: [70, 200, 330, 200, 70],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-        />
-      </svg>
-    </div>
   );
 }
 
 // AI Agent Illustration for Meet section
 function AIAgentIllustration() {
   return (
-    <div className="relative">
+              <div className="relative">
       <svg viewBox="0 0 200 200" className="w-48 h-48 mx-auto">
         <defs>
           <linearGradient id="agentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -368,7 +205,7 @@ function AIAgentIllustration() {
       >
         scanning...
       </motion.div>
-                              </div>
+              </div>
   );
 }
 
@@ -388,29 +225,29 @@ function DashboardPreview() {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
               <Cloud className="w-4 h-4 text-white" />
-                              </div>
+              </div>
             <span className="font-medium text-sm">InfrAudit</span>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-                            </div>
-                          </div>
+                </div>
+          </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="gap-2">
             <Plus className="w-4 h-4" />
             Add Provider
-          </Button>
+                </Button>
           <div className="flex -space-x-2">
             {["O", "C", "M"].map((letter, i) => (
               <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-medium border-2 border-white dark:border-gray-900">
                 {letter}
-                              </div>
+              </div>
             ))}
             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-xs font-medium border-2 border-white dark:border-gray-900">
               +7
-                            </div>
-                          </div>
+            </div>
                     </div>
-                        </div>
-                        
+                    </div>
+                  </div>
+                  
       {/* Sidebar + Content */}
       <div className="flex">
         {/* Sidebar */}
@@ -433,7 +270,7 @@ function DashboardPreview() {
               >
                 <item.icon className="w-4 h-4" />
                 {item.label}
-                            </div>
+                              </div>
                           ))}
           </nav>
 
@@ -451,12 +288,12 @@ function DashboardPreview() {
                 >
                   <div className={cn("w-3 h-3 rounded-sm", item.color)} />
                   {item.label}
-                    </div>
+                              </div>
               ))}
             </nav>
-            </div>
-          </div>
-          
+                            </div>
+                          </div>
+            
         {/* Main Content */}
         <div className="flex-1 p-6">
           <div className="flex items-center justify-between mb-6">
@@ -470,9 +307,9 @@ function DashboardPreview() {
                 <div className="w-2 h-2 rounded-full bg-blue-500" />
                 248 Resources
               </Badge>
-              </div>
-            </div>
-            
+                              </div>
+                    </div>
+                    
           {/* Table */}
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <table className="w-full text-sm">
@@ -501,7 +338,7 @@ function DashboardPreview() {
                       <div className="flex items-center gap-2">
                         <div className={cn("w-3 h-3 rounded-sm", row.providerColor)} />
                         {row.provider}
-              </div>
+                        </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn("font-medium", row.statusColor)}>{row.status}</span>
@@ -514,8 +351,8 @@ function DashboardPreview() {
                 ))}
               </tbody>
             </table>
-            </div>
-            
+                        </div>
+                    
           {/* AI Scanning Notice */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -524,102 +361,151 @@ function DashboardPreview() {
           >
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Bot className="w-4 h-4 text-white" />
-              </div>
+                    </div>
             <span className="text-sm text-blue-700 dark:text-blue-300">
               InfrAudit is scanning for cost optimization opportunities...
             </span>
             <Loader2 className="w-4 h-4 text-blue-600 animate-spin ml-auto" />
           </motion.div>
-            </div>
-              </div>
+                  </div>
+                </div>
     </motion.div>
   );
 }
 
-// AI Thinking Card Component
-function AIThinkingCard() {
-  const [thinkingStates, setThinkingStates] = useState({
-    cost: "Analyzing...",
-    security: "Checking...",
-    action: "Thinking..."
-  });
+// AI Brain Visualization Component
+function AIBrainVisualization() {
+  const [activeThought, setActiveThought] = useState(0);
+  const thoughts = [
+    { icon: DollarSign, text: "Analyzing cost patterns...", result: "Found $2,340 in savings", color: "text-emerald-500" },
+    { icon: Shield, text: "Scanning security configs...", result: "3 misconfigurations detected", color: "text-amber-500" },
+    { icon: Cpu, text: "Checking resource usage...", result: "12 instances oversized", color: "text-blue-500" },
+    { icon: TrendingUp, text: "Predicting next month...", result: "15% cost increase likely", color: "text-purple-500" },
+  ];
 
   useEffect(() => {
-    const timer1 = setTimeout(() => setThinkingStates(prev => ({ ...prev, cost: "$2,340 potential savings" })), 2000);
-    const timer2 = setTimeout(() => setThinkingStates(prev => ({ ...prev, security: "3 vulnerabilities found" })), 3500);
-    const timer3 = setTimeout(() => setThinkingStates(prev => ({ ...prev, action: "Rightsize 12 instances" })), 5000);
-    
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-    };
+    const interval = setInterval(() => {
+      setActiveThought((prev) => (prev + 1) % thoughts.length);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-6 max-w-md">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
-          <span className="text-gray-500">Monthly Cost</span>
-          <div className="flex items-center gap-2">
-            {thinkingStates.cost === "Analyzing..." ? (
-              <>
-                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                <span className="text-gray-400">Analyzing...</span>
-              </>
-            ) : (
-              <span className="font-semibold text-green-600">{thinkingStates.cost}</span>
-            )}
-                </div>
-                </div>
-        <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
-          <span className="text-gray-500">Security Status</span>
-          <div className="flex items-center gap-2">
-            {thinkingStates.security === "Checking..." ? (
-              <>
-                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                <span className="text-gray-400">Checking...</span>
-              </>
-            ) : (
-              <span className="font-semibold text-amber-600">{thinkingStates.security}</span>
-            )}
+    <div className="relative">
+      {/* Central AI Core */}
+      <div className="relative w-80 h-80 mx-auto">
+        {/* Outer rings */}
+        <motion.div
+          className="absolute inset-0 rounded-full border-2 border-blue-500/20"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div
+          className="absolute inset-4 rounded-full border border-blue-500/30"
+          animate={{ rotate: -360 }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.div
+          className="absolute inset-8 rounded-full border border-dashed border-blue-500/20"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+        />
+        
+        {/* Orbiting thought nodes */}
+        {thoughts.map((thought, i) => {
+          const angle = (i * 90) + (activeThought * 90);
+          const radius = 120;
+          return (
+            <motion.div
+              key={i}
+              className={cn(
+                "absolute w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500",
+                i === activeThought 
+                  ? "bg-blue-600 shadow-lg shadow-blue-500/30 scale-110" 
+                  : "bg-slate-800 opacity-60"
+              )}
+              style={{
+                left: `calc(50% + ${Math.cos((angle * Math.PI) / 180) * radius}px - 24px)`,
+                top: `calc(50% + ${Math.sin((angle * Math.PI) / 180) * radius}px - 24px)`,
+              }}
+            >
+              <thought.icon className="w-5 h-5 text-white" />
+            </motion.div>
+          );
+        })}
+        
+        {/* Central brain */}
+        <div className="absolute inset-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-2xl shadow-blue-500/20">
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <Bot className="w-16 h-16 text-white" />
+          </motion.div>
+          </div>
+          
+        {/* Pulse effect */}
+        <motion.div
+          className="absolute inset-16 rounded-full bg-blue-500"
+          animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
               </div>
+              
+      {/* Current thought display */}
+      <motion.div
+        key={activeThought}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-8 text-center"
+      >
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 text-sm text-slate-300 mb-3">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          {thoughts[activeThought].text}
                 </div>
-        <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
-          <span className="text-gray-500">Recommended action</span>
-          <div className="flex items-center gap-2">
-            {thinkingStates.action === "Thinking..." ? (
-              <>
-                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                <span className="text-gray-400">Thinking...</span>
-              </>
-            ) : (
-              <span className="font-semibold text-blue-600">{thinkingStates.action}</span>
-            )}
+        <p className={cn("text-lg font-semibold", thoughts[activeThought].color)}>
+          {thoughts[activeThought].result}
+        </p>
+      </motion.div>
                 </div>
-              </div>
-        <div className="flex items-center justify-between py-3">
-          <span className="text-gray-500">Assigned to</span>
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs">
-              O
-                </div>
-            <span className="font-medium">Olivia Chen</span>
-                </div>
-              </div>
-            </div>
-    </div>
   );
 }
 
-// Feature Badge Component
-function FeatureBadge({ icon: Icon, label }: { icon: any; label: string }) {
+// Live Insights Feed
+function LiveInsightsFeed() {
+  const insights = [
+    { time: "2s ago", text: "Detected idle load balancer in us-east-1", type: "warning" },
+    { time: "15s ago", text: "Security group sg-0x4f opened to 0.0.0.0/0", type: "critical" },
+    { time: "1m ago", text: "Auto-scaled down dev cluster (saved $12/hr)", type: "success" },
+    { time: "3m ago", text: "Backup completed for prod-db-primary", type: "info" },
+    { time: "5m ago", text: "Reserved instance recommendation: m5.xlarge", type: "savings" },
+  ];
+
   return (
-    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow">
-      <span className="font-medium">{label}</span>
-      <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-        <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+    <div className="space-y-3">
+      {insights.map((insight, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: i * 0.1 }}
+          className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50"
+        >
+          <div className={cn(
+            "w-2 h-2 rounded-full mt-2 flex-shrink-0",
+            insight.type === "critical" && "bg-red-500",
+            insight.type === "warning" && "bg-amber-500",
+            insight.type === "success" && "bg-emerald-500",
+            insight.type === "info" && "bg-blue-500",
+            insight.type === "savings" && "bg-purple-500",
+          )} />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-slate-200 truncate">{insight.text}</p>
+            <p className="text-xs text-slate-500">{insight.time}</p>
                 </div>
+        </motion.div>
+                          ))}
                 </div>
   );
 }
@@ -657,7 +543,7 @@ function AnimatedTaskList() {
           </span>
         </motion.div>
       ))}
-              </div>
+                </div>
   );
 }
 
@@ -675,43 +561,52 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-950">
       
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-32 px-6 overflow-hidden">
+      {/* Hero Section - Headroom Style */}
+      <section className="relative pt-24 pb-32 px-6 overflow-hidden bg-[#faf9f7] dark:bg-slate-950">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            {/* Large Typography with Illustration */}
+            {/* Large Typography with Typing Effect */}
             <div className="relative mb-8">
-              <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tight text-gray-200 dark:text-gray-800 leading-none">
-                CLOUD ON
+              <h1 className="text-5xl md:text-7xl lg:text-[8rem] font-black tracking-tight leading-[0.95]">
+                <span className="text-gray-300 dark:text-gray-700">CLOUD ON</span>
                 <br />
-                AUTOPILOT
+                <span className="text-gray-900 dark:text-gray-100">
+                  <TypeWriter 
+                    texts={[
+                      "AUTOPILOT",
+                      "OBSERVABILITY", 
+                      "AUTOMATION",
+                      "FINOPS",
+                      "INTELLIGENCE",
+                      "RELIABILITY"
+                    ]} 
+                  />
+                </span>
               </h1>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <CloudIllustration />
                 </div>
-              </div>
-              
+            
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-xl md:text-2xl font-medium text-gray-900 dark:text-white mb-8"
+              className="text-lg md:text-xl font-medium text-gray-700 dark:text-gray-300 mb-8 max-w-xl mx-auto"
             >
-              Powerful AI that monitors your cloud so you don't have to
+                          Cut costs. Reduce risk. Sleep better.
+
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+              className="flex flex-col sm:flex-row gap-3 justify-center mb-12"
             >
-              <Button asChild variant="outline" size="lg" className="h-12 px-6 rounded-full">
+              <Button asChild variant="outline" size="lg" className="h-11 px-6 rounded-full border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800">
                 <a href="https://github.com/pratik-mahalle/InfraAudit" target="_blank" rel="noopener">
-                  View on GitHub
+                  Join waitlist
                 </a>
               </Button>
-              <Button asChild size="lg" className="h-12 px-6 bg-blue-600 hover:bg-blue-700 rounded-full">
+              <Button asChild size="lg" className="h-11 px-6 bg-blue-600 hover:bg-blue-700 rounded-full text-white">
                 <Link href="/auth">
                   Get access now
                 </Link>
@@ -774,7 +669,7 @@ export default function HomePage() {
           <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
           </div>
-        
+            
         <div className="max-w-6xl mx-auto relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -804,7 +699,7 @@ export default function HomePage() {
                       </div>
                       </div>
       </section>
-
+      
       {/* All your cloud handled section */}
       <section className="py-24 px-6">
         <div className="max-w-6xl mx-auto">
@@ -814,7 +709,7 @@ export default function HomePage() {
                 All your cloud complexity,
                 <br />
                 handled by InfrAudit
-              </h2>
+            </h2>
               
               <div className="grid grid-cols-3 gap-6 mt-12">
                 {[
@@ -831,229 +726,229 @@ export default function HomePage() {
                 ))}
                     </div>
                   </div>
-
+              
             <DashboardPreview />
                 </div>
               </div>
       </section>
-
-      {/* Always thinking for you */}
-      <section className="py-24 px-6 bg-gray-50 dark:bg-slate-900/50">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+      
+      {/* Always thinking for you - Reimagined */}
+      <section className="py-24 px-6 bg-slate-950 text-white overflow-hidden relative">
+        {/* Background grid */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm mb-6">
+              <Activity className="w-4 h-4" />
+              Always On. Always Learning.
+                </div>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4">
+              Your AI That Never Sleeps
+            </h2>
+            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+              While you're away, InfrAudit continuously analyzes your infrastructure, 
+              finds optimization opportunities, and keeps everything secure.
+            </p>
+          </motion.div>
+          
+          {/* Main Content */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* AI Brain Visualization */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+            >
+              <AIBrainVisualization />
+            </motion.div>
+            
+            {/* Live Insights Feed */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-sm text-slate-400 font-medium">Live Insights Feed</span>
+                </div>
+              <LiveInsightsFeed />
+              
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-slate-800">
                 <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Always thinking for you
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400">
-                InfrAudit enriches your infrastructure data and helps you make smarter decisions.
-              </p>
-              </div>
-              
-            <div className="flex gap-6">
-              <AIThinkingCard />
-              
-              <div className="space-y-4 w-48">
-                <FeatureBadge icon={Users} label="Collaborative" />
-                <FeatureBadge icon={Smartphone} label="Mobile friendly" />
-                <FeatureBadge icon={Bot} label="Powered by AI" />
+                  <div className="text-2xl font-bold text-emerald-400">$47K</div>
+                  <div className="text-xs text-slate-500">Saved this month</div>
                 </div>
+                <div>
+                  <div className="text-2xl font-bold text-blue-400">248</div>
+                  <div className="text-xs text-slate-500">Resources monitored</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-purple-400">99.9%</div>
+                  <div className="text-xs text-slate-500">Uptime maintained</div>
                 </div>
               </div>
-                </div>
-      </section>
-
-      {/* Workflow Section */}
-      <section className="py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Manage any workflow */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
-              <h3 className="text-xl font-bold mb-2">Manage any workflow</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Our AI-powered workflows help you manage any process, from alerts to remediation.
-              </p>
-              <div className="space-y-3">
-                {[
-                  { label: "5 cost alerts pending", color: "border-amber-500" },
-                  { label: "2 security scans running", color: "border-blue-500" },
-                  { label: "1 optimization applied", color: "border-green-500" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className={cn("w-4 h-4 rounded-full border-2", item.color)} />
-                    <span className="text-sm">{item.label}</span>
-                </div>
-                ))}
-              </div>
-            </div>
-
-            {/* One Platform */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 text-center">
-              <div className="h-32 flex items-center justify-center mb-4">
-                <div className="relative">
-                  {[...Array(12)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute w-2 h-2 bg-blue-600 rounded-full"
-                      style={{
-                        left: `${Math.cos(i * 30 * Math.PI / 180) * 40}px`,
-                        top: `${Math.sin(i * 30 * Math.PI / 180) * 40}px`,
-                      }}
-                      animate={{
-                        scale: [1, 1.5, 1],
-                        opacity: [0.5, 1, 0.5],
-                      }}
-                      transition={{
-                        duration: 2,
-                        delay: i * 0.1,
-                        repeat: Infinity,
-                      }}
-                    />
-                  ))}
+            </motion.div>
           </div>
         </div>
-              <h3 className="text-xl font-bold mb-2">One Platform</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                All your cloud providers and data live together. No more juggling dashboards.
+      </section>
+      
+      {/* How It Works Section - Modern Cards */}
+      <section className="py-24 px-6 bg-gray-50 dark:bg-slate-900/30">
+        <div className="max-w-6xl mx-auto">
+          {/* Section Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <span className="inline-block px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-medium mb-4">
+              How it works
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Three steps to cloud clarity
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Get started in minutes. No complex setup required.
             </p>
-          </div>
+          </motion.div>
           
-            {/* Always in the loop */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
-              <h3 className="text-xl font-bold mb-2">Always in the loop</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Send notifications to teammates automatically.
-              </p>
-              <div className="space-y-2">
-                {[
-                  "Your cost alert was triggered",
-                  "Security scan completed",
-                  "New optimization available",
-                  "Monthly report ready",
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    <Mail className="w-4 h-4 text-red-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{item}</span>
-                    </div>
-                ))}
+          {/* Steps */}
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                step: "01",
+                title: "Connect your cloud",
+                description: "Link your AWS, Azure, or GCP accounts with read-only access. Your data never leaves your infrastructure.",
+                color: "from-blue-500 to-cyan-500",
+                features: ["One-click OAuth", "Read-only access", "SOC2 compliant"]
+              },
+              {
+                step: "02", 
+                title: "AI analyzes everything",
+                description: "Our AI scans your resources, identifies waste, security gaps, and optimization opportunities in real-time.",
+                color: "from-violet-500 to-purple-500",
+                features: ["Cost anomalies", "Security risks", "Performance issues"]
+              },
+              {
+                step: "03",
+                title: "Act on insights",
+                description: "Get actionable recommendations with one-click fixes. Automate remediation or review manually.",
+                color: "from-emerald-500 to-teal-500",
+                features: ["Auto-remediation", "Slack alerts", "Weekly reports"]
+              }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                className="relative group"
+              >
+                <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-gray-200 dark:border-gray-800 h-full hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-slate-900/50 transition-all duration-300 hover:-translate-y-1">
+                  {/* Step number with gradient */}
+                  <div className={cn(
+                    "inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br text-white font-bold text-lg mb-6",
+                    item.color
+                  )}>
+                    {item.step}
+                  </div>
+                  
+                  <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+                    {item.description}
+                  </p>
+                  
+                  {/* Feature pills */}
+                  <div className="flex flex-wrap gap-2">
+                    {item.features.map((feature, j) => (
+                      <span 
+                        key={j}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400"
+                      >
+                        {feature}
+                      </span>
+                    ))}
                   </div>
                 </div>
+                
+                {/* Connector line (except last) */}
+                {i < 2 && (
+                  <div className="hidden md:block absolute top-1/2 -right-4 w-8 border-t-2 border-dashed border-gray-300 dark:border-gray-700" />
+                )}
+              </motion.div>
+            ))}
           </div>
+          
+          {/* Testimonial Card */}
         </div>
       </section>
-
-      {/* Big Typography Section */}
-      <section className="py-24 px-6 overflow-hidden relative">
-        <div className="max-w-7xl mx-auto relative">
-          <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-gray-200 dark:text-gray-800 text-center leading-tight">
-            EVERYTHING
-            <br />
-            YOU NEED TO
-            <br />
-            <span className="relative inline-block">
-              SECURE
-              <motion.span
-                className="absolute -bottom-2 left-0 w-full h-1 bg-blue-600"
-                initial={{ scaleX: 0 }}
-                whileInView={{ scaleX: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-              />
-            </span>
-            {" "}YOUR
-            <br />
-            CLOUD
-          </h2>
-          
-          {/* 3D Shield with Cloud */}
-          <motion.div
-            className="absolute right-4 md:right-12 lg:right-24 top-1/2 -translate-y-1/2"
-            animate={{ y: [-10, 10, -10] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      
+      {/* Big Typography Section - Clean & Modern */}
+      <section className="py-40 px-6 relative bg-white dark:bg-slate-950">
+        <div className="max-w-5xl mx-auto text-center">
+          <motion.h2 
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1]"
           >
-            <svg viewBox="0 0 180 220" className="w-36 h-44 md:w-48 md:h-60">
-              <defs>
-                <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#3b82f6" />
-                  <stop offset="50%" stopColor="#2563eb" />
-                  <stop offset="100%" stopColor="#1d4ed8" />
-                </linearGradient>
-                <filter id="shieldShadow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feDropShadow dx="0" dy="8" stdDeviation="12" floodColor="#1d4ed8" floodOpacity="0.3" />
-                </filter>
-              </defs>
-              
-              {/* Shield shape */}
-              <path
-                d="M90 10 L160 40 L160 100 C160 160 90 200 90 200 C90 200 20 160 20 100 L20 40 Z"
-                fill="url(#shieldGradient)"
-                filter="url(#shieldShadow)"
-              />
-              
-              {/* Shield highlight */}
-              <path
-                d="M90 20 L145 45 L145 100 C145 150 90 185 90 185"
-                fill="none"
-                stroke="rgba(255,255,255,0.2)"
-                strokeWidth="2"
-              />
-              
-              {/* Cloud icon inside shield */}
-              <g transform="translate(45, 70)">
-                <path
-                  d="M75 45 C75 35 67 27 55 27 C48 27 42 31 39 37 C32 37 25 43 25 52 C25 61 32 68 42 68 L68 68 C76 68 82 62 82 54 C82 48 79 45 75 45 Z"
-                  fill="white"
-                  opacity="0.95"
-                />
-                
-                {/* Check mark */}
-                <motion.path
-                  d="M42 50 L50 58 L68 40"
-                  fill="none"
-                  stroke="#22c55e"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  initial={{ pathLength: 0 }}
-                  whileInView={{ pathLength: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.8, delay: 0.3 }}
-                />
-              </g>
-              
-              {/* Decorative lines */}
-              <motion.circle
-                cx="90" cy="110" r="60"
-                fill="none"
-                stroke="rgba(255,255,255,0.1)"
-                strokeWidth="1"
-                animate={{ r: [60, 70], opacity: [0.2, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-            </svg>
-          </motion.div>
+            <span className="text-gray-400 dark:text-slate-600">Everything you need to</span>
+            <br />
+            <TypeWriter 
+              texts={[
+                "secure your cloud",
+                "optimize costs",
+                "scale confidently",
+                "automate everything",
+                "monitor 24/7"
+              ]}
+              className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent"
+            />
+            <br />
+            <span className="text-gray-400 dark:text-slate-600">your cloud infrastructure</span>
+          </motion.h2>
           
-          {/* Floating elements */}
-          <motion.div
-            className="absolute left-8 md:left-20 top-20"
-            animate={{ y: [0, -15, 0], rotate: [0, 10, 0] }}
-            transition={{ duration: 5, repeat: Infinity }}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="mt-8 text-lg text-gray-500 dark:text-slate-400 max-w-2xl mx-auto"
           >
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Server className="w-6 h-6 text-white" />
-            </div>
-          </motion.div>
+            One platform. All your clouds. Complete visibility.
+          </motion.p>
           
           <motion.div
-            className="absolute left-16 md:left-32 bottom-20"
-            animate={{ y: [0, 12, 0], rotate: [0, -5, 0] }}
-            transition={{ duration: 4, repeat: Infinity, delay: 0.5 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="mt-10 flex flex-wrap justify-center gap-3"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
-              <Check className="w-5 h-5 text-white" />
-            </div>
+            {["Cost Optimization", "Security Scanning", "Compliance", "Multi-Cloud", "Real-time Alerts"].map((tag, i) => (
+              <span 
+                key={i}
+                className="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700"
+              >
+                {tag}
+              </span>
+            ))}
           </motion.div>
-        </div>
+              </div>
       </section>
       
       {/* Saves hours section */}
@@ -1098,73 +993,11 @@ export default function HomePage() {
               >
                 <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center">
                   <item.icon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                </div>
+              </div>
                 <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
                 <p className="text-gray-600 dark:text-gray-400">{item.description}</p>
               </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
-      
-      {/* Pricing Section */}
-      <section className="py-24 px-6">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Simple, transparent pricing
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Start free, scale as you grow
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Free Plan */}
-            <Card className="p-6">
-              <h3 className="text-xl font-bold mb-2">Community</h3>
-              <p className="text-gray-500 mb-4">Self-hosted, free forever</p>
-              <div className="text-4xl font-bold mb-6">$0</div>
-              <Button asChild variant="outline" className="w-full mb-6">
-                <a href="https://github.com/pratik-mahalle/InfraAudit" target="_blank">
-                  Deploy Self-Hosted
-                </a>
-              </Button>
-              <ul className="space-y-3 text-sm">
-                {["Core features", "Community support", "MIT License"].map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-500" />
-                    {item}
-                  </li>
-                ))}
-                </ul>
-            </Card>
-            
-            {/* Pro Plan */}
-            <Card className="p-6 border-2 border-blue-600 relative">
-              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600">
-                Most Popular
-              </Badge>
-                <h3 className="text-xl font-bold mb-2">Professional</h3>
-              <p className="text-gray-500 mb-4">For growing teams</p>
-              <div className="text-4xl font-bold mb-6">$299<span className="text-lg font-normal text-gray-500">/mo</span></div>
-              <Button asChild className="w-full mb-6 bg-blue-600 hover:bg-blue-700">
-                <Link href="/auth">Start Free Trial</Link>
-                </Button>
-              <ul className="space-y-3 text-sm">
-                {["Up to 500 resources", "AI recommendations", "Slack integration", "Priority support"].map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-500" />
-                    {item}
-                  </li>
-                ))}
-                </ul>
-            </Card>
           </div>
         </div>
       </section>
