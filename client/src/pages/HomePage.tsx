@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Check,
   BarChart3,
@@ -11,953 +13,1197 @@ import {
   DollarSign,
   LineChart,
   ArrowRight,
-  CloudLightning,
   ChevronRight,
   Plus,
-  Quote,
-  Layers,
+  Sparkles,
+  Zap,
+  Cloud,
+  Lock,
+  Bell,
+  TrendingUp,
+  Globe,
+  Server,
+  Database,
+  Cpu,
+  Eye,
+  Target,
+  Rocket,
+  Star,
+  Play,
+  CheckCircle2,
+  ArrowUpRight,
+  Users,
+  Settings,
   AlertTriangle,
-  RefreshCw
+  Activity,
+  Loader2,
+  Search,
+  Home,
+  Building2,
+  FolderKanban,
+  MessageSquare,
+  FileText,
+  Smartphone,
+  Bot,
+  Mail
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-// Import founder photo
-const founderPhoto = "/me.jpg";
+import { cn } from "@/lib/utils";
 
-// Simple brand SVG icons
-const AwsIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <path fill="#FFFFFF" d="M5 7.5c1.2-1 2.8-1.5 4.9-1.5 2.2 0 3.8.5 4.9 1.6.8.8 1.2 1.8 1.2 3 0 1.3-.4 2.3-1.2 3.1-1.1 1.1-2.7 1.7-4.9 1.7-2.1 0-3.7-.5-4.9-1.6C4.3 13 4 12.1 4 10.9c0-1.3.4-2.3 1-3.1zm2 .9c-.4.5-.6 1.1-.6 1.9 0 .8.2 1.5.7 2 .7.7 1.8 1 3.3 1 1.5 0 2.5-.3 3.3-1 .5-.5.7-1.1.7-1.9 0-.8-.2-1.4-.7-1.9-.7-.7-1.8-1-3.3-1-1.5 0-2.6.3-3.4 1z"/>
-  </svg>
-);
-const AzureIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <path fill="#FFFFFF" d="M3 18l8-14 3 5-6 9H3zm10 0l8-4-6-10-2 4 4 6-4 4z"/>
-  </svg>
-);
-const GcpIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <path fill="#FFFFFF" d="M12 2a10 10 0 00-9.33 6.5l3.46.53A6.99 6.99 0 0112 5a7 7 0 015.65 2.87l2.7-2.7A9.97 9.97 0 0012 2zm-9.95 9a10 10 0 001.71 5.51l2.95-1.7A6.99 6.99 0 015 12c0-.33.03-.66.08-.98L2.05 11zm14.3 7.35A7 7 0 017 12H3a10 10 0 0015.17 8.49l-1.77-2.14zM22 12c0-.7-.07-1.38-.21-2.03l-3.46.53c.1.49.15 1 .15 1.5 0 .36-.03.72-.09 1.06l3.48.94c.08-.65.13-1.32.13-2z"/>
-  </svg>
-);
-const TerraformIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <path fill="#FFFFFF" d="M3 4l6 3.5v7L3 11V4zm7 3.5L16 11v7l-6-3.5v-7zM17 11l4 2.3v7L17 18v-7z"/>
-  </svg>
-);
-const HelmIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <path fill="#FFFFFF" d="M12 3l2 3h3l-2 3 2 3h-3l-2 3-2-3H7l2-3-2-3h3l2-3z"/>
-  </svg>
-);
-const GrafanaIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <path fill="#FFFFFF" d="M12 4a8 8 0 108 8 8 8 0 00-8-8zm0 3a5 5 0 11-5 5 5 5 0 015-5z"/>
-  </svg>
-);
-const PrometheusIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <path fill="#FFFFFF" d="M12 2l2 6h4l-3 4 1 6-4-3-4 3 1-6-3-4h4l2-6z"/>
-  </svg>
-);
-const JiraIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-    <path fill="#FFFFFF" d="M3 12l6-6h6l-6 6 3 3-6 6 1-5-4-4zM15 6l6 6-6 6-3-3 3-3-3-3 3-3z"/>
-  </svg>
-);
-
-// Integrations data (icons + brand colors)
-const INTEGRATION_ICONS = [
-  { icon: <HelmIcon />, bg: '#0F6CBD' },
-  { icon: <TerraformIcon />, bg: '#7B42BC' },
-  { icon: <GrafanaIcon />, bg: '#F46800' },
-  { icon: <AzureIcon />, bg: '#0078D4' },
-  { icon: <GcpIcon />, bg: '#1A73E8' },
-  { icon: <JiraIcon />, bg: '#2684FF' },
-  { icon: <PrometheusIcon />, bg: '#E6522C' },
-  { icon: <AwsIcon />, bg: '#FF9900' },
-];
-
-function IntegrationsArc() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(800);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const resize = () => setWidth(el.clientWidth);
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const height = 290;
-  const cx = width / 2;
-  const cy = height * 0.85; // vertical placement of arc (near bottom)
-  const r = Math.min(width, 800) * 0.33; // radius tuned for new height
-  const startDeg = 200;
-  const endDeg = -20;
-
-  const normalizeDeg = (deg: number) => {
-    let d = deg % 360;
-    if (d < 0) d += 360;
-    return d;
-  };
-
-  const toXY = (deg: number) => {
-    const rad = (normalizeDeg(deg) * Math.PI) / 180;
-    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-  };
-
-  // Ensure we traverse the same (clockwise) minor arc as the SVG path
-  const endAdj = endDeg < startDeg ? endDeg + 360 : endDeg;
-  const start = toXY(startDeg);
-  const end = toXY(endAdj);
-  const mid = toXY(startDeg + (endAdj - startDeg) / 2);
-  const pathD = `M ${start.x},${start.y} A ${r},${r} 0 0 1 ${end.x},${end.y}`;
-
+// Marquee component for infinite scroll
+function Marquee({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div ref={ref} className="relative mt-28 md:mt-36 mx-auto max-w-4xl h-[240px]">
-      <svg className="absolute inset-0 w-full h-full integration-fade" viewBox={`0 0 ${width} ${height}`}>
-        <path d={pathD} stroke="rgba(100,116,139,0.25)" className="dark:stroke-[rgba(148,163,184,0.25)]" strokeWidth="2" fill="none" />
-      </svg>
-
-      {/* center logo positioned exactly on the arc midpoint */}
-      <div className="integration-center" style={{ left: `${mid.x}px`, top: `${mid.y}px` }}>
-        <img src="/logo.png" alt="InfraAudit" className="w-10 h-10" />
-      </div>
-
-      {/* evenly spaced icons along the arc */}
-      {INTEGRATION_ICONS.map((b, i) => {
-        const t = i / (INTEGRATION_ICONS.length - 1);
-        const deg = startDeg + (endAdj - startDeg) * t;
-        const p = toXY(deg);
-        return (
-          <div key={i} className="absolute" style={{ left: `${p.x}px`, top: `${p.y}px`, transform: 'translate(-50%, -50%)' }}>
-            <div className="integration-chip integration-chip--circle" style={{ backgroundColor: b.bg }}>
-              {b.icon}
-            </div>
-          </div>
-        );
-      })}
+    <div className={cn("flex overflow-hidden", className)}>
+      <motion.div
+        className="flex gap-8 whitespace-nowrap"
+        animate={{ x: ["0%", "-50%"] }}
+        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+      >
+        {children}
+        {children}
+      </motion.div>
     </div>
   );
 }
 
-// FAQ data structure
-const faqItems = [
-  {
-    question: "What is InfrAudit, and who is it for?",
-    answer: "InfrAudit is a comprehensive cloud infrastructure monitoring platform designed for DevOps teams, cloud engineers, and IT managers who need to maintain security compliance and cost efficiency across AWS, Azure, and Google Cloud environments."
-  },
-  {
-    question: "How does InfrAudit help reduce cloud management risks?",
-    answer: "InfrAudit continuously monitors your cloud infrastructure for security vulnerabilities, cost anomalies, and resource inefficiencies. Our AI-powered analysis detects issues before they become problems, helping to prevent data breaches and unexpected billing spikes."
-  },
-  {
-    question: "Can InfrAudit integrate with our existing systems?",
-    answer: "Yes, InfrAudit provides seamless integration with your existing DevOps toolchain, including Slack, PagerDuty, Jira, and GitHub. We also provide a REST API for custom integrations with your specific workflows and internal systems."
-  },
-  {
-    question: "What makes InfrAudit unique compared to other monitoring tools?",
-    answer: "Unlike competitors who focus on either cost or security, InfrAudit provides comprehensive coverage across all cloud providers with AI-driven insights, interactive visualizations, and customizable alerting—all in one unified dashboard."
-  },
-  {
-    question: "What kind of reports can InfrAudit generate?",
-    answer: "InfrAudit generates detailed cost analysis reports, security compliance audits, resource utilization summaries, and predictive forecasts. All reports are customizable, exportable, and can be scheduled for regular delivery to stakeholders."
-  }
-];
+// Animated typing effect
+function TypeWriter({ texts }: { texts: string[] }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [displayText, setDisplayText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentText = texts[currentIndex];
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        if (displayText.length < currentText.length) {
+          setDisplayText(currentText.slice(0, displayText.length + 1));
+        } else {
+          setTimeout(() => setIsDeleting(true), 2000);
+        }
+      } else {
+        if (displayText.length > 0) {
+          setDisplayText(displayText.slice(0, -1));
+        } else {
+          setIsDeleting(false);
+          setCurrentIndex((prev) => (prev + 1) % texts.length);
+        }
+      }
+    }, isDeleting ? 30 : 80);
+
+    return () => clearTimeout(timeout);
+  }, [displayText, isDeleting, currentIndex, texts]);
+
+  return (
+    <span className="text-blue-600">
+      {displayText}
+      <span className="animate-pulse">|</span>
+    </span>
+  );
+}
+
+// Premium Globe Illustration with Network Effect
+function CloudIllustration() {
+  return (
+    <div className="relative w-full max-w-md mx-auto">
+      <svg viewBox="0 0 400 400" className="w-full h-auto">
+        <defs>
+          {/* Gradient for the globe */}
+          <linearGradient id="globeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.9" />
+            <stop offset="50%" stopColor="#2563eb" stopOpacity="1" />
+            <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.9" />
+          </linearGradient>
+          
+          {/* Glow effect */}
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="8" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          
+          {/* Inner shadow */}
+          <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur" />
+            <feOffset dy="2" dx="2" />
+            <feComposite in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowDiff" />
+            <feFlood floodColor="#1e3a8a" floodOpacity="0.3" />
+            <feComposite in2="shadowDiff" operator="in" />
+            <feComposite in2="SourceGraphic" operator="over" />
+          </filter>
+        </defs>
+        
+        {/* Outer glow ring */}
+        <circle cx="200" cy="200" r="145" fill="none" stroke="#3b82f6" strokeWidth="1" opacity="0.2" />
+        <circle cx="200" cy="200" r="160" fill="none" stroke="#3b82f6" strokeWidth="0.5" opacity="0.1" />
+        
+        {/* Main globe */}
+        <circle cx="200" cy="200" r="130" fill="url(#globeGradient)" filter="url(#innerShadow)" />
+        
+        {/* Grid lines - horizontal */}
+        {[0.3, 0.5, 0.7].map((pos, i) => (
+          <ellipse
+            key={`h-${i}`}
+            cx="200"
+            cy={200 + (pos - 0.5) * 200}
+            rx={130 * Math.sqrt(1 - Math.pow(pos - 0.5, 2) * 4)}
+            ry="8"
+            fill="none"
+            stroke="rgba(255,255,255,0.15)"
+            strokeWidth="1"
+          />
+        ))}
+        
+        {/* Grid lines - vertical */}
+        <ellipse cx="200" cy="200" rx="40" ry="130" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+        <ellipse cx="200" cy="200" rx="80" ry="130" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+        <ellipse cx="200" cy="200" rx="130" ry="130" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+        
+        {/* Central dashboard card */}
+        <g filter="url(#glow)">
+          <rect x="155" y="155" width="90" height="70" rx="12" fill="#1e40af" />
+          <rect x="155" y="155" width="90" height="70" rx="12" fill="rgba(255,255,255,0.1)" />
+          
+          {/* Card content - lines */}
+          <rect x="167" y="170" width="45" height="6" rx="3" fill="rgba(255,255,255,0.4)" />
+          <rect x="167" y="182" width="55" height="6" rx="3" fill="rgba(255,255,255,0.25)" />
+          <rect x="167" y="194" width="35" height="6" rx="3" fill="rgba(255,255,255,0.25)" />
+          
+          {/* Status indicators */}
+          <circle cx="225" cy="173" r="4" fill="#22c55e" />
+          <circle cx="225" cy="185" r="4" fill="#22c55e" />
+          <circle cx="225" cy="197" r="4" fill="#eab308" />
+        </g>
+        
+        {/* Floating nodes - AWS */}
+        <motion.g
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <circle cx="95" cy="140" r="20" fill="#ff9900" />
+          <text x="95" y="145" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">λ</text>
+        </motion.g>
+        
+        {/* Floating nodes - Azure */}
+        <motion.g
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+        >
+          <circle cx="305" cy="160" r="18" fill="#0078d4" />
+          <path d="M297 160 L305 152 L313 160 L305 168 Z" fill="white" />
+        </motion.g>
+        
+        {/* Floating nodes - GCP */}
+        <motion.g
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        >
+          <circle cx="120" cy="280" r="16" fill="#4285f4" />
+          <circle cx="120" cy="280" r="6" fill="white" />
+        </motion.g>
+        
+        {/* Floating nodes - Kubernetes */}
+        <motion.g
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+        >
+          <circle cx="290" cy="270" r="17" fill="#326ce5" />
+          <path d="M290 258 L296 266 L296 278 L290 286 L284 278 L284 266 Z" fill="white" fillOpacity="0.9" />
+        </motion.g>
+        
+        {/* Connection lines */}
+        <motion.line
+          x1="115" y1="140" x2="155" y2="175"
+          stroke="rgba(255,153,0,0.4)"
+          strokeWidth="2"
+          strokeDasharray="4 4"
+          animate={{ strokeDashoffset: [0, -16] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+        />
+        <motion.line
+          x1="287" y1="160" x2="245" y2="180"
+          stroke="rgba(0,120,212,0.4)"
+          strokeWidth="2"
+          strokeDasharray="4 4"
+          animate={{ strokeDashoffset: [0, -16] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.3 }}
+        />
+        <motion.line
+          x1="136" y1="275" x2="165" y2="220"
+          stroke="rgba(66,133,244,0.4)"
+          strokeWidth="2"
+          strokeDasharray="4 4"
+          animate={{ strokeDashoffset: [0, -16] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.6 }}
+        />
+        <motion.line
+          x1="273" y1="265" x2="240" y2="215"
+          stroke="rgba(50,108,229,0.4)"
+          strokeWidth="2"
+          strokeDasharray="4 4"
+          animate={{ strokeDashoffset: [0, -16] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.9 }}
+        />
+        
+        {/* Orbiting particle */}
+        <motion.circle
+          cx="200"
+          cy="200"
+          r="6"
+          fill="#60a5fa"
+          filter="url(#glow)"
+          animate={{
+            cx: [200, 330, 200, 70, 200],
+            cy: [70, 200, 330, 200, 70],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+        />
+      </svg>
+    </div>
+  );
+}
+
+// AI Agent Illustration for Meet section
+function AIAgentIllustration() {
+  return (
+    <div className="relative">
+      <svg viewBox="0 0 200 200" className="w-48 h-48 mx-auto">
+        <defs>
+          <linearGradient id="agentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#60a5fa" />
+            <stop offset="100%" stopColor="#3b82f6" />
+          </linearGradient>
+          <filter id="agentGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        
+        {/* Background circle */}
+        <circle cx="100" cy="100" r="90" fill="rgba(255,255,255,0.1)" />
+        <circle cx="100" cy="100" r="80" fill="rgba(255,255,255,0.05)" />
+        
+        {/* Robot head */}
+        <rect x="55" y="50" width="90" height="75" rx="16" fill="white" />
+        
+        {/* Antenna */}
+        <motion.g
+          animate={{ rotate: [-5, 5, -5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{ transformOrigin: "100px 50px" }}
+        >
+          <line x1="100" y1="50" x2="100" y2="30" stroke="white" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="100" cy="25" r="6" fill="#60a5fa" filter="url(#agentGlow)" />
+        </motion.g>
+        
+        {/* Eyes */}
+        <motion.g
+          animate={{ scaleY: [1, 0.1, 1] }}
+          transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+        >
+          <rect x="70" y="70" width="20" height="20" rx="4" fill="#1e40af" />
+          <rect x="110" y="70" width="20" height="20" rx="4" fill="#1e40af" />
+          
+          {/* Eye glow */}
+          <rect x="73" y="73" width="8" height="8" rx="2" fill="#60a5fa" />
+          <rect x="113" y="73" width="8" height="8" rx="2" fill="#60a5fa" />
+        </motion.g>
+        
+        {/* Mouth - scanning line */}
+        <motion.rect
+          x="75" y="100"
+          width="50" height="6"
+          rx="3"
+          fill="#3b82f6"
+          animate={{ opacity: [0.5, 1, 0.5], width: [30, 50, 30], x: [85, 75, 85] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        />
+        
+        {/* Body */}
+        <rect x="65" y="130" width="70" height="45" rx="12" fill="white" />
+        
+        {/* Chest indicator */}
+        <motion.circle
+          cx="100" cy="152"
+          r="10"
+          fill="#3b82f6"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        <circle cx="100" cy="152" r="5" fill="white" />
+        
+        {/* Side panels */}
+        <rect x="45" y="140" width="15" height="25" rx="4" fill="rgba(255,255,255,0.8)" />
+        <rect x="140" y="140" width="15" height="25" rx="4" fill="rgba(255,255,255,0.8)" />
+        
+        {/* Signal waves */}
+        <motion.circle
+          cx="100" cy="100" r="95"
+          fill="none"
+          stroke="rgba(255,255,255,0.2)"
+          strokeWidth="1"
+          animate={{ r: [95, 110], opacity: [0.3, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+        <motion.circle
+          cx="100" cy="100" r="95"
+          fill="none"
+          stroke="rgba(255,255,255,0.2)"
+          strokeWidth="1"
+          animate={{ r: [95, 110], opacity: [0.3, 0] }}
+          transition={{ duration: 2, repeat: Infinity, delay: 0.7 }}
+        />
+      </svg>
+      
+      {/* Floating data points */}
+      <motion.div
+        className="absolute top-4 right-0 bg-white/20 backdrop-blur px-3 py-1 rounded-full text-white text-xs"
+        animate={{ y: [0, -5, 0] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      >
+        scanning...
+      </motion.div>
+                              </div>
+  );
+}
+
+// Product Demo Card - Dashboard Preview
+function DashboardPreview() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+      className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden max-w-5xl mx-auto"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+            <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
+              <Cloud className="w-4 h-4 text-white" />
+                              </div>
+            <span className="font-medium text-sm">InfrAudit</span>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+                            </div>
+                          </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="gap-2">
+            <Plus className="w-4 h-4" />
+            Add Provider
+          </Button>
+          <div className="flex -space-x-2">
+            {["O", "C", "M"].map((letter, i) => (
+              <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-medium border-2 border-white dark:border-gray-900">
+                {letter}
+                              </div>
+            ))}
+            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-xs font-medium border-2 border-white dark:border-gray-900">
+              +7
+                            </div>
+                          </div>
+                    </div>
+                        </div>
+                        
+      {/* Sidebar + Content */}
+      <div className="flex">
+        {/* Sidebar */}
+        <div className="w-48 border-r border-gray-100 dark:border-gray-800 p-4 hidden md:block">
+          <nav className="space-y-1">
+            {[
+              { icon: Home, label: "Dashboard", active: true },
+              { icon: Server, label: "Resources" },
+              { icon: Shield, label: "Security" },
+              { icon: DollarSign, label: "Costs" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
+                  item.active
+                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                )}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+                            </div>
+                          ))}
+          </nav>
+
+          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <p className="text-xs font-medium text-gray-400 mb-2 px-3">PROVIDERS</p>
+            <nav className="space-y-1">
+              {[
+                { label: "AWS", color: "bg-[#FF9900]" },
+                { label: "Azure", color: "bg-[#0078D4]" },
+                { label: "GCP", color: "bg-[#4285F4]" },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <div className={cn("w-3 h-3 rounded-sm", item.color)} />
+                  {item.label}
+                    </div>
+              ))}
+            </nav>
+            </div>
+          </div>
+          
+        {/* Main Content */}
+        <div className="flex-1 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold">Cloud Resources</h2>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="gap-1">
+                <div className="w-2 h-2 rounded-full bg-amber-500" />
+                12 Alerts
+              </Badge>
+              <Badge variant="outline" className="gap-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                248 Resources
+              </Badge>
+              </div>
+            </div>
+            
+          {/* Table */}
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-800/50">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Resource</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Provider</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
+                    Status<Badge variant="secondary" className="ml-1 text-[10px] px-1">AI</Badge>
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
+                    Cost<Badge variant="secondary" className="ml-1 text-[10px] px-1">AI</Badge>
+                  </th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {[
+                  { name: "prod-api-server", provider: "AWS", providerColor: "bg-[#FF9900]", status: "Healthy", statusColor: "text-green-600", cost: "$142/mo" },
+                  { name: "analytics-db", provider: "GCP", providerColor: "bg-[#4285F4]", status: "Warning", statusColor: "text-amber-600", cost: "$89/mo" },
+                  { name: "cdn-assets", provider: "Azure", providerColor: "bg-[#0078D4]", status: "Healthy", statusColor: "text-green-600", cost: "$34/mo" },
+                ].map((row, i) => (
+                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <td className="px-4 py-3 font-medium">{row.name}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className={cn("w-3 h-3 rounded-sm", row.providerColor)} />
+                        {row.provider}
+              </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={cn("font-medium", row.statusColor)}>{row.status}</span>
+                    </td>
+                    <td className="px-4 py-3">{row.cost}</td>
+                    <td className="px-4 py-3">
+                      <Button size="sm" variant="ghost">View</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            </div>
+            
+          {/* AI Scanning Notice */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/50"
+          >
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Bot className="w-4 h-4 text-white" />
+              </div>
+            <span className="text-sm text-blue-700 dark:text-blue-300">
+              InfrAudit is scanning for cost optimization opportunities...
+            </span>
+            <Loader2 className="w-4 h-4 text-blue-600 animate-spin ml-auto" />
+          </motion.div>
+            </div>
+              </div>
+    </motion.div>
+  );
+}
+
+// AI Thinking Card Component
+function AIThinkingCard() {
+  const [thinkingStates, setThinkingStates] = useState({
+    cost: "Analyzing...",
+    security: "Checking...",
+    action: "Thinking..."
+  });
+
+  useEffect(() => {
+    const timer1 = setTimeout(() => setThinkingStates(prev => ({ ...prev, cost: "$2,340 potential savings" })), 2000);
+    const timer2 = setTimeout(() => setThinkingStates(prev => ({ ...prev, security: "3 vulnerabilities found" })), 3500);
+    const timer3 = setTimeout(() => setThinkingStates(prev => ({ ...prev, action: "Rightsize 12 instances" })), 5000);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, []);
+
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 p-6 max-w-md">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
+          <span className="text-gray-500">Monthly Cost</span>
+          <div className="flex items-center gap-2">
+            {thinkingStates.cost === "Analyzing..." ? (
+              <>
+                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                <span className="text-gray-400">Analyzing...</span>
+              </>
+            ) : (
+              <span className="font-semibold text-green-600">{thinkingStates.cost}</span>
+            )}
+                </div>
+                </div>
+        <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
+          <span className="text-gray-500">Security Status</span>
+          <div className="flex items-center gap-2">
+            {thinkingStates.security === "Checking..." ? (
+              <>
+                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                <span className="text-gray-400">Checking...</span>
+              </>
+            ) : (
+              <span className="font-semibold text-amber-600">{thinkingStates.security}</span>
+            )}
+              </div>
+                </div>
+        <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
+          <span className="text-gray-500">Recommended action</span>
+          <div className="flex items-center gap-2">
+            {thinkingStates.action === "Thinking..." ? (
+              <>
+                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                <span className="text-gray-400">Thinking...</span>
+              </>
+            ) : (
+              <span className="font-semibold text-blue-600">{thinkingStates.action}</span>
+            )}
+                </div>
+              </div>
+        <div className="flex items-center justify-between py-3">
+          <span className="text-gray-500">Assigned to</span>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs">
+              O
+                </div>
+            <span className="font-medium">Olivia Chen</span>
+                </div>
+              </div>
+            </div>
+    </div>
+  );
+}
+
+// Feature Badge Component
+function FeatureBadge({ icon: Icon, label }: { icon: any; label: string }) {
+  return (
+    <div className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow">
+      <span className="font-medium">{label}</span>
+      <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+        <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                </div>
+                </div>
+  );
+}
+
+// Animated Task List
+function AnimatedTaskList() {
+  const tasks = [
+    "Detected 3 idle EC2 instances",
+    "Found unused EBS volumes",
+    "Identified over-provisioned RDS",
+    "Flagged public S3 bucket",
+    "Analyzed cost anomaly spike",
+    "Generated savings report",
+    "Scheduled resource cleanup",
+    "Sent Slack notification",
+  ];
+
+  return (
+    <div className="space-y-3">
+      {tasks.map((task, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: i * 0.15 }}
+          className="flex items-center gap-3"
+        >
+          <CheckCircle2 className="w-5 h-5 text-white" />
+          <span className={cn(
+            "text-white/90",
+            i > 4 && "text-white/60"
+          )}>
+            {task}
+          </span>
+        </motion.div>
+      ))}
+              </div>
+  );
+}
 
 export default function HomePage() {
   const { user } = useAuth();
-  const [email, setEmail] = useState("");
-  const [expandedFaqs, setExpandedFaqs] = useState<number[]>([]);
-  
-  // Add scroll animation hooks
-  const [scrollY, setScrollY] = useState(0);
-  
-  // Toggle FAQ expansion
-  const toggleFaq = (index: number) => {
-    setExpandedFaqs(prev => 
-      prev.includes(index)
-        ? prev.filter(i => i !== index)
-        : [...prev, index]
-    );
-  };
-  
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-    
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-  
-  // Redirect to dashboard if already logged in
+  const [prompt, setPrompt] = useState("");
   const [, setLocation] = useLocation();
-  
+
   useEffect(() => {
     if (user) {
       setLocation("/dashboard");
     }
   }, [user, setLocation]);
-  
-  return (
-    <div className="flex flex-col min-h-screen">
-      
-      {/* Hero Section with animated background */}
-      <section className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 relative overflow-hidden">
-        {/* animated background overlay */}
-        <div className="pointer-events-none absolute inset-0 opacity-70 dark:opacity-40 [mask-image:radial-gradient(50%_50%_at_50%_10%,black,transparent)]">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.15),transparent_60%)] dark:bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.25),transparent_60%)]" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-3xl bg-primary/10" />
-          {/* orbits */}
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 hero-orbit" style={{ ['--orbit-radius' as any]: '200px' }}>
-            <div className="hero-dot" style={{ ['--speed' as any]: '34s' }} />
-          </div>
-          <div className="absolute bottom-14 left-1/2 -translate-x-1/2 hero-orbit" style={{ ['--orbit-radius' as any]: '160px' }}>
-            <div className="hero-dot hero-dot--emerald" style={{ ['--speed' as any]: '26s' }} />
-          </div>
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 hero-orbit" style={{ ['--orbit-radius' as any]: '120px' }}>
-            <div className="hero-dot hero-dot--violet" style={{ ['--speed' as any]: '20s' }} />
-          </div>
-          {/* particles */}
-          <div className="particle" style={{ left: '30%', bottom: '160px', ['--dur' as any]: '9s', ['--delay' as any]: '0.4s' }} />
-          <div className="particle particle--violet" style={{ left: '55%', bottom: '190px', ['--dur' as any]: '7s', ['--delay' as any]: '1.1s' }} />
-          <div className="particle particle--emerald" style={{ left: '48%', bottom: '210px', ['--dur' as any]: '6.5s', ['--delay' as any]: '0.7s' }} />
-          <div className="particle" style={{ left: '65%', bottom: '150px', ['--dur' as any]: '8.5s', ['--delay' as any]: '0.9s' }} />
-          <div className="hero-bowl" />
-        </div>
-        <div className="max-w-6xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row items-center gap-12">
-            <div className="md:w-1/2">
 
-              
-              <div className="inline-flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                  Open Source
-                </span>
-              </div>
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
-                <span className="bg-gradient-to-r from-primary to-blue-600 dark:from-primary dark:to-blue-400 bg-clip-text text-transparent">Cloud Monitoring Made</span> <br />
-                <span className="relative">
-                  Effortless through AI
-                </span>
+  return (
+    <div className="flex flex-col min-h-screen bg-white dark:bg-slate-950">
+      
+      {/* Hero Section */}
+      <section className="relative pt-20 pb-32 px-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            {/* Large Typography with Illustration */}
+            <div className="relative mb-8">
+              <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tight text-gray-200 dark:text-gray-800 leading-none">
+                CLOUD ON
+                <br />
+                AUTOPILOT
               </h1>
-              
-              <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">
-                AI-powered platform to monitor, secure, and optimize your cloud infrastructure across all providers.
-              </p>
-              
-              <p className="text-sm text-gray-500 dark:text-gray-400 italic mb-4">
-                Tailor-made for DevOps and Cloud Engineering teams
-              </p>
-              
-              <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-100 dark:border-blue-900/50">
-                <p className="text-sm text-blue-700 dark:text-blue-300 flex items-center">
-                  <Check className="h-4 w-4 mr-2 text-green-500 flex-shrink-0" />
-                  Companies using InfrAudit save an average of{' '}<span tabIndex={0} className="font-bold">32%</span>{' '}on cloud costs
-                </p>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <CloudIllustration />
+                </div>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                <Button asChild size="lg" className="h-12 px-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600">
-                  <Link href="/roi-calculator" className="flex items-center">
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    Calculate Your Cloud Savings
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="h-12 px-6">
-                  <Link href="/auth">
-                    Get Started
-                  </Link>
-                </Button>
-                <a
-                  href="https://github.com/thedevopsguy/InfraAudit"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center h-12 px-6 rounded-md border text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-                >
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-xl md:text-2xl font-medium text-gray-900 dark:text-white mb-8"
+            >
+              Powerful AI that monitors your cloud so you don't have to
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+            >
+              <Button asChild variant="outline" size="lg" className="h-12 px-6 rounded-full">
+                <a href="https://github.com/pratik-mahalle/InfraAudit" target="_blank" rel="noopener">
                   View on GitHub
                 </a>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-3 mb-8 mt-6">
-                <div className="flex-grow group">
-                  <Input 
-                    type="email" 
-                    placeholder="contact@infraudit.io" 
-                    className="w-full h-12 transition-all duration-300 group-hover:border-primary" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <Button className="h-12 px-6 relative overflow-hidden group"
-                  onClick={() => {
-                    window.location.href = "mailto:info@infraudit.dev?subject=Schedule InfrAudit Demo";
-                  }}
-                >
-                  <span className="relative z-10 flex items-center">
-                    Schedule Demo
-                    <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </span>
-                </Button>
-              </div>
-            </div>
-            
-            <div className="md:w-1/2">
-              <div className="relative">
-                <div className="absolute -top-5 -left-5 w-20 h-20 bg-blue-100 dark:bg-blue-900/20 rounded-lg z-0"></div>
-                <div className="absolute -bottom-5 -right-5 w-20 h-20 bg-green-100 dark:bg-green-900/20 rounded-lg z-0"></div>
-                <div className="relative z-10 bg-white dark:bg-gray-800 shadow-xl rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
-                    <div className="flex gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    </div>
-                    <div className="flex gap-4">
-                      <Tabs defaultValue="dashboard">
-                        <TabsList>
-                          <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
-                          <TabsTrigger value="cost" className="text-xs">Cost Analysis</TabsTrigger>
-                          <TabsTrigger value="security" className="text-xs">Security</TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-                    </div>
-                  </div>
-                  
-                  <div className="p-2">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-                      <Card className="bg-blue-50 dark:bg-blue-950/30 p-3">
-                        <CardContent className="p-0">
-                          <div className="flex flex-col">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Resources</span>
-                            <span className="text-xl font-bold dark:text-white">248</span>
-                            <div className="w-full h-8 mt-2">
-                              <div className="w-full h-[2px] bg-gray-200 dark:bg-gray-700 relative">
-                                <div className="absolute h-[2px] bg-blue-500 left-0 top-0 w-3/4"></div>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="bg-green-50 dark:bg-green-950/30 p-3">
-                        <CardContent className="p-0">
-                          <div className="flex flex-col">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Compliance</span>
-                            <span className="text-xl font-bold dark:text-white">94%</span>
-                            <div className="w-full h-8 mt-2">
-                              <div className="w-full h-[2px] bg-gray-200 dark:bg-gray-700 relative">
-                                <div className="absolute h-[2px] bg-green-500 left-0 top-0 w-[94%]"></div>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="bg-amber-50 dark:bg-amber-950/30 p-3 col-span-2 md:col-span-1">
-                        <CardContent className="p-0">
-                          <div className="flex flex-col">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">Savings</span>
-                            <span className="text-xl font-bold dark:text-white">$3,240</span>
-                            <div className="w-full h-8 mt-2">
-                              <div className="w-full h-[2px] bg-gray-200 dark:bg-gray-700 relative">
-                                <div className="absolute h-[2px] bg-amber-500 left-0 top-0 w-1/2"></div>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                    
-                    <Card className="bg-gray-50 dark:bg-gray-900 mb-3">
-                      <CardContent className="p-3">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="font-medium">Cost Analysis</h3>
-                          <Tabs defaultValue="month" className="h-7">
-                            <TabsList className="h-7">
-                              <TabsTrigger value="week" className="text-xs h-6 px-2">Week</TabsTrigger>
-                              <TabsTrigger value="month" className="text-xs h-6 px-2">Month</TabsTrigger>
-                              <TabsTrigger value="year" className="text-xs h-6 px-2">Year</TabsTrigger>
-                            </TabsList>
-                          </Tabs>
-                        </div>
-                        
-                        <div className="h-32 flex items-end justify-between">
-                          {[40, 65, 35, 85, 45, 75, 55].map((height, i) => (
-                            <div key={i} className="h-full flex flex-col justify-end items-center">
-                              <div
-                                className="w-6 bg-blue-200 dark:bg-blue-700 rounded-sm"
-                                style={{ height: `${height}%` }}
-                              ></div>
-                              <span className="text-xs mt-1">{String.fromCharCode(65 + i)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <div className="flex items-center gap-1 text-sm text-primary">
-                      <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
-                      <span>Anomaly detected: EC2 instance spike in us-east-1</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="flex flex-col items-center text-center">
-              <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
-                <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h3 className="font-medium mb-1">Security Monitoring</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Continuous security drift detection & compliance checks</p>
-            </div>
-            
-            <div className="flex flex-col items-center text-center">
-              <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-                <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-              <h3 className="font-medium mb-1">Cost Optimization</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">AI-driven cost reduction and usage optimization</p>
-            </div>
-            
-            <div className="flex flex-col items-center text-center">
-              <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
-                <BarChart3 className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-              </div>
-              <h3 className="font-medium mb-1">Resource Monitoring</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Multi-cloud resource inventory and tracking</p>
-            </div>
-            
-            <div className="flex flex-col items-center text-center">
-              <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-4">
-                <LineChart className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <h3 className="font-medium mb-1">Predictive Analysis</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">ML-powered cost forecasting and anomaly detection</p>
-            </div>
-          </div>
-        </div>
-      </section>
-      
+              </Button>
+              <Button asChild size="lg" className="h-12 px-6 bg-blue-600 hover:bg-blue-700 rounded-full">
+                <Link href="/auth">
+                  Get access now
+                </Link>
+              </Button>
+            </motion.div>
 
-      {/* Features Section */}
-      <section id="features" className="w-full py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
-              All-in-One Cloud Management Solution
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              InfrAudit provides comprehensive tools to monitor, secure, and optimize your entire cloud infrastructure.
-            </p>
-          </div>
+            {/* AI Prompt Input */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="max-w-2xl mx-auto"
+            >
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center justify-center gap-2">
+                Connect your cloud, get instant insights
+                <span className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center text-[10px] text-gray-400">?</span>
+              </p>
+              <div className="relative">
+                <Textarea
+                  placeholder="I need to optimize my AWS costs and find security vulnerabilities..."
+                  className="min-h-[80px] pr-24 rounded-xl border-gray-300 dark:border-gray-700 resize-none"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                />
+                <Button 
+                  className="absolute bottom-3 right-3 rounded-lg"
+                  onClick={() => setLocation("/auth")}
+                >
+                  Analyze
+                </Button>
+                </div>
+            </motion.div>
+              </div>
+            </div>
+      </section>
+
+      {/* Dashboard Preview Section */}
+      <section className="py-20 px-6 bg-gray-50 dark:bg-slate-900/50">
+        <div className="max-w-7xl mx-auto">
+          <DashboardPreview />
           
-          <div className="grid md:grid-cols-2 gap-12">
-            <div className="flex flex-col gap-8">
-              <div className="flex gap-4">
-                <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                  <Check className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-medium mb-2">Multi-Cloud Support</h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Unified monitoring for AWS, Azure, and Google Cloud with a single dashboard.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-4">
-                <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                  <Check className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-medium mb-2">Security Drift Detection</h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Identify security configuration drift before it becomes a vulnerability.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-4">
-                <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                  <Check className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-medium mb-2">Cost Anomaly Detection</h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    AI-powered detection of unusual spending patterns with instant alerting.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-8">
-              <div className="flex gap-4">
-                <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                  <Check className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-medium mb-2">Interactive Cost Analysis</h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Drill down into cost data with interactive visualizations and period comparisons.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-4">
-                <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                  <Check className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-medium mb-2">Slack Integration</h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Real-time notifications and alerts directly to your team channels.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex gap-4">
-                <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                  <Check className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-medium mb-2">Resource Rightsizing</h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Automated recommendations for optimizing underutilized resources.
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Marquee */}
+          <div className="mt-16 text-center">
+            <p className="text-sm text-gray-400 mb-4">Trusted by DevOps teams worldwide</p>
+            <Marquee className="py-4">
+              {["AWS", "Azure", "GCP", "Kubernetes", "Terraform", "Docker", "Jenkins", "GitHub"].map((item) => (
+                <span key={item} className="text-gray-300 dark:text-gray-600 text-lg font-medium px-4">
+                  {item}
+                </span>
+              ))}
+            </Marquee>
           </div>
         </div>
       </section>
       
-      {/* What Makes Us Unique */}
-      <section className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
-              What Makes InfrAudit Different
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              We're not just another cloud monitoring tool
-            </p>
+      {/* Meet InfrAudit Section */}
+      <section className="py-24 px-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
           </div>
+        
+        <div className="max-w-6xl mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <p className="text-blue-200 mb-2 font-medium">Meet InfrAudit</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Your AI assistant that monitors your cloud 24/7,
+              <br />
+              so you can focus on building
+            </h2>
+          </motion.div>
           
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-1 rounded-xl shadow-xl">
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-8">
-                  <div className="space-y-6">
-                    <div className="flex items-start gap-4">
-                      <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0 mt-1">
-                        <span className="font-bold text-blue-600 dark:text-blue-400">1</span>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <AIAgentIllustration />
+            </motion.div>
+
+            <AnimatedTaskList />
                       </div>
+                      </div>
+      </section>
+
+      {/* All your cloud handled section */}
+      <section className="py-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
                       <div>
-                        <h3 className="text-xl font-medium mb-2">True Multi-Cloud Integration</h3>
-                        <p className="text-gray-600 dark:text-gray-300">
-                          Unlike competitors who prioritize one cloud provider, InfrAudit delivers equal depth of features across AWS, Azure, and Google Cloud from day one.
-                        </p>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                All your cloud complexity,
+                <br />
+                handled by InfrAudit
+              </h2>
+              
+              <div className="grid grid-cols-3 gap-6 mt-12">
+                {[
+                  { icon: Zap, text: "InfrAudit quickly takes action for you, because manual monitoring is slow" },
+                  { icon: Eye, text: "InfrAudit tracks, follows up, and alerts you while you build features" },
+                  { icon: Shield, text: "Rest easy knowing your infrastructure is secure without constant checking" },
+                ].map((item, i) => (
+                  <div key={i} className="text-center">
+                    <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                      <item.icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                       </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-4">
-                      <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0 mt-1">
-                        <span className="font-bold text-blue-600 dark:text-blue-400">2</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.text}</p>
                       </div>
-                      <div>
-                        <h3 className="text-xl font-medium mb-2">AI-Driven Insights</h3>
-                        <p className="text-gray-600 dark:text-gray-300">
-                          Our advanced machine learning algorithms don't just detect issues—they predict them before they happen, with 87% accuracy in cost spike prediction.
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-4">
-                      <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0 mt-1">
-                        <span className="font-bold text-blue-600 dark:text-blue-400">3</span>
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-medium mb-2">Interactive Drill-Down Analytics</h3>
-                        <p className="text-gray-600 dark:text-gray-300">
-                          InfrAudit provides detailed, interactive visualizations that let you explore cost and security data by clicking on any element to reveal deeper insights.
-                        </p>
-                      </div>
+                ))}
                     </div>
                   </div>
+
+            <DashboardPreview />
                 </div>
               </div>
-            </div>
-            
-            <div className="space-y-8">
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30">
-                  <DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />
-                </div>
+      </section>
+
+      {/* Always thinking for you */}
+      <section className="py-24 px-6 bg-gray-50 dark:bg-slate-900/50">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
                 <div>
-                  <h3 className="text-xl font-medium mb-2">23% Average Cost Savings</h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Our customers see an average of 23% reduction in cloud spending within the first quarter after implementation.
-                  </p>
-                </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Always thinking for you
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400">
+                InfrAudit enriches your infrastructure data and helps you make smarter decisions.
+              </p>
               </div>
               
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="flex gap-6">
+              <AIThinkingCard />
+              
+              <div className="space-y-4 w-48">
+                <FeatureBadge icon={Users} label="Collaborative" />
+                <FeatureBadge icon={Smartphone} label="Mobile friendly" />
+                <FeatureBadge icon={Bot} label="Powered by AI" />
                 </div>
-                <div>
-                  <h3 className="text-xl font-medium mb-2">94% Security Compliance</h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    InfrAudit users maintain an average of 94% compliance with industry security standards, compared to the industry average of 71%.
-                  </p>
                 </div>
               </div>
-              
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                  <BarChart3 className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                 </div>
-                <div>
-                  <h3 className="text-xl font-medium mb-2">5x Faster Issue Resolution</h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Teams using InfrAudit resolve infrastructure issues 5 times faster than teams using traditional monitoring tools.
-                  </p>
+      </section>
+
+      {/* Workflow Section */}
+      <section className="py-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Manage any workflow */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+              <h3 className="text-xl font-bold mb-2">Manage any workflow</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Our AI-powered workflows help you manage any process, from alerts to remediation.
+              </p>
+              <div className="space-y-3">
+                {[
+                  { label: "5 cost alerts pending", color: "border-amber-500" },
+                  { label: "2 security scans running", color: "border-blue-500" },
+                  { label: "1 optimization applied", color: "border-green-500" },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className={cn("w-4 h-4 rounded-full border-2", item.color)} />
+                    <span className="text-sm">{item.label}</span>
                 </div>
+                ))}
               </div>
             </div>
+
+            {/* One Platform */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800 text-center">
+              <div className="h-32 flex items-center justify-center mb-4">
+                <div className="relative">
+                  {[...Array(12)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-2 h-2 bg-blue-600 rounded-full"
+                      style={{
+                        left: `${Math.cos(i * 30 * Math.PI / 180) * 40}px`,
+                        top: `${Math.sin(i * 30 * Math.PI / 180) * 40}px`,
+                      }}
+                      animate={{
+                        scale: [1, 1.5, 1],
+                        opacity: [0.5, 1, 0.5],
+                      }}
+                      transition={{
+                        duration: 2,
+                        delay: i * 0.1,
+                        repeat: Infinity,
+                      }}
+                    />
+                  ))}
           </div>
         </div>
-      </section>
-      
-      {/* Testimonials Section */}
-      <section id="testimonials" className="w-full py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
-              Trusted by DevOps Teams Worldwide
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Here's what our users are saying about InfrAudit
+              <h3 className="text-xl font-bold mb-2">One Platform</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                All your cloud providers and data live together. No more juggling dashboards.
             </p>
           </div>
           
-          {/* User Feedback */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                name: "Aarav Shah",
-                role: "Head of DevOps · FinTech",
-                quote:
-                  "We cut nearly 28% of our monthly AWS bill in two sprints. InfrAudit surfaces waste instantly and the rightsizing tips were spot-on.",
-              },
-              {
-                name: "Meera Iyer",
-                role: "SRE Manager · SaaS",
-                quote:
-                  "The security drift alerts caught a public S3 policy within minutes. That alone paid for the product on day one.",
-              },
-              {
-                name: "Vikram Patel",
-                role: "Platform Lead · Marketplace",
-                quote:
-                  "Multi‑cloud inventory and anomaly charts made our quarterly audit painless. We finally have one place to see spend and risk.",
-              },
-              {
-                name: "Sanjana Rao",
-                role: "Cloud Architect · HealthTech",
-                quote:
-                  "Forecasting + recommendations helped us plan reserved capacity confidently. Budget variance dropped by 35%.",
-              },
-              {
-                name: "Rohit Kumar",
-                role: "Engineering Director · Logistics",
-                quote:
-                  "The sync + scan flow is fast, and Slack notifications are actionable. Our MTTR for cost spikes went down by 5x.",
-              },
-              {
-                name: "Neha Gupta",
-                role: "CEO · Keploy",
-                quote:
-                  "Onboarding took less than an hour. The dashboard is clean and the AI advice is actually practical for our teams.",
-              },
-            ].map((t, i) => (
-              <div key={i} className="p-6 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50">
-                <div className="flex items-start gap-3">
-                  <Quote className="h-6 w-6 text-blue-400 mt-1" />
-                  <div>
-                    <p className="text-gray-800 dark:text-gray-200">{t.quote}</p>
-                    <div className="mt-4">
-                      <div className="font-semibold">{t.name}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{t.role}</div>
+            {/* Always in the loop */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-800">
+              <h3 className="text-xl font-bold mb-2">Always in the loop</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Send notifications to teammates automatically.
+              </p>
+              <div className="space-y-2">
+                {[
+                  "Your cost alert was triggered",
+                  "Security scan completed",
+                  "New optimization available",
+                  "Monthly report ready",
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                    <Mail className="w-4 h-4 text-red-500" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{item}</span>
                     </div>
+                ))}
                   </div>
                 </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
 
-      {/* Integrations Section */}
-      <section className="w-full py-20 px-6 bg-gray-50 dark:bg-gray-950">
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="uppercase tracking-widest text-xs text-gray-500 dark:text-gray-400 mb-3">Integrations</p>
-          <h2 className="text-3xl md:text-4xl font-bold mb-3">InfrAudit integrates with AWS, GCP, Azure, and on‑prem.</h2>
-          <p className="text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">We also support your favorite tools including Terraform, Grafana, Prometheus, Jira, Helm, and more.</p>
-          <IntegrationsArc />
-          <div className="mt-6">
-            <Link href="/documentation" className="inline-flex items-center text-primary hover:underline">
-              Coming Soon <ChevronRight className="ml-1 h-4 w-4" />
-            </Link>
-          </div>
+      {/* Big Typography Section */}
+      <section className="py-24 px-6 overflow-hidden relative">
+        <div className="max-w-7xl mx-auto relative">
+          <h2 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-gray-200 dark:text-gray-800 text-center leading-tight">
+            EVERYTHING
+            <br />
+            YOU NEED TO
+            <br />
+            <span className="relative inline-block">
+              SECURE
+              <motion.span
+                className="absolute -bottom-2 left-0 w-full h-1 bg-blue-600"
+                initial={{ scaleX: 0 }}
+                whileInView={{ scaleX: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+              />
+            </span>
+            {" "}YOUR
+            <br />
+            CLOUD
+          </h2>
+          
+          {/* 3D Shield with Cloud */}
+          <motion.div
+            className="absolute right-4 md:right-12 lg:right-24 top-1/2 -translate-y-1/2"
+            animate={{ y: [-10, 10, -10] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <svg viewBox="0 0 180 220" className="w-36 h-44 md:w-48 md:h-60">
+              <defs>
+                <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="50%" stopColor="#2563eb" />
+                  <stop offset="100%" stopColor="#1d4ed8" />
+                </linearGradient>
+                <filter id="shieldShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="8" stdDeviation="12" floodColor="#1d4ed8" floodOpacity="0.3" />
+                </filter>
+              </defs>
+              
+              {/* Shield shape */}
+              <path
+                d="M90 10 L160 40 L160 100 C160 160 90 200 90 200 C90 200 20 160 20 100 L20 40 Z"
+                fill="url(#shieldGradient)"
+                filter="url(#shieldShadow)"
+              />
+              
+              {/* Shield highlight */}
+              <path
+                d="M90 20 L145 45 L145 100 C145 150 90 185 90 185"
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="2"
+              />
+              
+              {/* Cloud icon inside shield */}
+              <g transform="translate(45, 70)">
+                <path
+                  d="M75 45 C75 35 67 27 55 27 C48 27 42 31 39 37 C32 37 25 43 25 52 C25 61 32 68 42 68 L68 68 C76 68 82 62 82 54 C82 48 79 45 75 45 Z"
+                  fill="white"
+                  opacity="0.95"
+                />
+                
+                {/* Check mark */}
+                <motion.path
+                  d="M42 50 L50 58 L68 40"
+                  fill="none"
+                  stroke="#22c55e"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  initial={{ pathLength: 0 }}
+                  whileInView={{ pathLength: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: 0.3 }}
+                />
+              </g>
+              
+              {/* Decorative lines */}
+              <motion.circle
+                cx="90" cy="110" r="60"
+                fill="none"
+                stroke="rgba(255,255,255,0.1)"
+                strokeWidth="1"
+                animate={{ r: [60, 70], opacity: [0.2, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            </svg>
+          </motion.div>
+          
+          {/* Floating elements */}
+          <motion.div
+            className="absolute left-8 md:left-20 top-20"
+            animate={{ y: [0, -15, 0], rotate: [0, 10, 0] }}
+            transition={{ duration: 5, repeat: Infinity }}
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Server className="w-6 h-6 text-white" />
+            </div>
+          </motion.div>
+          
+          <motion.div
+            className="absolute left-16 md:left-32 bottom-20"
+            animate={{ y: [0, 12, 0], rotate: [0, -5, 0] }}
+            transition={{ duration: 4, repeat: Infinity, delay: 0.5 }}
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
+              <Check className="w-5 h-5 text-white" />
+            </div>
+          </motion.div>
         </div>
       </section>
       
-      
-      {/* FAQ Section */}
-      <section id="faq" className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
-              Frequently asked questions
+      {/* Saves hours section */}
+      <section className="py-24 px-6 bg-gray-50 dark:bg-slate-900/50">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              InfrAudit saves hours of work for you and your team
             </h2>
-          </div>
-          
-          <div className="space-y-6">
-            {/* FAQ Items with collapsible content */}
-            {faqItems.map((item, index) => (
-              <div 
-                key={index} 
-                className="border-b border-gray-200 dark:border-gray-700 py-5 cursor-pointer"
-                onClick={() => toggleFaq(index)}
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: Eye,
+                title: "Instant insights",
+                description: "Unlock insights and decisions from your infrastructure data instantly"
+              },
+              {
+                icon: Target,
+                title: "Smart routing",
+                description: "Route tasks to the right person, automatically based on expertise"
+              },
+              {
+                icon: Shield,
+                title: "Human in the loop",
+                description: "Critical decisions, always reviewed by a human when it matters"
+              }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="text-center"
               >
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-medium">{item.question}</h3>
-                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                    <Plus
-                      className={`h-5 w-5 transform transition-transform duration-200 ${expandedFaqs.includes(index) ? 'rotate-45' : ''}`}
-                    />
-                  </button>
+                <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center">
+                  <item.icon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                 </div>
-                
-                {expandedFaqs.includes(index) && (
-                  <div className="mt-4 text-gray-600 dark:text-gray-300 text-lg">
-                    {item.answer}
-                  </div>
-                )}
-              </div>
+                <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
+                <p className="text-gray-600 dark:text-gray-400">{item.description}</p>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
       
       {/* Pricing Section */}
-      <section id="pricing" className="w-full py-20 px-6 relative overflow-hidden">
-        {/* Background floating elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-xl animate-pulse"></div>
-          <div className="absolute top-40 right-20 w-24 h-24 bg-green-100 dark:bg-green-900/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '1s'}}></div>
-          <div className="absolute bottom-32 left-20 w-20 h-20 bg-purple-100 dark:bg-purple-900/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '2s'}}></div>
-          <div className="absolute bottom-20 right-32 w-28 h-28 bg-orange-100 dark:bg-orange-900/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '0.5s'}}></div>
-          <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-indigo-100 dark:bg-indigo-900/20 rounded-full blur-xl animate-pulse" style={{animationDelay: '1.5s'}}></div>
-        </div>
-
-        <div className="max-w-6xl mx-auto relative z-10">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800">
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Community-first Pricing</span>
-            </div>
-            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
-              Choose Your Journey
+      <section className="py-24 px-6">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Simple, transparent pricing
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              InfraAudit is Open Source. Start with the free Community edition, or upgrade anytime.
+            <p className="text-gray-600 dark:text-gray-400">
+              Start free, scale as you grow
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            {/* Floating decoration cards */}
-            <div className="absolute -top-8 -left-4 w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg rotate-12 shadow-lg animate-bounce opacity-20"></div>
-            <div className="absolute -top-4 -right-8 w-12 h-12 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg -rotate-12 shadow-lg animate-bounce opacity-20" style={{animationDelay: '0.5s'}}></div>
-            <div className="absolute top-1/2 -left-6 w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg rotate-45 shadow-lg animate-bounce opacity-20" style={{animationDelay: '1s'}}></div>
-            <div className="absolute top-1/3 -right-4 w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg -rotate-45 shadow-lg animate-bounce opacity-20" style={{animationDelay: '1.5s'}}></div>
-            <Card className="overflow-hidden transform transition-transform hover:scale-105 self-start">
-              <div className="p-6 bg-white dark:bg-gray-800">
-                <h3 className="text-xl font-bold mb-2">Community (Open Source)</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">Self-hosted, free forever. Ideal for individuals and small teams.</p>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold">$0</span>
-                  <span className="text-gray-500 dark:text-gray-400">/self-host</span>
-                </div>
-                
-                <a 
-                  className="w-full inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                  href="https://github.com/pratik-mahalle/InfraAudit"
-                  target="_blank" rel="noopener noreferrer"
-                >
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Free Plan */}
+            <Card className="p-6">
+              <h3 className="text-xl font-bold mb-2">Community</h3>
+              <p className="text-gray-500 mb-4">Self-hosted, free forever</p>
+              <div className="text-4xl font-bold mb-6">$0</div>
+              <Button asChild variant="outline" className="w-full mb-6">
+                <a href="https://github.com/pratik-mahalle/InfraAudit" target="_blank">
                   Deploy Self-Hosted
                 </a>
-              </div>
-              
-              <div className="p-6 bg-gray-50 dark:bg-gray-800/70 border-t dark:border-gray-700">
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Core features</span>
+              </Button>
+              <ul className="space-y-3 text-sm">
+                {["Core features", "Community support", "MIT License"].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    {item}
                   </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Community support</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">MIT License</span>
-                  </li>
+                ))}
                 </ul>
-              </div>
             </Card>
             
-            <Card className="overflow-hidden border-primary relative transform transition-transform hover:scale-105">
-              <div className="absolute top-0 right-0 bg-primary text-white text-xs py-1 px-3 rounded-bl-lg">
+            {/* Pro Plan */}
+            <Card className="p-6 border-2 border-blue-600 relative">
+              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600">
                 Most Popular
-              </div>
-              
-              <div className="p-6 bg-white dark:bg-gray-800">
+              </Badge>
                 <h3 className="text-xl font-bold mb-2">Professional</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">For growing teams with advanced monitoring needs</p>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold">$299</span>
-                  <span className="text-gray-500 dark:text-gray-400">/month</span>
-                </div>
-                
-                <Button 
-                  className="w-full" 
-                  onClick={() => window.location.href = "/auth"}
-                >
-                  Start Free Trial
+              <p className="text-gray-500 mb-4">For growing teams</p>
+              <div className="text-4xl font-bold mb-6">$299<span className="text-lg font-normal text-gray-500">/mo</span></div>
+              <Button asChild className="w-full mb-6 bg-blue-600 hover:bg-blue-700">
+                <Link href="/auth">Start Free Trial</Link>
                 </Button>
-              </div>
-              
-              <div className="p-6 bg-gray-50 dark:bg-gray-800/70 border-t dark:border-gray-700">
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Up to 500 resources</span>
+              <ul className="space-y-3 text-sm">
+                {["Up to 500 resources", "AI recommendations", "Slack integration", "Priority support"].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    {item}
                   </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Advanced cost analysis</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Hourly security scans</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Slack integration</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">30-day data retention</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">AI-powered recommendations</span>
-                  </li>
+                ))}
                 </ul>
-              </div>
-            </Card>
-            
-            <Card className="overflow-hidden transform transition-transform hover:scale-105">
-              <div className="p-6 bg-white dark:bg-gray-800">
-                <h3 className="text-xl font-bold mb-2">Enterprise</h3>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">For organizations with complex cloud environments</p>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold">Custom</span>
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    window.location.href = "mailto:info@infraudit.dev?subject=InfrAudit Enterprise Inquiry";
-                  }}
-                >
-                  Contact Sales
-                </Button>
-              </div>
-              
-              <div className="p-6 bg-gray-50 dark:bg-gray-800/70 border-t dark:border-gray-700">
-                <ul className="space-y-3">
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Unlimited resources</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Enterprise-grade security</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Custom alerting rules</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Dedicated support</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Unlimited data retention</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-500 dark:text-green-400" />
-                    <span className="text-gray-700 dark:text-gray-300">Custom integrations</span>
-                  </li>
-                </ul>
-              </div>
             </Card>
           </div>
         </div>
       </section>
       
       {/* CTA Section */}
-      <section className="w-full py-20 px-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">
-            Ready to Optimize Your Cloud?
+      <section className="py-24 px-6 bg-gray-900 dark:bg-slate-950">
+        <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Ready to begin?
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-            Join our pilot users and trust InfrAudit to secure and optimize your cloud infrastructure.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              className="px-8 group relative overflow-hidden hover:bg-primary-600 transition-colors"
-              onClick={() => window.location.href = "/auth"}
-            >
-              <span className="relative z-10">Start Free Trial</span>
+            <p className="text-gray-400 mb-8">
+              Sign up for our early access program to get started. We'll be in touch soon to talk about your infrastructure needs.
+            </p>
+            <Button asChild size="lg" className="h-12 px-8 bg-blue-600 hover:bg-blue-700 rounded-full">
+              <Link href="/auth">
+                Get early access
+              </Link>
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="px-8 group relative overflow-hidden hover:bg-primary-100 dark:hover:bg-primary-900/20 transition-colors"
-              onClick={() => {
-                // Open email client with pre-filled subject
-                window.location.href = "mailto:info@infraudit.dev?subject=InfrAudit Sales Inquiry";
-              }}
-            >
-              <span className="relative z-10">Contact Us</span>
-            </Button>
+          </motion.div>
           </div>
+      </section>
+
+      {/* Testimonial Footer */}
+      <section className="py-16 px-6 border-t border-gray-200 dark:border-gray-800">
+        <div className="max-w-4xl mx-auto">
+          <blockquote className="text-center">
+            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 italic mb-6">
+              "I never imagined having a tool that's fully customized to how we manage our cloud. InfrAudit is a game changer for our DevOps team."
+            </p>
+            <footer>
+              <div className="font-semibold">Aarav Shah, DevOps Lead</div>
+              <div className="text-sm text-gray-500">Using InfrAudit for 5 months</div>
+            </footer>
+          </blockquote>
         </div>
       </section>
     </div>
