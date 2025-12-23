@@ -165,11 +165,31 @@ export function Navbar() {
         {/* Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center gap-2">
-            <img
-              src="/logo.png"
-              alt="InfraAudit"
-              className="h-10 w-auto"
-            />
+            <div className="flex items-center gap-2">
+              {/* Logo Icon */}
+              <svg viewBox="0 0 44 44" className="h-9 w-9" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="navLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3B82F6"/>
+                    <stop offset="100%" stopColor="#1D4ED8"/>
+                  </linearGradient>
+                </defs>
+                <rect width="44" height="44" rx="10" fill="url(#navLogoGradient)"/>
+                <path d="M22 12C18.5 12 15.5 14.5 14.5 17.8C11.5 18.2 9 21 9 24.5C9 28.5 12 31.5 16 31.5H28C31.5 31.5 34.5 28.5 34.5 25C34.5 22 32.2 19.5 29.2 19C28.5 15 25.5 12 22 12Z" fill="white" fillOpacity="0.95"/>
+                <circle cx="16" cy="24" r="2" fill="#3B82F6"/>
+                <circle cx="22" cy="20" r="2" fill="#3B82F6"/>
+                <circle cx="28" cy="24" r="2" fill="#3B82F6"/>
+                <line x1="18" y1="23" x2="20" y2="21" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="24" y1="21" x2="26" y2="23" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round"/>
+                <line x1="18.5" y1="24" x2="25.5" y2="24" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round"/>
+                <rect x="13" y="28" width="18" height="1.5" rx="0.75" fill="#3B82F6" fillOpacity="0.5"/>
+              </svg>
+              {/* Logo Text */}
+              <span className="text-xl font-bold tracking-tight">
+                <span className="text-gray-900 dark:text-white">Infra</span>
+                <span className="text-blue-600">Audit</span>
+              </span>
+            </div>
           </Link>
         </div>
 
@@ -589,8 +609,8 @@ export function Navbar() {
                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <LayoutDashboard className="h-5 w-5 text-blue-600" />
                       <span className="font-medium">Dashboard</span>
-                    </div>
-                  </Link>
+                  </div>
+                </Link>
                 </div>
 
                 <div>
@@ -600,14 +620,14 @@ export function Navbar() {
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <DollarSign className="h-5 w-5 text-gray-500" />
                         <span>Cost Analysis</span>
-                      </div>
-                    </Link>
+                  </div>
+                </Link>
                     <Link href="/cost-prediction" onClick={() => setMobileMenuOpen(false)}>
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <TrendingUp className="h-5 w-5 text-gray-500" />
-                        <span>Predictions</span>
-                      </div>
-                    </Link>
+                    <span>Predictions</span>
+                  </div>
+                </Link>
                     <Link href="/resource-utilization" onClick={() => setMobileMenuOpen(false)}>
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <Activity className="h-5 w-5 text-gray-500" />
@@ -636,8 +656,8 @@ export function Navbar() {
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <Layers className="h-5 w-5 text-gray-500" />
                         <span>Architecture Designer</span>
-                      </div>
-                    </Link>
+                  </div>
+                </Link>
                   </div>
                 </div>
 
@@ -661,8 +681,8 @@ export function Navbar() {
                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Settings className="h-5 w-5 text-gray-500" />
                       <span className="font-medium">Settings</span>
-                    </div>
-                  </Link>
+                  </div>
+                </Link>
                   <button 
                     onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600"
@@ -718,8 +738,8 @@ export function Navbar() {
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <Building2 className="h-5 w-5 text-gray-500" />
                         <span>For Enterprise</span>
-                      </div>
-                    </Link>
+                  </div>
+                </Link>
                   </div>
                 </div>
                 
@@ -730,8 +750,8 @@ export function Navbar() {
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <BookOpen className="h-5 w-5 text-gray-500" />
                         <span>Documentation</span>
-                      </div>
-                    </Link>
+                  </div>
+                </Link>
                     <a 
                       href="https://github.com/pratik-mahalle/InfraAudit" 
                       target="_blank" 

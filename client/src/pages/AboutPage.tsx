@@ -1,7 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
-import { Zap, Award, Users, BarChart4, Shield, Cloud, Check, Quote } from 'lucide-react';
-import founderPhoto from '../assets/founder.jpg'; // Adjust the path as necessary
+import { Zap, Award, BarChart4, Shield, Cloud, Check } from 'lucide-react';
 
 export default function AboutPage() {
   return (
@@ -185,7 +184,7 @@ export default function AboutPage() {
                 <p className="text-center font-medium text-xl mb-4">Join us as we build the future of cloud cost intelligence.</p>
                 <div className="grid grid-cols-2 gap-4 w-full mt-2">
                   <div className="bg-background p-4 rounded-lg border border-border/50 text-center">
-                    <p className="text-3xl font-bold text-blue-600 mb-2"> 32%</p>
+                    <p className="text-3xl font-bold text-blue-600 mb-2">32%</p>
                     <p className="text-sm text-muted-foreground">Average cost savings</p>
                   </div>
                   <div className="bg-background p-4 rounded-lg border border-border/50 text-center">
@@ -196,65 +195,6 @@ export default function AboutPage() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Team or Leadership */}
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight mb-8">Leadership Team</h2>
-          
-          {/* Founder Featured Section */}
-          <div className="mb-12 overflow-hidden relative">
-            <div className="p-8 md:p-10 lg:p-12 rounded-xl bg-muted/50 backdrop-blur-sm border border-border/50 relative z-10">
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="md:w-1/3">
-                  <div className="relative group">
-                    <div className="relative">
-                      <div className="w-40 h-40 md:w-48 md:h-48 rounded-full overflow-hidden border-[6px] border-background shadow-xl mx-auto 
-                                  group-hover:scale-105 transition-transform duration-500 ease-out">
-                        <img 
-                          src={founderPhoto} 
-                          alt="Pratik Mahalle" 
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      </div>
-                    </div>
-                    <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs py-1 px-3 rounded-full shadow-lg
-                              z-20 hover:scale-110 transition-transform duration-300">
-                      Founder
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="md:w-2/3 text-center md:text-left">
-                  <div className="flex items-center mb-4">
-                    <Quote className="h-10 w-10 text-blue-300 dark:text-blue-500 mr-2 shrink-0" />
-                    <div>
-                      <h3 className="text-2xl font-bold">Pratik Mahalle</h3>
-                      <p className="text-blue-600 dark:text-blue-400">Founder & CEO</p>
-                    </div>
-                  </div>
-                  
-                  <p className="text-muted-foreground text-lg mb-4 pl-4 border-l-4 border-blue-300 dark:border-blue-500/50 italic">
-                    Hi, I'm Pratik, Founder and DevOps Engineer behind InfrAudit — a cloud observability and security tool that eliminates hours of manual effort for cloud teams. With InfrAudit, we've automated compliance checks, surfaced critical misconfigurations, and reduced cloud overspend with smart, real-time insights. It's now an operational prototype and actively evolving into a must-have tool for modern DevOps and FinOps workflows
-                  </p>
-                  
-                  <div className="mt-6 flex flex-wrap gap-4">
-                    <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm">
-                      DevOps Engineer
-                    </span>
-                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-sm">
-                      DevRel
-                    </span>
-                    <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-sm">
-                      Cloud Infrastructure Expert
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-
         </div>
       </div>
     </>
