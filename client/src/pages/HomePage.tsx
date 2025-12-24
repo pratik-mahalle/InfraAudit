@@ -196,7 +196,7 @@ function AIAgentIllustration() {
           transition={{ duration: 2, repeat: Infinity, delay: 0.7 }}
         />
       </svg>
-      
+
       {/* Floating data points */}
       <motion.div
         className="absolute top-4 right-0 bg-white/20 backdrop-blur px-3 py-1 rounded-full text-white text-xs"
@@ -205,7 +205,7 @@ function AIAgentIllustration() {
       >
         scanning...
       </motion.div>
-              </div>
+      </div>
   );
 }
 
@@ -225,10 +225,10 @@ function DashboardPreview() {
           <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
             <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
               <Cloud className="w-4 h-4 text-white" />
-              </div>
+          </div>
             <span className="font-medium text-sm">InfrAudit</span>
             <ChevronRight className="w-4 h-4 text-gray-400" />
-                </div>
+          </div>
           </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" className="gap-2">
@@ -239,15 +239,15 @@ function DashboardPreview() {
             {["O", "C", "M"].map((letter, i) => (
               <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-medium border-2 border-white dark:border-gray-900">
                 {letter}
-              </div>
+        </div>
             ))}
             <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-xs font-medium border-2 border-white dark:border-gray-900">
               +7
-            </div>
+              </div>
                     </div>
                     </div>
-                  </div>
-                  
+              </div>
+              
       {/* Sidebar + Content */}
       <div className="flex">
         {/* Sidebar */}
@@ -270,7 +270,7 @@ function DashboardPreview() {
               >
                 <item.icon className="w-4 h-4" />
                 {item.label}
-                              </div>
+              </div>
                           ))}
           </nav>
 
@@ -291,8 +291,8 @@ function DashboardPreview() {
                               </div>
               ))}
             </nav>
-                            </div>
-                          </div>
+              </div>
+            </div>
             
         {/* Main Content */}
         <div className="flex-1 p-6">
@@ -307,9 +307,9 @@ function DashboardPreview() {
                 <div className="w-2 h-2 rounded-full bg-blue-500" />
                 248 Resources
               </Badge>
-                              </div>
                     </div>
-                    
+                  </div>
+                  
           {/* Table */}
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <table className="w-full text-sm">
@@ -338,7 +338,7 @@ function DashboardPreview() {
                       <div className="flex items-center gap-2">
                         <div className={cn("w-3 h-3 rounded-sm", row.providerColor)} />
                         {row.provider}
-                        </div>
+                              </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={cn("font-medium", row.statusColor)}>{row.status}</span>
@@ -351,7 +351,7 @@ function DashboardPreview() {
                 ))}
               </tbody>
             </table>
-                        </div>
+                            </div>
                     
           {/* AI Scanning Notice */}
           <motion.div
@@ -361,14 +361,14 @@ function DashboardPreview() {
           >
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Bot className="w-4 h-4 text-white" />
-                    </div>
+                              </div>
             <span className="text-sm text-blue-700 dark:text-blue-300">
               InfrAudit is scanning for cost optimization opportunities...
             </span>
             <Loader2 className="w-4 h-4 text-blue-600 animate-spin ml-auto" />
           </motion.div>
-                  </div>
-                </div>
+                            </div>
+                          </div>
     </motion.div>
   );
 }
@@ -442,7 +442,7 @@ function AIBrainVisualization() {
           >
             <Bot className="w-16 h-16 text-white" />
           </motion.div>
-          </div>
+                              </div>
           
         {/* Pulse effect */}
         <motion.div
@@ -450,7 +450,7 @@ function AIBrainVisualization() {
           animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
-              </div>
+                            </div>
               
       {/* Current thought display */}
       <motion.div
@@ -462,12 +462,12 @@ function AIBrainVisualization() {
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 text-sm text-slate-300 mb-3">
           <Loader2 className="w-3 h-3 animate-spin" />
           {thoughts[activeThought].text}
-                </div>
+                          </div>
         <p className={cn("text-lg font-semibold", thoughts[activeThought].color)}>
           {thoughts[activeThought].result}
         </p>
       </motion.div>
-                </div>
+                    </div>
   );
 }
 
@@ -503,10 +503,10 @@ function LiveInsightsFeed() {
           <div className="flex-1 min-w-0">
             <p className="text-sm text-slate-200 truncate">{insight.text}</p>
             <p className="text-xs text-slate-500">{insight.time}</p>
-                </div>
+                            </div>
         </motion.div>
                           ))}
-                </div>
+                        </div>
   );
 }
 
@@ -543,7 +543,7 @@ function AnimatedTaskList() {
           </span>
         </motion.div>
       ))}
-                </div>
+              </div>
   );
 }
 
@@ -551,13 +551,13 @@ export default function HomePage() {
   const { user } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [, setLocation] = useLocation();
-
+  
   useEffect(() => {
     if (user) {
       setLocation("/dashboard");
     }
   }, [user, setLocation]);
-
+  
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-950">
       
@@ -583,7 +583,7 @@ export default function HomePage() {
                   />
                 </span>
               </h1>
-                </div>
+            </div>
             
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -605,12 +605,12 @@ export default function HomePage() {
                 <a href="https://github.com/pratik-mahalle/InfraAudit" target="_blank" rel="noopener">
                   Join waitlist
                 </a>
-              </Button>
+                </Button>
               <Button asChild size="lg" className="h-11 px-6 bg-blue-600 hover:bg-blue-700 rounded-full text-white">
-                <Link href="/auth">
+                  <Link href="/auth">
                   Get access now
-                </Link>
-              </Button>
+                  </Link>
+                </Button>
             </motion.div>
 
             {/* AI Prompt Input */}
@@ -637,10 +637,10 @@ export default function HomePage() {
                 >
                   Analyze
                 </Button>
-                </div>
-            </motion.div>
               </div>
+            </motion.div>
             </div>
+                    </div>
       </section>
 
       {/* Dashboard Preview Section */}
@@ -662,49 +662,129 @@ export default function HomePage() {
         </div>
       </section>
       
-      {/* Meet InfrAudit Section */}
-      <section className="py-24 px-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-          </div>
-            
+      {/* Meet InfrAudit Section - Clean Modern Design */}
+      <section className="py-28 px-6 bg-slate-900 relative overflow-hidden">
+        {/* Simple gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent" />
+        
         <div className="max-w-6xl mx-auto relative z-10">
+          {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-20"
           >
-            <p className="text-blue-200 mb-2 font-medium">Meet InfrAudit</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Your AI assistant that monitors your cloud 24/7,
+            <span className="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-400 text-sm font-medium border border-blue-500/20 mb-6">
+              Meet InfrAudit
+            </span>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
+              Your AI-powered
               <br />
-              so you can focus on building
+              <span className="text-blue-400">cloud assistant</span>
             </h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+              Monitors your infrastructure 24/7 so you can focus on building
+            </p>
           </motion.div>
           
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <AIAgentIllustration />
-            </motion.div>
-
-            <AnimatedTaskList />
-                      </div>
-                      </div>
+          {/* Feature Cards Grid */}
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Eye,
+                title: "Always Watching",
+                description: "Continuous monitoring across AWS, Azure, and GCP",
+                stat: "24/7",
+                statLabel: "Monitoring",
+                color: "from-blue-500 to-cyan-500"
+              },
+              {
+                icon: Zap,
+                title: "Instant Alerts",
+                description: "Get notified immediately when issues are detected",
+                stat: "<1s",
+                statLabel: "Response",
+                color: "from-violet-500 to-purple-500"
+              },
+              {
+                icon: DollarSign,
+                title: "Cost Savings",
+                description: "AI identifies waste and optimization opportunities",
+                stat: "35%",
+                statLabel: "Avg. Savings",
+                color: "from-emerald-500 to-teal-500"
+              }
+            ].map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="group bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800 hover:border-slate-600 transition-all duration-300"
+              >
+                <div className={cn("w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center mb-4", feature.color)}>
+                  <feature.icon className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
+                <p className="text-slate-400 mb-4">{feature.description}</p>
+                <div className="pt-4 border-t border-slate-700/50">
+                  <span className={cn("text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent", feature.color)}>{feature.stat}</span>
+                  <span className="text-slate-500 text-sm ml-2">{feature.statLabel}</span>
+                </div>
+              </motion.div>
+            ))}
+              </div>
+              
+          {/* Live Activity Preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-16 bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6 max-w-3xl mx-auto"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-sm font-medium text-slate-300">Live Activity</span>
+                </div>
+            <div className="space-y-3">
+              {[
+                { text: "Detected 3 idle EC2 instances in us-east-1", time: "2s ago", type: "warning" },
+                { text: "Security scan completed - All clear", time: "1m ago", type: "success" },
+                { text: "Cost anomaly detected: 40% spike in compute", time: "5m ago", type: "alert" },
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 + i * 0.1 }}
+                  className="flex items-center justify-between py-3 px-4 bg-slate-900/50 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      item.type === "warning" && "bg-amber-500",
+                      item.type === "success" && "bg-emerald-500",
+                      item.type === "alert" && "bg-red-500"
+                    )} />
+                    <span className="text-slate-300 text-sm">{item.text}</span>
+                </div>
+                  <span className="text-slate-500 text-xs">{item.time}</span>
+                </motion.div>
+              ))}
+              </div>
+          </motion.div>
+                </div>
       </section>
       
       {/* All your cloud handled section */}
       <section className="py-24 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-start">
-                      <div>
+                <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
                 All your cloud complexity,
                 <br />
@@ -720,16 +800,16 @@ export default function HomePage() {
                   <div key={i} className="text-center">
                     <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
                       <item.icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                      </div>
+                </div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{item.text}</p>
                       </div>
                 ))}
-                    </div>
-                  </div>
-              
+              </div>
+            </div>
+            
             <DashboardPreview />
                 </div>
-              </div>
+                </div>
       </section>
       
       {/* Always thinking for you - Reimagined */}
@@ -796,8 +876,8 @@ export default function HomePage() {
                 <div>
                   <div className="text-2xl font-bold text-purple-400">99.9%</div>
                   <div className="text-xs text-slate-500">Uptime maintained</div>
-                </div>
               </div>
+            </div>
             </motion.div>
           </div>
         </div>
@@ -864,7 +944,7 @@ export default function HomePage() {
                     item.color
                   )}>
                     {item.step}
-                  </div>
+                      </div>
                   
                   <h3 className="text-xl font-bold mb-3">{item.title}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
@@ -881,18 +961,265 @@ export default function HomePage() {
                         {feature}
                       </span>
                     ))}
-                  </div>
-                </div>
-                
+                      </div>
+                    </div>
+                    
                 {/* Connector line (except last) */}
                 {i < 2 && (
                   <div className="hidden md:block absolute top-1/2 -right-4 w-8 border-t-2 border-dashed border-gray-300 dark:border-gray-700" />
                 )}
               </motion.div>
             ))}
-          </div>
+                      </div>
           
           {/* Testimonial Card */}
+                      </div>
+      </section>
+
+      {/* Feature Showcase - Floating Cards */}
+      <section className="py-32 px-6 relative overflow-hidden bg-gradient-to-b from-white via-blue-50/30 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+        <div className="max-w-7xl mx-auto relative min-h-[700px] flex items-center justify-center">
+          
+          {/* Central Content */}
+          <div className="text-center relative z-10 max-w-2xl">
+            {/* Logo/Icon */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="w-16 h-16 mx-auto mb-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20"
+            >
+              <Cloud className="w-8 h-8 text-white" />
+            </motion.div>
+            
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4"
+            >
+              Monitor, optimize, and secure
+              <br />
+              <span className="text-gray-400 dark:text-slate-500">all in one place</span>
+            </motion.h2>
+            
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="text-gray-600 dark:text-gray-400 text-lg mb-8"
+            >
+              Unified cloud management that saves you time and money.
+            </motion.p>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+            >
+              <Button asChild size="lg" className="h-12 px-8 bg-blue-600 hover:bg-blue-700 rounded-full">
+                <Link href="/auth">
+                  Start for free
+                </Link>
+              </Button>
+            </motion.div>
+                    </div>
+                    
+          {/* Floating Card 1 - Cost Alert (Top Left) */}
+          <motion.div
+            initial={{ opacity: 0, x: -50, y: -30 }}
+            whileInView={{ opacity: 1, x: 0, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="absolute left-4 lg:left-16 top-8 lg:top-20"
+          >
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-slate-900/50 border border-gray-100 dark:border-slate-700 w-56"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div>
+                  <p className="font-semibold text-sm">Cost Alert</p>
+                  <p className="text-xs text-gray-500">2 minutes ago</p>
+                      </div>
+                    </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Unusual spending detected in <span className="font-medium text-amber-600">us-east-1</span>
+              </p>
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" variant="outline" className="h-7 text-xs">Dismiss</Button>
+                <Button size="sm" className="h-7 text-xs bg-amber-500 hover:bg-amber-600">View</Button>
+                  </div>
+            </motion.div>
+          </motion.div>
+          
+          {/* Floating Card 2 - Savings (Top Right) */}
+          <motion.div
+            initial={{ opacity: 0, x: 50, y: -30 }}
+            whileInView={{ opacity: 1, x: 0, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="absolute right-4 lg:right-16 top-16 lg:top-8"
+          >
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-slate-900/50 border border-gray-100 dark:border-slate-700 w-52"
+            >
+              <p className="text-xs text-gray-500 mb-1">Monthly Savings</p>
+              <p className="text-3xl font-bold text-emerald-600">$4,280</p>
+              <div className="flex items-center gap-1 mt-1">
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs text-emerald-600 font-medium">+23% from last month</span>
+                </div>
+              <div className="mt-3 h-12 flex items-end gap-1">
+                {[40, 55, 45, 70, 65, 80, 95].map((h, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 bg-emerald-500/20 rounded-t"
+                    style={{ height: `${h}%` }}
+                  >
+                    <div 
+                      className="w-full bg-emerald-500 rounded-t" 
+                      style={{ height: `${h * 0.7}%` }}
+                    />
+              </div>
+                ))}
+            </div>
+            </motion.div>
+          </motion.div>
+          
+          {/* Floating Card 3 - Sticky Note (Left Middle) */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5 }}
+            className="absolute left-8 lg:left-32 bottom-32 lg:bottom-40 hidden md:block"
+          >
+            <motion.div
+              animate={{ rotate: [-2, 2, -2], y: [0, -5, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              className="bg-yellow-100 dark:bg-yellow-200 rounded-lg p-4 shadow-lg w-44 transform -rotate-3"
+            >
+              <div className="w-2 h-2 rounded-full bg-red-400 absolute -top-1 left-1/2 -translate-x-1/2" />
+              <p className="text-sm text-yellow-900 font-handwriting leading-relaxed">
+                Check idle resources in staging environment before EOD
+              </p>
+              <div className="mt-2 flex items-center gap-2">
+                <div className="w-5 h-5 rounded bg-blue-500 flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-xs text-yellow-700">Priority: High</span>
+              </div>
+            </motion.div>
+          </motion.div>
+          
+          {/* Floating Card 4 - Security Scan (Right Middle) */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.6 }}
+            className="absolute right-4 lg:right-24 bottom-48 lg:bottom-52 hidden md:block"
+          >
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-slate-900/50 border border-gray-100 dark:border-slate-700 w-56"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-semibold text-sm">Security Scan</p>
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200 text-xs">
+                  Passed
+                </Badge>
+                </div>
+              <div className="space-y-2">
+                {[
+                  { label: "IAM Policies", status: true },
+                  { label: "Network ACLs", status: true },
+                  { label: "Encryption", status: true },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{item.label}</span>
+                </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+          
+          {/* Floating Card 5 - Today's Tasks (Bottom Left) */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.7 }}
+            className="absolute left-8 lg:left-48 bottom-4 lg:bottom-8"
+          >
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-slate-900/50 border border-gray-100 dark:border-slate-700 w-64"
+            >
+              <p className="font-semibold text-sm mb-3">Today's Tasks</p>
+              <div className="space-y-2">
+                {[
+                  { task: "Review cost recommendations", progress: 80, color: "bg-blue-500" },
+                  { task: "Update security policies", progress: 45, color: "bg-violet-500" },
+                ].map((item, i) => (
+                  <div key={i}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-gray-600 dark:text-gray-400">{item.task}</span>
+                      <span className="font-medium">{item.progress}%</span>
+                </div>
+                    <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div className={cn("h-full rounded-full", item.color)} style={{ width: `${item.progress}%` }} />
+                </div>
+              </div>
+                ))}
+            </div>
+            </motion.div>
+          </motion.div>
+          
+          {/* Floating Card 6 - Integrations (Bottom Right) */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.8 }}
+            className="absolute right-8 lg:right-40 bottom-4 lg:bottom-16"
+          >
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-slate-900/50 border border-gray-100 dark:border-slate-700"
+            >
+              <p className="font-semibold text-sm mb-3">50+ Integrations</p>
+              <div className="flex gap-2">
+                {[
+                  { bg: "bg-[#FF9900]", label: "AWS" },
+                  { bg: "bg-[#0078D4]", label: "Azure" },
+                  { bg: "bg-[#4285F4]", label: "GCP" },
+                  { bg: "bg-[#326CE5]", label: "K8s" },
+                ].map((item, i) => (
+                  <div 
+                    key={i}
+                    className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold", item.bg)}
+                  >
+                    {item.label.charAt(0)}
+          </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+          
         </div>
       </section>
       
@@ -948,7 +1275,7 @@ export default function HomePage() {
               </span>
             ))}
           </motion.div>
-              </div>
+        </div>
       </section>
       
       {/* Saves hours section */}
@@ -993,7 +1320,7 @@ export default function HomePage() {
               >
                 <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center">
                   <item.icon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-              </div>
+                    </div>
                 <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
                 <p className="text-gray-600 dark:text-gray-400">{item.description}</p>
               </motion.div>
@@ -1001,30 +1328,88 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-      
-      {/* CTA Section */}
-      <section className="py-24 px-6 bg-gray-900 dark:bg-slate-950">
-        <div className="max-w-3xl mx-auto text-center">
+
+      {/* CTA Section - Clean Gradient Design */}
+      <section className="py-28 px-6 relative overflow-hidden">
+        {/* Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800" />
+        
+        {/* Decorative Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl" />
+        </div>
+        
+        {/* Content */}
+        <div className="max-w-4xl mx-auto relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            className="text-center"
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Ready to begin?
-          </h2>
-            <p className="text-gray-400 mb-8">
-              Sign up for our early access program to get started. We'll be in touch soon to talk about your infrastructure needs.
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
+              Ready to optimize
+              <br />
+              your cloud?
+            </h2>
+            <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
+              Join thousands of DevOps teams already saving time and money with InfrAudit.
             </p>
-            <Button asChild size="lg" className="h-12 px-8 bg-blue-600 hover:bg-blue-700 rounded-full">
-              <Link href="/auth">
-                Get early access
-              </Link>
-            </Button>
+            
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+              <Button asChild size="lg" className="h-14 px-10 bg-white hover:bg-gray-100 text-blue-700 rounded-full text-lg font-semibold shadow-xl shadow-blue-900/20 transition-all duration-300 hover:scale-105">
+                <Link href="/auth">
+                  Start free trial
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="h-14 px-10  bg-white hover:bg-gray-100 text-blue-700 rounded-full text-lg font-semibold shadow-xl shadow-blue-900/20 transition-all duration-300 hover:scale-105">
+                <Link href="/contact">
+                  Talk to sales
+                </Link>
+              </Button>
+            </div>
+            
+            {/* Trust indicators */}
+            <div className="flex flex-wrap items-center justify-center gap-6 text-blue-100 text-sm">
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5" />
+                14-day free trial
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5" />
+                No credit card required
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5" />
+                Cancel anytime
+              </div>
+            </div>
           </motion.div>
-          </div>
+          
+          {/* Stats Row */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto"
+          >
+            {[
+              { value: "50K+", label: "Resources Monitored" },
+              { value: "$2M+", label: "Savings Identified" },
+              { value: "99.9%", label: "Uptime SLA" },
+            ].map((stat, i) => (
+              <div key={i} className="text-center">
+                <div className="text-3xl md:text-4xl font-bold text-white mb-1">{stat.value}</div>
+                <div className="text-blue-200 text-sm">{stat.label}</div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
       </section>
-
+      
       {/* Testimonial Footer */}
       <section className="py-16 px-6 border-t border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto">
