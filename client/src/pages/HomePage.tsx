@@ -570,7 +570,7 @@ export default function HomePage() {
               <h1 className="text-5xl md:text-7xl lg:text-[8rem] font-black tracking-tight leading-[0.95]">
                 <span className="text-gray-300 dark:text-gray-700">CLOUD ON</span>
                 <br />
-                <span className="text-gray-900 dark:text-gray-100">
+                <span className="text-black-400 dark:text-black-100">
                   <TypeWriter 
                     texts={[
                       "AUTOPILOT",
@@ -601,14 +601,9 @@ export default function HomePage() {
               transition={{ delay: 0.3 }}
               className="flex flex-col sm:flex-row gap-3 justify-center mb-12"
             >
-              <Button asChild variant="outline" size="lg" className="h-11 px-6 rounded-full border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800">
-                <a href="https://github.com/pratik-mahalle/InfraAudit" target="_blank" rel="noopener">
-                  Join waitlist
-                </a>
-                </Button>
               <Button asChild size="lg" className="h-11 px-6 bg-blue-600 hover:bg-blue-700 rounded-full text-white">
                   <Link href="/auth">
-                  Get access now
+                  Get started
                   </Link>
                 </Button>
             </motion.div>
