@@ -21,8 +21,8 @@ const SubscriptionCancel = () => {
   return (
     <>
       <Helmet>
-        <title>Subscription Cancelled - CloudGuard</title>
-        <meta name="description" content="Your CloudGuard subscription process was cancelled." />
+        <title>Subscription Cancelled - InfraAudit</title>
+        <meta name="description" content="Your InfraAudit subscription process was cancelled." />
       </Helmet>
       
       <div className="container mx-auto px-4 py-16">

@@ -14,25 +14,25 @@ interface QuickActionButtonProps {
 }
 
 function QuickActionButton({ icon, label, onClick, variant }: QuickActionButtonProps) {
-  const getBackgroundColor = () => {
+  const getVariantClasses = () => {
     switch (variant) {
       case "primary":
-        return "bg-primary bg-opacity-5 hover:bg-opacity-10 text-primary";
+        return "text-primary bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30";
       case "secondary":
-        return "bg-secondary bg-opacity-5 hover:bg-opacity-10 text-secondary";
+        return "text-blue-600 dark:text-blue-400 bg-blue-500/10 hover:bg-blue-500/20";
       case "warning":
-        return "bg-warning bg-opacity-5 hover:bg-opacity-10 text-warning";
+        return "text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20";
       case "danger":
-        return "bg-danger bg-opacity-5 hover:bg-opacity-10 text-danger";
+        return "text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20";
       default:
-        return "bg-primary bg-opacity-5 hover:bg-opacity-10 text-primary";
+        return "text-primary bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30";
     }
   };
 
   return (
     <Button
       variant="ghost"
-      className={`w-full flex items-center justify-between rounded-lg px-4 py-3 ${getBackgroundColor()}`}
+      className={`w-full flex items-center justify-between rounded-lg px-4 py-3 transition-colors border border-transparent hover:border-foreground/10 ${getVariantClasses()}`}
       onClick={onClick}
     >
       <span className="flex items-center">
@@ -104,7 +104,7 @@ export function QuickActions() {
   };
 
   return (
-    <Card>
+    <Card className="bg-white/70 dark:bg-slate-900/50 backdrop-blur border border-gray-200/60 dark:border-slate-800/60 shadow-sm">
       <CardHeader>
         <CardTitle className="text-lg font-semibold font-inter">Quick Actions</CardTitle>
       </CardHeader>

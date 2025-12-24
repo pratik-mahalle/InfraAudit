@@ -55,8 +55,8 @@ const SubscriptionSuccess = () => {
   return (
     <>
       <Helmet>
-        <title>Subscription Successful - CloudGuard</title>
-        <meta name="description" content="Your CloudGuard subscription has been activated successfully." />
+        <title>Subscription Successful - InfraAudit</title>
+        <meta name="description" content="Your InfraAudit subscription has been activated successfully." />
       </Helmet>
       
       <div className="container mx-auto px-4 py-16">
@@ -69,9 +69,9 @@ const SubscriptionSuccess = () => {
           
           <p className="text-muted-foreground mb-8">
             {planName ? (
-              <>Your CloudGuard <span className="font-medium">{planName}</span> has been activated successfully.</>
+              <>Your InfraAudit <span className="font-medium">{planName}</span> has been activated successfully.</>
             ) : (
-              <>Your CloudGuard subscription has been activated successfully.</>
+              <>Your InfraAudit subscription has been activated successfully.</>
             )}
           </p>
           

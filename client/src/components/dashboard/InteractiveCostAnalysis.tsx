@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Line, Bar } from "react-chartjs-2";
@@ -98,6 +99,7 @@ interface CostAnomaly {
 
 export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCostAnalysisProps) {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [groupBy, setGroupBy] = useState<GroupBy>("service");
   const [chartType, setChartType] = useState<ChartType>("area");
@@ -105,6 +107,8 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [showAnomalies, setShowAnomalies] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedDetail, setSelectedDetail] = useState<string | null>(null);
+  const [comparisonMode, setComparisonMode] = useState<boolean>(false);
   
   // Calculate the number of selected filters
   const selectedFilters = selectedServices.length + selectedRegions.length;
@@ -141,6 +145,33 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
   
   // Cost breakdown
   const [costBreakdown, setCostBreakdown] = useState<CostBreakdown[]>([]);
+  
+  // Get previous period data for comparison when enabled
+  function getPreviousPeriodData() {
+    if (!costData || costData.length === 0) return [];
+    
+    // Clone and manipulate data to represent previous period (30 days before)
+    const previousPeriodData = costData.map(item => {
+      const dateParts = item.date.split('-');
+      const itemDate = new Date(
+        parseInt(dateParts[0]),
+        parseInt(dateParts[1]) - 1,
+        parseInt(dateParts[2])
+      );
+      
+      // Move date 30 days back for previous period
+      itemDate.setDate(itemDate.getDate() - 30);
+      
+      return {
+        ...item,
+        date: itemDate.toISOString().split('T')[0],
+        // Randomize previous amount for demo purposes (in real app, fetch actual previous data)
+        amount: item.amount * (Math.random() * (1.3 - 0.7) + 0.7)
+      };
+    });
+    
+    return previousPeriodData;
+  }
   
   // Prepare chart data
   const prepareChartData = () => {
@@ -198,7 +229,7 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
         : Array.from(serviceSet);
     
     // Create datasets
-    const datasets = [];
+    const datasets: any[] = [];
     
     // Add current period datasets
     servicesToShow.forEach((service, index) => {
@@ -294,33 +325,6 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
   
   // Calculate total spend
   const totalSpend = costData ? costData.reduce((sum, item) => sum + item.amount, 0) : 0;
-  
-  // For drill-down functionality
-  const [selectedDetail, setSelectedDetail] = useState<string | null>(null);
-  const [comparisonMode, setComparisonMode] = useState<boolean>(false);
-  
-  // Get previous period data for comparison when enabled
-  const getPreviousPeriodData = () => {
-    if (!costData || costData.length === 0) return [];
-    
-    // Clone and manipulate data to represent previous period (30 days before)
-    const previousPeriodData = costData.map(item => {
-      const dateParts = item.date.split('-');
-      const itemDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-      
-      // Move date 30 days back for previous period
-      itemDate.setDate(itemDate.getDate() - 30);
-      
-      return {
-        ...item,
-        date: itemDate.toISOString().split('T')[0],
-        // Randomize previous amount for demo purposes (in real app, fetch actual previous data)
-        amount: item.amount * (Math.random() * (0.7 - 1.3) + 0.85)
-      };
-    });
-    
-    return previousPeriodData;
-  };
   
   // Sample anomalies
   const anomalies: CostAnomaly[] = [
@@ -587,7 +591,7 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
             <p className="text-gray-600 dark:text-gray-400 max-w-md mb-4">
               Connect your cloud accounts to see real-time cost data and detailed analytics.
             </p>
-            <Button>
+            <Button onClick={() => navigate("/cloud-providers") }>
               Connect Cloud Provider
             </Button>
           </div>
@@ -726,28 +730,26 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
                       <h4 className="text-sm font-medium">Usage by Region</h4>
                     </div>
                     <div className="space-y-2">
-                      {costData
-                        .filter(item => item.service === selectedDetail)
-                        .reduce((acc, item) => {
-                          const region = item.region || 'Unknown';
-                          if (!acc[region]) {
-                            acc[region] = 0;
-                          }
-                          acc[region] += item.amount;
-                          return acc;
-                        }, {} as Record<string, number>)
-                        .entries()
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([region, cost], index) => (
-                          <div key={region} className="flex items-center justify-between p-2 rounded bg-white dark:bg-gray-900">
-                            <div className="flex items-center">
-                              <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: getColorForIndex(index) }} />
-                              <span className="text-sm">{region}</span>
-                            </div>
-                            <span className="text-sm font-medium">{formatCurrency(cost)}</span>
+                      {Object.entries(
+                        costData
+                          .filter(item => item.service === selectedDetail)
+                          .reduce((acc, item) => {
+                            const region = item.region || 'Unknown';
+                            acc[region] = (acc[region] || 0) + item.amount;
+                            return acc;
+                          }, {} as Record<string, number>)
+                      )
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([region, cost], index) => (
+                        <div key={region} className="flex items-center justify-between p-2 rounded bg-white dark:bg-gray-900">
+                          <div className="flex items-center">
+                            <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: getColorForIndex(index) }} />
+                            <span className="text-sm">{region}</span>
                           </div>
-                        ))
-                      }
+                          <span className="text-sm font-medium">{formatCurrency(cost)}</span>
+                        </div>
+                      ))
+                    }
                     </div>
                   </Card>
                   
@@ -756,19 +758,17 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
                       <h4 className="text-sm font-medium">Daily Trend</h4>
                     </div>
                     <div className="text-center py-8">
-                      {costData
-                        .filter(item => item.service === selectedDetail)
-                        .reduce((acc, item) => {
-                          const day = item.date.split('-')[2]; // Get day from date
-                          if (!acc[day]) {
-                            acc[day] = 0;
-                          }
-                          acc[day] += item.amount;
-                          return acc;
-                        }, {} as Record<string, number>)
-                        .entries()
-                        .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
-                        .reduce((total, [day, amount]) => total + amount, 0) / 30
+                      {Object.entries(
+                        costData
+                          .filter(item => item.service === selectedDetail)
+                          .reduce((acc, item) => {
+                            const day = item.date.split('-')[2]; // Get day from date
+                            acc[day] = (acc[day] || 0) + item.amount;
+                            return acc;
+                          }, {} as Record<string, number>)
+                      )
+                      .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+                      .reduce((total, [, amount]) => total + amount, 0) / 30
                       }
                       <div className="text-2xl font-bold">{formatCurrency(
                         costData
@@ -818,16 +818,14 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
                 </div>
                 
                 <div className="space-y-3">
-                  {costData && costData.reduce((acc, item) => {
-                    if (item.service) {
-                      if (!acc[item.service]) {
-                        acc[item.service] = 0;
+                  {costData && Object.entries(
+                    costData.reduce((acc, item) => {
+                      if (item.service) {
+                        acc[item.service] = (acc[item.service] || 0) + item.amount;
                       }
-                      acc[item.service] += item.amount;
-                    }
-                    return acc;
-                  }, {} as Record<string, number>)
-                  .entries()
+                      return acc;
+                    }, {} as Record<string, number>)
+                  )
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 5)
                   .map(([service, cost], index) => (

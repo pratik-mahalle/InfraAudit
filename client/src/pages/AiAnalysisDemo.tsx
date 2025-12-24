@@ -321,8 +321,8 @@ export default function AiAnalysisDemo() {
   return (
     <>
       <Helmet>
-        <title>AI Analysis Demo | InfraAudit</title>
-        <meta name="description" content="Experience InfraAudit's AI-powered analysis for cloud resource cost optimization and security drift detection." />
+        <title>AI Analysis Demo | InfrAudit</title>
+        <meta name="description" content="Experience InfrAudit's AI-powered analysis for cloud resource cost optimization and security drift detection." />
       </Helmet>
 
       <div className="container max-w-7xl mx-auto py-12 px-4 md:px-6">
@@ -578,7 +578,7 @@ export default function AiAnalysisDemo() {
         
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            Note: This is a demonstration of InfraAudit's AI capabilities. In the production version, analyses are performed in real-time on your actual cloud resources.
+            Note: This is a demonstration of InfrAudit's AI capabilities. In the production version, analyses are performed in real-time on your actual cloud resources.
           </p>
         </div>
       </div>

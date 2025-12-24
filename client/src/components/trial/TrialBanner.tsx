@@ -31,7 +31,7 @@ export default function TrialBanner() {
       if (user.trialStatus === "expired") {
         setFallbackStatus({
           status: "expired",
-          message: "Your 7-day trial has expired. Upgrade to continue using InfraAudit.",
+          message: "Your 7-day trial has expired. Upgrade to continue using InfrAudit.",
           daysRemaining: 0
         });
       } else if (user.trialStatus === "active" && user.trialStartedAt) {
@@ -73,6 +73,7 @@ export default function TrialBanner() {
       }
     },
     // Don't fetch if user is not authenticated
+    // InfrAudit
     enabled: !!user,
     // Refresh every 5 minutes
     refetchInterval: 5 * 60 * 1000
@@ -125,7 +126,7 @@ export default function TrialBanner() {
         <AlertTitle className="text-blue-800 dark:text-blue-300">Start Your Free Trial</AlertTitle>
         <AlertDescription className="flex items-center justify-between">
           <span className="text-blue-700 dark:text-blue-300">
-            Get full access to InfraAudit for 7 days. No credit card required.
+            Get full access to InfrAudit for 7 days. No credit card required.
           </span>
           <Button 
             onClick={handleStartTrial} 

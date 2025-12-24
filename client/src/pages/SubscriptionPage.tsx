@@ -26,8 +26,8 @@ const SubscriptionPage = () => {
   return (
     <>
       <Helmet>
-        <title>Subscription Plans - CloudGuard</title>
-        <meta name="description" content="Choose the right CloudGuard subscription plan for your organization's cloud monitoring needs." />
+        <title>Subscription Plans - InfraAudit</title>
+        <meta name="description" content="Choose the right InfraAudit subscription plan for your organization's cloud monitoring needs." />
       </Helmet>
       
       <div className="container mx-auto px-4 py-8">
@@ -35,7 +35,7 @@ const SubscriptionPage = () => {
           <div>
             <h1 className="text-4xl font-bold mb-2">Subscription & Billing</h1>
             <p className="text-muted-foreground">
-              Manage your CloudGuard subscription and billing information
+              Manage your InfraAudit subscription and billing information
             </p>
           </div>
           
@@ -57,6 +57,17 @@ const SubscriptionPage = () => {
             </TabsList>
             
             <TabsContent value="plans" className="mt-6">
+              <div className="mb-4 p-4 rounded border bg-muted/40 text-sm">
+                InfraAudit is open source. You can use the Community edition by self-hosting for free, or choose a managed plan below.
+                <a
+                  href="https://github.com/thedevopsguy/InfraAudit"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 underline"
+                >
+                  View on GitHub
+                </a>
+              </div>
               <PlanSelector />
             </TabsContent>
             

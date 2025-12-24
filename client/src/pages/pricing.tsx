@@ -13,6 +13,20 @@ export default function PricingPage() {
   // Pricing tiers with monthly and annual pricing
   const pricingTiers = [
     {
+      name: "Community (Open Source)",
+      description: "Self-hosted, free forever. Ideal for individuals and small teams",
+      monthlyPrice: 0,
+      annualPrice: 0,
+      features: [
+        "Core features",
+        "Community support",
+        "MIT License",
+      ],
+      isPopular: false,
+      ctaText: "Deploy Self-Hosted",
+      isOss: true,
+    },
+    {
       name: "Starter",
       description: "Essential monitoring for small cloud deployments",
       monthlyPrice: 49,
@@ -68,12 +82,12 @@ export default function PricingPage() {
     <div className="container max-w-6xl py-10">
       <div className="mb-10 text-center">
         <h1 className="text-3xl font-extrabold tracking-tight lg:text-4xl mb-4">
-          Upgrade to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">InfraAudit Pro</span>
+          Upgrade to <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">InfrAudit Pro</span>
         </h1>
         
         {user?.trialStatus === "expired" ? (
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
-            Your free trial has expired. Choose a plan to continue using InfraAudit.
+            Your free trial has expired. Choose a plan to continue using InfrAudit.
           </p>
         ) : (
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-6">
@@ -117,12 +131,21 @@ export default function PricingPage() {
             
             <CardContent className="flex-grow">
               <div className="mt-2 mb-6">
-                <p className="text-4xl font-bold">
-                  ${billingInterval === "monthly" ? tier.monthlyPrice : tier.annualPrice}
-                </p>
-                <p className="text-gray-500 dark:text-gray-400">
-                  per {billingInterval === "monthly" ? "month" : "year"}
-                </p>
+                {tier.isOss ? (
+                  <>
+                    <p className="text-4xl font-bold">Free</p>
+                    <p className="text-gray-500 dark:text-gray-400">Self-hosted</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-4xl font-bold">
+                      ${billingInterval === "monthly" ? tier.monthlyPrice : tier.annualPrice}
+                    </p>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      per {billingInterval === "monthly" ? "month" : "year"}
+                    </p>
+                  </>
+                )}
               </div>
               
               <ul className="space-y-2">
@@ -136,13 +159,23 @@ export default function PricingPage() {
             </CardContent>
             
             <CardFooter>
-              <Button 
-                className={`w-full ${tier.isPopular ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                variant={tier.isPopular ? 'default' : 'outline'}
-                asChild
-              >
-                <Link href="/subscription">{tier.ctaText}</Link>
-              </Button>
+              {tier.isOss ? (
+                <a 
+                  className="w-full inline-flex items-center justify-center h-10 px-4 py-2 text-sm font-medium transition-colors bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                  href="https://github.com/thedevopsguy/InfraAudit"
+                  target="_blank" rel="noopener noreferrer"
+                >
+                  {tier.ctaText}
+                </a>
+              ) : (
+                <Button 
+                  className={`w-full ${tier.isPopular ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                  variant={tier.isPopular ? 'default' : 'outline'}
+                  asChild
+                >
+                  <Link href="/subscription">{tier.ctaText}</Link>
+                </Button>
+              )}
             </CardFooter>
           </Card>
         ))}

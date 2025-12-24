@@ -8,7 +8,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
-  password: text("password").notNull(),
+  password: text("password"), // Made optional for OAuth users
   fullName: text("full_name"),
   role: text("role").default("user"), // user, admin, support
   organizationId: integer("organization_id"),
@@ -18,6 +18,9 @@ export const users = pgTable("users", {
   subscriptionStatus: text("subscription_status").default("inactive"), // active, inactive, past_due, canceled
   trialStartedAt: timestamp("trial_started_at"),
   trialStatus: text("trial_status").default("inactive"), // inactive, active, expired
+  oauthProvider: text("oauth_provider"), // google, github, etc.
+  oauthId: text("oauth_id"), // OAuth provider user ID
+  avatarUrl: text("avatar_url"), // Profile picture URL
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   lastLoginAt: timestamp("last_login_at"),
@@ -36,6 +39,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   subscriptionStatus: true,
   trialStartedAt: true,
   trialStatus: true,
+  oauthProvider: true,
+  oauthId: true,
+  avatarUrl: true,
 });
 
 // Cloud resources schema

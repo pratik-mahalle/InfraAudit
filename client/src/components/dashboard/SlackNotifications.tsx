@@ -48,7 +48,8 @@ export function SlackNotifications({
                   d="M0 34.249a5.381 5.381 0 0 0 5.376 5.386 5.381 5.381 0 0 0 5.376-5.386v-5.387H5.376A5.381 5.381 0 0 0 0 34.25m14.336-.001v14.364A5.381 5.381 0 0 0 19.712 54a5.381 5.381 0 0 0 5.376-5.387V34.25a5.381 5.381 0 0 0-5.376-5.387 5.381 5.381 0 0 0-5.376 5.387"
                 />
               </svg>
-              InfraAudit Alerts
+              InfrAudit Alerts
+              <span className="mr-2">InfrAudit</span>
             </div>
           </div>
           <div className="p-3 bg-white">
@@ -59,7 +60,7 @@ export function SlackNotifications({
               Unexpected 43% increase in compute costs over the last 24 hours. <a href="#" className="text-blue-600">View details →</a>
             </div>
             <div className="text-xs text-gray-500 mt-2">
-              <span className="mr-2">InfraAudit</span>
+              <span className="mr-2">InfrAudit</span>
               <span>Today at 9:15 AM</span>
             </div>
           </div>

@@ -8,8 +8,8 @@ export default function PrivacyPolicyPage() {
   return (
     <>
       <Helmet>
-        <title>Privacy Policy | InfraAudit</title>
-        <meta name="description" content="Learn how InfraAudit collects, uses, and protects your personal information and data in compliance with global privacy regulations." />
+        <title>Privacy Policy | InfrAudit</title>
+        <meta name="description" content="Learn how InfrAudit collects, uses, and protects your personal information and data in compliance with global privacy regulations." />
       </Helmet>
 
       <div className="container max-w-4xl mx-auto py-12 px-4 md:px-6">
@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
         {/* Introduction */}
         <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
           <p>
-            At InfraAudit, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, 
+            At InfrAudit, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, 
             and safeguard your information when you use our multi-cloud infrastructure monitoring platform. 
             Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, 
             please do not access the platform.
@@ -239,11 +239,11 @@ export default function PrivacyPolicyPage() {
               If you have questions or comments about this privacy policy, you may contact us at:
             </p>
             <div className="mt-4">
-              <p><strong>InfraAudit, Inc.</strong></p>
+              <p><strong>InfrAudit, Inc.</strong></p>
               <p>350 California St</p>
               <p>San Francisco, CA 94104</p>
               <p>United States</p>
-              <p>Email: privacy@infraaudit.com</p>
+              <p>Email: privacy@infraudit.com</p>
               <p>Phone: +1 (800) 555-1234</p>
             </div>
           </section>
@@ -255,7 +255,7 @@ export default function PrivacyPolicyPage() {
           <div>
             <h3 className="text-lg font-semibold mb-2">Our Commitment to Privacy</h3>
             <p className="text-muted-foreground">
-              InfraAudit is committed to protecting your privacy and ensuring compliance with applicable data protection laws, 
+              InfrAudit is committed to protecting your privacy and ensuring compliance with applicable data protection laws, 
               including GDPR, CCPA, and other regional privacy regulations. If you have any questions about our privacy practices 
               or wish to exercise your rights, please don't hesitate to contact us.
             </p>
