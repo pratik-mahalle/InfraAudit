@@ -1,15 +1,15 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
-import { 
-  Zap, 
-  Award, 
-  BarChart4, 
-  Shield, 
-  Cloud, 
-  Check, 
-  Users, 
-  Globe, 
+import {
+  Zap,
+  Award,
+  BarChart4,
+  Shield,
+  Cloud,
+  Check,
+  Users,
+  Globe,
   Rocket,
   Target,
   Heart,
@@ -82,7 +82,7 @@ export default function AboutPage() {
         <section className="relative py-24 px-6 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
           <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-100/50 to-transparent dark:from-blue-900/10" />
-          
+
           <div className="max-w-6xl mx-auto relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -156,7 +156,7 @@ export default function AboutPage() {
                   </Button>
                 </div>
               </motion.div>
-              
+
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
@@ -199,7 +199,7 @@ export default function AboutPage() {
                 Everything you need to optimize, secure, and manage your cloud infrastructure.
               </p>
             </motion.div>
-            
+
             <div className="grid md:grid-cols-3 gap-8">
               {solutions.map((solution, i) => (
                 <motion.div
@@ -235,7 +235,7 @@ export default function AboutPage() {
                 The principles that guide everything we build.
               </p>
             </motion.div>
-            
+
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {values.map((value, i) => (
                 <motion.div
@@ -258,32 +258,85 @@ export default function AboutPage() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-24 px-6 bg-gradient-to-br from-blue-600 to-indigo-700">
-          <div className="max-w-4xl mx-auto text-center">
+        <section className="relative py-28 px-6 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-violet-900">
+          {/* Decorative background elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-1/4 -left-32 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-500/15 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-t from-violet-600/10 to-transparent" />
+          </div>
+
+          {/* Grid pattern overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
+
+          <div className="max-w-4xl mx-auto relative z-10">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-center"
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                Ready to optimize your cloud?
+              {/* Sparkle badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 mb-8"
+              >
+                <Zap className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm text-white/90 font-medium">Start saving in minutes</span>
+              </motion.div>
+
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
+                Ready to optimize
+                <br />
+                <span className="bg-gradient-to-r from-violet-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                  your cloud?
+                </span>
               </h2>
-              <p className="text-xl text-blue-100 mb-8">
-                Start your free trial today. No credit card required.
+
+              <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+                Join thousands of companies saving up to 35% on their cloud costs.
+                Start your free 14-day trial today. No credit card required.
               </p>
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild size="lg" className="bg-white hover:bg-gray-100 text-blue-700 rounded-full px-8 font-semibold">
+                <Button asChild size="lg" className="bg-white hover:bg-gray-100 text-slate-900 rounded-full px-8 font-semibold shadow-lg shadow-white/20 hover:shadow-white/30 transition-all duration-300">
                   <Link href="/auth">
                     Get started free
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="border-white/30 hover:bg-white/10 text-white rounded-full px-8">
+                <Button asChild variant="outline" size="lg" className="border-white/30 bg-white/5 hover:bg-white/15 hover:border-white/50 text-white rounded-full px-8 backdrop-blur-sm transition-all duration-300">
                   <Link href="/contact">
                     Talk to sales
                   </Link>
                 </Button>
               </div>
+
+              {/* Trust indicators */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4 }}
+                className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-slate-400"
+              >
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  <span>No credit card required</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  <span>14-day free trial</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  <span>Cancel anytime</span>
+                </div>
+              </motion.div>
             </motion.div>
           </div>
         </section>

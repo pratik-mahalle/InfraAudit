@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { 
-  LayoutDashboard, 
-  Settings, 
-  Cloud, 
-  BarChart3, 
-  Shield, 
-  Menu, 
+import {
+  LayoutDashboard,
+  Settings,
+  Cloud,
+  BarChart3,
+  Shield,
+  Menu,
   LogOut,
   BookOpen,
   CreditCard,
@@ -61,7 +61,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 // Mega Menu Item
@@ -122,18 +121,18 @@ export function Navbar() {
   };
 
   // Mega Menu Dropdown Component
-  const MegaMenuDropdown = ({ 
-    label, 
-    isOpen, 
-    onToggle, 
-    children 
-  }: { 
-    label: string; 
-    isOpen: boolean; 
-    onToggle: () => void; 
-    children: React.ReactNode 
+  const MegaMenuDropdown = ({
+    label,
+    isOpen,
+    onToggle,
+    children
+  }: {
+    label: string;
+    isOpen: boolean;
+    onToggle: () => void;
+    children: React.ReactNode
   }) => (
-    <div 
+    <div
       className="relative"
       onMouseEnter={() => setActiveDropdown(label)}
       onMouseLeave={() => setActiveDropdown(null)}
@@ -142,15 +141,15 @@ export function Navbar() {
         onClick={onToggle}
         className={cn(
           "flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors rounded-lg",
-          isOpen 
-            ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30" 
+          isOpen
+            ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30"
             : "text-gray-700 dark:text-gray-300 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800"
         )}
       >
         {label}
         <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
       </button>
-      
+
       {isOpen && (
         <div className="absolute top-full left-0 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden z-50">
           {children}
@@ -170,19 +169,19 @@ export function Navbar() {
               <svg viewBox="0 0 44 44" className="h-9 w-9" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <linearGradient id="navLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3B82F6"/>
-                    <stop offset="100%" stopColor="#1D4ED8"/>
+                    <stop offset="0%" stopColor="#3B82F6" />
+                    <stop offset="100%" stopColor="#1D4ED8" />
                   </linearGradient>
                 </defs>
-                <rect width="44" height="44" rx="10" fill="url(#navLogoGradient)"/>
-                <path d="M22 12C18.5 12 15.5 14.5 14.5 17.8C11.5 18.2 9 21 9 24.5C9 28.5 12 31.5 16 31.5H28C31.5 31.5 34.5 28.5 34.5 25C34.5 22 32.2 19.5 29.2 19C28.5 15 25.5 12 22 12Z" fill="white" fillOpacity="0.95"/>
-                <circle cx="16" cy="24" r="2" fill="#3B82F6"/>
-                <circle cx="22" cy="20" r="2" fill="#3B82F6"/>
-                <circle cx="28" cy="24" r="2" fill="#3B82F6"/>
-                <line x1="18" y1="23" x2="20" y2="21" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round"/>
-                <line x1="24" y1="21" x2="26" y2="23" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round"/>
-                <line x1="18.5" y1="24" x2="25.5" y2="24" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round"/>
-                <rect x="13" y="28" width="18" height="1.5" rx="0.75" fill="#3B82F6" fillOpacity="0.5"/>
+                <rect width="44" height="44" rx="10" fill="url(#navLogoGradient)" />
+                <path d="M22 12C18.5 12 15.5 14.5 14.5 17.8C11.5 18.2 9 21 9 24.5C9 28.5 12 31.5 16 31.5H28C31.5 31.5 34.5 28.5 34.5 25C34.5 22 32.2 19.5 29.2 19C28.5 15 25.5 12 22 12Z" fill="white" fillOpacity="0.95" />
+                <circle cx="16" cy="24" r="2" fill="#3B82F6" />
+                <circle cx="22" cy="20" r="2" fill="#3B82F6" />
+                <circle cx="28" cy="24" r="2" fill="#3B82F6" />
+                <line x1="18" y1="23" x2="20" y2="21" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="24" y1="21" x2="26" y2="23" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="18.5" y1="24" x2="25.5" y2="24" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" />
+                <rect x="13" y="28" width="18" height="1.5" rx="0.75" fill="#3B82F6" fillOpacity="0.5" />
               </svg>
               {/* Logo Text */}
               <span className="text-xl font-bold tracking-tight">
@@ -201,8 +200,8 @@ export function Navbar() {
               <Link href="/dashboard">
                 <span className={cn(
                   "px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer",
-                  location === "/dashboard" 
-                    ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30" 
+                  location === "/dashboard"
+                    ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30"
                     : "text-gray-700 dark:text-gray-300 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800"
                 )}>
                   Dashboard
@@ -210,8 +209,8 @@ export function Navbar() {
               </Link>
 
               {/* Analytics Mega Menu */}
-              <MegaMenuDropdown 
-                label="Analytics" 
+              <MegaMenuDropdown
+                label="Analytics"
                 isOpen={activeDropdown === "Analytics"}
                 onToggle={() => setActiveDropdown(activeDropdown === "Analytics" ? null : "Analytics")}
               >
@@ -246,8 +245,8 @@ export function Navbar() {
               </MegaMenuDropdown>
 
               {/* Infrastructure Mega Menu */}
-              <MegaMenuDropdown 
-                label="Infrastructure" 
+              <MegaMenuDropdown
+                label="Infrastructure"
                 isOpen={activeDropdown === "Infrastructure"}
                 onToggle={() => setActiveDropdown(activeDropdown === "Infrastructure" ? null : "Infrastructure")}
               >
@@ -257,27 +256,27 @@ export function Navbar() {
                     <div className="col-span-1 pr-6 border-r border-gray-200 dark:border-gray-700">
                       <CategoryHeader>Featured</CategoryHeader>
                       <div className="space-y-3">
-                        <FeaturedItem 
-                          href="/cloud-providers" 
-                          title="Multi-Cloud" 
-                          description="AWS, Azure, GCP" 
-                          icon={Cloud} 
+                        <FeaturedItem
+                          href="/cloud-providers"
+                          title="Multi-Cloud"
+                          description="AWS, Azure, GCP"
+                          icon={Cloud}
                         />
-                        <FeaturedItem 
-                          href="/kubernetes" 
-                          title="Kubernetes" 
-                          description="K8s monitoring" 
-                          icon={Cpu} 
+                        <FeaturedItem
+                          href="/kubernetes"
+                          title="Kubernetes"
+                          description="K8s monitoring"
+                          icon={Cpu}
                         />
-                        <FeaturedItem 
-                          href="/architecture-playground" 
-                          title="Designer" 
-                          description="Visual architect" 
-                          icon={Layers} 
+                        <FeaturedItem
+                          href="/architecture-playground"
+                          title="Designer"
+                          description="Visual architect"
+                          icon={Layers}
                         />
                       </div>
                     </div>
-                    
+
                     {/* Cloud Providers */}
                     <div>
                       <CategoryHeader>Cloud Providers</CategoryHeader>
@@ -288,7 +287,7 @@ export function Navbar() {
                         <MegaMenuItem href="/cloud-providers">All Providers</MegaMenuItem>
                       </div>
                     </div>
-                    
+
                     {/* Kubernetes */}
                     <div>
                       <CategoryHeader>Kubernetes</CategoryHeader>
@@ -299,7 +298,7 @@ export function Navbar() {
                         <MegaMenuItem href="/kubernetes">Optimization</MegaMenuItem>
                       </div>
                     </div>
-                    
+
                     {/* Tools */}
                     <div>
                       <CategoryHeader>Tools</CategoryHeader>
@@ -316,8 +315,8 @@ export function Navbar() {
               <Link href="/security">
                 <span className={cn(
                   "px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer",
-                  location === "/security" 
-                    ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30" 
+                  location === "/security"
+                    ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30"
                     : "text-gray-700 dark:text-gray-300 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800"
                 )}>
                   Security
@@ -327,8 +326,8 @@ export function Navbar() {
               <Link href="/subscription">
                 <span className={cn(
                   "px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer",
-                  location === "/subscription" 
-                    ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30" 
+                  location === "/subscription"
+                    ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30"
                     : "text-gray-700 dark:text-gray-300 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800"
                 )}>
                   Billing
@@ -339,8 +338,8 @@ export function Navbar() {
             // Public Navigation
             <>
               {/* Products Mega Menu */}
-              <MegaMenuDropdown 
-                label="Products" 
+              <MegaMenuDropdown
+                label="Products"
                 isOpen={activeDropdown === "Products"}
                 onToggle={() => setActiveDropdown(activeDropdown === "Products" ? null : "Products")}
               >
@@ -350,39 +349,39 @@ export function Navbar() {
                     <div className="col-span-1 pr-6 border-r border-gray-200 dark:border-gray-700">
                       <CategoryHeader>Featured Products</CategoryHeader>
                       <div className="space-y-2">
-                        <FeaturedItem 
-                          href="/auth" 
-                          title="Cost Optimizer" 
-                          description="AI-powered savings" 
-                          icon={DollarSign} 
+                        <FeaturedItem
+                          href="/auth"
+                          title="Cost Optimizer"
+                          description="AI-powered savings"
+                          icon={DollarSign}
                         />
-                        <FeaturedItem 
-                          href="/auth" 
-                          title="Security Monitor" 
-                          description="Drift detection" 
-                          icon={Shield} 
+                        <FeaturedItem
+                          href="/auth"
+                          title="Security Monitor"
+                          description="Drift detection"
+                          icon={Shield}
                         />
-                        <FeaturedItem 
-                          href="/auth" 
-                          title="Kubernetes" 
-                          description="K8s cost analytics" 
-                          icon={Cpu} 
+                        <FeaturedItem
+                          href="/auth"
+                          title="Kubernetes"
+                          description="K8s cost analytics"
+                          icon={Cpu}
                         />
-                        <FeaturedItem 
-                          href="/auth" 
-                          title="AI Insights" 
-                          description="Smart recommendations" 
-                          icon={Sparkles} 
+                        <FeaturedItem
+                          href="/auth"
+                          title="AI Insights"
+                          description="Smart recommendations"
+                          icon={Sparkles}
                         />
-                        <FeaturedItem 
-                          href="/auth" 
-                          title="Architecture Designer" 
-                          description="Visual cloud design" 
-                          icon={Layers} 
+                        <FeaturedItem
+                          href="/auth"
+                          title="Architecture Designer"
+                          description="Visual cloud design"
+                          icon={Layers}
                         />
                       </div>
                     </div>
-                    
+
                     {/* Cost Management */}
                     <div>
                       <CategoryHeader>Cost Management</CategoryHeader>
@@ -393,7 +392,7 @@ export function Navbar() {
                         <MegaMenuItem href="/auth">Billing Integration</MegaMenuItem>
                         <MegaMenuItem href="/auth">Savings Plans</MegaMenuItem>
                       </div>
-                      
+
                       <CategoryHeader>AI & Predictions</CategoryHeader>
                       <div className="space-y-1">
                         <MegaMenuItem href="/auth">Cost Forecasting</MegaMenuItem>
@@ -401,7 +400,7 @@ export function Navbar() {
                         <MegaMenuItem href="/auth">Smart Recommendations</MegaMenuItem>
                       </div>
                     </div>
-                    
+
                     {/* Security & Compliance */}
                     <div>
                       <CategoryHeader>Security & Compliance</CategoryHeader>
@@ -412,7 +411,7 @@ export function Navbar() {
                         <MegaMenuItem href="/auth">Policy Management</MegaMenuItem>
                         <MegaMenuItem href="/auth">Vulnerability Alerts</MegaMenuItem>
                       </div>
-                      
+
                       <CategoryHeader>Infrastructure</CategoryHeader>
                       <div className="space-y-1">
                         <MegaMenuItem href="/auth">Resource Inventory</MegaMenuItem>
@@ -420,7 +419,7 @@ export function Navbar() {
                         <MegaMenuItem href="/auth">Utilization Metrics</MegaMenuItem>
                       </div>
                     </div>
-                    
+
                     {/* Integrations */}
                     <div>
                       <CategoryHeader>Cloud Providers</CategoryHeader>
@@ -430,7 +429,7 @@ export function Navbar() {
                         <MegaMenuItem href="/auth">Google Cloud</MegaMenuItem>
                         <MegaMenuItem href="/auth">Kubernetes</MegaMenuItem>
                       </div>
-                      
+
                       <CategoryHeader>Notifications</CategoryHeader>
                       <div className="space-y-1">
                         <MegaMenuItem href="/auth" icon={Slack}>Slack</MegaMenuItem>
@@ -443,8 +442,8 @@ export function Navbar() {
               </MegaMenuDropdown>
 
               {/* Solutions Dropdown */}
-              <MegaMenuDropdown 
-                label="Solutions" 
+              <MegaMenuDropdown
+                label="Solutions"
                 isOpen={activeDropdown === "Solutions"}
                 onToggle={() => setActiveDropdown(activeDropdown === "Solutions" ? null : "Solutions")}
               >
@@ -453,34 +452,34 @@ export function Navbar() {
                     <div>
                       <CategoryHeader>By Company Size</CategoryHeader>
                       <div className="space-y-2">
-                        <FeaturedItem 
-                          href="/auth" 
-                          title="Startups" 
-                          description="Scale efficiently from day one" 
-                          icon={Zap} 
+                        <FeaturedItem
+                          href="/auth"
+                          title="Startups"
+                          description="Scale efficiently from day one"
+                          icon={Zap}
                         />
-                        <FeaturedItem 
-                          href="/auth" 
-                          title="Enterprise" 
-                          description="Enterprise-grade compliance" 
-                          icon={Building2} 
+                        <FeaturedItem
+                          href="/auth"
+                          title="Enterprise"
+                          description="Enterprise-grade compliance"
+                          icon={Building2}
                         />
                       </div>
                     </div>
                     <div>
                       <CategoryHeader>By Team</CategoryHeader>
                       <div className="space-y-2">
-                        <FeaturedItem 
-                          href="/auth" 
-                          title="DevOps" 
-                          description="Automate cloud operations" 
-                          icon={Terminal} 
+                        <FeaturedItem
+                          href="/auth"
+                          title="DevOps"
+                          description="Automate cloud operations"
+                          icon={Terminal}
                         />
-                        <FeaturedItem 
-                          href="/auth" 
-                          title="FinOps" 
-                          description="Cloud financial management" 
-                          icon={Wallet} 
+                        <FeaturedItem
+                          href="/auth"
+                          title="FinOps"
+                          description="Cloud financial management"
+                          icon={Wallet}
                         />
                       </div>
                     </div>
@@ -489,8 +488,8 @@ export function Navbar() {
               </MegaMenuDropdown>
 
               {/* Developers Dropdown */}
-              <MegaMenuDropdown 
-                label="Developers" 
+              <MegaMenuDropdown
+                label="Developers"
                 isOpen={activeDropdown === "Developers"}
                 onToggle={() => setActiveDropdown(activeDropdown === "Developers" ? null : "Developers")}
               >
@@ -522,14 +521,27 @@ export function Navbar() {
                   Pricing
                 </span>
               </Link>
+
+              {/* About - Direct Link */}
+              <Link href="/about">
+                <span className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors cursor-pointer">
+                  About
+                </span>
+              </Link>
+
+              {/* Contact - Direct Link */}
+              <Link href="/contact">
+                <span className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors cursor-pointer">
+                  Contact
+                </span>
+              </Link>
             </>
           )}
         </div>
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-3">
-          <ThemeToggle />
-          
+
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -584,12 +596,12 @@ export function Navbar() {
               </Button>
             </div>
           )}
-          
+
           {/* Mobile Menu Toggle */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="md:hidden" 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -609,8 +621,8 @@ export function Navbar() {
                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <LayoutDashboard className="h-5 w-5 text-blue-600" />
                       <span className="font-medium">Dashboard</span>
-                  </div>
-                </Link>
+                    </div>
+                  </Link>
                 </div>
 
                 <div>
@@ -620,14 +632,14 @@ export function Navbar() {
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <DollarSign className="h-5 w-5 text-gray-500" />
                         <span>Cost Analysis</span>
-                  </div>
-                </Link>
+                      </div>
+                    </Link>
                     <Link href="/cost-prediction" onClick={() => setMobileMenuOpen(false)}>
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <TrendingUp className="h-5 w-5 text-gray-500" />
-                    <span>Predictions</span>
-                  </div>
-                </Link>
+                        <span>Predictions</span>
+                      </div>
+                    </Link>
                     <Link href="/resource-utilization" onClick={() => setMobileMenuOpen(false)}>
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <Activity className="h-5 w-5 text-gray-500" />
@@ -656,8 +668,8 @@ export function Navbar() {
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <Layers className="h-5 w-5 text-gray-500" />
                         <span>Architecture Designer</span>
-                  </div>
-                </Link>
+                      </div>
+                    </Link>
                   </div>
                 </div>
 
@@ -672,18 +684,18 @@ export function Navbar() {
                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <CreditCard className="h-5 w-5 text-gray-500" />
                       <span className="font-medium">Billing</span>
-                  </div>
-                </Link>
+                    </div>
+                  </Link>
                 </div>
-                
+
                 <div className="border-t border-gray-200 dark:border-gray-800 pt-4">
                   <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>
                     <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Settings className="h-5 w-5 text-gray-500" />
                       <span className="font-medium">Settings</span>
-                  </div>
-                </Link>
-                  <button 
+                    </div>
+                  </Link>
+                  <button
                     onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600"
                   >
@@ -713,7 +725,7 @@ export function Navbar() {
                     <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <Cpu className="h-5 w-5 text-blue-600" />
-                    <span>Kubernetes</span>
+                        <span>Kubernetes</span>
                       </div>
                     </Link>
                     <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
@@ -738,11 +750,11 @@ export function Navbar() {
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <Building2 className="h-5 w-5 text-gray-500" />
                         <span>For Enterprise</span>
-                  </div>
-                </Link>
+                      </div>
+                    </Link>
                   </div>
                 </div>
-                
+
                 <div>
                   <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Resources</p>
                   <div className="space-y-1">
@@ -750,11 +762,11 @@ export function Navbar() {
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                         <BookOpen className="h-5 w-5 text-gray-500" />
                         <span>Documentation</span>
-                  </div>
-                </Link>
-                    <a 
-                      href="https://github.com/pratik-mahalle/InfraAudit" 
-                      target="_blank" 
+                      </div>
+                    </Link>
+                    <a
+                      href="https://github.com/pratik-mahalle/InfraAudit"
+                      target="_blank"
                       rel="noopener"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -769,9 +781,21 @@ export function Navbar() {
                         <span>Pricing</span>
                       </div>
                     </Link>
+                    <Link href="/about" onClick={() => setMobileMenuOpen(false)}>
+                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <Users className="h-5 w-5 text-gray-500" />
+                        <span>About Us</span>
+                      </div>
+                    </Link>
+                    <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>
+                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                        <Mail className="h-5 w-5 text-gray-500" />
+                        <span>Contact Us</span>
+                      </div>
+                    </Link>
                   </div>
                 </div>
-                
+
                 <div className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
                   <Button asChild variant="outline" className="w-full justify-center">
                     <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>Log in</Link>
