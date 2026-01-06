@@ -49,11 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: "Login failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Error is now handled inline in the auth form
+      // No toast needed - user sees the error message directly in the form
     },
   });
 

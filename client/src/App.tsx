@@ -18,6 +18,7 @@ import Profile from "@/pages/Profile";
 import CloudProviders from "@/pages/CloudProviders";
 import Documentation from "@/pages/documentation";
 import AuthPage from "@/pages/auth-page";
+import SignupPage from "@/pages/signup-page";
 import HomePage from "@/pages/HomePage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
@@ -47,94 +48,99 @@ function Router() {
       <Dashboard />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedSecurity = () => (
     <ExpiredTrialRedirect>
       <SecurityMonitoring />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedCost = () => (
     <ExpiredTrialRedirect>
       <CostOptimization />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedCostPrediction = () => (
     <ExpiredTrialRedirect>
       <CostPrediction />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedResources = () => (
     <ExpiredTrialRedirect>
       <ResourceUtilization />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedSettings = () => (
     <ExpiredTrialRedirect>
       <Settings />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedProfile = () => (
     <ExpiredTrialRedirect>
       <Profile />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedCloudProviders = () => (
     <ExpiredTrialRedirect>
       <CloudProviders />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedKubernetes = () => (
     <ExpiredTrialRedirect>
       <KubernetesPage />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedSubscription = () => (
     <ExpiredTrialRedirect>
       <SubscriptionPage />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedSubscriptionSuccess = () => (
     <ExpiredTrialRedirect>
       <SubscriptionSuccess />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedSubscriptionCancel = () => (
     <ExpiredTrialRedirect>
       <SubscriptionCancel />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedArchitecturePlayground = () => (
     <ExpiredTrialRedirect>
       <ArchitecturePlaygroundPage />
     </ExpiredTrialRedirect>
   );
-  
+
   const ProtectedRoiCalculator = () => (
     <ExpiredTrialRedirect>
       <RoiCalculator />
     </ExpiredTrialRedirect>
   );
-  
+
   return (
     <Switch>
-      {/* Auth page */}
+      {/* Auth pages */}
       <Route path="/auth">
         <AuthLayout>
           <AuthPage />
         </AuthLayout>
       </Route>
-      
+      <Route path="/signup">
+        <AuthLayout>
+          <SignupPage />
+        </AuthLayout>
+      </Route>
+
       {/* All other routes - with footer */}
       <Route path="*">
         <MainLayout>
@@ -156,7 +162,7 @@ function Router() {
             <ProtectedRoute path="/subscription/success" component={ProtectedSubscriptionSuccess} />
             <ProtectedRoute path="/subscription/cancel" component={ProtectedSubscriptionCancel} />
             <ProtectedRoute path="/roi-calculator" component={ProtectedRoiCalculator} />
-            
+
             {/* Public routes */}
             <Route path="/" component={HomePage} /> {/* Landing page for non-authenticated users */}
             <Route path="/documentation" component={Documentation} />
@@ -166,14 +172,14 @@ function Router() {
             <Route path="/share/:token" component={ShareViewer} />
             <Route path="/api" component={APIPage} />
             <Route path="/pricing" component={PricingPage} />
-            
+
             {/* Footer pages */}
             <Route path="/about" component={AboutPage} />
             <Route path="/contact" component={ContactPage} />
             <Route path="/privacy" component={PrivacyPolicyPage} />
             <Route path="/terms" component={TermsOfServicePage} />
             <Route path="/ai-demo" component={AiAnalysisDemo} />
-            
+
             {/* Fallback to 404 */}
             <Route component={NotFound} />
           </Switch>

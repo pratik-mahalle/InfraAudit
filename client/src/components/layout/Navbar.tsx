@@ -592,7 +592,7 @@ export function Navbar() {
                 <Link href="/auth">Log in</Link>
               </Button>
               <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4">
-                <Link href="/auth">Sign up</Link>
+                <Link href="/signup">Sign up</Link>
               </Button>
             </div>
           )}
@@ -801,7 +801,7 @@ export function Navbar() {
                     <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>Log in</Link>
                   </Button>
                   <Button asChild className="w-full justify-center bg-blue-600 hover:bg-blue-700">
-                    <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>Sign up</Link>
+                    <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>Sign up</Link>
                   </Button>
                 </div>
               </>
