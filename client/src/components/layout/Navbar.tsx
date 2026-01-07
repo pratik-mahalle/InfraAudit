@@ -63,41 +63,50 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
-// Mega Menu Item
+// Mega Menu Item - Redesigned with better hover states
 function MegaMenuItem({ href, children, icon: Icon }: { href: string; children: React.ReactNode; icon?: any }) {
   return (
     <Link href={href}>
-      <span className="flex items-center gap-2 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-        {Icon && <Icon className="h-4 w-4" />}
-        {children}
+      <span className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 cursor-pointer group">
+        {Icon && (
+          <span className="flex items-center justify-center w-8 h-8 rounded-md bg-gray-100 dark:bg-gray-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors duration-200">
+            <Icon className="h-4 w-4 text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200" />
+          </span>
+        )}
+        <span className="font-medium">{children}</span>
       </span>
     </Link>
   );
 }
 
-// Featured Product Item
+
+// Featured Product Item - Enhanced with better animations
 function FeaturedItem({ href, title, description, icon: Icon }: { href: string; title: string; description: string; icon: any }) {
   return (
     <Link href={href}>
-      <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer group">
-        <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
+      <div className="flex items-start gap-4 p-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-transparent dark:hover:from-blue-900/20 dark:hover:to-transparent border border-transparent hover:border-blue-100 dark:hover:border-blue-800/30 transition-all duration-300 cursor-pointer group">
+        <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/40 group-hover:scale-105 transition-all duration-300">
           <Icon className="h-5 w-5" />
         </div>
-        <div>
-          <div className="font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 flex items-center gap-2">
             {title}
+            <ArrowRight className="h-3.5 w-3.5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">{description}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{description}</div>
         </div>
       </div>
     </Link>
   );
 }
 
-// Category Header
+// Category Header - Enhanced styling
 function CategoryHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h4 className="font-semibold text-gray-900 dark:text-white text-sm mb-3">{children}</h4>
+    <h4 className="font-semibold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4 px-3 flex items-center gap-2">
+      <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+      {children}
+    </h4>
   );
 }
 
@@ -106,6 +115,12 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [location] = useLocation();
+
+  // Close dropdown when route changes
+  React.useEffect(() => {
+    setActiveDropdown(null);
+    setMobileMenuOpen(false);
+  }, [location]);
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -120,43 +135,63 @@ export function Navbar() {
       .toUpperCase();
   };
 
-  // Mega Menu Dropdown Component
+  // Mega Menu Dropdown Component - Enhanced with flexible positioning
   const MegaMenuDropdown = ({
     label,
     isOpen,
     onToggle,
-    children
+    children,
+    position = 'left' // 'left' | 'center' | 'right'
   }: {
     label: string;
     isOpen: boolean;
     onToggle: () => void;
-    children: React.ReactNode
-  }) => (
-    <div
-      className="relative"
-      onMouseEnter={() => setActiveDropdown(label)}
-      onMouseLeave={() => setActiveDropdown(null)}
-    >
-      <button
-        onClick={onToggle}
-        className={cn(
-          "flex items-center gap-1 px-4 py-2 text-sm font-medium transition-colors rounded-lg",
-          isOpen
-            ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30"
-            : "text-gray-700 dark:text-gray-300 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-        )}
-      >
-        {label}
-        <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
-      </button>
+    children: React.ReactNode;
+    position?: 'left' | 'center' | 'right';
+  }) => {
+    // Determine positioning classes based on position prop
+    const positionClasses = {
+      left: 'left-0',
+      center: 'left-1/2 -translate-x-1/2',
+      right: 'right-0'
+    };
 
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden z-50">
-          {children}
-        </div>
-      )}
-    </div>
-  );
+    return (
+      <div
+        className="relative"
+        onMouseEnter={() => setActiveDropdown(label)}
+        onMouseLeave={() => setActiveDropdown(null)}
+      >
+        <button
+          onClick={onToggle}
+          className={cn(
+            "flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg",
+            isOpen
+              ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30 shadow-sm"
+              : "text-gray-700 dark:text-gray-300 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+          )}
+        >
+          {label}
+          <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isOpen && "rotate-180")} />
+        </button>
+
+        {isOpen && (
+          <div
+            className={cn(
+              "absolute top-full mt-3 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50",
+              positionClasses[position]
+            )}
+            style={{
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+              maxWidth: 'calc(100vw - 2rem)'
+            }}
+          >
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white dark:bg-slate-950 border-b border-gray-200 dark:border-gray-800">
@@ -213,9 +248,10 @@ export function Navbar() {
                 label="Analytics"
                 isOpen={activeDropdown === "Analytics"}
                 onToggle={() => setActiveDropdown(activeDropdown === "Analytics" ? null : "Analytics")}
+                position="center"
               >
-                <div className="p-6 w-[600px]">
-                  <div className="grid grid-cols-3 gap-6">
+                <div className="p-6 w-[640px] max-w-[calc(100vw-2rem)]">
+                  <div className="grid grid-cols-3 gap-8">
                     <div>
                       <CategoryHeader>Cost Management</CategoryHeader>
                       <div className="space-y-1">
@@ -227,9 +263,9 @@ export function Navbar() {
                     <div>
                       <CategoryHeader>Monitoring</CategoryHeader>
                       <div className="space-y-1">
-                        <MegaMenuItem href="/resource-utilization" icon={Activity}>Resource Utilization</MegaMenuItem>
-                        <MegaMenuItem href="/alerts" icon={Bell}>Alerts</MegaMenuItem>
-                        <MegaMenuItem href="/ai-analysis" icon={Sparkles}>AI Analysis</MegaMenuItem>
+                        <MegaMenuItem href="/resources" icon={Activity}>Resource Utilization</MegaMenuItem>
+                        <MegaMenuItem href="/security" icon={Bell}>Alerts</MegaMenuItem>
+                        <MegaMenuItem href="/ai-demo" icon={Sparkles}>AI Analysis</MegaMenuItem>
                       </div>
                     </div>
                     <div>
@@ -244,18 +280,20 @@ export function Navbar() {
                 </div>
               </MegaMenuDropdown>
 
+
               {/* Infrastructure Mega Menu */}
               <MegaMenuDropdown
                 label="Infrastructure"
                 isOpen={activeDropdown === "Infrastructure"}
                 onToggle={() => setActiveDropdown(activeDropdown === "Infrastructure" ? null : "Infrastructure")}
+                position="center"
               >
-                <div className="p-6 w-[700px]">
-                  <div className="grid grid-cols-4 gap-6">
+                <div className="p-6 w-[720px] max-w-[calc(100vw-2rem)]">
+                  <div className="grid grid-cols-4 gap-8">
                     {/* Featured */}
-                    <div className="col-span-1 pr-6 border-r border-gray-200 dark:border-gray-700">
+                    <div className="col-span-1 pr-6 border-r border-gray-200/80 dark:border-gray-700/50">
                       <CategoryHeader>Featured</CategoryHeader>
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         <FeaturedItem
                           href="/cloud-providers"
                           title="Multi-Cloud"
@@ -281,10 +319,10 @@ export function Navbar() {
                     <div>
                       <CategoryHeader>Cloud Providers</CategoryHeader>
                       <div className="space-y-1">
-                        <MegaMenuItem href="/cloud-providers">Amazon Web Services</MegaMenuItem>
-                        <MegaMenuItem href="/cloud-providers">Microsoft Azure</MegaMenuItem>
-                        <MegaMenuItem href="/cloud-providers">Google Cloud</MegaMenuItem>
-                        <MegaMenuItem href="/cloud-providers">All Providers</MegaMenuItem>
+                        <MegaMenuItem href="/cloud-providers" icon={Cloud}>Amazon Web Services</MegaMenuItem>
+                        <MegaMenuItem href="/cloud-providers" icon={Cloud}>Microsoft Azure</MegaMenuItem>
+                        <MegaMenuItem href="/cloud-providers" icon={Cloud}>Google Cloud</MegaMenuItem>
+                        <MegaMenuItem href="/cloud-providers" icon={Globe}>All Providers</MegaMenuItem>
                       </div>
                     </div>
 
@@ -292,10 +330,10 @@ export function Navbar() {
                     <div>
                       <CategoryHeader>Kubernetes</CategoryHeader>
                       <div className="space-y-1">
-                        <MegaMenuItem href="/kubernetes">Clusters</MegaMenuItem>
-                        <MegaMenuItem href="/kubernetes">Workloads</MegaMenuItem>
-                        <MegaMenuItem href="/kubernetes">Cost Allocation</MegaMenuItem>
-                        <MegaMenuItem href="/kubernetes">Optimization</MegaMenuItem>
+                        <MegaMenuItem href="/kubernetes" icon={Server}>Clusters</MegaMenuItem>
+                        <MegaMenuItem href="/kubernetes" icon={Cpu}>Workloads</MegaMenuItem>
+                        <MegaMenuItem href="/kubernetes" icon={DollarSign}>Cost Allocation</MegaMenuItem>
+                        <MegaMenuItem href="/kubernetes" icon={TrendingUp}>Optimization</MegaMenuItem>
                       </div>
                     </div>
 
@@ -342,8 +380,9 @@ export function Navbar() {
                 label="Products"
                 isOpen={activeDropdown === "Products"}
                 onToggle={() => setActiveDropdown(activeDropdown === "Products" ? null : "Products")}
+                position="center"
               >
-                <div className="p-6 w-[900px]">
+                <div className="p-6 w-[800px] max-w-[calc(100vw-2rem)]">
                   <div className="grid grid-cols-4 gap-6">
                     {/* Featured Products */}
                     <div className="col-span-1 pr-6 border-r border-gray-200 dark:border-gray-700">
@@ -446,8 +485,9 @@ export function Navbar() {
                 label="Solutions"
                 isOpen={activeDropdown === "Solutions"}
                 onToggle={() => setActiveDropdown(activeDropdown === "Solutions" ? null : "Solutions")}
+                position="center"
               >
-                <div className="p-6 w-[500px]">
+                <div className="p-6 w-[480px] max-w-[calc(100vw-2rem)]">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <CategoryHeader>By Company Size</CategoryHeader>
@@ -492,8 +532,9 @@ export function Navbar() {
                 label="Developers"
                 isOpen={activeDropdown === "Developers"}
                 onToggle={() => setActiveDropdown(activeDropdown === "Developers" ? null : "Developers")}
+                position="center"
               >
-                <div className="p-6 w-[400px]">
+                <div className="p-6 w-[400px] max-w-[calc(100vw-2rem)]">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <CategoryHeader>Resources</CategoryHeader>

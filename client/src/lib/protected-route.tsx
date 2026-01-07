@@ -4,10 +4,11 @@ import { Redirect, Route } from "wouter";
 
 interface ProtectedRouteProps {
   path: string;
-  component: React.ComponentType<any>;
+  component?: React.ComponentType<any>;
+  children?: React.ReactNode;
 }
 
-export function ProtectedRoute({ path, component: Component }: ProtectedRouteProps) {
+export function ProtectedRoute({ path, component: Component, children }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
 
   return (
@@ -26,7 +27,12 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
           return <Redirect to="/auth" />;
         }
 
-        return <Component />;
+        // Support both component prop and children
+        if (Component) {
+          return <Component />;
+        }
+
+        return <>{children}</>;
       }}
     />
   );
