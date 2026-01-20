@@ -30,6 +30,9 @@ export function CostRecommendations({
 }: CostRecommendationsProps) {
   const { toast } = useToast();
 
+  // Ensure recommendations is always an array
+  const safeRecommendations = Array.isArray(recommendations) ? recommendations : [];
+
   const handleApplyRecommendation = (id: number) => {
     if (onApplyRecommendation) {
       onApplyRecommendation(id);
@@ -83,12 +86,12 @@ export function CostRecommendations({
                 </div>
               </div>
             ))
-          ) : recommendations.length === 0 ? (
+          ) : safeRecommendations.length === 0 ? (
             <div className="text-center py-6 text-gray-500 dark:text-gray-400">
               No cost optimization recommendations available.
             </div>
           ) : (
-            recommendations.map((recommendation) => (
+            safeRecommendations.map((recommendation) => (
               <div key={recommendation.id} className="border border-gray-300 rounded-lg p-4">
                 <div className="flex justify-between">
                   <div>
@@ -97,8 +100,8 @@ export function CostRecommendations({
                         {recommendation.title}
                       </h3>
                       {recommendation.id >= 1000 && (
-                        <Badge 
-                          variant="outline" 
+                        <Badge
+                          variant="outline"
                           className="ml-2 bg-blue-100/80 text-blue-700 border-blue-200 px-1.5 py-0.5 flex items-center gap-1"
                         >
                           <CloudIcon className="h-3 w-3" />
@@ -123,9 +126,9 @@ export function CostRecommendations({
                   <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                     <span className="font-medium mr-1">Affected Resources:</span>
                     {recommendation.resourcesAffected && recommendation.resourcesAffected.length > 0
-                      ? (getResourceName 
-                          ? getResourceName(recommendation.resourcesAffected[0])
-                          : `Resource ${recommendation.resourcesAffected[0]}`)
+                      ? (getResourceName
+                        ? getResourceName(recommendation.resourcesAffected[0])
+                        : `Resource ${recommendation.resourcesAffected[0]}`)
                       : "Multiple resources"}
                     {recommendation.id >= 1000 && <span className="ml-1 text-blue-600">(AWS)</span>}
                   </div>

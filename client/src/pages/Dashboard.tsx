@@ -26,12 +26,12 @@ import { InteractiveCostAnalysis } from "@/components/dashboard/InteractiveCostA
 import TrialBanner from "@/components/trial/TrialBanner";
 
 // Icons
-import { 
-  Play, 
-  LayoutDashboard, 
-  Settings, 
-  Sparkles, 
-  ChevronRight, 
+import {
+  Play,
+  LayoutDashboard,
+  Settings,
+  Sparkles,
+  ChevronRight,
   RefreshCw,
   CloudIcon,
   Share2,
@@ -67,23 +67,23 @@ import {
 
 // UI Components
 import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription, 
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
   CardContent,
   CardFooter
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -99,6 +99,17 @@ import {
 
 import { formatDate, cn } from "@/lib/utils";
 import { SecurityDrift, Alert, Recommendation, UtilizationMetric } from "@/types";
+import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import {
+  isDemoMode,
+  enableDemoMode,
+  demoRecommendations,
+  demoSecurityDrifts,
+  demoAlerts,
+  demoUtilizationMetrics,
+  demoCostData,
+  demoResources,
+} from "@/lib/demo-data";
 
 export default function Dashboard() {
   const [, navigate] = useLocation();
@@ -266,14 +277,23 @@ export default function Dashboard() {
     { name: "Network I/O", value: 89, status: "critical", trend: "up", change: 43 },
   ];
 
-  // First-time setup
+  // First-time setup - now uses the new OnboardingWizard
   if (showFirstTimeSetup) {
     return (
-      <DashboardLayout>
-        <WelcomeOnboarding onCloudIntegrationClick={() => {
-          setDashboardTab("providers");
-          setShowFirstTimeSetup(false);
-        }} />
+      <DashboardLayout hideSidebar>
+        <OnboardingWizard
+          onComplete={() => {
+            setShowFirstTimeSetup(false);
+          }}
+          onSkip={() => {
+            enableDemoMode();
+            setShowFirstTimeSetup(false);
+            toast({
+              title: "🎮 Demo Mode Activated",
+              description: "Explore InfraAudit with sample data. Connect a provider anytime to see your real infrastructure.",
+            });
+          }}
+        />
       </DashboardLayout>
     );
   }
@@ -285,7 +305,7 @@ export default function Dashboard() {
         <TrialBanner />
 
         {/* Hero Header Section */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative mb-8"
@@ -330,7 +350,7 @@ export default function Dashboard() {
               {/* Command Palette & Actions */}
               <div className="flex items-center gap-3">
                 <CommandPalette onRunScan={handleRunScan} isScanning={isScanning} />
-                
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className="h-10 w-10">
@@ -359,7 +379,7 @@ export default function Dashboard() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button 
+                      <Button
                         onClick={handleRunScan}
                         disabled={isScanning}
                         className={cn(
@@ -400,28 +420,28 @@ export default function Dashboard() {
             {/* Dashboard Tabs */}
             <Tabs value={dashboardTab} onValueChange={setDashboardTab}>
               <TabsList className="bg-white/80 dark:bg-slate-800/80 border border-gray-200/60 dark:border-slate-700/60 p-1.5 rounded-xl shadow-sm">
-                <TabsTrigger 
-                  value="overview" 
+                <TabsTrigger
+                  value="overview"
                   className="rounded-lg px-4 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
                 >
                   <LayoutDashboard className="h-4 w-4 mr-2" />
                   Overview
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="analytics"
                   className="rounded-lg px-4 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
                 >
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Analytics
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="providers"
                   className="rounded-lg px-4 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-600 data-[state=active]:to-amber-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
                 >
                   <CloudIcon className="h-4 w-4 mr-2" />
                   Providers
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="widgets"
                   className="rounded-lg px-4 py-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300"
                 >
@@ -529,8 +549,8 @@ export default function Dashboard() {
                 {/* Left Column - Main Content */}
                 <div className="lg:col-span-2 space-y-6">
                   {/* Health Score */}
-                  <HealthScoreGauge 
-                    overallScore={88} 
+                  <HealthScoreGauge
+                    overallScore={88}
                     previousScore={85}
                   />
 
@@ -546,9 +566,9 @@ export default function Dashboard() {
                   />
 
                   {/* Security Drifts */}
-                  <SecurityDriftsTable 
-                    drifts={securityDrifts || []} 
-                    isLoading={isLoadingDrifts} 
+                  <SecurityDriftsTable
+                    drifts={securityDrifts || []}
+                    isLoading={isLoadingDrifts}
                   />
                 </div>
 
@@ -562,29 +582,29 @@ export default function Dashboard() {
 
                   {/* Recent Alerts */}
                   <RecentAlerts
-                    alerts={alerts || []} 
-                    isLoading={isLoadingAlerts} 
+                    alerts={alerts || []}
+                    isLoading={isLoadingAlerts}
                   />
 
                   {/* Slack Integration */}
-                  <SlackNotifications 
-                    isConnected={true} 
-                    alertsSentToday={12} 
+                  <SlackNotifications
+                    isConnected={true}
+                    alertsSentToday={12}
                   />
                 </div>
               </div>
 
               {/* Resource Utilization */}
-              <ResourceUtilization 
-                metrics={utilizationMetrics} 
+              <ResourceUtilization
+                metrics={utilizationMetrics}
                 isLoading={isLoadingAwsResources}
                 awsResources={awsResources || []}
               />
 
               {/* Cost Recommendations */}
-              <CostRecommendations 
-                recommendations={recommendations || []} 
-                isLoading={isLoadingRecommendations} 
+              <CostRecommendations
+                recommendations={recommendations || []}
+                isLoading={isLoadingRecommendations}
               />
             </motion.div>
           )}
@@ -599,7 +619,7 @@ export default function Dashboard() {
               transition={{ duration: 0.3 }}
             >
               <InteractiveCostAnalysis hasCloudCredentials={hasConnectedProviders} />
-              
+
               {/* Additional Analytics Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
                 <Card className="bg-white/70 dark:bg-slate-900/50 backdrop-blur border border-gray-200/60 dark:border-slate-800/60">
@@ -646,7 +666,7 @@ export default function Dashboard() {
                         { title: "Reserved instance savings", savings: "$4,500/mo", impact: "high" },
                         { title: "S3 lifecycle policies", savings: "$320/mo", impact: "low" },
                       ].map((rec, i) => (
-                        <motion.div 
+                        <motion.div
                           key={i}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -657,8 +677,8 @@ export default function Dashboard() {
                             <div className={cn(
                               "p-2 rounded-lg",
                               rec.impact === "high" ? "bg-emerald-500/10 text-emerald-500" :
-                              rec.impact === "medium" ? "bg-amber-500/10 text-amber-500" :
-                              "bg-blue-500/10 text-blue-500"
+                                rec.impact === "medium" ? "bg-amber-500/10 text-amber-500" :
+                                  "bg-blue-500/10 text-blue-500"
                             )}>
                               <CheckCircle2 className="h-4 w-4" />
                             </div>

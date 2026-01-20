@@ -34,6 +34,8 @@ import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import PrivacyPolicyPage from "@/pages/legal/PrivacyPolicyPage";
 import TermsOfServicePage from "@/pages/legal/TermsOfServicePage";
+import Compliance from "@/pages/Compliance";
+import Automation from "@/pages/Automation";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import ExpiredTrialRedirect from "@/components/trial/ExpiredTrialRedirect";
@@ -54,6 +56,8 @@ const PROTECTED_ROUTES = [
   "/subscription/success",
   "/subscription/cancel",
   "/roi-calculator",
+  "/compliance",
+  "/automation",
 ];
 
 // Check if current path is a protected route
@@ -132,6 +136,12 @@ function Router() {
             </ProtectedRoute>
             <ProtectedRoute path="/roi-calculator">
               <WithTrialCheck><RoiCalculator /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/compliance">
+              <WithTrialCheck><Compliance /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/automation">
+              <WithTrialCheck><Automation /></WithTrialCheck>
             </ProtectedRoute>
 
             {/* Public routes */}

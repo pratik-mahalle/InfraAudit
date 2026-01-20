@@ -62,6 +62,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { AskInfraAudit } from "@/components/ai/AskInfraAudit";
 
 // Mega Menu Item - Redesigned with better hover states
 function MegaMenuItem({ href, children, icon: Icon }: { href: string; children: React.ReactNode; icon?: any }) {
@@ -342,6 +343,8 @@ export function Navbar() {
                       <CategoryHeader>Tools</CategoryHeader>
                       <div className="space-y-1">
                         <MegaMenuItem href="/architecture-playground" icon={Layers}>Architecture Designer</MegaMenuItem>
+                        <MegaMenuItem href="/compliance" icon={FileText}>Compliance</MegaMenuItem>
+                        <MegaMenuItem href="/automation" icon={Zap}>Automation</MegaMenuItem>
                         <MegaMenuItem href="/cloud-providers" icon={RefreshCw}>Sync Resources</MegaMenuItem>
                         <MegaMenuItem href="/settings" icon={Settings2}>Integrations</MegaMenuItem>
                       </div>
@@ -582,6 +585,10 @@ export function Navbar() {
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-3">
+
+          {user && (
+            <AskInfraAudit />
+          )}
 
           {user ? (
             <DropdownMenu>

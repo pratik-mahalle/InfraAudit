@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Lock, Key, User, Bell, Shield, Cloud, Users } from "lucide-react";
+import { Save, Lock, Key, User, Bell, Shield, Cloud, Users, Webhook } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
+import { WebhookManager } from "@/components/settings/WebhookManager";
 
 type ApiKey = { id: number; name: string; created: string; lastUsed: string };
 type Session = { id: number; device: string; ip: string; lastActive: string };
@@ -33,12 +35,6 @@ export default function Settings() {
   const [timezone, setTimezone] = useState("UTC");
   const [language, setLanguage] = useState("en");
   const [theme, setTheme] = useState<"light" | "dark" | "auto">("auto");
-
-  // Notifications
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [slackConnected, setSlackConnected] = useState(false);
-  const [costThreshold, setCostThreshold] = useState(20);
-  const [criticalAlerts, setCriticalAlerts] = useState(true);
 
   // Security
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
@@ -66,7 +62,7 @@ export default function Settings() {
   const [inviteRole, setInviteRole] = useState<"Admin" | "Editor" | "Viewer">("Viewer");
 
   const save = (section: string) => toast({ title: `${section} saved`, description: "Your changes have been applied." });
-  const generateKey = () => setApiKeys(prev => [{ id: Date.now(), name: "New API Key", created: new Date().toISOString().slice(0,10), lastUsed: "—" }, ...prev]);
+  const generateKey = () => setApiKeys(prev => [{ id: Date.now(), name: "New API Key", created: new Date().toISOString().slice(0, 10), lastUsed: "—" }, ...prev]);
   const revokeKey = (id: number) => setApiKeys(prev => prev.filter(k => k.id !== id));
   const logoutSession = (id: number) => setSessions(prev => prev.filter(s => s.id !== id));
   const disconnectCloud = (id: number) => setCloudAccounts(prev => prev.filter(a => a.id !== id));
@@ -75,11 +71,12 @@ export default function Settings() {
     <DashboardLayout>
       <PageHeader title="Settings" description="Configure and customize your InfrAudit experience" />
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid grid-cols-6 w-full">
+      <Tabs defaultValue="notifications" className="space-y-6">
+        <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="profile"><User className="h-4 w-4 mr-2" />Profile</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="notifications"><Bell className="h-4 w-4 mr-2" />Notifications</TabsTrigger>
+          <TabsTrigger value="notifications"><Bell className="h-4 w-4 mr-2" />Alerts</TabsTrigger>
+          <TabsTrigger value="webhooks"><Webhook className="h-4 w-4 mr-2" />Webhooks</TabsTrigger>
           <TabsTrigger value="security"><Shield className="h-4 w-4 mr-2" />Security</TabsTrigger>
           <TabsTrigger value="cloud"><Cloud className="h-4 w-4 mr-2" />Cloud</TabsTrigger>
           <TabsTrigger value="team"><Users className="h-4 w-4 mr-2" />Team</TabsTrigger>
@@ -97,7 +94,7 @@ export default function Settings() {
                 <div className="flex flex-col items-center gap-3">
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${fullName || "User"}`} />
-                    <AvatarFallback>{(fullName || "US").slice(0,2).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{(fullName || "US").slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <Input type="file" accept="image/*" />
                 </div>
@@ -171,31 +168,18 @@ export default function Settings() {
 
         {/* Notification Settings */}
         <TabsContent value="notifications" className="space-y-6">
+          <NotificationPreferences />
+        </TabsContent>
+
+        {/* Webhooks Settings */}
+        <TabsContent value="webhooks" className="space-y-6">
           <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
             <CardHeader>
-              <CardTitle>Notification Settings</CardTitle>
-              <CardDescription>Control alerts and communication channels</CardDescription>
+              <CardTitle>Webhooks</CardTitle>
+              <CardDescription>Configure webhook endpoints to receive event payloads.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center justify-between border rounded-xl p-4">
-                  <div><div className="font-medium">Email Notifications</div><div className="text-sm text-muted-foreground">Receive product and alert emails</div></div>
-                  <Switch checked={emailNotifications} onCheckedChange={setEmailNotifications} />
-                </div>
-                <div className="flex items-center justify-between border rounded-xl p-4">
-                  <div><div className="font-medium">Slack / Teams Integration</div><div className="text-sm text-muted-foreground">Send alerts to your chat channels</div></div>
-                  <Button variant={slackConnected ? 'outline' : 'default'} onClick={() => setSlackConnected(!slackConnected)}>{slackConnected ? 'Disconnect' : 'Connect'}</Button>
-                </div>
-                <div className="flex items-center justify-between border rounded-xl p-4">
-                  <div><div className="font-medium">Cost Alert Threshold</div><div className="text-sm text-muted-foreground">Notify when monthly cost exceeds this value</div></div>
-                  <div className="flex items-center gap-2"><Input type="number" className="w-24" value={costThreshold} onChange={(e) => setCostThreshold(Number(e.target.value))} /><span className="text-sm">%</span></div>
-                </div>
-                <div className="flex items-center justify-between border rounded-xl p-4">
-                  <div><div className="font-medium">Critical Security Alerts</div><div className="text-sm text-muted-foreground">Always on for administrators</div></div>
-                  <Switch checked={criticalAlerts} onCheckedChange={setCriticalAlerts} />
-                </div>
-              </div>
-              <div className="flex justify-end"><Button onClick={() => save("Notification settings")}>Save Changes</Button></div>
+            <CardContent>
+              <WebhookManager />
             </CardContent>
           </Card>
         </TabsContent>
