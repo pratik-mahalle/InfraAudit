@@ -1,10 +1,66 @@
 // Common types to be used across the application
 export interface User {
   id: number;
+  email: string;
   username: string;
   fullName?: string;
   role: string;
+  planType?: string;
+  organizationId?: number;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  subscriptionStatus?: string;
+  trialStartedAt?: string;
+  trialStatus?: string;
+  oauthProvider?: string;
+  oauthId?: string;
+  avatarUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  lastLoginAt?: string;
 }
+
+// Zod-compatible insert schema for auth forms
+export type InsertUser = {
+  email: string;
+  password: string;
+  username?: string;
+  fullName?: string;
+};
+
+// Cloud provider types (replaces @shared/cloud-providers)
+export enum CloudProvider {
+  AWS = "AWS",
+  GCP = "GCP",
+  AZURE = "AZURE",
+}
+
+export interface CloudCredentials {
+  provider: CloudProvider;
+}
+
+export interface AWSCredentials extends CloudCredentials {
+  provider: CloudProvider.AWS;
+  accessKeyId: string;
+  secretAccessKey: string;
+  region?: string;
+}
+
+export interface GCPCredentials extends CloudCredentials {
+  provider: CloudProvider.GCP;
+  serviceAccountKey: string;
+  projectId?: string;
+}
+
+export interface AzureCredentials extends CloudCredentials {
+  provider: CloudProvider.AZURE;
+  clientId: string;
+  clientSecret: string;
+  tenantId: string;
+  subscriptionId: string;
+}
+
+export type AllCloudCredentials = AWSCredentials | GCPCredentials | AzureCredentials;
 
 export interface Resource {
   id: number;

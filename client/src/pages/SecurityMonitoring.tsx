@@ -58,20 +58,23 @@ export default function SecurityMonitoring() {
   const [alertStatus, setAlertStatus] = useState<string>("all");
   const [activeAlertTab, setActiveAlertTab] = useState<string>("all");
 
-  // Fetch security drifts
-  const { data: securityDrifts, isLoading: isLoadingDrifts } = useQuery<SecurityDrift[]>({
-    queryKey: ["/api/security-drifts"],
+  // Fetch security drifts (paginated — extract .data)
+  const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<any>({
+    queryKey: ["/api/drifts"],
   });
+  const securityDrifts: SecurityDrift[] = Array.isArray(driftsResponse) ? driftsResponse : (driftsResponse?.data ?? []);
 
-  // Fetch alerts
-  const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[]>({
+  // Fetch alerts (paginated — extract .data)
+  const { data: alertsResponse, isLoading: isLoadingAlerts } = useQuery<any>({
     queryKey: ["/api/alerts"],
   });
+  const alerts: Alert[] = Array.isArray(alertsResponse) ? alertsResponse : (alertsResponse?.data ?? []);
 
-  // Fetch resources to get names
-  const { data: resources } = useQuery<Resource[]>({
+  // Fetch resources to get names (paginated — extract .data)
+  const { data: resourcesResponse } = useQuery<any>({
     queryKey: ["/api/resources"],
   });
+  const resources: Resource[] = Array.isArray(resourcesResponse) ? resourcesResponse : (resourcesResponse?.data ?? []);
 
   const getResourceName = (id: number) => {
     const resource = resources?.find((r) => r.id === id);

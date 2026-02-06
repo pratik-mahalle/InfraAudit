@@ -16,7 +16,7 @@ export function Footer() {
             <div className="absolute top-0 right-0 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
             <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-indigo-400/20 rounded-full blur-3xl" />
           </div>
-          
+
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
             <h3 className="text-2xl md:text-3xl font-semibold text-white">
               Join Us in Defining the Next Era of Cloud
@@ -46,29 +46,29 @@ export function Footer() {
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm mb-6">
               InfrAudit is your AI-powered cloud assistant, monitoring your infrastructure 24/7 to optimize costs and ensure security.
             </p>
-            
+
             {/* Social Icons */}
             <div className="flex gap-4">
-              <a 
-                href="https://twitter.com" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
               >
                 <Twitter className="h-4 w-4" />
               </a>
-              <a 
-                href="https://github.com/pratik-mahalle/InfraAudit" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://github.com/pratik-mahalle/InfraAudit"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
               >
                 <Github className="h-4 w-4" />
               </a>
-              <a 
-                href="https://linkedin.com" 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href="https://www.linkedin.com/company/infraudit"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-9 h-9 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
               >
                 <Linkedin className="h-4 w-4" />
@@ -107,7 +107,7 @@ export function Footer() {
                 { label: "LinkedIn", href: "https://linkedin.com" },
               ].map((link) => (
                 <li key={link.label}>
-                  <a 
+                  <a
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -146,7 +146,7 @@ export function Footer() {
       {/* Large Brand Name */}
       <div className="relative overflow-hidden">
         <div className="flex items-center justify-center py-8">
-          <h2 
+          <h2
             className="text-[6rem] md:text-[10rem] lg:text-[14rem] font-black tracking-tighter leading-none text-transparent select-none"
             style={{
               WebkitTextStroke: '2px rgba(71, 85, 105, 0.4)',
@@ -156,7 +156,7 @@ export function Footer() {
             InfrAudit
           </h2>
         </div>
-        
+
         {/* Copyright - centered over the large text */}
         <div className="absolute bottom-8 left-0 right-0 text-center">
           <p className="text-slate-500 text-sm">

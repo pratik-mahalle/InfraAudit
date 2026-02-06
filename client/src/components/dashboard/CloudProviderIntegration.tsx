@@ -24,7 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { CloudProvider, AllCloudCredentials } from "@shared/cloud-providers";
+import { CloudProvider, AllCloudCredentials } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -93,17 +93,17 @@ export function CloudProviderIntegration() {
     },
   });
 
-  // Fetch connected cloud accounts
+  // Fetch connected cloud accounts from Go backend
   const { data: cloudProviders, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/cloud-providers"],
+    queryKey: ["/api/providers"],
   });
 
-  // Fetch cloud resources
-  const { data: cloudResources } = useQuery<any[]>({
-    queryKey: ["/api/cloud-resources"],
-    // Only fetch resources if we have connected providers
+  // Fetch cloud resources (paginated — extract .data)
+  const { data: resourcesResponse } = useQuery<any>({
+    queryKey: ["/api/resources"],
     enabled: !!cloudProviders && cloudProviders.length > 0,
   });
+  const cloudResources = Array.isArray(resourcesResponse) ? resourcesResponse : (resourcesResponse?.data ?? []);
 
   // Map cloud providers to UI format
   const connectedAccounts: CloudAccountUI[] = React.useMemo(() => {
@@ -112,7 +112,7 @@ export function CloudProviderIntegration() {
     return cloudProviders.map(provider => {
       // Count resources for this provider if available
       const providerResources = cloudResources?.filter(
-        resource => resource.provider === provider.id
+        (resource: any) => resource.provider === provider.id
       ) || [];
       
       let icon: React.ReactNode;
@@ -151,13 +151,13 @@ export function CloudProviderIntegration() {
       let endpoint = '';
       switch (credentials.provider) {
         case CloudProvider.AWS:
-          endpoint = '/api/cloud-providers/aws';
+          endpoint = '/api/providers/aws/connect';
           break;
         case CloudProvider.GCP:
-          endpoint = '/api/cloud-providers/gcp';
+          endpoint = '/api/providers/gcp/connect';
           break;
         case CloudProvider.AZURE:
-          endpoint = '/api/cloud-providers/azure';
+          endpoint = '/api/providers/azure/connect';
           break;
         default:
           throw new Error('Unsupported cloud provider');
@@ -172,7 +172,7 @@ export function CloudProviderIntegration() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cloud-providers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/providers"] });
       setIsAddingProvider(false);
       toast({
         title: "Cloud provider connected",
@@ -198,7 +198,7 @@ export function CloudProviderIntegration() {
     mutationFn: async (accountId: string) => {
       console.log("Syncing cloud provider:", accountId);
       
-      const response = await apiRequest('POST', `/api/cloud-providers/${accountId}/sync`);
+      const response = await apiRequest('POST', `/api/providers/${accountId}/sync`);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to sync provider resources');
@@ -207,8 +207,8 @@ export function CloudProviderIntegration() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cloud-providers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cloud-resources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/providers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
       toast({
         title: "Sync successful",
         description: "Your cloud provider resources have been synchronized.",
@@ -228,7 +228,7 @@ export function CloudProviderIntegration() {
     mutationFn: async (accountId: string) => {
       console.log("Disconnecting cloud provider:", accountId);
       
-      const response = await apiRequest('DELETE', `/api/cloud-providers/${accountId}`);
+      const response = await apiRequest('DELETE', `/api/providers/${accountId}`);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to disconnect provider');
@@ -237,8 +237,8 @@ export function CloudProviderIntegration() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cloud-providers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cloud-resources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/providers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
       toast({
         title: "Provider disconnected",
         description: "Your cloud provider has been disconnected.",

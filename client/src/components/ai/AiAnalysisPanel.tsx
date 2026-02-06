@@ -19,39 +19,45 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('cost');
 
-  // Query to fetch existing anomalies and drifts
+  // Query to fetch existing anomalies and drifts from Go backend
   const { data: costAnomalies, isLoading: isLoadingCost } = useQuery({
-    queryKey: ['/api/cost-anomalies', resourceId],
-    queryFn: () => apiRequest(`/api/cost-anomalies?resourceId=${resourceId}`),
-    select: (data) => data || [],
+    queryKey: ['/api/v1/costs/anomalies', resourceId],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/v1/costs/anomalies?resourceId=${resourceId}`);
+      return await res.json();
+    },
+    select: (data: any) => {
+      const unwrapped = data?.data ?? data ?? [];
+      return Array.isArray(unwrapped) ? unwrapped : [];
+    },
   });
 
   const { data: securityDrifts, isLoading: isLoadingSecurity } = useQuery({
-    queryKey: ['/api/security-drifts', resourceId],
-    queryFn: () => apiRequest(`/api/security-drifts?resourceId=${resourceId}`),
-    select: (data) => data || [],
+    queryKey: ['/api/drifts', resourceId],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/drifts?resourceId=${resourceId}`);
+      return await res.json();
+    },
+    select: (data: any) => {
+      const unwrapped = data?.data ?? data ?? [];
+      return Array.isArray(unwrapped) ? unwrapped : (unwrapped?.data ?? []);
+    },
   });
 
-  // Mutations for running AI analysis
+  // Mutations for running AI analysis — uses drift detect + cost anomaly detect endpoints
   const costAnalysisMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/ai-analysis/analyze/cost/${resourceId}`, { method: 'POST' }),
-    onSuccess: (data) => {
-      if (data.anomaly) {
-        toast({
-          title: 'Cost Anomaly Detected!',
-          description: `${data.anomaly.description.substring(0, 100)}...`,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'No Cost Anomalies Detected',
-          description: 'Your resource costs look normal',
-          variant: 'default',
-        });
-      }
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/v1/costs/anomalies/detect');
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Cost Analysis Complete',
+        description: 'Cost anomaly detection has been triggered.',
+        variant: 'default',
+      });
       
-      // Invalidate the related queries to refresh the data
-      queryClient.invalidateQueries({ queryKey: ['/api/cost-anomalies'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/anomalies'] });
       queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
     },
     onError: (error: any) => {
@@ -64,24 +70,18 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
   });
 
   const securityAnalysisMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/ai-analysis/analyze/security/${resourceId}`, { method: 'POST' }),
-    onSuccess: (data) => {
-      if (data.drift) {
-        toast({
-          title: 'Security Drift Detected!',
-          description: `${data.drift.description.substring(0, 100)}...`,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'No Security Drifts Detected',
-          description: 'Your resource security configurations look good',
-          variant: 'default',
-        });
-      }
+    mutationFn: async () => {
+      const res = await apiRequest('POST', '/api/drifts/detect');
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Security Analysis Complete',
+        description: 'Drift detection has been triggered.',
+        variant: 'default',
+      });
       
-      // Invalidate the related queries to refresh the data
-      queryClient.invalidateQueries({ queryKey: ['/api/security-drifts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/drifts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
     },
     onError: (error: any) => {
@@ -94,7 +94,7 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
   });
 
   const recommendationsMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/ai-analysis/recommendations/${resourceId}`, { method: 'POST' }),
+    mutationFn: () => apiRequest('POST', '/api/recommendations/generate'),
     onSuccess: (data) => {
       toast({
         title: 'Recommendations Generated',

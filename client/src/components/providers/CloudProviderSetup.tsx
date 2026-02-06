@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { CloudProvider } from '@shared/cloud-providers';
+import { CloudProvider } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
@@ -76,9 +76,9 @@ export function CloudProviderSetup() {
     isLoading: isLoadingProviders, 
     error: providersError 
   } = useQuery<CloudProviderItem[]>({
-    queryKey: ['/api/cloud-providers'],
+    queryKey: ['/api/providers'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/cloud-providers');
+      const res = await apiRequest('GET', '/api/providers');
       return await res.json();
     }
   });
@@ -117,7 +117,7 @@ export function CloudProviderSetup() {
   // AWS connection mutation
   const awsConnectionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof awsFormSchema>) => {
-      const res = await apiRequest('POST', '/api/cloud-providers/aws', data);
+      const res = await apiRequest('POST', '/api/providers/aws/connect', data);
       return await res.json();
     },
     onSuccess: () => {
@@ -127,7 +127,7 @@ export function CloudProviderSetup() {
         variant: "default",
       });
       awsForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/cloud-providers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/providers'] });
     },
     onError: (error: any) => {
       toast({
@@ -141,7 +141,7 @@ export function CloudProviderSetup() {
   // GCP connection mutation
   const gcpConnectionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof gcpFormSchema>) => {
-      const res = await apiRequest('POST', '/api/cloud-providers/gcp', data);
+      const res = await apiRequest('POST', '/api/providers/gcp/connect', data);
       return await res.json();
     },
     onSuccess: () => {
@@ -151,7 +151,7 @@ export function CloudProviderSetup() {
         variant: "default",
       });
       gcpForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/cloud-providers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/providers'] });
     },
     onError: (error: any) => {
       toast({
@@ -165,7 +165,7 @@ export function CloudProviderSetup() {
   // Azure connection mutation
   const azureConnectionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof azureFormSchema>) => {
-      const res = await apiRequest('POST', '/api/cloud-providers/azure', data);
+      const res = await apiRequest('POST', '/api/providers/azure/connect', data);
       return await res.json();
     },
     onSuccess: () => {
@@ -175,7 +175,7 @@ export function CloudProviderSetup() {
         variant: "default",
       });
       azureForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/cloud-providers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/providers'] });
     },
     onError: (error: any) => {
       toast({
@@ -189,7 +189,7 @@ export function CloudProviderSetup() {
   // Remove provider mutation
   const removeProviderMutation = useMutation({
     mutationFn: async (provider: CloudProvider) => {
-      const res = await apiRequest('DELETE', `/api/cloud-providers/${provider}`);
+      const res = await apiRequest('DELETE', `/api/providers/${provider}`);
       return await res.json();
     },
     onSuccess: () => {
@@ -198,7 +198,7 @@ export function CloudProviderSetup() {
         description: "Cloud provider has been disconnected successfully.",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/cloud-providers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/providers'] });
     },
     onError: (error: any) => {
       toast({
@@ -340,7 +340,7 @@ export function CloudProviderSetup() {
                   variant="secondary" 
                   size="sm"
                   className="flex items-center"
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/cloud-providers'] })}
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/providers'] })}
                 >
                   <RefreshCw className="h-4 w-4 mr-1" />
                   Refresh

@@ -50,22 +50,22 @@ export function QuickActions() {
   
   const runScanMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/run-scan", {});
+      const res = await apiRequest("POST", "/api/drifts/detect");
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
         title: "Scan completed",
-        description: `Found ${data.summary.securityDrifts} security drifts and ${data.summary.costAnomalies} cost anomalies`,
+        description: "Drift detection finished successfully.",
       });
       
       // Invalidate relevant queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/security-drifts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cost-anomalies"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/drifts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/costs/anomalies"] });
       queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Scan failed",
         description: "Could not complete the security scan",

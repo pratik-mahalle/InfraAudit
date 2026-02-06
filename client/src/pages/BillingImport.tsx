@@ -37,7 +37,8 @@ export default function BillingImport() {
     retry: false,
     refetchInterval: false,
     refetchOnWindowFocus: false,
-    staleTime: 30000
+    staleTime: 30000,
+    enabled: false, // Billing import endpoint not yet available in Go backend
   });
 
   // File upload mutation
@@ -94,8 +95,8 @@ export default function BillingImport() {
       setUploadProgress(0);
       
       // Invalidate queries that depend on billing data
-      queryClient.invalidateQueries({ queryKey: ['/api/billing-import/status'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/cost-prediction/history'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/trends'] });
     },
     onError: (error: any) => {
       toast({

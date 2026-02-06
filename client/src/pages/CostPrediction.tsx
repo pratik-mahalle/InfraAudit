@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useCostOverview, useCostForecast, useCostTrends, useCostOptimizations, useSyncCosts } from "@/hooks/use-costs";
+import type { CostOverview, CostForecast, CostTrend, CostOptimization } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet";
@@ -50,72 +51,40 @@ export default function CostPrediction() {
   const [timeframe, setTimeframe] = useState(30);
   const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Query to get optimization suggestions
-  const { 
-    data: optimizationData, 
-    isLoading: isLoadingOptimizations,
-    error: optimizationError
-  } = useQuery({
-    queryKey: ["/api/cost-prediction/optimization-suggestions"],
-    enabled: true,
-  });
+  // Real data hooks — fetching from Go backend via api.costs.*
+  const { data: overviewData, isLoading: isLoadingOverview } = useCostOverview();
+  const { data: forecastData, isLoading: isLoadingForecast } = useCostForecast('', timeframe);
+  const { data: trendsData, isLoading: isLoadingTrends } = useCostTrends();
+  const { data: optimizationsData, isLoading: isLoadingOptimizations } = useCostOptimizations();
 
-  // Mutation to generate cost predictions
-  const generatePredictionMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/cost-prediction/predict", {
-        days: timeframe,
-        model: predictionModel
-      });
-      return await res.json();
-    },
-    onMutate: () => {
-      toast({
-        title: "🧠 Generating Prediction",
-        description: "AI is analyzing your cost patterns...",
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cost-prediction/history"] });
-      toast({
-        title: "✅ Prediction Complete",
-        description: "Cost forecast has been updated.",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "❌ Prediction Failed",
-        description: "Unable to generate cost prediction.",
-        variant: "destructive",
-      });
-    }
-  });
+  // Sync costs mutation (triggers cost sync from cloud providers)
+  const syncCostsMutation = useSyncCosts();
 
-  // Mutation to generate optimization suggestions
-  const generateOptimizationsMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/cost-prediction/generate-suggestions");
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cost-prediction/optimization-suggestions"] });
-      toast({
-        title: "✅ Analysis Complete",
-        description: "New optimization suggestions available.",
-      });
-    }
-  });
-
-  // Fetch historical cost data
-  const { 
-    data: historicalData, 
-    isLoading: isLoadingHistory,
-    error: historyError 
-  } = useQuery({
-    queryKey: ["/api/cost-prediction/history"],
-    enabled: true,
-  });
+  const handleGenerateForecast = () => {
+    toast({
+      title: "Generating Forecast",
+      description: "Syncing cost data and generating predictions...",
+    });
+    syncCostsMutation.mutate(undefined, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/forecast'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/trends'] });
+        toast({
+          title: "Forecast Updated",
+          description: "Cost forecast has been updated with latest data.",
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Sync Failed",
+          description: "Unable to sync cost data. Please try again.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -127,16 +96,40 @@ export default function CostPrediction() {
     }).format(amount);
   };
 
-  // Mock stats for display
+  // Derive stats from real API data
+  const overview = overviewData as CostOverview | undefined;
+  const forecast = forecastData as CostForecast | undefined;
+  const trends = trendsData as CostTrend | undefined;
+  const optimizations = (Array.isArray(optimizationsData) ? optimizationsData : []) as CostOptimization[];
+
   const stats = {
-    currentSpend: 18450,
-    predictedSpend: 24850,
-    budget: 25000,
-    previousMonth: 22300,
-    potentialSavings: 9660,
-    savingsOpportunities: 5,
-    accuracy: 94
+    currentSpend: overview?.monthlyCost ?? 0,
+    predictedSpend: forecast?.forecastedCost ?? 0,
+    budget: forecast?.upperBound ?? Math.ceil((overview?.monthlyCost ?? 0) * 1.3),
+    previousMonth: trends?.previousCost ?? 0,
+    potentialSavings: overview?.potentialSavings ?? 0,
+    savingsOpportunities: optimizations.length,
+    accuracy: forecast?.confidenceLevel ?? 0,
   };
+
+  // Compute weekly forecast breakdown from forecast data
+  const weekCount = Math.min(Math.max(Math.ceil(timeframe / 7), 1), 4);
+  const weeklyForecast = (() => {
+    if (!forecast) {
+      return Array.from({ length: weekCount }, (_, i) => ({
+        week: `Week ${i + 1}`,
+        amount: 0,
+        change: 0,
+      }));
+    }
+    const baseWeekly = forecast.forecastedCost / weekCount;
+    const changeRate = (trends?.changePercent ?? 0) / 100;
+    return Array.from({ length: weekCount }, (_, i) => ({
+      week: `Week ${i + 1}`,
+      amount: Math.round(baseWeekly * (1 + changeRate * (i / Math.max(weekCount - 1, 1)))),
+      change: parseFloat((Math.abs(changeRate) * 100 * ((i + 1) / weekCount)).toFixed(1)),
+    }));
+  })();
 
   return (
     <>
@@ -225,15 +218,15 @@ export default function CostPrediction() {
                 </Select>
 
                 <Button 
-                  onClick={() => generatePredictionMutation.mutate()}
-                  disabled={generatePredictionMutation.isPending}
+                  onClick={handleGenerateForecast}
+                  disabled={syncCostsMutation.isPending}
                   className={cn(
                     "gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600",
                     "hover:from-violet-700 hover:to-fuchsia-700",
                     "text-white shadow-lg"
                   )}
                 >
-                  {generatePredictionMutation.isPending ? (
+                  {syncCostsMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Analyzing...
@@ -302,16 +295,18 @@ export default function CostPrediction() {
                     label: "Current Month", 
                     value: formatCurrency(stats.currentSpend),
                     icon: <DollarSign className="h-5 w-5" />,
-                    change: "+12%",
-                    trend: "up",
+                    change: trends ? `${trends.changePercent > 0 ? '+' : ''}${trends.changePercent.toFixed(1)}%` : '--',
+                    trend: trends?.trend ?? "stable",
                     color: "blue"
                   },
                   { 
                     label: "Predicted Total", 
                     value: formatCurrency(stats.predictedSpend),
                     icon: <TrendingUp className="h-5 w-5" />,
-                    change: "+11%",
-                    trend: "up",
+                    change: stats.currentSpend > 0 && stats.predictedSpend > 0
+                      ? `${stats.predictedSpend >= stats.currentSpend ? '+' : ''}${((stats.predictedSpend - stats.currentSpend) / stats.currentSpend * 100).toFixed(1)}%`
+                      : '--',
+                    trend: stats.predictedSpend > stats.currentSpend ? "up" : stats.predictedSpend < stats.currentSpend ? "down" : "stable",
                     color: "violet"
                   },
                   { 
@@ -324,9 +319,9 @@ export default function CostPrediction() {
                   },
                   { 
                     label: "Budget Remaining", 
-                    value: formatCurrency(stats.budget - stats.currentSpend),
+                    value: formatCurrency(Math.max(stats.budget - stats.currentSpend, 0)),
                     icon: <Target className="h-5 w-5" />,
-                    change: `${Math.round(((stats.budget - stats.currentSpend) / stats.budget) * 100)}%`,
+                    change: stats.budget > 0 ? `${Math.round(((stats.budget - stats.currentSpend) / stats.budget) * 100)}%` : '--',
                     trend: "stable",
                     color: "amber"
                   }
@@ -447,12 +442,7 @@ export default function CostPrediction() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {[
-                        { week: "Week 1", amount: 5840, change: 8.2 },
-                        { week: "Week 2", amount: 6120, change: 4.8 },
-                        { week: "Week 3", amount: 6390, change: 4.4 },
-                        { week: "Week 4", amount: 6500, change: 1.7 }
-                      ].map((item, index) => (
+                      {weeklyForecast.map((item, index) => (
                         <motion.div
                           key={item.week}
                           initial={{ opacity: 0, x: -20 }}

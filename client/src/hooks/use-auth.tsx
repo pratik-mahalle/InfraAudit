@@ -4,15 +4,12 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { insertUserSchema, User } from "@shared/schema";
-import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
+import { User } from "@/types";
+import { getQueryFn, apiRequest, queryClient, unwrapResponse } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
 
-// Create a type for the login data that only has email and password
-type LoginData = Pick<z.infer<typeof insertUserSchema>, "email" | "password">;
-// Use the entire insert schema for registration
-type RegisterData = z.infer<typeof insertUserSchema>;
+type LoginData = { email: string; password: string };
+type RegisterData = { email: string; password: string; username?: string; fullName?: string };
 
 type AuthContextType = {
   user: User | null;
@@ -39,7 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      const json = await res.json();
+      const data = unwrapResponse<{ accessToken: string; refreshToken: string; user: User }>(json);
+      return data.user;
     },
     onSuccess: (user: User) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -48,22 +47,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: `Welcome, ${user.fullName || user.username}!`,
       });
     },
-    onError: (error: Error) => {
-      // Error is now handled inline in the auth form
-      // No toast needed - user sees the error message directly in the form
+    onError: (_error: Error) => {
+      // Error is handled inline in the auth form
     },
   });
 
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
       const res = await apiRequest("POST", "/api/register", userData);
-      return await res.json();
+      const json = await res.json();
+      const data = unwrapResponse<{ accessToken: string; refreshToken: string; user: User }>(json);
+      return data.user;
     },
     onSuccess: (user: User) => {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Registration successful",
-        description: `Welcome to CloudGuard, ${user.fullName || user.username}!`,
+        description: `Welcome to InfraAudit, ${user.fullName || user.username}!`,
       });
     },
     onError: (error: Error) => {

@@ -385,10 +385,10 @@ export function Navbar() {
                 onToggle={() => setActiveDropdown(activeDropdown === "Products" ? null : "Products")}
                 position="center"
               >
-                <div className="p-6 w-[800px] max-w-[calc(100vw-2rem)]">
-                  <div className="grid grid-cols-4 gap-6">
+                <div className="p-6 w-[640px] max-w-[calc(100vw-2rem)]">
+                  <div className="grid grid-cols-3 gap-6">
                     {/* Featured Products */}
-                    <div className="col-span-1 pr-6 border-r border-gray-200 dark:border-gray-700">
+                    <div className="pr-6 border-r border-gray-200 dark:border-gray-700">
                       <CategoryHeader>Featured Products</CategoryHeader>
                       <div className="space-y-2">
                         <FeaturedItem
@@ -405,78 +405,32 @@ export function Navbar() {
                         />
                         <FeaturedItem
                           href="/auth"
-                          title="Kubernetes"
-                          description="K8s cost analytics"
-                          icon={Cpu}
-                        />
-                        <FeaturedItem
-                          href="/auth"
                           title="AI Insights"
                           description="Smart recommendations"
                           icon={Sparkles}
                         />
-                        <FeaturedItem
-                          href="/auth"
-                          title="Architecture Designer"
-                          description="Visual cloud design"
-                          icon={Layers}
-                        />
                       </div>
                     </div>
 
-                    {/* Cost Management */}
+                    {/* Cost & Security */}
                     <div>
-                      <CategoryHeader>Cost Management</CategoryHeader>
+                      <CategoryHeader>Cost & Security</CategoryHeader>
                       <div className="space-y-1">
                         <MegaMenuItem href="/auth">Cost Analysis</MegaMenuItem>
                         <MegaMenuItem href="/auth">Budget Alerts</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Cost Allocation</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Billing Integration</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Savings Plans</MegaMenuItem>
-                      </div>
-
-                      <CategoryHeader>AI & Predictions</CategoryHeader>
-                      <div className="space-y-1">
-                        <MegaMenuItem href="/auth">Cost Forecasting</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Anomaly Detection</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Smart Recommendations</MegaMenuItem>
-                      </div>
-                    </div>
-
-                    {/* Security & Compliance */}
-                    <div>
-                      <CategoryHeader>Security & Compliance</CategoryHeader>
-                      <div className="space-y-1">
                         <MegaMenuItem href="/auth">Security Scanning</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Drift Detection</MegaMenuItem>
                         <MegaMenuItem href="/auth">Compliance Reports</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Policy Management</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Vulnerability Alerts</MegaMenuItem>
-                      </div>
-
-                      <CategoryHeader>Infrastructure</CategoryHeader>
-                      <div className="space-y-1">
-                        <MegaMenuItem href="/auth">Resource Inventory</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Multi-Cloud View</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Utilization Metrics</MegaMenuItem>
                       </div>
                     </div>
 
-                    {/* Integrations */}
+                    {/* Cloud Providers */}
                     <div>
                       <CategoryHeader>Cloud Providers</CategoryHeader>
                       <div className="space-y-1">
-                        <MegaMenuItem href="/auth">AWS</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Azure</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Google Cloud</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Kubernetes</MegaMenuItem>
-                      </div>
-
-                      <CategoryHeader>Notifications</CategoryHeader>
-                      <div className="space-y-1">
-                        <MegaMenuItem href="/auth" icon={Slack}>Slack</MegaMenuItem>
-                        <MegaMenuItem href="/auth" icon={Mail}>Email</MegaMenuItem>
-                        <MegaMenuItem href="/auth" icon={Webhook}>Webhooks</MegaMenuItem>
+                        <MegaMenuItem href="/auth" icon={Cloud}>AWS</MegaMenuItem>
+                        <MegaMenuItem href="/auth" icon={Cloud}>Azure</MegaMenuItem>
+                        <MegaMenuItem href="/auth" icon={Cloud}>Google Cloud</MegaMenuItem>
+                        <MegaMenuItem href="/auth" icon={Cpu}>Kubernetes</MegaMenuItem>
                       </div>
                     </div>
                   </div>

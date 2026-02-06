@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import {
   Card,
@@ -33,110 +32,78 @@ import {
   Database 
 } from "lucide-react";
 import { formatTimeAgo, getSeverityColor, getSeverityBgColor } from "@/lib/utils";
+import { useAlerts, useAlertSummary, useAcknowledgeAlert, useResolveAlert } from "@/hooks/use-alerts";
+import { useResources } from "@/hooks/use-resources";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Alerts() {
   const [alertType, setAlertType] = useState<string>("all");
   const [alertSeverity, setAlertSeverity] = useState<string>("all");
   const [alertStatus, setAlertStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [awsAlerts, setAwsAlerts] = useState<Alert[]>([]);
-  const [isGeneratingAwsAlerts, setIsGeneratingAwsAlerts] = useState(false);
 
-  // Fetch standard alerts
-  const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[]>({
-    queryKey: ["/api/alerts"],
-  });
+  const { toast } = useToast();
 
-  // Fetch resources to get names
-  const { data: resources } = useQuery<Resource[]>({
-    queryKey: ["/api/resources"],
-  });
-  
-  // Fetch real AWS resources
-  const { data: awsResources, isLoading: isLoadingAwsResources } = useQuery<any[]>({
-    queryKey: ["/api/aws-resources"],
-  });
-  
-  // Fetch cloud providers to check for AWS
-  const { data: cloudProviders } = useQuery<any[]>({
-    queryKey: ["/api/cloud-providers"],
-  });
-  
-  // Generate AWS alerts based on real S3 buckets
-  useEffect(() => {
-    if (awsResources && awsResources.length > 0 && !isGeneratingAwsAlerts) {
-      setIsGeneratingAwsAlerts(true);
-      
-      // Create alerts based on AWS S3 buckets
-      const s3Buckets = awsResources.filter(r => r.type === "S3");
-      
-      if (s3Buckets.length > 0) {
-        const newAwsAlerts: Alert[] = s3Buckets.map((bucket, index) => {
-          // Generate different alert types for variety
-          const alertTypes = ["security", "cost", "resource"];
-          const severities = ["low", "medium", "high"];
-          const statuses = ["open", "acknowledged", "resolved"];
-          
-          // Use modulo to distribute different alert types
-          const typeIndex = index % alertTypes.length;
-          const severityIndex = index % severities.length;
-          const statusIndex = index % statuses.length;
-          
-          let title = "";
-          let message = "";
-          
-          // Create different alert types based on bucket properties
-          if (alertTypes[typeIndex] === "security") {
-            title = `Security configuration issue in bucket ${bucket.name}`;
-            message = `S3 bucket ${bucket.name} may have insecure permissions. Please review security settings.`;
-          } else if (alertTypes[typeIndex] === "cost") {
-            title = `Cost anomaly detected for ${bucket.name}`;
-            message = `S3 bucket ${bucket.name} storage costs increased by 15% in the last 30 days.`;
-          } else {
-            title = `Resource monitoring alert for ${bucket.name}`;
-            message = `S3 bucket ${bucket.name} has unusually high access patterns detected.`;
-          }
-          
-          return {
-            id: 1000 + index, // Use high IDs to not conflict with existing alerts
-            title,
-            message,
-            type: alertTypes[typeIndex],
-            severity: severities[severityIndex],
-            status: statuses[statusIndex],
-            resourceId: index + 1, // Link to existing resources
-            createdAt: new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 24 * 30).toISOString(), // Random time in the last month
-          };
+  // Fetch paginated alerts from the real backend
+  const { data: alertsResponse, isLoading: isLoadingAlerts } = useAlerts();
+  const alerts = alertsResponse?.data ?? [];
+
+  // Fetch alert summary for the summary cards
+  const { data: alertSummary } = useAlertSummary();
+
+  // Fetch resources for name lookup (paginated — extract .data)
+  const { data: resourcesResponse } = useResources();
+  const resources = resourcesResponse?.data ?? [];
+
+  // Mutations for acknowledge and resolve
+  const acknowledgeAlert = useAcknowledgeAlert();
+  const resolveAlert = useResolveAlert();
+
+  const handleAcknowledge = (id: number) => {
+    acknowledgeAlert.mutate(id, {
+      onSuccess: () => {
+        toast({
+          title: "Alert Acknowledged",
+          description: "The alert has been marked as acknowledged.",
         });
-        
-        setAwsAlerts(newAwsAlerts);
-      }
-      
-      setIsGeneratingAwsAlerts(false);
-    }
-  }, [awsResources, isGeneratingAwsAlerts]);
+      },
+      onError: (error: Error) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to acknowledge alert.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  const handleResolve = (id: number) => {
+    resolveAlert.mutate(id, {
+      onSuccess: () => {
+        toast({
+          title: "Alert Resolved",
+          description: "The alert has been marked as resolved.",
+        });
+      },
+      onError: (error: Error) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to resolve alert.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   const getResourceName = (id?: number) => {
     if (!id) return "N/A";
-    
-    // First check if we have a matching resource in our resources array
-    const resource = resources?.find((r) => r.id === id);
+    const resource = resources.find((r) => r.id === id);
     if (resource) return resource.name;
-    
-    // If not found and we have AWS resources, check there
-    if (awsResources && awsResources.length > 0) {
-      const awsResource = awsResources.find((r, index) => (index + 1) === id);
-      if (awsResource) return awsResource.name;
-    }
-    
     return `Resource ID: ${id}`;
   };
 
-  // Combine standard alerts with AWS alerts
-  const combinedAlerts = [...(alerts || []), ...awsAlerts];
-  
   // Filter alerts based on criteria
-  const filteredAlerts = combinedAlerts.filter((alert) => {
+  const filteredAlerts = alerts.filter((alert) => {
     const matchesType = alertType === "all" || alert.type === alertType;
     const matchesSeverity = alertSeverity === "all" || alert.severity === alertSeverity;
     const matchesStatus = alertStatus === "all" || alert.status === alertStatus;
@@ -147,14 +114,124 @@ export default function Alerts() {
     return matchesType && matchesSeverity && matchesStatus && matchesSearch;
   });
 
-  // Count alerts by severity
-  const criticalCount = combinedAlerts.filter(a => a.severity === 'critical').length || 0;
-  const highCount = combinedAlerts.filter(a => a.severity === 'high').length || 0;
-  const mediumCount = combinedAlerts.filter(a => a.severity === 'medium').length || 0;
-  const lowCount = combinedAlerts.filter(a => a.severity === 'low').length || 0;
-  
-  // Create a badge to show when real AWS data is displayed
-  const hasAwsData = awsResources && awsResources.length > 0 && awsAlerts.length > 0;
+  // Summary counts from the real /api/alerts/summary endpoint
+  const criticalCount = alertSummary?.critical ?? 0;
+  const highCount = alertSummary?.high ?? 0;
+  const mediumCount = alertSummary?.medium ?? 0;
+  const lowCount = alertSummary?.low ?? 0;
+
+  // Helper to render the alerts table for any given list
+  const renderAlertsTable = (alertList: Alert[]) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Title</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Severity</TableHead>
+          <TableHead>Resource</TableHead>
+          <TableHead>Created</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {isLoadingAlerts ? (
+          <TableRow>
+            <TableCell colSpan={7} className="h-24 text-center">
+              Loading alerts...
+            </TableCell>
+          </TableRow>
+        ) : alertList.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={7} className="h-24 text-center">
+              No alerts found matching the current filters.
+            </TableCell>
+          </TableRow>
+        ) : (
+          alertList.map((alert) => (
+            <TableRow key={alert.id}>
+              <TableCell className="font-medium max-w-[300px] truncate">
+                {alert.title}
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline" className="capitalize">
+                  {alert.type}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(alert.severity)} ${getSeverityColor(alert.severity)} rounded-full`}>
+                  {alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
+                </span>
+              </TableCell>
+              <TableCell>
+                {alert.resourceId ? getResourceName(alert.resourceId) : "N/A"}
+              </TableCell>
+              <TableCell>{formatTimeAgo(alert.createdAt)}</TableCell>
+              <TableCell>
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  alert.status === "open"
+                    ? "bg-warning bg-opacity-10 text-warning"
+                    : alert.status === "acknowledged"
+                    ? "bg-primary bg-opacity-10 text-primary"
+                    : "bg-secondary bg-opacity-10 text-secondary"
+                }`}>
+                  {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
+                </span>
+              </TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
+                  {alert.status === "open" && (
+                    <>
+                      {alert.type === "security" && (
+                        <Button size="sm" variant="default" className="h-8">
+                          Remediate
+                        </Button>
+                      )}
+                      {alert.type === "cost" && (
+                        <Button size="sm" variant="default" className="h-8">
+                          Investigate
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8"
+                        disabled={acknowledgeAlert.isPending}
+                        onClick={() => handleAcknowledge(alert.id)}
+                      >
+                        Acknowledge
+                      </Button>
+                    </>
+                  )}
+                  {alert.status === "acknowledged" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8"
+                      disabled={resolveAlert.isPending}
+                      onClick={() => handleResolve(alert.id)}
+                    >
+                      Resolve
+                    </Button>
+                  )}
+                  {alert.status === "resolved" && (
+                    <Button size="sm" variant="ghost" className="h-8">
+                      Details
+                    </Button>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+
+  // Filtered lists for the typed tabs
+  const securityAlerts = filteredAlerts.filter((a) => a.type === "security");
+  const costAlerts = filteredAlerts.filter((a) => a.type === "cost");
+  const resourceAlerts = filteredAlerts.filter((a) => a.type === "resource");
 
   return (
     <DashboardLayout>
@@ -258,103 +335,11 @@ export default function Alerts() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Severity</TableHead>
-                    <TableHead>Resource</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingAlerts ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
-                        Loading alerts...
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredAlerts.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
-                        No alerts found matching the current filters.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredAlerts.map((alert) => (
-                      <TableRow key={alert.id}>
-                        <TableCell className="font-medium max-w-[300px] truncate">
-                          {alert.title}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {alert.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(alert.severity)} ${getSeverityColor(alert.severity)} rounded-full`}>
-                            {alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {alert.resourceId ? getResourceName(alert.resourceId) : "N/A"}
-                        </TableCell>
-                        <TableCell>{formatTimeAgo(alert.createdAt)}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            alert.status === "open"
-                              ? "bg-warning bg-opacity-10 text-warning"
-                              : alert.status === "acknowledged"
-                              ? "bg-primary bg-opacity-10 text-primary"
-                              : "bg-secondary bg-opacity-10 text-secondary"
-                          }`}>
-                            {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            {alert.status === "open" && (
-                              <>
-                                {alert.type === "security" && (
-                                  <Button size="sm" variant="default" className="h-8">
-                                    Remediate
-                                  </Button>
-                                )}
-                                {alert.type === "cost" && (
-                                  <Button size="sm" variant="default" className="h-8">
-                                    Investigate
-                                  </Button>
-                                )}
-                                <Button size="sm" variant="outline" className="h-8">
-                                  Acknowledge
-                                </Button>
-                              </>
-                            )}
-                            {alert.status === "acknowledged" && (
-                              <Button size="sm" variant="outline" className="h-8">
-                                Resolve
-                              </Button>
-                            )}
-                            {alert.status === "resolved" && (
-                              <Button size="sm" variant="ghost" className="h-8">
-                                Details
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+              {renderAlertsTable(filteredAlerts)}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Other tab contents follow the same pattern but would filter by type */}
         <TabsContent value="security" className="mt-6">
           <Card>
             <CardHeader>
@@ -364,7 +349,7 @@ export default function Alerts() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Same table but filtered for security alerts */}
+              {renderAlertsTable(securityAlerts)}
             </CardContent>
           </Card>
         </TabsContent>
@@ -378,7 +363,7 @@ export default function Alerts() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Same table but filtered for cost alerts */}
+              {renderAlertsTable(costAlerts)}
             </CardContent>
           </Card>
         </TabsContent>
@@ -392,7 +377,7 @@ export default function Alerts() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Same table but filtered for resource alerts */}
+              {renderAlertsTable(resourceAlerts)}
             </CardContent>
           </Card>
         </TabsContent>

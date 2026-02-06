@@ -4,6 +4,7 @@ import {
   ScheduledJob, JobExecution, RemediationAction, NotificationPreference,
   Webhook
 } from '@/types';
+import { unwrapResponse } from '@/lib/queryClient';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -11,10 +12,24 @@ type RequestOptions = {
   method?: string;
   body?: unknown;
   headers?: Record<string, string>;
+  params?: Record<string, string | number | undefined>;
 };
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, headers = {} } = options;
+  const { method = 'GET', body, headers = {}, params } = options;
+
+  // Build query string from params
+  let url = `${API_BASE}${endpoint}`;
+  if (params) {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null) {
+        searchParams.set(key, String(value));
+      }
+    }
+    const qs = searchParams.toString();
+    if (qs) url += `${url.includes('?') ? '&' : '?'}${qs}`;
+  }
 
   const config: RequestInit = {
     method,
@@ -29,21 +44,24 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     config.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, config);
+  const response = await fetch(url, config);
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    // Handle Go error envelope: { success: false, error: { code, message } }
+    const errorJson = await response.json().catch(() => ({ message: 'Request failed' }));
+    const errorMsg = errorJson.error?.message || errorJson.message || `HTTP error! status: ${response.status}`;
+    throw new Error(errorMsg);
   }
 
-  return response.json();
+  const json = await response.json();
+  return unwrapResponse<T>(json);
 }
 
 export interface PaginatedResponse<T> {
   data: T[];
   page: number;
   pageSize: number;
-  total: number;
+  totalItems: number;
   totalPages: number;
 }
 

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { CostOverview, CostTrend, CostAnomaly, CostForecast, CostOptimization, CostSummary } from '@/types';
+import { CostOverview, CostTrend, CostAnomaly, CostForecast, CostOptimization } from '@/types';
 
 export function useCostOverview() {
     return useQuery({
