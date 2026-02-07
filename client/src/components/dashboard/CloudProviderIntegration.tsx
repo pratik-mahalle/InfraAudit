@@ -24,7 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { CloudProvider, AllCloudCredentials } from "@/types";
+import { CloudProvider, AllCloudCredentials, AWSCredentials, GCPCredentials, AzureCredentials } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -106,24 +106,35 @@ export function CloudProviderIntegration() {
   const cloudResources = Array.isArray(resourcesResponse) ? resourcesResponse : (resourcesResponse?.data ?? []);
 
   // Map cloud providers to UI format
+  // Go backend returns: { provider: "aws", isConnected: true, lastSynced: "..." }
+  const providerDisplayName = (type: string): string => {
+    switch (type) {
+      case 'aws': return 'Amazon Web Services';
+      case 'gcp': return 'Google Cloud Platform';
+      case 'azure': return 'Microsoft Azure';
+      default: return type.toUpperCase();
+    }
+  };
+
   const connectedAccounts: CloudAccountUI[] = React.useMemo(() => {
-    if (!cloudProviders) return [];
+    if (!cloudProviders || !Array.isArray(cloudProviders)) return [];
     
-    return cloudProviders.map(provider => {
+    return cloudProviders.map((prov: any) => {
+      const provType = (prov.provider || '').toLowerCase();
       // Count resources for this provider if available
       const providerResources = cloudResources?.filter(
-        (resource: any) => resource.provider === provider.id
+        (resource: any) => (resource.provider || '').toLowerCase() === provType
       ) || [];
       
       let icon: React.ReactNode;
-      switch (provider.id) {
-        case CloudProvider.AWS:
+      switch (provType) {
+        case 'aws':
           icon = <SiAmazonwebservices className="h-6 w-6 text-orange-500" />;
           break;
-        case CloudProvider.GCP:
+        case 'gcp':
           icon = <SiGooglecloud className="h-6 w-6 text-blue-500" />;
           break;
-        case CloudProvider.AZURE:
+        case 'azure':
           icon = <CloudIcon className="h-6 w-6 text-blue-600" />;
           break;
         default:
@@ -131,39 +142,65 @@ export function CloudProviderIntegration() {
       }
       
       return {
-        id: provider.id,
-        name: provider.name,
-        provider: provider.id as CloudProvider,
-        isConnected: provider.isConnected,
-        lastSynced: provider.lastSynced || new Date().toISOString(),
+        id: provType,
+        name: providerDisplayName(provType),
+        provider: provType.toUpperCase() as CloudProvider,
+        isConnected: prov.isConnected,
+        lastSynced: prov.lastSynced || new Date().toISOString(),
         resourceCount: providerResources.length,
         icon,
-        status: provider.isConnected ? "active" : "error"
+        status: prov.isConnected ? "active" : "error"
       };
     });
   }, [cloudProviders, cloudResources]);
 
-  // Add cloud provider mutation
+  // Add cloud provider mutation — transform camelCase form fields to Go backend snake_case DTO
   const addProviderMutation = useMutation({
     mutationFn: async (credentials: AllCloudCredentials) => {
       console.log("Adding cloud provider:", credentials);
       
       let endpoint = '';
+      let body: Record<string, any> = {};
+
       switch (credentials.provider) {
-        case CloudProvider.AWS:
+        case CloudProvider.AWS: {
           endpoint = '/api/providers/aws/connect';
+          const aws = credentials as AWSCredentials;
+          body = {
+            provider: 'aws',
+            aws_access_key_id: aws.accessKeyId,
+            aws_secret_access_key: aws.secretAccessKey,
+            aws_region: aws.region || 'us-east-1',
+          };
           break;
-        case CloudProvider.GCP:
+        }
+        case CloudProvider.GCP: {
           endpoint = '/api/providers/gcp/connect';
+          const gcp = credentials as GCPCredentials;
+          body = {
+            provider: 'gcp',
+            gcp_project_id: gcp.projectId || '',
+            gcp_service_account_json: gcp.serviceAccountKey,
+          };
           break;
-        case CloudProvider.AZURE:
+        }
+        case CloudProvider.AZURE: {
           endpoint = '/api/providers/azure/connect';
+          const azure = credentials as AzureCredentials;
+          body = {
+            provider: 'azure',
+            azure_tenant_id: azure.tenantId,
+            azure_client_id: azure.clientId,
+            azure_client_secret: azure.clientSecret,
+            azure_subscription_id: azure.subscriptionId,
+          };
           break;
+        }
         default:
           throw new Error('Unsupported cloud provider');
       }
       
-      const response = await apiRequest('POST', endpoint, credentials);
+      const response = await apiRequest('POST', endpoint, body);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to connect provider');

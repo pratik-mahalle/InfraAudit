@@ -17,6 +17,7 @@ import { FrameworkSelector } from "@/components/compliance/FrameworkSelector";
 import { ControlsTable } from "@/components/compliance/ControlsTable";
 import { AssessmentHistory } from "@/components/compliance/AssessmentHistory";
 import { FailingControlsList } from "@/components/compliance/FailingControlsList";
+import { Badge } from "@/components/ui/badge";
 import { PlayCircle, Download, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

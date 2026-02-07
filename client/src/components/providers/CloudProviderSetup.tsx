@@ -57,10 +57,9 @@ const azureFormSchema = z.object({
   name: z.string().optional()
 });
 
-// Provider item interface
+// Provider item interface — matches Go DTO ProviderDTO after camelCase conversion
 interface CloudProviderItem {
-  id: CloudProvider;
-  name: string;
+  provider: string;       // "aws" | "gcp" | "azure" (lowercase from backend)
   isConnected: boolean;
   lastSynced?: string;
 }
@@ -70,17 +69,13 @@ export function CloudProviderSetup() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch connected providers
+  // Fetch connected providers — use default queryFn which unwraps Go { success, data } envelope
   const { 
     data: providers = [], 
     isLoading: isLoadingProviders, 
     error: providersError 
   } = useQuery<CloudProviderItem[]>({
     queryKey: ['/api/providers'],
-    queryFn: async () => {
-      const res = await apiRequest('GET', '/api/providers');
-      return await res.json();
-    }
   });
 
   // Form handlers for each provider
@@ -114,10 +109,16 @@ export function CloudProviderSetup() {
     }
   });
 
-  // AWS connection mutation
+  // AWS connection mutation — transform camelCase form fields to Go backend snake_case DTO
   const awsConnectionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof awsFormSchema>) => {
-      const res = await apiRequest('POST', '/api/providers/aws/connect', data);
+      const body = {
+        provider: 'aws',
+        aws_access_key_id: data.accessKeyId,
+        aws_secret_access_key: data.secretAccessKey,
+        aws_region: data.region || 'us-east-1',
+      };
+      const res = await apiRequest('POST', '/api/providers/aws/connect', body);
       return await res.json();
     },
     onSuccess: () => {
@@ -138,10 +139,16 @@ export function CloudProviderSetup() {
     }
   });
 
-  // GCP connection mutation
+  // GCP connection mutation — transform camelCase form fields to Go backend snake_case DTO
   const gcpConnectionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof gcpFormSchema>) => {
-      const res = await apiRequest('POST', '/api/providers/gcp/connect', data);
+      const body = {
+        provider: 'gcp',
+        gcp_project_id: data.projectId || '',
+        gcp_service_account_json: data.serviceAccountKey,
+        gcp_region: undefined,
+      };
+      const res = await apiRequest('POST', '/api/providers/gcp/connect', body);
       return await res.json();
     },
     onSuccess: () => {
@@ -162,10 +169,17 @@ export function CloudProviderSetup() {
     }
   });
 
-  // Azure connection mutation
+  // Azure connection mutation — transform camelCase form fields to Go backend snake_case DTO
   const azureConnectionMutation = useMutation({
     mutationFn: async (data: z.infer<typeof azureFormSchema>) => {
-      const res = await apiRequest('POST', '/api/providers/azure/connect', data);
+      const body = {
+        provider: 'azure',
+        azure_tenant_id: data.tenantId,
+        azure_client_id: data.clientId,
+        azure_client_secret: data.clientSecret,
+        azure_subscription_id: data.subscriptionId,
+      };
+      const res = await apiRequest('POST', '/api/providers/azure/connect', body);
       return await res.json();
     },
     onSuccess: () => {
@@ -186,10 +200,10 @@ export function CloudProviderSetup() {
     }
   });
 
-  // Remove provider mutation
+  // Remove provider mutation — backend expects lowercase provider name in URL
   const removeProviderMutation = useMutation({
     mutationFn: async (provider: CloudProvider) => {
-      const res = await apiRequest('DELETE', `/api/providers/${provider}`);
+      const res = await apiRequest('DELETE', `/api/providers/${provider.toLowerCase()}`);
       return await res.json();
     },
     onSuccess: () => {
@@ -253,10 +267,10 @@ export function CloudProviderSetup() {
     }
   };
 
-  // Find if providers already connected
-  const isAwsConnected = providers.some(p => p.id === CloudProvider.AWS);
-  const isGcpConnected = providers.some(p => p.id === CloudProvider.GCP);
-  const isAzureConnected = providers.some(p => p.id === CloudProvider.AZURE);
+  // Find if providers already connected (backend uses lowercase: "aws", "gcp", "azure")
+  const isAwsConnected = providers.some(p => p.provider === 'aws' && p.isConnected);
+  const isGcpConnected = providers.some(p => p.provider === 'gcp' && p.isConnected);
+  const isAzureConnected = providers.some(p => p.provider === 'azure' && p.isConnected);
 
   return (
     <div className="space-y-6">
@@ -295,13 +309,13 @@ export function CloudProviderSetup() {
             </div>
           </Card>
         ) : (
-          providers.map((provider) => (
-            <Card key={provider.id} className="overflow-hidden">
+          providers.map((prov) => (
+            <Card key={prov.provider} className="overflow-hidden">
               <CardHeader className="bg-primary/5">
                 <div className="flex justify-between items-center">
-                  {getProviderIcon(provider.id)}
+                  {getProviderIcon(prov.provider.toUpperCase() as CloudProvider)}
                   <div className="flex items-center">
-                    {provider.isConnected ? (
+                    {prov.isConnected ? (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center">
                         <Check className="h-3 w-3 mr-1" /> Connected
                       </span>
@@ -312,10 +326,10 @@ export function CloudProviderSetup() {
                     )}
                   </div>
                 </div>
-                <CardTitle className="text-lg">{provider.name}</CardTitle>
+                <CardTitle className="text-lg">{getProviderName(prov.provider.toUpperCase() as CloudProvider)}</CardTitle>
                 <CardDescription>
-                  {provider.lastSynced ? (
-                    <>Last synced: {new Date(provider.lastSynced).toLocaleString()}</>
+                  {prov.lastSynced ? (
+                    <>Last synced: {new Date(prov.lastSynced).toLocaleString()}</>
                   ) : (
                     <>Not yet synced</>
                   )}
@@ -326,7 +340,7 @@ export function CloudProviderSetup() {
                   variant="outline" 
                   size="sm" 
                   className="flex items-center"
-                  onClick={() => handleRemoveProvider(provider.id)}
+                  onClick={() => handleRemoveProvider(prov.provider.toUpperCase() as CloudProvider)}
                   disabled={removeProviderMutation.isPending}
                 >
                   {removeProviderMutation.isPending ? (

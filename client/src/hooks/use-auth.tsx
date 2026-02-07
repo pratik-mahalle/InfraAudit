@@ -5,7 +5,7 @@ import {
   UseMutationResult,
 } from "@tanstack/react-query";
 import { User } from "@/types";
-import { getQueryFn, apiRequest, queryClient, unwrapResponse } from "../lib/queryClient";
+import { getQueryFn, apiRequest, queryClient, unwrapResponse, setAccessToken } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type LoginData = { email: string; password: string };
@@ -38,6 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/login", credentials);
       const json = await res.json();
       const data = unwrapResponse<{ accessToken: string; refreshToken: string; user: User }>(json);
+      // Store token in memory as fallback when HttpOnly cookies aren't forwarded
+      if (data.accessToken) {
+        setAccessToken(data.accessToken);
+      }
       return data.user;
     },
     onSuccess: (user: User) => {
@@ -57,6 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/register", userData);
       const json = await res.json();
       const data = unwrapResponse<{ accessToken: string; refreshToken: string; user: User }>(json);
+      // Store token in memory as fallback when HttpOnly cookies aren't forwarded
+      if (data.accessToken) {
+        setAccessToken(data.accessToken);
+      }
       return data.user;
     },
     onSuccess: (user: User) => {
@@ -80,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      setAccessToken(null);
       queryClient.setQueryData(["/api/user"], null);
       toast({
         title: "Logout successful",

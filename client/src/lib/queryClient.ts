@@ -2,6 +2,25 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "";
 
+// ─── In-memory token store (fallback when HttpOnly cookies fail) ───
+let _accessToken: string | null = null;
+
+export function setAccessToken(token: string | null) {
+  _accessToken = token;
+}
+export function getAccessToken(): string | null {
+  return _accessToken;
+}
+
+// Build auth headers: always include Content-Type when body present,
+// and add Bearer token as fallback for cookie-based auth
+function buildHeaders(hasBody: boolean): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (hasBody) headers["Content-Type"] = "application/json";
+  if (_accessToken) headers["Authorization"] = `Bearer ${_accessToken}`;
+  return headers;
+}
+
 // Convert snake_case keys to camelCase recursively
 function snakeToCamel(str: string): string {
   return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
@@ -53,7 +72,7 @@ export async function apiRequest(
 ): Promise<Response> {
   const res = await fetch(`${API_BASE}${url}`, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: buildHeaders(!!data),
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -69,6 +88,7 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const res = await fetch(`${API_BASE}${queryKey[0] as string}`, {
+      headers: buildHeaders(false),
       credentials: "include",
     });
 
