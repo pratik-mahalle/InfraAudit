@@ -114,14 +114,18 @@ export interface Alert {
 }
 
 export interface Recommendation {
-  id: number | string;
+  id: number;
+  type: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   description: string;
-  type: string;
-  potentialSavings: number;
-  resourcesAffected: number[];
+  savings: number;
+  effort: string;
+  impact: string;
+  category: string;
+  status: 'pending' | 'applied' | 'dismissed';
+  resources?: string[];
   createdAt: string;
-  status: 'open' | 'applied' | 'dismissed';
 }
 
 export interface ScanResult {

@@ -63,6 +63,7 @@ export default function CostOptimization() {
 
   // Fetch real data from backend
   const { data: overview, isLoading: isLoadingOverview } = useCostOverview();
+  const { data: trends } = useCostTrends();
   const { data: anomalies, isLoading: isLoadingAnomalies } = useCostAnomalies();
   const { data: optimizations, isLoading: isLoadingOptimizations } = useCostOptimizations();
   const { mutate: syncCosts, isPending: isSyncing } = useSyncCosts();
@@ -93,6 +94,67 @@ export default function CostOptimization() {
   // Calculate changes (mock logic if backend doesn't provide prev period yet)
   const spendChange = overview?.trend?.changePercent || 0;
 
+  // Export report as CSV
+  const handleExportReport = () => {
+    try {
+      const rows: string[][] = [
+        ["Cost Optimization Report", `Generated ${new Date().toLocaleString()}`],
+        [],
+        ["Summary"],
+        ["Current Month Spend", formatCurrency(currentSpend)],
+        ["Projected Spend", formatCurrency(projectedSpend)],
+        ["Potential Savings", formatCurrency(potentialSavings)],
+        ["Spend Change %", `${spendChange}%`],
+        ["Cost Anomalies", String(overview?.anomalyCount || 0)],
+        [],
+        ["Top Services by Cost"],
+        ["Service", "Provider", "Cost", "% of Total"],
+      ];
+
+      if (overview?.topServices) {
+        for (const svc of overview.topServices) {
+          rows.push([svc.serviceName, svc.provider || '', formatCurrency(svc.cost), `${svc.percentage?.toFixed(1)}%`]);
+        }
+      }
+
+      if (optimizations && optimizations.length > 0) {
+        rows.push([], ["Optimization Recommendations"], ["ID", "Title", "Estimated Savings", "Status"]);
+        for (const opt of optimizations as any[]) {
+          rows.push([String(opt.id), opt.title || opt.description || '', formatCurrency(opt.estimatedSavings || 0), opt.status || '']);
+        }
+      }
+
+      if (anomalies && anomalies.length > 0) {
+        rows.push([], ["Cost Anomalies"], ["Service", "Provider", "Severity", "Expected", "Actual", "Deviation", "Status"]);
+        for (const a of anomalies as any[]) {
+          rows.push([a.serviceName || '', a.provider || '', a.severity || '', formatCurrency(a.expectedCost || 0), formatCurrency(a.actualCost || 0), formatCurrency(a.deviation || 0), a.status || '']);
+        }
+      }
+
+      const csvContent = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `infraaudit-cost-report-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Report Exported",
+        description: "Cost optimization report has been downloaded as CSV.",
+      });
+    } catch (err) {
+      toast({
+        title: "Export Failed",
+        description: "Unable to generate the report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <DashboardLayout>
       <PageHeader
@@ -109,7 +171,7 @@ export default function CostOptimization() {
               <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
               {isSyncing ? "Syncing..." : "Sync Costs"}
             </Button>
-            <Button className="flex items-center gap-2">
+            <Button className="flex items-center gap-2" onClick={handleExportReport}>
               <Download className="h-4 w-4" />
               Export Report
             </Button>
@@ -184,8 +246,9 @@ export default function CostOptimization() {
             potentialSavings={potentialSavings}
             optimizationCount={optimizations?.length || 0}
             spendChange={spendChange}
-            projectionChange={10} // Mock projection change
+            projectionChange={10}
             isLoading={isLoadingOverview}
+            trendDataPoints={(trends as any)?.dataPoints}
           />
         </div>
 

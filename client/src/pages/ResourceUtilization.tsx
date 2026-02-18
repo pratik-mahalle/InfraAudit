@@ -297,7 +297,7 @@ export default function ResourceUtilizationPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-emerald-600 font-semibold mb-1">
-                        {formatCurrency(rec.estimatedSavings || rec.potentialSavings || 0)}/mo
+                        {formatCurrency((rec as any).savings || (rec as any).estimatedSavings || 0)}/mo
                       </div>
                       <div className="text-xs text-gray-500">Potential savings</div>
                     </div>

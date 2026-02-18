@@ -36,6 +36,10 @@ import PrivacyPolicyPage from "@/pages/legal/PrivacyPolicyPage";
 import TermsOfServicePage from "@/pages/legal/TermsOfServicePage";
 import Compliance from "@/pages/Compliance";
 import Automation from "@/pages/Automation";
+import Recommendations from "@/pages/Recommendations";
+import DriftDetectionPage from "@/pages/DriftDetection";
+import VulnerabilitiesPage from "@/pages/Vulnerabilities";
+import BillingImport from "@/pages/BillingImport";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import ExpiredTrialRedirect from "@/components/trial/ExpiredTrialRedirect";
@@ -44,6 +48,8 @@ import ExpiredTrialRedirect from "@/components/trial/ExpiredTrialRedirect";
 const PROTECTED_ROUTES = [
   "/dashboard",
   "/security",
+  "/drift-detection",
+  "/vulnerabilities",
   "/cost",
   "/cost-prediction",
   "/resources",
@@ -58,6 +64,8 @@ const PROTECTED_ROUTES = [
   "/roi-calculator",
   "/compliance",
   "/automation",
+  "/recommendations",
+  "/billing-import",
 ];
 
 // Check if current path is a protected route
@@ -99,7 +107,19 @@ function Router() {
               <WithTrialCheck><Dashboard /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/security">
-              <WithTrialCheck><SecurityMonitoring /></WithTrialCheck>
+              <WithTrialCheck><SecurityMonitoring defaultTab="drifts" /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/drift-detection">
+              <WithTrialCheck><DriftDetectionPage /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/vulnerabilities">
+              <WithTrialCheck><VulnerabilitiesPage /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/recommendations">
+              <WithTrialCheck><Recommendations /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/billing-import">
+              <WithTrialCheck><BillingImport /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/cost">
               <WithTrialCheck><CostOptimization /></WithTrialCheck>
@@ -171,7 +191,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <AuthProvider>
           <TooltipProvider>
             <Toaster />

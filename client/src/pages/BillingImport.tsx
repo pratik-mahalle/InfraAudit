@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { apiRequest, queryClient, getAccessToken } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -58,8 +59,13 @@ export default function BillingImport() {
       try {
         // Can't use apiRequest because it adds Content-Type: application/json
         // which breaks multipart/form-data uploads
+        const headers: Record<string, string> = {};
+        const token = getAccessToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
         const response = await fetch('/api/billing-import/upload', {
           method: 'POST',
+          headers,
           body: formData,
           credentials: 'include'
           // Don't set Content-Type header as it's automatically set with form boundary
@@ -213,11 +219,12 @@ export default function BillingImport() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <DashboardLayout>
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Billing Data Import</h1>
-          <p className="text-muted-foreground">Import your cloud provider billing data for cost analysis and prediction.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Billing Data Import</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Import your cloud provider billing data for cost analysis and prediction.</p>
         </div>
       </div>
 
@@ -406,5 +413,6 @@ export default function BillingImport() {
         </TabsContent>
       </Tabs>
     </div>
+    </DashboardLayout>
   );
 }

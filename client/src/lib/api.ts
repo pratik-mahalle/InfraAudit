@@ -4,7 +4,7 @@ import {
   ScheduledJob, JobExecution, RemediationAction, NotificationPreference,
   Webhook
 } from '@/types';
-import { unwrapResponse } from '@/lib/queryClient';
+import { unwrapResponse, getAccessToken } from '@/lib/queryClient';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -31,10 +31,18 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     if (qs) url += `${url.includes('?') ? '&' : '?'}${qs}`;
   }
 
+  // Include Bearer token as fallback when HttpOnly cookies aren't forwarded
+  const authHeaders: Record<string, string> = {};
+  const token = getAccessToken();
+  if (token) {
+    authHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
   const config: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...headers,
     },
     credentials: 'include',
@@ -196,13 +204,16 @@ export interface ProviderCredentials {
 
 export interface Recommendation {
   id: number;
-  resourceId?: number;
   type: string;
   priority: 'critical' | 'high' | 'medium' | 'low';
   title: string;
   description: string;
-  estimatedSavings?: number;
+  savings: number;
+  effort: string;
+  impact: string;
+  category: string;
   status: 'pending' | 'applied' | 'dismissed';
+  resources?: string[];
   createdAt: string;
 }
 

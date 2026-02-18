@@ -63,7 +63,7 @@ const navSections: NavSection[] = [
         items: [
             { label: "Cost Analysis", href: "/cost", icon: BarChart3 },
             { label: "Predictions", href: "/cost-prediction", icon: TrendingUp },
-            { label: "Recommendations", href: "/cost", icon: Target },
+            { label: "Recommendations", href: "/recommendations", icon: Target },
             { label: "Billing Import", href: "/billing-import", icon: DollarSign },
         ],
     },
@@ -73,9 +73,9 @@ const navSections: NavSection[] = [
         iconColor: "text-blue-500",
         items: [
             { label: "Security Dashboard", href: "/security", icon: Shield },
-            { label: "Drift Detection", href: "/security", icon: AlertTriangle },
+            { label: "Drift Detection", href: "/drift-detection", icon: AlertTriangle },
             { label: "Compliance", href: "/compliance", icon: FileCheck },
-            { label: "Vulnerabilities", href: "/security", icon: Lock },
+            { label: "Vulnerabilities", href: "/vulnerabilities", icon: Lock },
         ],
     },
     {

@@ -115,7 +115,7 @@ export function CostRecommendations({
                   </div>
                   <div className="text-right">
                     <div className="text-secondary font-semibold mb-1">
-                      {formatCurrency(recommendation.potentialSavings)}/mo
+                      {formatCurrency(recommendation.savings)}/mo
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
                       Potential savings
@@ -125,10 +125,10 @@ export function CostRecommendations({
                 <div className="flex flex-wrap justify-between items-center mb-3">
                   <div className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                     <span className="font-medium mr-1">Affected Resources:</span>
-                    {recommendation.resourcesAffected && recommendation.resourcesAffected.length > 0
+                    {recommendation.resources && recommendation.resources.length > 0
                       ? (getResourceName
-                        ? getResourceName(recommendation.resourcesAffected[0])
-                        : `Resource ${recommendation.resourcesAffected[0]}`)
+                        ? getResourceName(Number(recommendation.resources[0]))
+                        : `Resource ${recommendation.resources[0]}`)
                       : "Multiple resources"}
                     {recommendation.id >= 1000 && <span className="ml-1 text-blue-600">(AWS)</span>}
                   </div>

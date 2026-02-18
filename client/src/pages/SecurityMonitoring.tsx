@@ -42,10 +42,10 @@ import {
 } from "lucide-react";
 import { formatTimeAgo, getSeverityColor, getSeverityBgColor } from "@/lib/utils";
 
-export default function SecurityMonitoring() {
+export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultTab?: string }) {
   // Common state
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [activeMainTab, setActiveMainTab] = useState<string>("drifts");
+  const [activeMainTab, setActiveMainTab] = useState<string>(defaultTab);
   
   // Drifts-specific state
   const [severity, setSeverity] = useState<string>("all");
@@ -290,7 +290,7 @@ export default function SecurityMonitoring() {
       </div>
 
       {/* Main Tabs - Configuration Drifts vs Alerts */}
-      <Tabs defaultValue="drifts" className="mb-6" onValueChange={setActiveMainTab}>
+      <Tabs defaultValue={defaultTab} value={activeMainTab} className="mb-6" onValueChange={setActiveMainTab}>
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 mb-4">
           <TabsList>
             <TabsTrigger value="drifts">

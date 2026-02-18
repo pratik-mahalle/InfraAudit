@@ -37,6 +37,8 @@ interface CostTrendChartProps {
   spendChange: number;
   projectionChange: number;
   isLoading?: boolean;
+  /** Real data points from the Go backend /api/v1/costs/trends */
+  trendDataPoints?: { date: string; cost: number }[];
 }
 
 export function CostTrendChart({
@@ -47,131 +49,68 @@ export function CostTrendChart({
   spendChange,
   projectionChange,
   isLoading = false,
+  trendDataPoints,
 }: CostTrendChartProps) {
   const [timeframe, setTimeframe] = useState<ChartTimeframe>("7d");
-  
-  // Generate chart data based on timeframe and real AWS resources
-  const generateChartData = (timeframe: ChartTimeframe) => {
-    let labels: string[] = [];
-    let costData: number[] = [];
-    let projectedData: number[] = [];
-    
-    // Daily cost for the chart based on the current monthly spend
-    const dailyCost = currentSpend / 30; // Convert monthly spend to per-day cost
-    const dailyVariation = 0.15; // 15% variation for more realistic visualization
-    
-    // Base value for calculations - this is real data from the AWS resources
-    const baseDailyCost = dailyCost > 0 ? dailyCost : 10; // Use a minimal value if no real data
-    
-    switch (timeframe) {
-      case "7d":
-        // Use weekday names for 7-day view
-        labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-        
-        // Generate cost data with a growth pattern based on real AWS S3 spending
-        costData = Array.from({ length: 7 }, (_, i) => {
-          // Generate costs with a realistic pattern: gradual increase with slight daily variations
-          // i/7 creates a percentage of the distance through the week (0% to 100%)
-          const growthFactor = 1 + (i/7) * 0.1; // Gradually increase by up to 10% through the week
-          const variation = baseDailyCost * dailyVariation * (Math.random() * 2 - 1); // Random variation
-          return baseDailyCost * growthFactor + variation;
-        });
-        
-        // Set the last value to match current daily cost to ensure consistency
-        costData[costData.length - 1] = baseDailyCost * 1.1; // Today's cost is a bit higher than base
-        
-        // Project future costs at a slightly higher rate based on growth trend
-        const projectedDailyCost = baseDailyCost * 1.2; // Projected 20% higher than base
-        // Create projected data with explicit type for array that can contain nulls
-        projectedData = [...costData] as (number | null)[];
-        projectedData.push(null, null, projectedDailyCost); // Null values create the gap in the chart
-        break;
-        
-      case "30d":
-        // For 30 day view, we'll show 5 data points per week (workdays)
-        const dateLabels = [];
-        const now = new Date();
-        
-        // Create date labels for the past 30 days
-        for (let i = 29; i >= 0; i--) {
-          const date = new Date(now);
-          date.setDate(now.getDate() - i);
-          dateLabels.push(date.getDate().toString());
+
+  // Build chart data from real backend data points when available
+  const buildChartData = (tf: ChartTimeframe) => {
+    // Filter data points based on timeframe
+    const now = new Date();
+    const daysMap: Record<ChartTimeframe, number> = { "7d": 7, "30d": 30, "90d": 90 };
+    const days = daysMap[tf] || 30;
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - days);
+
+    // Use real data points if available
+    const realPoints = (trendDataPoints || [])
+      .filter(dp => new Date(dp.date) >= cutoff)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    let labels: string[];
+    let costData: number[];
+
+    if (realPoints.length > 0) {
+      // Use actual backend data
+      labels = realPoints.map(dp => {
+        const d = new Date(dp.date);
+        return tf === "7d"
+          ? d.toLocaleDateString("en-US", { weekday: "short" })
+          : `${d.getMonth() + 1}/${d.getDate()}`;
+      });
+      costData = realPoints.map(dp => dp.cost);
+    } else {
+      // No real data — show zero baseline for the time range
+      const count = tf === "7d" ? 7 : tf === "30d" ? 30 : 12;
+      labels = [];
+      costData = [];
+      for (let i = count - 1; i >= 0; i--) {
+        const d = new Date(now);
+        if (tf === "90d") {
+          // Weekly labels for 90-day view
+          d.setDate(d.getDate() - i * 7);
+        } else {
+          d.setDate(d.getDate() - i);
         }
-        
-        labels = dateLabels;
-        
-        // Generate monthly trend with more realistic AWS storage growth pattern
-        costData = Array.from({ length: 30 }, (_, i) => {
-          // Monthly pattern shows more gradual but consistent growth
-          const growthFactor = 1 + (i/30) * 0.15; // Up to 15% growth over the month
-          const variation = baseDailyCost * dailyVariation * (Math.random() * 2 - 1);
-          
-          // Add small jumps on specific days (e.g., weekends or month transitions)
-          const jump = (i % 7 === 0 || i % 7 === 6) ? baseDailyCost * 0.05 : 0;
-          
-          return baseDailyCost * growthFactor + variation + jump;
-        });
-        
-        // Set the last value to match current daily cost
-        costData[costData.length - 1] = baseDailyCost * 1.15;
-        
-        // Project future costs - more gradual for 30-day view
-        projectedData = [...costData, null, null, baseDailyCost * 1.25];
-        break;
-        
-      case "90d":
-        // For 90-day view, we'll create month/day labels
-        const quarterLabels = [];
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - 89);
-        
-        // Create abbreviated month/day labels for quarter view
-        for (let i = 0; i < 90; i++) {
-          const date = new Date(startDate);
-          date.setDate(startDate.getDate() + i);
-          
-          // Show only every ~3 days to avoid label crowding
-          if (i % 3 === 0) {
-            quarterLabels.push(`${date.getMonth()+1}/${date.getDate()}`);
-          } else {
-            quarterLabels.push('');
-          }
-        }
-        
-        labels = quarterLabels;
-        
-        // Generate quarterly trend with realistic AWS storage growth pattern
-        costData = Array.from({ length: 90 }, (_, i) => {
-          // Quarterly pattern with gradual consistent growth and monthly "steps"
-          const monthlyGrowth = Math.floor(i / 30) * 0.05; // 5% step increase each month
-          const dailyGrowth = (i % 30) / 30 * 0.05; // Small daily growth within month
-          const growthFactor = 1 + monthlyGrowth + dailyGrowth;
-          
-          // Add variation for realism
-          const variation = baseDailyCost * (dailyVariation/2) * (Math.random() * 2 - 1);
-          
-          // Add occasional small jumps at month transitions or weekends
-          const isMonthTransition = i % 30 === 0;
-          const jump = isMonthTransition ? baseDailyCost * 0.1 : 0;
-          
-          return baseDailyCost * growthFactor + variation + jump;
-        });
-        
-        // Set the last value to match current daily cost
-        costData[costData.length - 1] = baseDailyCost * 1.2;
-        
-        // Project future costs for the quarter - with steeper curve
-        projectedData = [...costData, null, null, baseDailyCost * 1.35];
-        break;
+        labels.push(
+          tf === "7d"
+            ? d.toLocaleDateString("en-US", { weekday: "short" })
+            : `${d.getMonth() + 1}/${d.getDate()}`
+        );
+        costData.push(0);
+      }
     }
-    
+
+    // Add a simple projected point
+    const lastCost = costData.length > 0 ? costData[costData.length - 1] : 0;
+    const projectedCost = projectedSpend > 0 ? projectedSpend / (tf === "7d" ? 7 : tf === "30d" ? 30 : 90) : lastCost * 1.1;
+
     return {
-      labels: [...labels, "", "Future"],
+      labels: [...labels, "Projected"],
       datasets: [
         {
           label: "Actual Cost",
-          data: [...costData, null, null],
+          data: [...costData, null] as (number | null)[],
           borderColor: "#0066CC",
           backgroundColor: "rgba(0, 102, 204, 0.1)",
           fill: true,
@@ -179,18 +118,19 @@ export function CostTrendChart({
         },
         {
           label: "Projected",
-          data: projectedData,
+          data: [...costData.map(() => null as number | null), projectedCost],
           borderColor: "#DC3545",
           backgroundColor: "rgba(220, 53, 69, 0.1)",
           borderDash: [5, 5],
           fill: false,
           tension: 0.4,
+          pointRadius: 5,
         },
       ],
     };
   };
-  
-  const chartData = generateChartData(timeframe);
+
+  const chartData = buildChartData(timeframe);
   
   const options = {
     responsive: true,
@@ -248,15 +188,6 @@ export function CostTrendChart({
           {isLoading ? (
             <div className="h-full w-full flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : currentSpend === 0 ? (
-            <div className="h-full w-full flex flex-col items-center justify-center space-y-2 bg-gray-50 rounded-lg">
-              <AlertTriangle className="h-8 w-8 text-amber-500" />
-              <p className="text-gray-600 dark:text-gray-300 text-sm">No cost data available</p>
-              <p className="text-gray-500 dark:text-gray-400 text-xs text-center max-w-md">
-                Connect your cloud provider credentials to see actual cost data.
-                Go to Cloud Providers page to add your AWS, GCP, or Azure credentials.
-              </p>
             </div>
           ) : (
             <Line data={chartData} options={options} />
