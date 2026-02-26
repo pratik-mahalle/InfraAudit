@@ -358,6 +358,25 @@ export const api = {
       request(`/api/resources/${id}`, { method: 'PUT', body: data }),
 
     delete: (id: number) => request(`/api/resources/${id}`, { method: 'DELETE' }),
+
+    analyze: (resourceData: Record<string, unknown>) =>
+      request<{
+        costAnalysis: {
+          detected: boolean;
+          description: string;
+          severity: string;
+          recommendations: string[];
+          estimatedSavings: number;
+        };
+        securityAnalysis: {
+          detected: boolean;
+          description: string;
+          severity: string;
+          vulnerabilities: string[];
+          recommendations: string[];
+          complianceImpact: string[];
+        };
+      }>('/api/v1/resources/analyze', { method: 'POST', body: resourceData }),
   },
 
   // ============================================
@@ -526,7 +545,8 @@ export const api = {
     sync: (provider?: string) => {
       const params = new URLSearchParams();
       if (provider) params.set('provider', provider);
-      return request('/api/v1/costs/sync', { method: 'POST', body: { provider } });
+      const qs = params.toString();
+      return request(`/api/v1/costs/sync${qs ? `?${qs}` : ''}`, { method: 'POST' });
     },
 
     getSavings: () => request<{ potentialSavings: number }>('/api/v1/costs/savings'),

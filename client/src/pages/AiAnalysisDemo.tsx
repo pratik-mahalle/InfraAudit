@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Zap, AlertTriangle, Shield, BarChart3, Loader2, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import api from '@/lib/api';
 
 export default function AiAnalysisDemo() {
   const { toast } = useToast();
@@ -77,7 +76,7 @@ export default function AiAnalysisDemo() {
       objectCount: 15782,
       totalSize: '512 GB',
       lastAccessed: '2025-05-23',
-      publicAccess: true, // This is a potential security concern
+      publicAccess: true,
       crossRegionReplication: false
     }
   };
@@ -101,7 +100,7 @@ export default function AiAnalysisDemo() {
       engine: 'PostgreSQL',
       version: '13.4',
       instanceClass: 'db.r5.xlarge',
-      multiAZ: false, // This is a potential security concern
+      multiAZ: false,
       storage: '500 GB',
       storageType: 'gp2',
       encrypted: true,
@@ -146,7 +145,7 @@ export default function AiAnalysisDemo() {
     setResourceJson(JSON.stringify(example, null, 2));
   };
 
-  const analyzeResource = () => {
+  const analyzeResource = async () => {
     if (!resourceJson.trim()) {
       toast({
         title: "No resource data",
@@ -156,10 +155,10 @@ export default function AiAnalysisDemo() {
       return;
     }
 
-    let resource;
+    let resource: Record<string, unknown>;
     try {
       resource = JSON.parse(resourceJson);
-    } catch (error) {
+    } catch {
       toast({
         title: "Invalid JSON",
         description: "Please check your JSON format and try again",
@@ -169,129 +168,30 @@ export default function AiAnalysisDemo() {
     }
 
     setAnalyzing(true);
-    
-    // Simulate analysis with OpenAI integration
-    setTimeout(() => {
-      // Mock response for demonstration
-      let mockResults;
-      
-      if (resource.type === 'EC2') {
-        mockResults = {
-          costAnalysis: {
-            detected: true,
-            description: "This EC2 instance is significantly underutilized. The average CPU utilization is only 15% and memory usage is 30%, indicating that you're paying for resources that aren't being used.",
-            severity: "high",
-            recommendations: [
-              "Downsize from t3.xlarge to t3.medium to match actual usage patterns",
-              "Consider implementing auto-scaling to adjust capacity during low-usage periods",
-              "Evaluate if this workload is suitable for spot instances to reduce costs"
-            ],
-            estimatedSavings: 62.70
-          },
-          securityAnalysis: {
-            detected: false,
-            description: "No significant security configuration drifts detected for this EC2 instance.",
-            severity: "low",
-            vulnerabilities: [],
-            recommendations: [
-              "Continue regular security scans and updates",
-              "Consider implementing EC2 instance lifecycle policies"
-            ],
-            complianceImpact: []
-          }
-        };
-      } else if (resource.type === 'S3') {
-        mockResults = {
-          costAnalysis: {
-            detected: true,
-            description: "Your S3 bucket is using the Standard storage class for all objects, which may not be cost-effective for infrequently accessed data.",
-            severity: "medium",
-            recommendations: [
-              "Implement lifecycle policies to transition older objects to Infrequent Access or Glacier storage classes",
-              "Review object retention requirements and set up expiration policies for temporary data"
-            ],
-            estimatedSavings: 30.08
-          },
-          securityAnalysis: {
-            detected: true,
-            description: "This S3 bucket has public access enabled, which poses a significant security risk. All data could potentially be exposed to unauthorized users.",
-            severity: "critical",
-            vulnerabilities: [
-              "Public access is enabled for the bucket",
-              "No cross-region replication configured for disaster recovery"
-            ],
-            recommendations: [
-              "Immediately disable public access to the bucket",
-              "Implement bucket policies to restrict access to authorized users only",
-              "Enable server-side encryption for all objects"
-            ],
-            complianceImpact: ["GDPR", "HIPAA", "SOC2"]
-          }
-        };
-      } else if (resource.type === 'RDS') {
-        mockResults = {
-          costAnalysis: {
-            detected: true,
-            description: "The RDS instance is provisioned with more resources than needed and is not using the most cost-effective options.",
-            severity: "high",
-            recommendations: [
-              "Consider downsizing from db.r5.xlarge to db.r5.large based on current usage patterns",
-              "Evaluate if GP3 storage would be more cost-effective than current GP2",
-              "Optimize backup retention period based on your actual recovery requirements"
-            ],
-            estimatedSavings: 140.24
-          },
-          securityAnalysis: {
-            detected: true,
-            description: "The RDS instance is not configured for high availability with Multi-AZ deployment, which creates a potential availability risk.",
-            severity: "high",
-            vulnerabilities: [
-              "No Multi-AZ deployment configured, creating a single point of failure",
-              "Extended maintenance window may lead to longer downtime periods"
-            ],
-            recommendations: [
-              "Enable Multi-AZ deployment to improve availability and security",
-              "Reduce the maintenance window duration to minimize potential downtime",
-              "Consider implementing a read replica for improved read performance and disaster recovery"
-            ],
-            complianceImpact: ["SOC2", "PCI-DSS"]
-          }
-        };
-      } else {
-        mockResults = {
-          costAnalysis: {
-            detected: false,
-            description: "No significant cost optimizations identified for this resource.",
-            severity: "low",
-            recommendations: ["Continue monitoring resource usage patterns"],
-            estimatedSavings: 0
-          },
-          securityAnalysis: {
-            detected: false,
-            description: "No security drifts detected for this resource.",
-            severity: "low",
-            vulnerabilities: [],
-            recommendations: ["Maintain regular security assessments"],
-            complianceImpact: []
-          }
-        };
-      }
-      
-      setResults(mockResults);
-      setAnalyzing(false);
-      
+    setResults(null);
+
+    try {
+      const data = await api.resources.analyze(resource);
+      setResults(data);
       toast({
         title: "Analysis Complete",
-        description: `Analysis for ${resource.name} (${resource.type}) completed successfully`,
-        variant: "default",
+        description: `Analysis for ${(resource as any).name ?? 'resource'} completed successfully`,
       });
-    }, 3000);
+    } catch (err: any) {
+      toast({
+        title: "Analysis Failed",
+        description: err?.message || "Failed to analyze resource. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const getSeverityBadge = (severity: string) => {
     let variant: "default" | "destructive" | "outline" = "outline";
     let className = "";
-    
+
     switch(severity) {
       case 'critical':
         variant = "destructive";
@@ -310,7 +210,7 @@ export default function AiAnalysisDemo() {
         className = "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
         break;
     }
-    
+
     return (
       <Badge variant={variant} className={className}>
         {severity.charAt(0).toUpperCase() + severity.slice(1)}
@@ -321,8 +221,8 @@ export default function AiAnalysisDemo() {
   return (
     <>
       <Helmet>
-        <title>AI Analysis Demo | InfrAudit</title>
-        <meta name="description" content="Experience InfrAudit's AI-powered analysis for cloud resource cost optimization and security drift detection." />
+        <title>AI Analysis | InfraAudit</title>
+        <meta name="description" content="AI-powered analysis for cloud resource cost optimization and security drift detection." />
       </Helmet>
 
       <div className="container max-w-7xl mx-auto py-12 px-4 md:px-6">
@@ -332,7 +232,7 @@ export default function AiAnalysisDemo() {
           </div>
           <h1 className="text-4xl font-bold tracking-tight mb-4">AI-Powered Resource Analysis</h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Detect cost anomalies and security drifts with our advanced AI analysis. Optimize your cloud infrastructure with intelligent recommendations.
+            Detect cost anomalies and security drifts with AI analysis powered by Google Gemini. Optimize your cloud infrastructure with intelligent recommendations.
           </p>
         </div>
 
@@ -355,8 +255,8 @@ export default function AiAnalysisDemo() {
                     RDS Example
                   </Button>
                 </div>
-                <Textarea 
-                  placeholder="Paste your JSON resource configuration here..." 
+                <Textarea
+                  placeholder="Paste your JSON resource configuration here..."
                   value={resourceJson}
                   onChange={(e) => setResourceJson(e.target.value)}
                   rows={20}
@@ -374,7 +274,7 @@ export default function AiAnalysisDemo() {
                 {analyzing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Analyzing...
+                    Analyzing with AI...
                   </>
                 ) : (
                   <>
@@ -385,7 +285,7 @@ export default function AiAnalysisDemo() {
               </Button>
             </CardFooter>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Analysis Results</CardTitle>
@@ -411,9 +311,9 @@ export default function AiAnalysisDemo() {
                       Security Analysis
                     </TabsTrigger>
                   </TabsList>
-                  
+
                   <TabsContent value="cost" className="space-y-4 pt-4">
-                    {results.costAnalysis.detected ? (
+                    {results.costAnalysis?.detected ? (
                       <div className="rounded-lg border p-4">
                         <div className="flex items-start gap-3">
                           <AlertTriangle className={`h-5 w-5 flex-shrink-0 ${
@@ -437,7 +337,7 @@ export default function AiAnalysisDemo() {
                             <div className="space-y-2">
                               <h4 className="text-sm font-medium">Recommendations:</h4>
                               <ul className="space-y-1">
-                                {results.costAnalysis.recommendations.map((rec: string, index: number) => (
+                                {results.costAnalysis.recommendations?.map((rec: string, index: number) => (
                                   <li key={index} className="text-sm flex items-start gap-2">
                                     <span className="text-green-500 font-bold">•</span>
                                     <span>{rec}</span>
@@ -458,9 +358,9 @@ export default function AiAnalysisDemo() {
                       </div>
                     )}
                   </TabsContent>
-                  
+
                   <TabsContent value="security" className="space-y-4 pt-4">
-                    {results.securityAnalysis.detected ? (
+                    {results.securityAnalysis?.detected ? (
                       <div className="rounded-lg border p-4">
                         <div className="flex items-start gap-3">
                           <AlertTriangle className={`h-5 w-5 flex-shrink-0 ${
@@ -476,8 +376,8 @@ export default function AiAnalysisDemo() {
                             <p className="text-sm text-muted-foreground mb-3">
                               {results.securityAnalysis.description}
                             </p>
-                            
-                            {results.securityAnalysis.vulnerabilities.length > 0 && (
+
+                            {results.securityAnalysis.vulnerabilities?.length > 0 && (
                               <div className="space-y-2 mb-3">
                                 <h4 className="text-sm font-medium">Vulnerabilities:</h4>
                                 <ul className="space-y-1">
@@ -490,11 +390,11 @@ export default function AiAnalysisDemo() {
                                 </ul>
                               </div>
                             )}
-                            
+
                             <div className="space-y-2">
                               <h4 className="text-sm font-medium">Recommendations:</h4>
                               <ul className="space-y-1">
-                                {results.securityAnalysis.recommendations.map((rec: string, index: number) => (
+                                {results.securityAnalysis.recommendations?.map((rec: string, index: number) => (
                                   <li key={index} className="text-sm flex items-start gap-2">
                                     <span className="text-green-500 font-bold">•</span>
                                     <span>{rec}</span>
@@ -502,8 +402,8 @@ export default function AiAnalysisDemo() {
                                 ))}
                               </ul>
                             </div>
-                            
-                            {results.securityAnalysis.complianceImpact.length > 0 && (
+
+                            {results.securityAnalysis.complianceImpact?.length > 0 && (
                               <div className="mt-3 pt-3 border-t">
                                 <h4 className="text-sm font-medium mb-2">Compliance Impact:</h4>
                                 <div className="flex flex-wrap gap-2">
@@ -540,7 +440,7 @@ export default function AiAnalysisDemo() {
             </CardContent>
           </Card>
         </div>
-        
+
         <div className="bg-muted/50 rounded-lg p-6 mb-8">
           <h2 className="text-xl font-bold mb-4">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -553,7 +453,7 @@ export default function AiAnalysisDemo() {
                 Our AI analyzes your cloud resource configuration and usage patterns to identify potential issues.
               </p>
             </div>
-            
+
             <div className="space-y-3">
               <div className="bg-primary/10 rounded-full w-10 h-10 flex items-center justify-center">
                 <span className="text-primary font-bold">2</span>
@@ -563,7 +463,7 @@ export default function AiAnalysisDemo() {
                 The system detects cost anomalies, security drifts, and potential optimization opportunities.
               </p>
             </div>
-            
+
             <div className="space-y-3">
               <div className="bg-primary/10 rounded-full w-10 h-10 flex items-center justify-center">
                 <span className="text-primary font-bold">3</span>
@@ -575,10 +475,10 @@ export default function AiAnalysisDemo() {
             </div>
           </div>
         </div>
-        
+
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            Note: This is a demonstration of InfrAudit's AI capabilities. In the production version, analyses are performed in real-time on your actual cloud resources.
+            Powered by Google Gemini AI. Analysis is performed in real-time using your resource configuration data.
           </p>
         </div>
       </div>

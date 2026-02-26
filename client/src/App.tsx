@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/layouts/MainLayout";
-import { AuthLayout } from "@/layouts/AuthLayout";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import SecurityMonitoring from "@/pages/SecurityMonitoring";
@@ -16,8 +15,7 @@ import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import CloudProviders from "@/pages/CloudProviders";
 import Documentation from "@/pages/documentation";
-import AuthPage from "@/pages/auth-page";
-import SignupPage from "@/pages/signup-page";
+import AuthDisabled from "@/pages/AuthDisabled";
 import HomePage from "@/pages/HomePage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
@@ -86,17 +84,9 @@ function Router() {
 
   return (
     <Switch>
-      {/* Auth pages - no MainLayout */}
-      <Route path="/auth">
-        <AuthLayout>
-          <AuthPage />
-        </AuthLayout>
-      </Route>
-      <Route path="/signup">
-        <AuthLayout>
-          <SignupPage />
-        </AuthLayout>
-      </Route>
+      {/* Auth is temporarily disabled — redirect to info page */}
+      <Route path="/auth" component={AuthDisabled} />
+      <Route path="/signup" component={AuthDisabled} />
 
       {/* All other routes - with MainLayout */}
       <Route path="*">

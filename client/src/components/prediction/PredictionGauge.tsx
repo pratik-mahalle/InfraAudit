@@ -1,9 +1,7 @@
 import React from "react";
-import { motion } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface PredictionGaugeProps {
   currentSpend: number;
@@ -14,171 +12,184 @@ interface PredictionGaugeProps {
 }
 
 export function PredictionGauge({
-  currentSpend = 18450,
-  predictedSpend = 24850,
-  budget = 25000,
-  previousMonthSpend = 22300,
-  isLoading = false
+  currentSpend = 0,
+  predictedSpend = 0,
+  budget = 0,
+  previousMonthSpend = 0,
 }: PredictionGaugeProps) {
-  const percentUsed = Math.min((predictedSpend / budget) * 100, 100);
-  const percentChange = previousMonthSpend 
-    ? ((predictedSpend - previousMonthSpend) / previousMonthSpend) * 100 
+  const percentUsed = budget > 0 ? Math.min((currentSpend / budget) * 100, 100) : 0;
+  const percentPredicted = budget > 0 ? Math.min((predictedSpend / budget) * 100, 120) : 0;
+  const percentChange = previousMonthSpend
+    ? ((predictedSpend - previousMonthSpend) / previousMonthSpend) * 100
     : 0;
   const isOverBudget = predictedSpend > budget;
-  const isNearBudget = percentUsed >= 85 && !isOverBudget;
-  
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
 
-  // Calculate arc path
-  const radius = 85;
-  const strokeWidth = 12;
-  const normalizedRadius = radius - strokeWidth / 2;
-  const circumference = normalizedRadius * Math.PI; // Half circle
-  const offset = circumference - (percentUsed / 100) * circumference;
-
-  // Get status color
   const getStatusColor = () => {
-    if (isOverBudget) return { stroke: "#ef4444", bg: "bg-red-500", text: "text-red-500" };
-    if (isNearBudget) return { stroke: "#f59e0b", bg: "bg-amber-500", text: "text-amber-500" };
-    return { stroke: "#10b981", bg: "bg-emerald-500", text: "text-emerald-500" };
+    if (isOverBudget) return "red";
+    if (percentPredicted >= 85) return "amber";
+    return "emerald";
+  };
+  const status = getStatusColor();
+
+  const barColorMap: Record<string, string> = {
+    emerald: "bg-emerald-500",
+    amber: "bg-amber-500",
+    red: "bg-red-500",
+  };
+  const textColorMap: Record<string, string> = {
+    emerald: "text-emerald-600 dark:text-emerald-400",
+    amber: "text-amber-600 dark:text-amber-400",
+    red: "text-red-600 dark:text-red-400",
+  };
+  const bgColorMap: Record<string, string> = {
+    emerald: "bg-emerald-500/10",
+    amber: "bg-amber-500/10",
+    red: "bg-red-500/10",
   };
 
-  const statusColor = getStatusColor();
+  const statusLabel = isOverBudget
+    ? "Over Budget"
+    : percentPredicted >= 85
+      ? "Near Limit"
+      : "On Track";
 
   return (
-    <Card className="bg-white/70 dark:bg-slate-900/50 backdrop-blur border border-gray-200/60 dark:border-slate-800/60 shadow-sm overflow-hidden">
-      <CardHeader className="pb-2">
+    <Card className="rounded-xl shadow-none border-border/50">
+      <CardContent className="p-6 space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Target className="h-5 w-5 text-blue-500" />
+          <h3 className="text-base font-medium text-foreground">
             Budget Forecast
-          </CardTitle>
-          <Badge 
-            variant="outline" 
+          </h3>
+          <span
             className={cn(
-              "text-xs",
-              isOverBudget 
-                ? "bg-red-500/10 text-red-600 border-red-500/30" 
-                : isNearBudget 
-                  ? "bg-amber-500/10 text-amber-600 border-amber-500/30"
-                  : "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+              "text-xs font-medium px-2.5 py-1 rounded-full",
+              bgColorMap[status],
+              textColorMap[status]
             )}
           >
-            {isOverBudget ? "Over Budget" : isNearBudget ? "Near Limit" : "On Track"}
-          </Badge>
+            {statusLabel}
+          </span>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center">
-          {/* Semi-circular gauge */}
-          <div className="relative" style={{ width: radius * 2, height: radius + 20 }}>
-            <svg 
-              width={radius * 2} 
-              height={radius + 20} 
-              className="transform -rotate-180"
-              style={{ transform: "rotate(-90deg)" }}
-            >
-              {/* Background arc */}
-              <path
-                d={`M ${strokeWidth / 2} ${radius} A ${normalizedRadius} ${normalizedRadius} 0 0 1 ${radius * 2 - strokeWidth / 2} ${radius}`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={strokeWidth}
-                className="text-gray-200 dark:text-gray-700"
-                strokeLinecap="round"
-              />
-              
-              {/* Progress arc */}
-              <motion.path
-                d={`M ${strokeWidth / 2} ${radius} A ${normalizedRadius} ${normalizedRadius} 0 0 1 ${radius * 2 - strokeWidth / 2} ${radius}`}
-                fill="none"
-                stroke={statusColor.stroke}
-                strokeWidth={strokeWidth}
-                strokeLinecap="round"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: percentUsed / 100 }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
-                style={{
-                  filter: `drop-shadow(0 0 6px ${statusColor.stroke}50)`
-                }}
-              />
-            </svg>
 
-            {/* Center content */}
-            <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
-              <motion.span 
-                className={cn("text-3xl font-bold", statusColor.text)}
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5, duration: 0.5 }}
-              >
-                {formatCurrency(predictedSpend)}
-              </motion.span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                of {formatCurrency(budget)} budget
-              </span>
-            </div>
+        {/* Main Amount */}
+        <div>
+          <p className="text-4xl font-semibold tracking-tight text-foreground">
+            {formatCurrency(currentSpend)}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            of {formatCurrency(budget)} budget
+          </p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Spent</span>
+            <span>{percentUsed.toFixed(0)}%</span>
           </div>
-
-          {/* Status indicators */}
-          <div className="grid grid-cols-3 gap-4 w-full mt-6 pt-4 border-t border-gray-200/60 dark:border-slate-700/60">
-            <div className="text-center">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Current</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {formatCurrency(currentSpend)}
-              </p>
-            </div>
-            <div className="text-center border-x border-gray-200/60 dark:border-slate-700/60">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Predicted</p>
-              <p className={cn("text-lg font-semibold", statusColor.text)}>
-                {formatCurrency(predictedSpend)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">vs Last Month</p>
-              <p className={cn(
-                "text-lg font-semibold flex items-center justify-center gap-1",
-                percentChange > 0 ? "text-red-500" : "text-emerald-500"
-              )}>
-                {percentChange > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                {Math.abs(percentChange).toFixed(1)}%
-              </p>
-            </div>
-          </div>
-
-          {/* Alert message */}
-          {(isOverBudget || isNearBudget) && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1 }}
+          <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+            <div
               className={cn(
-                "mt-4 p-3 rounded-lg flex items-start gap-2 text-sm w-full",
-                isOverBudget 
-                  ? "bg-red-500/10 text-red-700 dark:text-red-400" 
-                  : "bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                "h-full rounded-full transition-all duration-700 ease-out",
+                barColorMap[status]
               )}
-            >
-              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <span>
-                {isOverBudget 
-                  ? `Projected to exceed budget by ${formatCurrency(predictedSpend - budget)}`
-                  : `${(100 - percentUsed).toFixed(1)}% of budget remaining - consider reviewing expenses`
-                }
-              </span>
-            </motion.div>
+              style={{ width: `${Math.min(percentUsed, 100)}%` }}
+            />
+          </div>
+          {/* Predicted marker */}
+          {predictedSpend > 0 && budget > 0 && (
+            <div className="relative w-full h-0">
+              <div
+                className="absolute -top-3.5 flex flex-col items-center"
+                style={{
+                  left: `${Math.min(percentPredicted, 100)}%`,
+                  transform: "translateX(-50%)",
+                }}
+              >
+                <div
+                  className={cn(
+                    "w-0.5 h-2",
+                    barColorMap[status],
+                    "opacity-60"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-[10px] font-medium mt-0.5 whitespace-nowrap",
+                    textColorMap[status]
+                  )}
+                >
+                  Predicted
+                </span>
+              </div>
+            </div>
           )}
         </div>
+
+        {/* Metrics Row */}
+        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/40">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Current</p>
+            <p className="text-lg font-semibold tabular-nums">
+              {formatCurrency(currentSpend)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Predicted</p>
+            <p
+              className={cn(
+                "text-lg font-semibold tabular-nums",
+                textColorMap[status]
+              )}
+            >
+              {formatCurrency(predictedSpend)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">vs Last Month</p>
+            <div className="flex items-center gap-1">
+              {percentChange > 0.5 ? (
+                <TrendingUp className="h-3.5 w-3.5 text-red-500" />
+              ) : percentChange < -0.5 ? (
+                <TrendingDown className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+              <span
+                className={cn(
+                  "text-lg font-semibold tabular-nums",
+                  percentChange > 0.5
+                    ? "text-red-500"
+                    : percentChange < -0.5
+                      ? "text-emerald-500"
+                      : "text-muted-foreground"
+                )}
+              >
+                {Math.abs(percentChange).toFixed(1)}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Alert */}
+        {isOverBudget && (
+          <div className="p-3 rounded-lg bg-red-500/10 text-red-700 dark:text-red-400 text-sm">
+            Projected to exceed budget by{" "}
+            <span className="font-semibold">
+              {formatCurrency(predictedSpend - budget)}
+            </span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
-

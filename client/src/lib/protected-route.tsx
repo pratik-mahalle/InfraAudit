@@ -1,6 +1,7 @@
-import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
-import { Redirect, Route } from "wouter";
+import { Route } from "wouter";
+
+// AUTH IS TEMPORARILY DISABLED — all protected routes are accessible without login.
+// To re-enable, restore the auth check using useAuth() and redirect to /auth when !user.
 
 interface ProtectedRouteProps {
   path: string;
@@ -9,29 +10,13 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ path, component: Component, children }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuth();
-
   return (
     <Route
       path={path}
       component={() => {
-        if (isLoading) {
-          return (
-            <div className="flex items-center justify-center min-h-screen">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          );
-        }
-
-        if (!user) {
-          return <Redirect to="/auth" />;
-        }
-
-        // Support both component prop and children
         if (Component) {
           return <Component />;
         }
-
         return <>{children}</>;
       }}
     />
