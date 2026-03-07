@@ -1,24 +1,12 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || "";
 
-// ─── In-memory token store (fallback when HttpOnly cookies fail) ───
-let _accessToken: string | null = null;
-
-export function setAccessToken(token: string | null) {
-  _accessToken = token;
-}
-export function getAccessToken(): string | null {
-  return _accessToken;
-}
-
-// Build auth headers: always include Content-Type when body present,
-// and add Bearer token as fallback for cookie-based auth
-function buildHeaders(hasBody: boolean): Record<string, string> {
-  const headers: Record<string, string> = {};
-  if (hasBody) headers["Content-Type"] = "application/json";
-  if (_accessToken) headers["Authorization"] = `Bearer ${_accessToken}`;
-  return headers;
+// Get the current Supabase access token
+async function getSupabaseToken(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
 }
 
 // Convert snake_case keys to camelCase recursively
@@ -70,9 +58,16 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (data) headers["Content-Type"] = "application/json";
+
+  // Get Supabase token and include as Bearer
+  const token = await getSupabaseToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   const res = await fetch(`${API_BASE}${url}`, {
     method,
-    headers: buildHeaders(!!data),
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -82,24 +77,28 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
+export function getQueryFn<T>(options: {
   on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
+}): QueryFunction<T> {
+  return async ({ queryKey }) => {
+    const headers: Record<string, string> = {};
+    const token = await getSupabaseToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     const res = await fetch(`${API_BASE}${queryKey[0] as string}`, {
-      headers: buildHeaders(false),
+      headers,
       credentials: "include",
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null as any;
+    if (options.on401 === "returnNull" && res.status === 401) {
+      return null as T;
     }
 
     await throwIfResNotOk(res);
     const json = await res.json();
     return unwrapResponse<T>(json);
   };
+}
 
 export const queryClient = new QueryClient({
   defaultOptions: {

@@ -112,7 +112,7 @@ function CategoryHeader({ children }: { children: React.ReactNode }) {
 }
 
 export function Navbar() {
-  const { user, logoutMutation } = useAuth();
+  const { user, signOut } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [location] = useLocation();
@@ -124,7 +124,7 @@ export function Navbar() {
   }, [location]);
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    signOut();
   };
 
   const getInitials = (name: string) => {

@@ -1,23 +1,21 @@
 // Common types to be used across the application
 export interface User {
   id: number;
+  authId?: string;
   email: string;
   username: string;
   fullName?: string;
   role: string;
   planType?: string;
+  avatarUrl?: string;
   organizationId?: number;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   subscriptionStatus?: string;
   trialStartedAt?: string;
   trialStatus?: string;
-  oauthProvider?: string;
-  oauthId?: string;
-  avatarUrl?: string;
   createdAt?: string;
   updatedAt?: string;
-  lastLoginAt?: string;
 }
 
 // Zod-compatible insert schema for auth forms

@@ -1,118 +1,153 @@
-import { createContext, ReactNode, useContext } from "react";
-import {
-  useQuery,
-  useMutation,
-  UseMutationResult,
-} from "@tanstack/react-query";
+import { createContext, ReactNode, useContext, useEffect, useState, useCallback } from "react";
+import { Session, AuthError } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import { User } from "@/types";
-import { getQueryFn, apiRequest, queryClient, unwrapResponse, setAccessToken } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-
-type LoginData = { email: string; password: string };
-type RegisterData = { email: string; password: string; username?: string; fullName?: string };
+import { unwrapResponse } from "@/lib/queryClient";
 
 type AuthContextType = {
   user: User | null;
+  session: Session | null;
   isLoading: boolean;
-  error: Error | null;
-  loginMutation: UseMutationResult<User, Error, LoginData>;
-  logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<User, Error, RegisterData>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (
+    email: string,
+    password: string,
+    metadata?: { username?: string; fullName?: string }
+  ) => Promise<void>;
+  signInWithOAuth: (provider: "google" | "github") => Promise<void>;
+  signOut: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
+async function fetchProfile(accessToken: string): Promise<User | null> {
+  try {
+    const res = await fetch("/api/user", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return unwrapResponse<User>(json);
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useQuery<User, Error>({
-    queryKey: ["/api/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
-  });
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      const json = await res.json();
-      const data = unwrapResponse<{ accessToken: string; refreshToken: string; user: User }>(json);
-      // Store token in memory as fallback when HttpOnly cookies aren't forwarded
-      if (data.accessToken) {
-        setAccessToken(data.accessToken);
-      }
-      return data.user;
-    },
-    onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/user"], user);
+  // Fetch profile from Go backend using Supabase JWT
+  const loadProfile = useCallback(async (sess: Session | null) => {
+    if (!sess?.access_token) {
+      setUser(null);
+      return;
+    }
+    const profile = await fetchProfile(sess.access_token);
+    setUser(profile);
+  }, []);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      loadProfile(initialSession).finally(() => setIsLoading(false));
+    });
+
+    // Listen for auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      loadProfile(newSession);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [loadProfile]);
+
+  const signInWithEmail = useCallback(
+    async (email: string, password: string) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw new Error(error.message);
       toast({
         title: "Login successful",
-        description: `Welcome, ${user.fullName || user.username}!`,
+        description: "Welcome back!",
       });
     },
-    onError: (_error: Error) => {
-      // Error is handled inline in the auth form
-    },
-  });
+    [toast]
+  );
 
-  const registerMutation = useMutation({
-    mutationFn: async (userData: RegisterData) => {
-      const res = await apiRequest("POST", "/api/register", userData);
-      const json = await res.json();
-      const data = unwrapResponse<{ accessToken: string; refreshToken: string; user: User }>(json);
-      // Store token in memory as fallback when HttpOnly cookies aren't forwarded
-      if (data.accessToken) {
-        setAccessToken(data.accessToken);
-      }
-      return data.user;
-    },
-    onSuccess: (user: User) => {
-      queryClient.setQueryData(["/api/user"], user);
+  const signUpWithEmail = useCallback(
+    async (
+      email: string,
+      password: string,
+      metadata?: { username?: string; fullName?: string }
+    ) => {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: metadata?.username || "",
+            full_name: metadata?.fullName || "",
+          },
+        },
+      });
+      if (error) throw new Error(error.message);
       toast({
         title: "Registration successful",
-        description: `Welcome to InfraAudit, ${user.fullName || user.username}!`,
+        description: "Welcome to InfraAudit!",
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Registration failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+    [toast]
+  );
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", "/api/logout");
-    },
-    onSuccess: () => {
-      setAccessToken(null);
-      queryClient.setQueryData(["/api/user"], null);
-      toast({
-        title: "Logout successful",
-        description: "You have been logged out.",
+  const signInWithOAuth = useCallback(
+    async (provider: "google" | "github") => {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
       });
+      if (error) throw new Error(error.message);
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+    []
+  );
+
+  const signOut = useCallback(async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw new Error(error.message);
+    setUser(null);
+    setSession(null);
+    // Also clear Go backend cookies
+    try {
+      await fetch("/api/logout", { method: "POST", credentials: "include" });
+    } catch {
+      // Ignore errors clearing server cookies
+    }
+    toast({
+      title: "Logged out",
+      description: "You have been logged out.",
+    });
+  }, [toast]);
 
   return (
     <AuthContext.Provider
       value={{
-        user: user || null,
+        user,
+        session,
         isLoading,
-        error,
-        loginMutation,
-        logoutMutation,
-        registerMutation,
+        signInWithEmail,
+        signUpWithEmail,
+        signInWithOAuth,
+        signOut,
       }}
     >
       {children}

@@ -22,25 +22,37 @@ const GitHubIcon = () => (
   </svg>
 );
 
-const handleOAuthLogin = (provider: 'google' | 'github') => {
-  const envBase = (import.meta as any).env?.VITE_OAUTH_BACKEND_BASE || (import.meta as any).env?.VITE_API_BASE_URL;
-  const base = envBase && typeof envBase === 'string' && envBase.length > 0 ? envBase : 'http://localhost:8080';
-  window.location.assign(new URL(`/api/auth/${provider}`, base).toString());
-};
-
 export default function AuthPage() {
-  const { user, loginMutation } = useAuth();
+  const { user, signInWithEmail, signInWithOAuth } = useAuth();
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   if (user) {
     return <Redirect to="/dashboard" />;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    loginMutation.mutate({ email, password });
+    setAuthError(null);
+    setIsLoading(true);
+    try {
+      await signInWithEmail(email, password);
+    } catch (err: any) {
+      setAuthError(err.message || "Invalid email or password");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOAuthLogin = async (provider: 'google' | 'github') => {
+    try {
+      await signInWithOAuth(provider);
+    } catch (err: any) {
+      setAuthError(err.message || "OAuth login failed");
+    }
   };
 
   return (
@@ -214,11 +226,11 @@ export default function AuthPage() {
           ) : (
             <>
               {/* Email Form */}
-              {loginMutation.isError && (
+              {authError && (
                 <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
                   <p className="text-sm text-red-600 dark:text-red-400">
-                    Invalid email or password
+                    {authError}
                   </p>
                 </div>
               )}
@@ -251,8 +263,8 @@ export default function AuthPage() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full h-11" disabled={loginMutation.isPending}>
-                  {loginMutation.isPending ? (
+                <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                  {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Signing in...

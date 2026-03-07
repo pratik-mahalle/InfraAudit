@@ -15,7 +15,8 @@ import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import CloudProviders from "@/pages/CloudProviders";
 import Documentation from "@/pages/documentation";
-import AuthDisabled from "@/pages/AuthDisabled";
+import AuthPage from "@/pages/auth-page";
+import SignupPage from "@/pages/signup-page";
 import HomePage from "@/pages/HomePage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
@@ -84,9 +85,10 @@ function Router() {
 
   return (
     <Switch>
-      {/* Auth is temporarily disabled — redirect to info page */}
-      <Route path="/auth" component={AuthDisabled} />
-      <Route path="/signup" component={AuthDisabled} />
+      {/* Auth routes (outside MainLayout) */}
+      <Route path="/auth" component={AuthPage} />
+      <Route path="/auth/callback" component={AuthPage} />
+      <Route path="/signup" component={SignupPage} />
 
       {/* All other routes - with MainLayout */}
       <Route path="*">

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiRequest, queryClient, getAccessToken } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,8 +61,8 @@ export default function BillingImport() {
         // Can't use apiRequest because it adds Content-Type: application/json
         // which breaks multipart/form-data uploads
         const headers: Record<string, string> = {};
-        const token = getAccessToken();
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
         const response = await fetch('/api/billing-import/upload', {
           method: 'POST',

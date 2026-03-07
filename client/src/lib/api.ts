@@ -4,7 +4,8 @@ import {
   ScheduledJob, JobExecution, RemediationAction, NotificationPreference,
   Webhook
 } from '@/types';
-import { unwrapResponse, getAccessToken } from '@/lib/queryClient';
+import { unwrapResponse } from '@/lib/queryClient';
+import { supabase } from '@/lib/supabase';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -31,11 +32,11 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     if (qs) url += `${url.includes('?') ? '&' : '?'}${qs}`;
   }
 
-  // Include Bearer token as fallback when HttpOnly cookies aren't forwarded
+  // Get Supabase session token for Go backend authentication
   const authHeaders: Record<string, string> = {};
-  const token = getAccessToken();
-  if (token) {
-    authHeaders['Authorization'] = `Bearer ${token}`;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    authHeaders['Authorization'] = `Bearer ${session.access_token}`;
   }
 
   const config: RequestInit = {
@@ -245,18 +246,9 @@ export const api = {
   // Authentication
   // ============================================
   auth: {
-    login: (email: string, password: string) =>
-      request('/api/login', { method: 'POST', body: { email, password } }),
-
-    register: (data: { email: string; password: string; username?: string; fullName?: string }) =>
-      request('/api/register', { method: 'POST', body: data }),
-
+    // Supabase handles login/register/refresh — only Go backend profile endpoints remain
     logout: () => request('/api/logout', { method: 'POST' }),
-
     me: () => request('/api/user'),
-
-    refresh: (refreshToken: string) =>
-      request('/api/auth/refresh', { method: 'POST', body: { refreshToken } }),
   },
 
   // ============================================

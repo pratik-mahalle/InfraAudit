@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { LogOut, Settings, Shield, Cloud, Bell, Key, ChevronRight } from "lucide-react";
 
 export default function Profile() {
-  const { user, logoutMutation } = useAuth();
+  const { user, signOut } = useAuth();
   const [, navigate] = useLocation();
 
   if (!user) return null;
@@ -46,7 +46,7 @@ export default function Profile() {
                 <Button variant="outline" onClick={() => navigate("/settings")}>
                   <Settings className="mr-2 h-4 w-4" /> Edit Settings
                 </Button>
-                <Button variant="outline" onClick={() => logoutMutation.mutate()} disabled={logoutMutation.isPending}>
+                <Button variant="outline" onClick={() => signOut()}>
                   <LogOut className="mr-2 h-4 w-4" /> Sign Out
                 </Button>
               </div>

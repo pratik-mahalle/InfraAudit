@@ -22,14 +22,8 @@ const GitHubIcon = () => (
     </svg>
 );
 
-const handleOAuthLogin = (provider: 'google' | 'github') => {
-    const envBase = (import.meta as any).env?.VITE_OAUTH_BACKEND_BASE || (import.meta as any).env?.VITE_API_BASE_URL;
-    const base = envBase && typeof envBase === 'string' && envBase.length > 0 ? envBase : 'http://localhost:8080';
-    window.location.assign(new URL(`/api/auth/${provider}`, base).toString());
-};
-
 export default function SignupPage() {
-    const { user, registerMutation } = useAuth();
+    const { user, signUpWithEmail, signInWithOAuth } = useAuth();
     const [showEmailForm, setShowEmailForm] = useState(false);
     const [formData, setFormData] = useState({
         username: "",
@@ -39,6 +33,7 @@ export default function SignupPage() {
         confirmPassword: "",
     });
     const [error, setError] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     if (user) {
         return <Redirect to="/dashboard" />;
@@ -49,7 +44,7 @@ export default function SignupPage() {
         setError("");
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
@@ -58,16 +53,28 @@ export default function SignupPage() {
             return;
         }
 
-        registerMutation.mutate({
-            email: formData.email,
-            password: formData.password,
-            username: formData.username,
-            fullName: formData.fullName,
-            role: "user",
-        });
+        setIsLoading(true);
+        try {
+            await signUpWithEmail(formData.email, formData.password, {
+                username: formData.username,
+                fullName: formData.fullName,
+            });
+        } catch (err: any) {
+            setError(err.message || "Registration failed. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const hasError = error || registerMutation.isError;
+    const handleOAuthLogin = async (provider: 'google' | 'github') => {
+        try {
+            await signInWithOAuth(provider);
+        } catch (err: any) {
+            setError(err.message || "OAuth login failed");
+        }
+    };
+
+    const hasError = !!error;
 
     return (
         <div className="min-h-screen flex">
@@ -319,8 +326,8 @@ export default function SignupPage() {
                                     />
                                 </div>
 
-                                <Button type="submit" className="w-full h-11" disabled={registerMutation.isPending}>
-                                    {registerMutation.isPending ? (
+                                <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                                    {isLoading ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                             Creating account...
