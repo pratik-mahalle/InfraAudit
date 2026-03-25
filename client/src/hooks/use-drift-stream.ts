@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './use-auth';
 import { useToast } from './use-toast';
+import { supabase } from '@/lib/supabase';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -19,10 +20,13 @@ export function useDriftStream() {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (!user || eventSourceRef.current) return;
 
-    const url = `${API_BASE}/api/ws/drifts`;
+    // EventSource can't set Authorization header, so pass token as query param
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || '';
+    const url = `${API_BASE}/api/ws/drifts${token ? `?token=${token}` : ''}`;
     const eventSource = new EventSource(url, { withCredentials: true });
     eventSourceRef.current = eventSource;
 
@@ -66,10 +70,10 @@ export function useDriftStream() {
       eventSource.close();
       eventSourceRef.current = null;
 
-      // Reconnect after 5 seconds
+      // Reconnect after 30 seconds
       reconnectTimerRef.current = setTimeout(() => {
         connect();
-      }, 5000);
+      }, 30000);
     };
   }, [user, queryClient, toast]);
 

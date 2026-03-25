@@ -64,10 +64,29 @@ interface CloudProviderItem {
   lastSynced?: string;
 }
 
+// Kubernetes cluster type — matches KubernetesIntegration component
+interface K8sCluster {
+  id: number;
+  name: string;
+  context?: string;
+  hasKubeconfig: boolean;
+  status?: 'connected' | 'disconnected' | 'error';
+  nodeCount?: number;
+  nodes?: number;
+  version?: string;
+}
+
 export function CloudProviderSetup() {
   const [activeTab, setActiveTab] = useState<string>('aws');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Kubernetes tab state
+  const [k8sPasteContent, setK8sPasteContent] = useState('');
+  const [k8sUploadContent, setK8sUploadContent] = useState('');
+  const [k8sUploadFileName, setK8sUploadFileName] = useState('');
+  const [k8sUploadClusterName, setK8sUploadClusterName] = useState('');
+  const [k8sPasteClusterName, setK8sPasteClusterName] = useState('');
 
   // Fetch connected providers — use default queryFn which unwraps Go { success, data } envelope
   const { 
@@ -222,6 +241,97 @@ export function CloudProviderSetup() {
       });
     }
   });
+
+  // Fetch Kubernetes clusters
+  const {
+    data: k8sClusters = [],
+    isLoading: isLoadingK8sClusters,
+    error: k8sClustersError,
+  } = useQuery<K8sCluster[]>({
+    queryKey: ['/api/kubernetes/clusters'],
+    select: (data) => (Array.isArray(data) ? data : []),
+    retry: (failureCount, error: any) => {
+      if (error?.message?.includes('404')) return false;
+      return failureCount < 3;
+    },
+  });
+
+  // Register a new K8s cluster
+  const registerK8sClusterMutation = useMutation({
+    mutationFn: async (body: { name: string; kubeconfig: string; context?: string }) => {
+      const res = await apiRequest('POST', '/api/kubernetes/clusters', body);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Kubernetes cluster connected',
+        description: 'Your cluster has been registered and is being synced.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/kubernetes/clusters'] });
+      // Reset form state
+      setK8sUploadContent('');
+      setK8sUploadFileName('');
+      setK8sUploadClusterName('');
+      setK8sPasteContent('');
+      setK8sPasteClusterName('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to connect Kubernetes cluster',
+        description: error.message || 'Please check your kubeconfig and try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete/disconnect a K8s cluster
+  const removeK8sClusterMutation = useMutation({
+    mutationFn: async (clusterId: number) => {
+      await apiRequest('DELETE', `/api/kubernetes/clusters/${clusterId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Kubernetes cluster disconnected',
+        description: 'The cluster has been removed.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/kubernetes/clusters'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to disconnect cluster',
+        description: error.message || 'An error occurred while removing the cluster.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleConnectK8sUpload = () => {
+    if (!k8sUploadContent) {
+      toast({ title: 'No kubeconfig file', description: 'Please upload a kubeconfig file first.', variant: 'destructive' });
+      return;
+    }
+    registerK8sClusterMutation.mutate({
+      name: k8sUploadClusterName || k8sUploadFileName || 'Kubernetes Cluster',
+      kubeconfig: k8sUploadContent,
+    });
+  };
+
+  const handleConnectK8sPaste = () => {
+    if (!k8sPasteContent || k8sPasteContent.length < 50) {
+      toast({ title: 'Invalid kubeconfig', description: 'Please paste a valid kubeconfig content.', variant: 'destructive' });
+      return;
+    }
+    registerK8sClusterMutation.mutate({
+      name: k8sPasteClusterName || 'Kubernetes Cluster',
+      kubeconfig: k8sPasteContent,
+    });
+  };
+
+  const handleDisconnectK8s = (cluster: K8sCluster) => {
+    if (confirm(`Are you sure you want to disconnect "${cluster.name}"?`)) {
+      removeK8sClusterMutation.mutate(cluster.id);
+    }
+  };
 
   const onSubmitAWS = (data: z.infer<typeof awsFormSchema>) => {
     awsConnectionMutation.mutate(data);
@@ -755,38 +865,71 @@ export function CloudProviderSetup() {
                           className="hidden"
                           accept=".yaml,.yml,.json"
                           onChange={(e) => {
-                            // Handle file upload
                             const file = e.target.files?.[0];
                             if (file) {
-                              // File processing would go here
-                              console.log('File selected:', file.name);
+                              if (file.size > 100 * 1024) {
+                                toast({ title: 'File too large', description: 'Kubeconfig file must be under 100KB.', variant: 'destructive' });
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                const content = ev.target?.result as string;
+                                setK8sUploadContent(content);
+                                setK8sUploadFileName(file.name.replace(/\.(ya?ml|json)$/, ''));
+                              };
+                              reader.readAsText(file);
                             }
                           }}
                         />
                         <label htmlFor="kubeconfig-file" className="cursor-pointer w-full text-center">
-                          <Database className="h-10 w-10 mx-auto text-gray-400 mb-2" />
-                          <p className="text-sm font-medium">Click to upload or drag and drop</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            YAML or JSON (max. 100KB)
-                          </p>
+                          {k8sUploadContent ? (
+                            <>
+                              <Check className="h-10 w-10 mx-auto text-green-500 mb-2" />
+                              <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                                {k8sUploadFileName || 'File loaded'}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Click to replace
+                              </p>
+                            </>
+                          ) : (
+                            <>
+                              <Database className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                              <p className="text-sm font-medium">Click to upload or drag and drop</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                YAML or JSON (max. 100KB)
+                              </p>
+                            </>
+                          )}
                         </label>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <label className="block text-sm font-medium mb-1">
                           Cluster Name (Optional)
                         </label>
-                        <Input 
-                          placeholder="e.g., Production Cluster" 
+                        <Input
+                          placeholder="e.g., Production Cluster"
                           className="w-full"
+                          value={k8sUploadClusterName}
+                          onChange={(e) => setK8sUploadClusterName(e.target.value)}
                         />
                         <p className="text-xs text-muted-foreground">
                           If not provided, we'll use the cluster name from the kubeconfig.
                         </p>
                       </div>
-                      
-                      <Button className="w-full mt-4">
-                        Connect Kubernetes Cluster
+
+                      <Button
+                        className="w-full mt-4"
+                        disabled={!k8sUploadContent || registerK8sClusterMutation.isPending}
+                        onClick={handleConnectK8sUpload}
+                      >
+                        {registerK8sClusterMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Server className="h-4 w-4 mr-2" />
+                        )}
+                        {registerK8sClusterMutation.isPending ? 'Connecting...' : 'Connect Kubernetes Cluster'}
                       </Button>
                     </TabsContent>
                     
@@ -798,24 +941,37 @@ export function CloudProviderSetup() {
                         <textarea
                           className="flex min-h-[200px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                           placeholder="Paste your kubeconfig content here (YAML or JSON)"
+                          value={k8sPasteContent}
+                          onChange={(e) => setK8sPasteContent(e.target.value)}
                         />
                       </div>
-                      
+
                       <div className="space-y-2">
                         <label className="block text-sm font-medium mb-1">
                           Cluster Name (Optional)
                         </label>
-                        <Input 
-                          placeholder="e.g., Production Cluster" 
+                        <Input
+                          placeholder="e.g., Production Cluster"
                           className="w-full"
+                          value={k8sPasteClusterName}
+                          onChange={(e) => setK8sPasteClusterName(e.target.value)}
                         />
                         <p className="text-xs text-muted-foreground">
                           If not provided, we'll use the cluster name from the kubeconfig.
                         </p>
                       </div>
-                      
-                      <Button className="w-full mt-4">
-                        Connect Kubernetes Cluster
+
+                      <Button
+                        className="w-full mt-4"
+                        disabled={!k8sPasteContent || registerK8sClusterMutation.isPending}
+                        onClick={handleConnectK8sPaste}
+                      >
+                        {registerK8sClusterMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Server className="h-4 w-4 mr-2" />
+                        )}
+                        {registerK8sClusterMutation.isPending ? 'Connecting...' : 'Connect Kubernetes Cluster'}
                       </Button>
                     </TabsContent>
                   </Tabs>
@@ -824,30 +980,65 @@ export function CloudProviderSetup() {
                 {/* Connected Kubernetes clusters list */}
                 <div className="mt-6">
                   <h4 className="text-sm font-medium mb-3">Connected Kubernetes Clusters</h4>
-                  
-                  <div className="border rounded-md overflow-hidden">
-                    {/* Example cluster - in a real implementation this would be dynamic */}
-                    <div className="p-4 border-b last:border-0 flex justify-between items-center">
-                      <div className="flex items-center space-x-3">
-                        <Server className="h-8 w-8 text-blue-400" />
-                        <div>
-                          <div className="font-medium">Development Cluster</div>
-                          <div className="text-xs text-muted-foreground flex gap-2 mt-1">
-                            <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs">
-                              v1.25.8
-                            </span>
-                            <span>3 nodes</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Disconnect
-                        </Button>
+
+                  {isLoadingK8sClusters ? (
+                    <div className="border rounded-md p-6 flex items-center justify-center">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      <span className="text-sm text-muted-foreground">Loading clusters...</span>
+                    </div>
+                  ) : k8sClustersError ? (
+                    <div className="border rounded-md p-4 bg-destructive/10">
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                        <span className="text-sm text-destructive">
+                          {(k8sClustersError as Error).message || 'Failed to load Kubernetes clusters'}
+                        </span>
                       </div>
                     </div>
-                  </div>
+                  ) : k8sClusters.length === 0 ? (
+                    <div className="border rounded-md p-6 text-center">
+                      <Server className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">No Kubernetes clusters connected yet.</p>
+                    </div>
+                  ) : (
+                    <div className="border rounded-md overflow-hidden">
+                      {k8sClusters.map((cluster) => (
+                        <div key={cluster.id} className="p-4 border-b last:border-0 flex justify-between items-center">
+                          <div className="flex items-center space-x-3">
+                            <Server className="h-8 w-8 text-blue-400" />
+                            <div>
+                              <div className="font-medium">{cluster.name}</div>
+                              <div className="text-xs text-muted-foreground flex gap-2 mt-1">
+                                {cluster.version && (
+                                  <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs">
+                                    {cluster.version.startsWith('v') ? cluster.version : `v${cluster.version}`}
+                                  </span>
+                                )}
+                                {(cluster.nodes || cluster.nodeCount) != null && (
+                                  <span>{cluster.nodes || cluster.nodeCount} nodes</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={removeK8sClusterMutation.isPending}
+                              onClick={() => handleDisconnectK8s(cluster)}
+                            >
+                              {removeK8sClusterMutation.isPending ? (
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 mr-1" />
+                              )}
+                              Disconnect
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
 
