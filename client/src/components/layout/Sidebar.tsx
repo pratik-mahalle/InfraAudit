@@ -26,6 +26,7 @@ import {
     Lock,
     Eye,
     RefreshCw,
+    FileCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -86,6 +87,7 @@ const navSections: NavSection[] = [
             { label: "Cloud Providers", href: "/cloud-providers", icon: Cloud },
             { label: "Resources", href: "/resources", icon: Server },
             { label: "Kubernetes", href: "/kubernetes", icon: Cpu },
+            { label: "IaC Management", href: "/iac", icon: FileCode },
             { label: "Databases", href: "/resources", icon: Database },
         ],
     },

@@ -1,6 +1,7 @@
 import React, { ReactNode, useState } from "react";
 import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useDriftStream } from "@/hooks/use-drift-stream";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { toast } = useToast();
+  useDriftStream();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

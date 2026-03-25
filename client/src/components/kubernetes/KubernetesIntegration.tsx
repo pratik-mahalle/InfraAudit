@@ -4,7 +4,10 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { queryClient, apiRequest } from '@/lib/queryClient';
+import { queryClient, apiRequest, unwrapResponse } from '@/lib/queryClient';
+import { supabase } from '@/lib/supabase';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -25,12 +28,13 @@ import { cn } from '@/lib/utils';
 // ============================================================================
 
 type KubernetesCluster = {
-  id: string;
+  id: number;
   name: string;
   context?: string;
   hasKubeconfig: boolean;
   status?: 'connected' | 'disconnected' | 'error';
   nodeCount?: number;
+  nodes?: number;
   version?: string;
 };
 
@@ -191,18 +195,18 @@ function ClusterCard({
         </DropdownMenu>
       </div>
 
-      {(cluster.nodeCount || cluster.version) && (
+      {((cluster.nodes || cluster.nodeCount) || cluster.version) && (
         <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-          {cluster.nodeCount && (
+          {(cluster.nodes || cluster.nodeCount) && (
             <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
               <Layers className="h-3 w-3" />
-              {cluster.nodeCount} nodes
+              {cluster.nodes || cluster.nodeCount} nodes
             </span>
           )}
           {cluster.version && (
             <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
               <Terminal className="h-3 w-3" />
-              v{cluster.version}
+              {cluster.version?.startsWith('v') ? cluster.version : `v${cluster.version}`}
             </span>
           )}
         </div>
@@ -402,7 +406,7 @@ function AddClusterDialog({
 
 export function KubernetesIntegration() {
   const { toast } = useToast();
-  const [selectedCluster, setSelectedCluster] = useState<string | null>(null);
+  const [selectedCluster, setSelectedCluster] = useState<number | null>(null);
   const [isAddingCluster, setIsAddingCluster] = useState(false);
 
   // Queries
@@ -418,6 +422,19 @@ export function KubernetesIntegration() {
   const { data: resources = [], isLoading: resourcesLoading, error: resourcesError } = useQuery<KubernetesResource[]>({
     queryKey: ['/api/kubernetes/clusters', selectedCluster, 'resources'],
     enabled: !!selectedCluster,
+    queryFn: async () => {
+      const headers: Record<string, string> = {};
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch(`${API_BASE}/api/kubernetes/clusters/${selectedCluster}/resources`, {
+        headers,
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      const json = await res.json();
+      return unwrapResponse<KubernetesResource[]>(json);
+    },
     select: (data) => Array.isArray(data) ? data : [],
   });
 
@@ -438,7 +455,7 @@ export function KubernetesIntegration() {
   });
 
   const removeClusterMutation = useMutation({
-    mutationFn: async (clusterId: string) => {
+    mutationFn: async (clusterId: number) => {
       await apiRequest('DELETE', `/api/kubernetes/clusters/${clusterId}`);
     },
     onSuccess: () => {
@@ -474,7 +491,7 @@ export function KubernetesIntegration() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Server} label="Total Clusters" value={clusters.length} trend="All connected" />
-        <StatCard icon={Layers} label="Total Nodes" value={clusters.reduce((acc, c) => acc + (c.nodeCount || 0), 0)} />
+        <StatCard icon={Layers} label="Total Nodes" value={clusters.reduce((acc, c) => acc + (c.nodes || c.nodeCount || 0), 0)} />
         <StatCard icon={Box} label="Active Pods" value={resources.filter(r => r.kind === 'Pod' && r.status === 'Running').length} />
         <StatCard icon={Activity} label="Healthy" value="100%" trendUp trend="↑ 5% from last week" />
       </div>

@@ -8,6 +8,8 @@ export interface User {
   role: string;
   planType?: string;
   avatarUrl?: string;
+  jobTitle?: string;
+  company?: string;
   organizationId?: number;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;

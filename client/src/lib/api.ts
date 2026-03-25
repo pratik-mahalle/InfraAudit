@@ -257,12 +257,12 @@ export const api = {
   drifts: {
     list: (params?: DriftParams) => {
       const searchParams = new URLSearchParams();
-      if (params?.resourceId) searchParams.set('resourceId', params.resourceId);
-      if (params?.driftType) searchParams.set('driftType', params.driftType);
+      if (params?.resourceId) searchParams.set('resource_id', params.resourceId);
+      if (params?.driftType) searchParams.set('drift_type', params.driftType);
       if (params?.severity) searchParams.set('severity', params.severity);
       if (params?.status) searchParams.set('status', params.status);
       if (params?.page) searchParams.set('page', params.page.toString());
-      if (params?.pageSize) searchParams.set('pageSize', params.pageSize.toString());
+      if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString());
 
       const query = searchParams.toString();
       return request<PaginatedResponse<Drift>>(`/api/drifts${query ? `?${query}` : ''}`);
@@ -305,7 +305,7 @@ export const api = {
       if (params?.severity) searchParams.set('severity', params.severity);
       if (params?.status) searchParams.set('status', params.status);
       if (params?.page) searchParams.set('page', params.page.toString());
-      if (params?.pageSize) searchParams.set('pageSize', params.pageSize.toString());
+      if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString());
 
       const query = searchParams.toString();
       return request<PaginatedResponse<Alert>>(`/api/alerts${query ? `?${query}` : ''}`);
@@ -335,7 +335,7 @@ export const api = {
       if (params?.region) searchParams.set('region', params.region);
       if (params?.status) searchParams.set('status', params.status);
       if (params?.page) searchParams.set('page', params.page.toString());
-      if (params?.pageSize) searchParams.set('pageSize', params.pageSize.toString());
+      if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString());
 
       const query = searchParams.toString();
       return request<PaginatedResponse<Resource>>(`/api/resources${query ? `?${query}` : ''}`);
@@ -468,14 +468,25 @@ export const api = {
   // IaC (Infrastructure as Code)
   // ============================================
   iac: {
-    upload: (file: File) => {
+    upload: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
-      return fetch(`${API_BASE}/api/iac/upload`, {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      const res = await fetch(`${API_BASE}/api/iac/upload`, {
         method: 'POST',
+        headers,
         body: formData,
         credentials: 'include',
-      }).then(res => res.json());
+      });
+      if (!res.ok) {
+        const errorJson = await res.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorJson.error?.message || errorJson.message || `HTTP error! status: ${res.status}`);
+      }
+      return res.json();
     },
 
     listDefinitions: () => request('/api/iac/definitions'),
@@ -669,10 +680,17 @@ export const api = {
   // Phase 6: Notifications & Webhooks
   // ============================================
   notifications: {
-    getPreferences: () => request<NotificationPreference[] | Record<string, NotificationPreference>>('/api/v1/notifications/preferences'),
+    getPreferences: async () => {
+      const res = await request<any>('/api/v1/notifications/preferences');
+      // Backend wraps in {preferences: [...]}, unwrap it
+      return res?.preferences || res || [];
+    },
 
     updatePreference: (channel: string, settings: any) =>
-      request(`/api/v1/notifications/preferences/${channel}`, { method: 'PUT', body: settings }),
+      request(`/api/v1/notifications/preferences/${channel}`, {
+        method: 'PUT',
+        body: { isEnabled: settings.enabled ?? settings.isEnabled ?? true, config: settings },
+      }),
 
     getHistory: (limit?: number, offset?: number) => {
       const params = new URLSearchParams();
@@ -681,7 +699,16 @@ export const api = {
     },
 
     send: (channel: string, message: string) =>
-      request('/api/v1/notifications/send', { method: 'POST', body: { channel, message } }),
+      request('/api/v1/notifications/send', {
+        method: 'POST',
+        body: {
+          type: 'test_notification',
+          priority: 'low',
+          title: `Test ${channel} notification`,
+          message,
+          data: { channel },
+        },
+      }),
   },
 
   webhooks: {

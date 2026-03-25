@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,7 +42,7 @@ export default function BillingImport() {
     refetchInterval: false,
     refetchOnWindowFocus: false,
     staleTime: 30000,
-    enabled: false, // Billing import endpoint not yet available in Go backend
+    enabled: true,
   });
 
   // File upload mutation
@@ -64,7 +66,7 @@ export default function BillingImport() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        const response = await fetch('/api/billing-import/upload', {
+        const response = await fetch(`${API_BASE}/api/billing-import/upload`, {
           method: 'POST',
           headers,
           body: formData,
