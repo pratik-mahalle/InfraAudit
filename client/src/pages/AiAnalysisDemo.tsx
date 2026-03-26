@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { Helmet } from 'react-helmet';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -219,13 +220,13 @@ export default function AiAnalysisDemo() {
   };
 
   return (
-    <>
+    <DashboardLayout>
       <Helmet>
         <title>AI Analysis | InfraAudit</title>
         <meta name="description" content="AI-powered analysis for cloud resource cost optimization and security drift detection." />
       </Helmet>
 
-      <div className="container max-w-7xl mx-auto py-12 px-4 md:px-6">
+      <div className="space-y-8">
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full mb-4">
             <Zap className="h-8 w-8 text-blue-600" />
@@ -482,6 +483,6 @@ export default function AiAnalysisDemo() {
           </p>
         </div>
       </div>
-    </>
+    </DashboardLayout>
   );
 }

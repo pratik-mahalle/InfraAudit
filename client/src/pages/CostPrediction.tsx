@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -242,13 +243,13 @@ export default function CostPrediction() {
   })();
 
   return (
-    <>
+    <DashboardLayout>
       <Helmet>
         <title>Cost Prediction | InfraAudit</title>
         <meta name="description" content="AI-powered cloud cost prediction and optimization recommendations." />
       </Helmet>
 
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+      <div className="space-y-8">
         {/* Minimalist Hero */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border/40">
           <div>
@@ -586,6 +587,6 @@ export default function CostPrediction() {
           </AnimatePresence>
         </div>
       </div>
-    </>
+    </DashboardLayout>
   );
 }

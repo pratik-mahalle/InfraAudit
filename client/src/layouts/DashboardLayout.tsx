@@ -41,7 +41,7 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
       <main
         className={cn(
           "flex-1 bg-background pb-10 transition-all duration-300",
-          !hideSidebar && (sidebarCollapsed ? "ml-16" : "ml-64")
+          !hideSidebar && (sidebarCollapsed ? "ml-14" : "ml-56")
         )}
       >
         {/* Search Bar */}

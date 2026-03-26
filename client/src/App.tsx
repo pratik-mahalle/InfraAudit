@@ -40,6 +40,7 @@ import DriftDetectionPage from "@/pages/DriftDetection";
 import VulnerabilitiesPage from "@/pages/Vulnerabilities";
 import BillingImport from "@/pages/BillingImport";
 import IaCManagement from "@/pages/IaCManagement";
+import Alerts from "@/pages/Alerts";
 import Reports from "@/pages/Reports";
 import ReportDetail from "@/pages/ReportDetail";
 import { AuthProvider } from "./hooks/use-auth";
@@ -70,6 +71,8 @@ const PROTECTED_ROUTES = [
   "/billing-import",
   "/iac",
   "/reports",
+  "/alerts",
+  "/ai-demo",
 ];
 
 // Check if current path is a protected route
@@ -163,6 +166,12 @@ function Router() {
             <ProtectedRoute path="/iac">
               <WithTrialCheck><IaCManagement /></WithTrialCheck>
             </ProtectedRoute>
+            <ProtectedRoute path="/alerts">
+              <WithTrialCheck><Alerts /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/ai-demo">
+              <WithTrialCheck><AiAnalysisDemo /></WithTrialCheck>
+            </ProtectedRoute>
             <ProtectedRoute path="/reports/:id">
               <WithTrialCheck><ReportDetail /></WithTrialCheck>
             </ProtectedRoute>
@@ -183,8 +192,6 @@ function Router() {
             <Route path="/contact" component={ContactPage} />
             <Route path="/privacy" component={PrivacyPolicyPage} />
             <Route path="/terms" component={TermsOfServicePage} />
-            <Route path="/ai-demo" component={AiAnalysisDemo} />
-
             {/* Fallback to 404 */}
             <Route component={NotFound} />
           </Switch>
