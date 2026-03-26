@@ -40,6 +40,8 @@ import DriftDetectionPage from "@/pages/DriftDetection";
 import VulnerabilitiesPage from "@/pages/Vulnerabilities";
 import BillingImport from "@/pages/BillingImport";
 import IaCManagement from "@/pages/IaCManagement";
+import Reports from "@/pages/Reports";
+import ReportDetail from "@/pages/ReportDetail";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import ExpiredTrialRedirect from "@/components/trial/ExpiredTrialRedirect";
@@ -67,6 +69,7 @@ const PROTECTED_ROUTES = [
   "/recommendations",
   "/billing-import",
   "/iac",
+  "/reports",
 ];
 
 // Check if current path is a protected route
@@ -159,6 +162,12 @@ function Router() {
             </ProtectedRoute>
             <ProtectedRoute path="/iac">
               <WithTrialCheck><IaCManagement /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/reports/:id">
+              <WithTrialCheck><ReportDetail /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/reports">
+              <WithTrialCheck><Reports /></WithTrialCheck>
             </ProtectedRoute>
 
             {/* Public routes */}

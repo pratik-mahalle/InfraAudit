@@ -31,6 +31,7 @@ import {
   ArrowRight,
   Plus,
   Loader2,
+  FileText,
 } from "lucide-react";
 
 // UI Components
@@ -312,8 +313,15 @@ export default function Dashboard() {
     refetchOnMount: "always",  // ensure fresh data after navigating back from cloud-providers
   });
 
-  // Only fetch data when at least one provider is connected
-  const hasConnected = !!providers && providers.some((p: any) => p.isConnected);
+  // Also fetch K8s clusters
+  const { data: k8sClusters = [], isLoading: isLoadingK8s } = useQuery<any[]>({
+    queryKey: ["/api/kubernetes/clusters"],
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
+  // Only fetch data when at least one provider OR k8s cluster is connected
+  const hasConnected = (!!providers && providers.some((p: any) => p.isConnected)) || k8sClusters.length > 0;
 
   const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<any>({
     queryKey: ["/api/drifts"],
@@ -353,7 +361,7 @@ export default function Dashboard() {
 
   // Go backend returns { provider: "aws", isConnected: true, lastSynced: "..." }
   const connectedProviders = providers?.filter((p: any) => p.isConnected) || [];
-  const hasProviders = connectedProviders.length > 0;
+  const hasProviders = connectedProviders.length > 0 || k8sClusters.length > 0;
 
   // ── Mutations ────────────────────────────────────────────
   const scanMutation = useMutation({
@@ -388,7 +396,7 @@ export default function Dashboard() {
   };
 
   // ── If no providers, show onboarding ─────────────────────
-  if (!isLoadingProviders && !hasProviders) {
+  if (!isLoadingProviders && !isLoadingK8s && !hasProviders) {
     return (
       <DashboardLayout>
         <OnboardingScreen onNavigateToProviders={() => navigate("/cloud-providers")} />
@@ -397,7 +405,7 @@ export default function Dashboard() {
   }
 
   // ── Loading state ────────────────────────────────────────
-  if (isLoadingProviders) {
+  if (isLoadingProviders || isLoadingK8s) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -430,7 +438,10 @@ export default function Dashboard() {
               <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
               <span className="flex items-center gap-1.5">
                 <Activity className="h-3.5 w-3.5 text-emerald-500" />
-                {connectedProviders.length} provider{connectedProviders.length !== 1 ? "s" : ""} connected
+                {connectedProviders.length > 0 && `${connectedProviders.length} provider${connectedProviders.length !== 1 ? "s" : ""}`}
+                {connectedProviders.length > 0 && k8sClusters.length > 0 && ", "}
+                {k8sClusters.length > 0 && `${k8sClusters.length} cluster${k8sClusters.length !== 1 ? "s" : ""}`}
+                {" "}connected
               </span>
             </div>
           </div>
@@ -460,6 +471,15 @@ export default function Dashboard() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => navigate("/reports")}
+            >
+              <FileText className="h-4 w-4" />
+              View Reports
+            </Button>
 
             <TooltipProvider>
               <Tooltip>
@@ -529,26 +549,73 @@ export default function Dashboard() {
         </div>
 
         {/* ── Connected Providers ──────────────────────────── */}
-        <Card className="border border-gray-200/60 dark:border-slate-800/60">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CloudIcon className="h-5 w-5 text-blue-500" />
-                Connected Providers
-              </CardTitle>
-              <Button variant="outline" size="sm" onClick={() => navigate("/cloud-providers")} className="gap-1">
-                <Plus className="h-3.5 w-3.5" /> Add Provider
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {connectedProviders.map((provider: any) => (
-                <ProviderSummaryCard key={provider.id || provider.provider} provider={provider} />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        {connectedProviders.length > 0 && (
+          <Card className="border border-gray-200/60 dark:border-slate-800/60">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CloudIcon className="h-5 w-5 text-blue-500" />
+                  Connected Providers
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={() => navigate("/cloud-providers")} className="gap-1">
+                  <Plus className="h-3.5 w-3.5" /> Add Provider
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {connectedProviders.map((provider: any) => (
+                  <ProviderSummaryCard key={provider.id || provider.provider} provider={provider} />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* ── Kubernetes Clusters ─────────────────────────── */}
+        {k8sClusters.length > 0 && (
+          <Card className="border border-gray-200/60 dark:border-slate-800/60">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Server className="h-5 w-5 text-blue-500" />
+                  Kubernetes Clusters
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={() => navigate("/cloud-providers")} className="gap-1">
+                  <Plus className="h-3.5 w-3.5" /> Add Cluster
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {k8sClusters.map((cluster: any) => (
+                  <Card key={cluster.id} className="border border-gray-200/60 dark:border-slate-800/60 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/kubernetes")}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="font-semibold text-gray-900 dark:text-white">
+                          {cluster.name}
+                        </div>
+                        <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                          Connected
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                        {cluster.version && (
+                          <span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full">
+                            {cluster.version.startsWith("v") ? cluster.version : `v${cluster.version}`}
+                          </span>
+                        )}
+                        {(cluster.nodes || cluster.nodeCount) != null && (
+                          <span>{cluster.nodes || cluster.nodeCount} node{(cluster.nodes || cluster.nodeCount) !== 1 ? "s" : ""}</span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ── Two Column Layout ────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

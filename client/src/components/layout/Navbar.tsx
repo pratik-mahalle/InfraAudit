@@ -196,7 +196,7 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white dark:bg-slate-950 border-b border-gray-200 dark:border-gray-800">
-      <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+      <div className="flex h-16 items-center justify-between px-4 md:px-6">
         {/* Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center gap-2">
