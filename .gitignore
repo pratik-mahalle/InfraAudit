@@ -4,4 +4,8 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment files (keep .env.example as a safe template)
 .env
+.env.*
+!.env.example
