@@ -13,6 +13,8 @@ export function useComplianceOverview() {
     return useQuery({
         queryKey: ['/api/v1/compliance/overview'],
         queryFn: () => api.compliance.getOverview(),
+        staleTime: 0,
+        refetchOnMount: 'always' as const,
     });
 }
 
@@ -21,6 +23,7 @@ export function useComplianceTrend(frameworkId: string, days = 30) {
         queryKey: ['/api/v1/compliance/trend', frameworkId, days],
         queryFn: () => api.compliance.getTrend(frameworkId, days),
         enabled: !!frameworkId,
+        staleTime: 0,
     });
 }
 
@@ -28,6 +31,8 @@ export function useFrameworks() {
     return useQuery({
         queryKey: ['/api/v1/compliance/frameworks'],
         queryFn: () => api.compliance.listFrameworks(),
+        staleTime: 0,
+        refetchOnMount: 'always' as const,
     });
 }
 
@@ -44,6 +49,7 @@ export function useFrameworkControls(frameworkId: string, category = '') {
         queryKey: ['/api/v1/compliance/frameworks/controls', frameworkId, category],
         queryFn: () => api.compliance.listControls(frameworkId, category),
         enabled: !!frameworkId,
+        staleTime: 0,
     });
 }
 
@@ -51,6 +57,8 @@ export function useAssessments(frameworkId = '', limit = 10, offset = 0) {
     return useQuery({
         queryKey: ['/api/v1/compliance/assessments', frameworkId, limit, offset],
         queryFn: () => api.compliance.listAssessments(frameworkId, limit, offset),
+        staleTime: 0,
+        refetchOnMount: 'always' as const,
     });
 }
 
@@ -67,6 +75,7 @@ export function useFailingControls(frameworkId: string) {
         queryKey: ['/api/v1/compliance/controls/failing', frameworkId],
         queryFn: () => api.compliance.getFailingControls(frameworkId),
         enabled: !!frameworkId,
+        staleTime: 0,
     });
 }
 

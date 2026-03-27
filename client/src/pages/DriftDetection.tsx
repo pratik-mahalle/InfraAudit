@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { useDrifts, useDriftSummary, useTriggerDriftDetection, useResolveDrift, useAcknowledgeDrift } from "@/hooks/use-drifts";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ export default function DriftDetection() {
   const [search, setSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const { data: driftsResponse, isLoading } = useDrifts();
   const { data: summary } = useDriftSummary();
@@ -33,6 +34,17 @@ export default function DriftDetection() {
     if (search && !d.driftType?.toLowerCase().includes(search.toLowerCase()) && !d.fieldChanged?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  const driftTypeLabels: Record<string, string> = {
+    configuration_change: "Config Change",
+    security_group: "Security Group",
+    iam_policy: "IAM Policy",
+    network_rule: "Network Rule",
+    encryption: "Encryption",
+    compliance: "Compliance",
+    k8s_deployment: "K8s Deployment",
+    k8s_image_change: "K8s Image Change",
+  };
 
   const severityColors: Record<string, string> = {
     critical: "bg-red-500/10 text-red-600 border-red-500/30",
@@ -169,10 +181,30 @@ export default function DriftDetection() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((drift: any) => (
-                    <TableRow key={drift.id}>
+                    <React.Fragment key={drift.id}>
+                    <TableRow>
                       <TableCell>
-                        <div className="font-medium text-gray-900 dark:text-white">{drift.driftType || "Configuration Drift"}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {driftTypeLabels[drift.driftType] || drift.driftType || "Configuration Drift"}
+                          </span>
+                          {drift.details?.cve_summary && drift.details.cve_summary.critical > 0 && (
+                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                              {drift.details.cve_summary.critical} Critical CVE{drift.details.cve_summary.critical > 1 ? "s" : ""}
+                            </Badge>
+                          )}
+                          {drift.details?.cve_summary && drift.details.cve_summary.critical === 0 && drift.details.cve_summary.high > 0 && (
+                            <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/30 text-[10px] px-1.5 py-0">
+                              {drift.details.cve_summary.high} High CVE{drift.details.cve_summary.high > 1 ? "s" : ""}
+                            </Badge>
+                          )}
+                        </div>
                         {drift.fieldChanged && <div className="text-xs text-gray-500 mt-0.5">Field: {drift.fieldChanged}</div>}
+                        {drift.details?.namespace && (
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {drift.details.namespace}/{drift.details.deployment} on {drift.details.cluster}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={cn("text-xs", severityColors[drift.severity] || "")}>
@@ -191,30 +223,75 @@ export default function DriftDetection() {
                         {drift.detectedAt ? new Date(drift.detectedAt).toLocaleDateString() : "—"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {drift.status !== "resolved" && (
-                          <div className="flex items-center justify-end gap-1">
-                            {drift.status === "detected" && (
-                              <Button variant="ghost" size="sm"
-                                onClick={() => acknowledgeMutation.mutate(drift.id, {
-                                  onSuccess: () => toast({ title: "Acknowledged", description: "Drift has been acknowledged." }),
-                                })}
-                                disabled={acknowledgeMutation.isPending}
-                              >
-                                <Eye className="h-4 w-4 text-amber-500" />
-                              </Button>
-                            )}
+                        <div className="flex items-center justify-end gap-1">
+                          {drift.details?.cve_summary && (
                             <Button variant="ghost" size="sm"
-                              onClick={() => resolveMutation.mutate(drift.id, {
-                                onSuccess: () => toast({ title: "Resolved", description: "Drift has been resolved." }),
-                              })}
-                              disabled={resolveMutation.isPending}
+                              onClick={() => setExpandedId(expandedId === drift.id ? null : drift.id)}
                             >
-                              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                              <ShieldAlert className={cn("h-4 w-4", expandedId === drift.id ? "text-blue-600" : "text-gray-400")} />
                             </Button>
-                          </div>
-                        )}
+                          )}
+                          {drift.status !== "resolved" && (
+                            <>
+                              {drift.status === "detected" && (
+                                <Button variant="ghost" size="sm"
+                                  onClick={() => acknowledgeMutation.mutate(drift.id, {
+                                    onSuccess: () => toast({ title: "Acknowledged", description: "Drift has been acknowledged." }),
+                                  })}
+                                  disabled={acknowledgeMutation.isPending}
+                                >
+                                  <Eye className="h-4 w-4 text-amber-500" />
+                                </Button>
+                              )}
+                              <Button variant="ghost" size="sm"
+                                onClick={() => resolveMutation.mutate(drift.id, {
+                                  onSuccess: () => toast({ title: "Resolved", description: "Drift has been resolved." }),
+                                })}
+                                disabled={resolveMutation.isPending}
+                              >
+                                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
+                    {expandedId === drift.id && drift.details?.cve_summary && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="bg-gray-50 dark:bg-gray-900/50 p-0">
+                          <div className="p-4">
+                            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
+                              <div className="text-sm font-medium text-red-700 dark:text-red-400 mb-2">
+                                CVE Report: {drift.details.cve_summary.image}
+                              </div>
+                              <div className="grid grid-cols-4 gap-2 text-xs mb-3">
+                                <div><span className="font-bold text-red-600">{drift.details.cve_summary.critical}</span> Critical</div>
+                                <div><span className="font-bold text-orange-600">{drift.details.cve_summary.high}</span> High</div>
+                                <div><span className="font-bold text-amber-600">{drift.details.cve_summary.medium}</span> Medium</div>
+                                <div><span className="font-bold text-blue-600">{drift.details.cve_summary.low}</span> Low</div>
+                              </div>
+                              {drift.details.cve_summary.top_cves?.length > 0 && (
+                                <div className="space-y-1 border-t border-red-200 dark:border-red-800 pt-2">
+                                  {drift.details.cve_summary.top_cves.map((cve: any) => (
+                                    <div key={cve.id} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                                      <Badge variant="outline" className={cn("text-[10px] px-1 py-0",
+                                        cve.severity === "critical" ? "border-red-400 text-red-600" : "border-orange-400 text-orange-600"
+                                      )}>
+                                        {cve.severity}
+                                      </Badge>
+                                      <span className="font-mono font-medium">{cve.id}</span>
+                                      <span className="truncate">{cve.title || cve.package}</span>
+                                      {cve.fixed && <span className="text-green-600 shrink-0">(fix: {cve.fixed})</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>

@@ -71,22 +71,19 @@ export function useScan() {
             setIsScanning(false);
             progressToast.dismiss();
 
-            // Invalidate reports list
+            // Invalidate reports list and resources
             queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/drifts"] });
 
-            // Show completion toast with View Report action
+            // Show completion toast
             toast({
               title: "Scan completed",
               description: `Found ${status.resourceCount ?? 0} resources and ${status.driftCount ?? 0} drifts. Security score: ${status.securityScore ?? "N/A"}`,
-              action: React.createElement(
-                ToastAction,
-                {
-                  altText: "View Report",
-                  onClick: () => navigate(`/reports/${reportId}`),
-                },
-                "View Report"
-              ),
             });
+
+            // Auto-redirect to the report
+            navigate(`/reports/${reportId}`);
           } else if (status.status === "failed") {
             stopPolling();
             setIsScanning(false);

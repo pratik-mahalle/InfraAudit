@@ -103,7 +103,7 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
     if (isCollapsed) {
         return (
             <TooltipProvider delayDuration={0}>
-                <aside className="fixed left-0 top-16 bottom-0 w-14 bg-white dark:bg-slate-950 border-r border-gray-200 dark:border-gray-800 flex flex-col z-40">
+                <aside className="fixed left-0 top-14 bottom-0 w-14 bg-white dark:bg-slate-950 border-r border-gray-200 dark:border-gray-800 flex flex-col z-40">
                     <div className="flex items-center justify-center py-3 border-b border-gray-200 dark:border-gray-800">
                         <Button variant="ghost" size="icon" onClick={onToggle} className="h-7 w-7">
                             <ChevronLeft className="h-3.5 w-3.5 rotate-180" />
@@ -158,7 +158,7 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
 
     // Expanded view — compact flat list with group labels
     return (
-        <aside className="fixed left-0 top-16 bottom-0 w-56 bg-white dark:bg-slate-950 border-r border-gray-200 dark:border-gray-800 flex flex-col z-40">
+        <aside className="fixed left-0 top-14 bottom-0 w-56 bg-white dark:bg-slate-950 border-r border-gray-200 dark:border-gray-800 flex flex-col z-40">
             <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-200 dark:border-gray-800">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
                     Menu

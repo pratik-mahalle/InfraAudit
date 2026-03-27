@@ -1,56 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard,
-  Settings,
-  Cloud,
-  BarChart3,
-  Shield,
-  Menu,
-  LogOut,
-  BookOpen,
-  CreditCard,
-  TrendingUp,
-  Server,
-  Layers,
-  Github,
   ChevronDown,
-  Zap,
-  DollarSign,
-  Eye,
-  Target,
-  Users,
-  Building2,
-  Headphones,
-  FileText,
-  Code,
-  Cpu,
-  Database,
+  Menu,
   X,
-  ArrowRight,
-  AlertTriangle,
-  Activity,
-  Bell,
-  LineChart,
-  PieChart,
-  Wallet,
-  Lock,
-  Key,
-  Globe,
-  Terminal,
-  Webhook,
-  MessageSquare,
-  Mail,
-  Slack,
-  RefreshCw,
-  Search,
-  Filter,
-  Download,
-  Upload,
-  Settings2,
-  Sparkles
+  LogOut,
+  Settings,
+  CreditCard,
+  BookOpen,
+  Github,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -64,50 +24,99 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { AskInfraAudit } from "@/components/ai/AskInfraAudit";
 
-// Mega Menu Item - Redesigned with better hover states
-function MegaMenuItem({ href, children, icon: Icon }: { href: string; children: React.ReactNode; icon?: any }) {
-  return (
-    <Link href={href}>
-      <span className="flex items-center gap-3 px-3 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 cursor-pointer group">
-        {Icon && (
-          <span className="flex items-center justify-center w-8 h-8 rounded-md bg-gray-100 dark:bg-gray-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors duration-200">
-            <Icon className="h-4 w-4 text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200" />
-          </span>
-        )}
-        <span className="font-medium">{children}</span>
-      </span>
-    </Link>
-  );
-}
+// Simple dropdown item
+function NavDropdownItem({
+  href,
+  children,
+  description,
+  external,
+}: {
+  href: string;
+  children: React.ReactNode;
+  description?: string;
+  external?: boolean;
+}) {
+  const Wrapper = external ? "a" : Link;
+  const extraProps = external
+    ? { target: "_blank", rel: "noopener noreferrer" }
+    : {};
 
-
-// Featured Product Item - Enhanced with better animations
-function FeaturedItem({ href, title, description, icon: Icon }: { href: string; title: string; description: string; icon: any }) {
   return (
-    <Link href={href}>
-      <div className="flex items-start gap-4 p-4 rounded-xl hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-transparent dark:hover:from-blue-900/20 dark:hover:to-transparent border border-transparent hover:border-blue-100 dark:hover:border-blue-800/30 transition-all duration-300 cursor-pointer group">
-        <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/40 group-hover:scale-105 transition-all duration-300">
-          <Icon className="h-5 w-5" />
+    <Wrapper href={href} {...(extraProps as any)}>
+      <div className="px-3 py-2.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer group">
+        <div className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+          {children}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 flex items-center gap-2">
-            {title}
-            <ArrowRight className="h-3.5 w-3.5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+        {description && (
+          <div className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+            {description}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{description}</div>
-        </div>
+        )}
       </div>
-    </Link>
+    </Wrapper>
   );
 }
 
-// Category Header - Enhanced styling
-function CategoryHeader({ children }: { children: React.ReactNode }) {
+// Lightweight dropdown container
+function NavDropdown({
+  label,
+  children,
+  isOpen,
+  onToggle,
+  onClose,
+}: {
+  label: string;
+  children: React.ReactNode;
+  isOpen: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onClose]);
+
   return (
-    <h4 className="font-semibold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-4 px-3 flex items-center gap-2">
-      <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-      {children}
-    </h4>
+    <div ref={ref} className="relative">
+      <button
+        onClick={onToggle}
+        className={cn(
+          "flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+          isOpen
+            ? "text-blue-600 dark:text-blue-400"
+            : "text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+        )}
+      >
+        {label}
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 transition-transform duration-200",
+            isOpen && "rotate-180"
+          )}
+        />
+      </button>
+
+      <div
+        className={cn(
+          "absolute top-full left-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-gray-200/80 dark:border-gray-700/80 p-1.5 z-50",
+          "transition-all duration-200 origin-top",
+          isOpen
+            ? "opacity-100 scale-100 translate-y-0"
+            : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
+        )}
+      >
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -117,15 +126,14 @@ export function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [location] = useLocation();
 
-  // Close dropdown when route changes
-  React.useEffect(() => {
+  // Close everything on route change
+  useEffect(() => {
     setActiveDropdown(null);
     setMobileMenuOpen(false);
   }, [location]);
 
-  const handleLogout = () => {
-    signOut();
-  };
+  const toggleDropdown = (name: string) =>
+    setActiveDropdown((prev) => (prev === name ? null : name));
 
   const getInitials = (name: string) => {
     if (!name) return "U";
@@ -136,536 +144,309 @@ export function Navbar() {
       .toUpperCase();
   };
 
-  // Mega Menu Dropdown Component - Enhanced with flexible positioning
-  const MegaMenuDropdown = ({
-    label,
-    isOpen,
-    onToggle,
-    children,
-    position = 'left' // 'left' | 'center' | 'right'
-  }: {
-    label: string;
-    isOpen: boolean;
-    onToggle: () => void;
-    children: React.ReactNode;
-    position?: 'left' | 'center' | 'right';
-  }) => {
-    // Determine positioning classes based on position prop
-    const positionClasses = {
-      left: 'left-0',
-      center: 'left-1/2 -translate-x-1/2',
-      right: 'right-0'
-    };
-
-    return (
-      <div
-        className="relative"
-        onMouseEnter={() => setActiveDropdown(label)}
-        onMouseLeave={() => setActiveDropdown(null)}
-      >
-        <button
-          onClick={onToggle}
-          className={cn(
-            "flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg",
-            isOpen
-              ? "text-blue-600 bg-blue-50 dark:bg-blue-900/30 shadow-sm"
-              : "text-gray-700 dark:text-gray-300 hover:text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-          )}
-        >
-          {label}
-          <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isOpen && "rotate-180")} />
-        </button>
-
-        {isOpen && (
-          <div
-            className={cn(
-              "absolute top-full mt-3 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50",
-              positionClasses[position]
-            )}
-            style={{
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05)',
-              maxWidth: 'calc(100vw - 2rem)'
-            }}
+  return (
+    <nav className="sticky top-0 z-50 w-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800/60">
+      <div className="flex h-14 items-center justify-between px-4 lg:px-6">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+          <svg
+            viewBox="0 0 44 44"
+            className="h-8 w-8"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
           >
-            {children}
+            <defs>
+              <linearGradient
+                id="navLogoGrad"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
+                <stop offset="0%" stopColor="#3B82F6" />
+                <stop offset="100%" stopColor="#1D4ED8" />
+              </linearGradient>
+            </defs>
+            <rect width="44" height="44" rx="10" fill="url(#navLogoGrad)" />
+            <path
+              d="M22 12C18.5 12 15.5 14.5 14.5 17.8C11.5 18.2 9 21 9 24.5C9 28.5 12 31.5 16 31.5H28C31.5 31.5 34.5 28.5 34.5 25C34.5 22 32.2 19.5 29.2 19C28.5 15 25.5 12 22 12Z"
+              fill="white"
+              fillOpacity="0.95"
+            />
+          </svg>
+          <span className="text-lg font-bold tracking-tight">
+            <span className="text-gray-900 dark:text-white">Infra</span>
+            <span className="text-blue-600">Audit</span>
+          </span>
+        </Link>
+
+        {/* Center Nav — public only */}
+        {!user && (
+          <div className="hidden md:flex items-center gap-0.5">
+            {/* Products */}
+            <NavDropdown
+              label="Products"
+              isOpen={activeDropdown === "Products"}
+              onToggle={() => toggleDropdown("Products")}
+              onClose={() => setActiveDropdown(null)}
+            >
+              <NavDropdownItem
+                href="/auth"
+                description="AI-powered cost savings"
+              >
+                Cost Optimizer
+              </NavDropdownItem>
+              <NavDropdownItem
+                href="/auth"
+                description="Drift & misconfiguration detection"
+              >
+                Security Monitor
+              </NavDropdownItem>
+              <NavDropdownItem
+                href="/auth"
+                description="Smart recommendations"
+              >
+                AI Insights
+              </NavDropdownItem>
+              <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
+              <NavDropdownItem
+                href="/auth"
+                description="AWS, Azure, GCP, K8s"
+              >
+                Cloud Providers
+              </NavDropdownItem>
+            </NavDropdown>
+
+            {/* Developers */}
+            <NavDropdown
+              label="Developers"
+              isOpen={activeDropdown === "Developers"}
+              onToggle={() => toggleDropdown("Developers")}
+              onClose={() => setActiveDropdown(null)}
+            >
+              <NavDropdownItem href="/documentation">
+                Documentation
+              </NavDropdownItem>
+              <NavDropdownItem href="/documentation">
+                API Reference
+              </NavDropdownItem>
+              <div className="h-px bg-gray-100 dark:bg-gray-800 my-1" />
+              <NavDropdownItem
+                href="https://github.com/pratik-mahalle/InfraAudit"
+                external
+              >
+                GitHub
+              </NavDropdownItem>
+            </NavDropdown>
+
+            {/* Direct links */}
+            <Link href="/pricing">
+              <span className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+                Pricing
+              </span>
+            </Link>
+            <Link href="/about">
+              <span className="px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+                About
+              </span>
+            </Link>
           </div>
         )}
-      </div>
-    );
-  };
 
-  return (
-    <nav className="sticky top-0 z-50 w-full bg-white dark:bg-slate-950 border-b border-gray-200 dark:border-gray-800">
-      <div className="flex h-16 items-center justify-between px-4 md:px-6">
-        {/* Logo */}
-        <div className="flex items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              {/* Logo Icon */}
-              <svg viewBox="0 0 44 44" className="h-9 w-9" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="navLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#3B82F6" />
-                    <stop offset="100%" stopColor="#1D4ED8" />
-                  </linearGradient>
-                </defs>
-                <rect width="44" height="44" rx="10" fill="url(#navLogoGradient)" />
-                <path d="M22 12C18.5 12 15.5 14.5 14.5 17.8C11.5 18.2 9 21 9 24.5C9 28.5 12 31.5 16 31.5H28C31.5 31.5 34.5 28.5 34.5 25C34.5 22 32.2 19.5 29.2 19C28.5 15 25.5 12 22 12Z" fill="white" fillOpacity="0.95" />
-                <circle cx="16" cy="24" r="2" fill="#3B82F6" />
-                <circle cx="22" cy="20" r="2" fill="#3B82F6" />
-                <circle cx="28" cy="24" r="2" fill="#3B82F6" />
-                <line x1="18" y1="23" x2="20" y2="21" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="24" y1="21" x2="26" y2="23" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="18.5" y1="24" x2="25.5" y2="24" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" />
-                <rect x="13" y="28" width="18" height="1.5" rx="0.75" fill="#3B82F6" fillOpacity="0.5" />
-              </svg>
-              {/* Logo Text */}
-              <span className="text-xl font-bold tracking-tight">
-                <span className="text-gray-900 dark:text-white">Infra</span>
-                <span className="text-blue-600">Audit</span>
-              </span>
-            </div>
-          </Link>
-        </div>
-
-        {/* Navigation — authenticated users have no middle nav (sidebar handles it) */}
-        <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
-          {user ? null : (
-            // Public Navigation
-            <>
-              {/* Products Mega Menu */}
-              <MegaMenuDropdown
-                label="Products"
-                isOpen={activeDropdown === "Products"}
-                onToggle={() => setActiveDropdown(activeDropdown === "Products" ? null : "Products")}
-                position="center"
-              >
-                <div className="p-6 w-[640px] max-w-[calc(100vw-2rem)]">
-                  <div className="grid grid-cols-3 gap-6">
-                    {/* Featured Products */}
-                    <div className="pr-6 border-r border-gray-200 dark:border-gray-700">
-                      <CategoryHeader>Featured Products</CategoryHeader>
-                      <div className="space-y-2">
-                        <FeaturedItem
-                          href="/auth"
-                          title="Cost Optimizer"
-                          description="AI-powered savings"
-                          icon={DollarSign}
-                        />
-                        <FeaturedItem
-                          href="/auth"
-                          title="Security Monitor"
-                          description="Drift detection"
-                          icon={Shield}
-                        />
-                        <FeaturedItem
-                          href="/auth"
-                          title="AI Insights"
-                          description="Smart recommendations"
-                          icon={Sparkles}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Cost & Security */}
-                    <div>
-                      <CategoryHeader>Cost & Security</CategoryHeader>
-                      <div className="space-y-1">
-                        <MegaMenuItem href="/auth">Cost Analysis</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Budget Alerts</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Security Scanning</MegaMenuItem>
-                        <MegaMenuItem href="/auth">Compliance Reports</MegaMenuItem>
-                      </div>
-                    </div>
-
-                    {/* Cloud Providers */}
-                    <div>
-                      <CategoryHeader>Cloud Providers</CategoryHeader>
-                      <div className="space-y-1">
-                        <MegaMenuItem href="/auth" icon={Cloud}>AWS</MegaMenuItem>
-                        <MegaMenuItem href="/auth" icon={Cloud}>Azure</MegaMenuItem>
-                        <MegaMenuItem href="/auth" icon={Cloud}>Google Cloud</MegaMenuItem>
-                        <MegaMenuItem href="/auth" icon={Cpu}>Kubernetes</MegaMenuItem>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </MegaMenuDropdown>
-
-              {/* Solutions Dropdown */}
-              <MegaMenuDropdown
-                label="Solutions"
-                isOpen={activeDropdown === "Solutions"}
-                onToggle={() => setActiveDropdown(activeDropdown === "Solutions" ? null : "Solutions")}
-                position="center"
-              >
-                <div className="p-6 w-[480px] max-w-[calc(100vw-2rem)]">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <CategoryHeader>By Company Size</CategoryHeader>
-                      <div className="space-y-2">
-                        <FeaturedItem
-                          href="/auth"
-                          title="Startups"
-                          description="Scale efficiently from day one"
-                          icon={Zap}
-                        />
-                        <FeaturedItem
-                          href="/auth"
-                          title="Enterprise"
-                          description="Enterprise-grade compliance"
-                          icon={Building2}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <CategoryHeader>By Team</CategoryHeader>
-                      <div className="space-y-2">
-                        <FeaturedItem
-                          href="/auth"
-                          title="DevOps"
-                          description="Automate cloud operations"
-                          icon={Terminal}
-                        />
-                        <FeaturedItem
-                          href="/auth"
-                          title="FinOps"
-                          description="Cloud financial management"
-                          icon={Wallet}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </MegaMenuDropdown>
-
-              {/* Developers Dropdown */}
-              <MegaMenuDropdown
-                label="Developers"
-                isOpen={activeDropdown === "Developers"}
-                onToggle={() => setActiveDropdown(activeDropdown === "Developers" ? null : "Developers")}
-                position="center"
-              >
-                <div className="p-6 w-[400px] max-w-[calc(100vw-2rem)]">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div>
-                      <CategoryHeader>Resources</CategoryHeader>
-                      <div className="space-y-1">
-                        <MegaMenuItem href="/documentation" icon={BookOpen}>Documentation</MegaMenuItem>
-                        <MegaMenuItem href="/documentation" icon={FileText}>API Reference</MegaMenuItem>
-                        <MegaMenuItem href="/documentation" icon={Terminal}>CLI Guide</MegaMenuItem>
-                      </div>
-                    </div>
-                    <div>
-                      <CategoryHeader>Community</CategoryHeader>
-                      <div className="space-y-1">
-                        <MegaMenuItem href="https://github.com/pratik-mahalle/InfraAudit" icon={Github}>GitHub</MegaMenuItem>
-                        <MegaMenuItem href="/documentation" icon={MessageSquare}>Discussions</MegaMenuItem>
-                        <MegaMenuItem href="/documentation" icon={Headphones}>Support</MegaMenuItem>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </MegaMenuDropdown>
-
-              {/* Pricing - Direct Link */}
-              <Link href="/pricing">
-                <span className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors cursor-pointer">
-                  Pricing
-                </span>
-              </Link>
-
-              {/* About - Direct Link */}
-              <Link href="/about">
-                <span className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors cursor-pointer">
-                  About
-                </span>
-              </Link>
-
-              {/* Contact - Direct Link */}
-              <Link href="/contact">
-                <span className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors cursor-pointer">
-                  Contact
-                </span>
-              </Link>
-            </>
-          )}
-        </div>
-
-        {/* Right Side Actions */}
-        <div className="flex items-center gap-3">
-
-          {user && (
-            <AskInfraAudit />
-          )}
+        {/* Right Side */}
+        <div className="flex items-center gap-2">
+          {user && <AskInfraAudit />}
 
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full" size="icon">
-                  <Avatar className="h-9 w-9">
-                    <AvatarFallback className="bg-blue-600 text-white">
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                  size="icon"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-blue-600 text-white text-xs">
                       {getInitials(user.fullName || user.username)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.fullName || user.username}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user.username}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {user.fullName || user.username}
+                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user.username}
+                    </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <Link href="/settings">
                   <DropdownMenuItem className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
+                    Settings
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/subscription">
                   <DropdownMenuItem className="cursor-pointer">
                     <CreditCard className="mr-2 h-4 w-4" />
-                    <span>Subscription</span>
+                    Subscription
                   </DropdownMenuItem>
                 </Link>
                 <Link href="/documentation">
                   <DropdownMenuItem className="cursor-pointer">
                     <BookOpen className="mr-2 h-4 w-4" />
-                    <span>Documentation</span>
+                    Documentation
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
+                <DropdownMenuItem
+                  onClick={() => signOut()}
+                  className="cursor-pointer text-red-600"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <div className="hidden md:flex items-center gap-2">
-              <Button asChild variant="ghost" size="sm" className="text-sm font-medium">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-sm font-medium h-8"
+              >
                 <Link href="/auth">Log in</Link>
               </Button>
-              <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-4">
+              <Button
+                asChild
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4 h-8 text-sm"
+              >
                 <Link href="/signup">Sign up</Link>
               </Button>
             </div>
           )}
 
-          {/* Mobile Menu Toggle */}
+          {/* Mobile toggle */}
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="md:hidden h-8 w-8"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
           </Button>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-950 max-h-[calc(100vh-4rem)] overflow-y-auto">
-          <div className="px-4 py-6 space-y-6">
-            {user ? (
-              <>
-                {/* Authenticated Mobile Menu */}
-                <div className="space-y-1">
-                  <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <LayoutDashboard className="h-5 w-5 text-blue-600" />
-                      <span className="font-medium">Dashboard</span>
-                    </div>
-                  </Link>
-                </div>
-
-                <div>
-                  <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Analytics</p>
-                  <div className="space-y-1">
-                    <Link href="/cost" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <DollarSign className="h-5 w-5 text-gray-500" />
-                        <span>Cost Analysis</span>
-                      </div>
-                    </Link>
-                    <Link href="/cost-prediction" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <TrendingUp className="h-5 w-5 text-gray-500" />
-                        <span>Predictions</span>
-                      </div>
-                    </Link>
-                    <Link href="/resource-utilization" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Activity className="h-5 w-5 text-gray-500" />
-                        <span>Resource Utilization</span>
-                      </div>
-                    </Link>
+      {/* Mobile Menu */}
+      <div
+        className={cn(
+          "md:hidden overflow-hidden transition-all duration-300 ease-in-out border-t border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-slate-950",
+          mobileMenuOpen ? "max-h-[80vh] opacity-100" : "max-h-0 opacity-0 border-t-0"
+        )}
+      >
+        <div className="px-4 py-4 space-y-1">
+          {user ? (
+            <>
+              {[
+                { href: "/dashboard", label: "Dashboard" },
+                { href: "/cost", label: "Cost Analysis" },
+                { href: "/security", label: "Security" },
+                { href: "/cloud-providers", label: "Cloud Providers" },
+                { href: "/settings", label: "Settings" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    {item.label}
                   </div>
-                </div>
-
-                <div>
-                  <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Infrastructure</p>
-                  <div className="space-y-1">
-                    <Link href="/cloud-providers" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Cloud className="h-5 w-5 text-gray-500" />
-                        <span>Cloud Providers</span>
-                      </div>
-                    </Link>
-                    <Link href="/kubernetes" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Cpu className="h-5 w-5 text-gray-500" />
-                        <span>Kubernetes</span>
-                      </div>
-                    </Link>
-                    <Link href="/architecture-playground" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Layers className="h-5 w-5 text-gray-500" />
-                        <span>Architecture Designer</span>
-                      </div>
-                    </Link>
+                </Link>
+              ))}
+              <div className="h-px bg-gray-200 dark:bg-gray-800 my-2" />
+              <button
+                onClick={() => {
+                  signOut();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              {[
+                { href: "/auth", label: "Products" },
+                { href: "/documentation", label: "Documentation" },
+                { href: "/pricing", label: "Pricing" },
+                { href: "/about", label: "About" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <div className="px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    {item.label}
                   </div>
+                </Link>
+              ))}
+              <a
+                href="https://github.com/pratik-mahalle/InfraAudit"
+                target="_blank"
+                rel="noopener"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="px-3 py-2.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2">
+                  <Github className="h-4 w-4" />
+                  GitHub
                 </div>
-
-                <div className="space-y-1">
-                  <Link href="/security" onClick={() => setMobileMenuOpen(false)}>
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <Shield className="h-5 w-5 text-gray-500" />
-                      <span className="font-medium">Security</span>
-                    </div>
-                  </Link>
-                  <Link href="/subscription" onClick={() => setMobileMenuOpen(false)}>
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <CreditCard className="h-5 w-5 text-gray-500" />
-                      <span className="font-medium">Billing</span>
-                    </div>
-                  </Link>
-                </div>
-
-                <div className="border-t border-gray-200 dark:border-gray-800 pt-4">
-                  <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <Settings className="h-5 w-5 text-gray-500" />
-                      <span className="font-medium">Settings</span>
-                    </div>
-                  </Link>
-                  <button
-                    onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600"
+              </a>
+              <div className="h-px bg-gray-200 dark:bg-gray-800 my-2" />
+              <div className="flex gap-2 pt-1">
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 h-9"
+                >
+                  <Link
+                    href="/auth"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
-                    <LogOut className="h-5 w-5" />
-                    <span className="font-medium">Log out</span>
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Public Mobile Menu */}
-                <div>
-                  <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Products</p>
-                  <div className="space-y-1">
-                    <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <DollarSign className="h-5 w-5 text-blue-600" />
-                        <span>Cost Optimization</span>
-                      </div>
-                    </Link>
-                    <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Shield className="h-5 w-5 text-blue-600" />
-                        <span>Security Monitoring</span>
-                      </div>
-                    </Link>
-                    <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Cpu className="h-5 w-5 text-blue-600" />
-                        <span>Kubernetes</span>
-                      </div>
-                    </Link>
-                    <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Sparkles className="h-5 w-5 text-blue-600" />
-                        <span>AI Insights</span>
-                      </div>
-                    </Link>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Solutions</p>
-                  <div className="space-y-1">
-                    <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Zap className="h-5 w-5 text-gray-500" />
-                        <span>For Startups</span>
-                      </div>
-                    </Link>
-                    <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Building2 className="h-5 w-5 text-gray-500" />
-                        <span>For Enterprise</span>
-                      </div>
-                    </Link>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Resources</p>
-                  <div className="space-y-1">
-                    <Link href="/documentation" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <BookOpen className="h-5 w-5 text-gray-500" />
-                        <span>Documentation</span>
-                      </div>
-                    </Link>
-                    <a
-                      href="https://github.com/pratik-mahalle/InfraAudit"
-                      target="_blank"
-                      rel="noopener"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Github className="h-5 w-5 text-gray-500" />
-                        <span>GitHub</span>
-                      </div>
-                    </a>
-                    <Link href="/pricing" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <CreditCard className="h-5 w-5 text-gray-500" />
-                        <span>Pricing</span>
-                      </div>
-                    </Link>
-                    <Link href="/about" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Users className="h-5 w-5 text-gray-500" />
-                        <span>About Us</span>
-                      </div>
-                    </Link>
-                    <Link href="/contact" onClick={() => setMobileMenuOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <Mail className="h-5 w-5 text-gray-500" />
-                        <span>Contact Us</span>
-                      </div>
-                    </Link>
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-200 dark:border-gray-800 pt-4 space-y-2">
-                  <Button asChild variant="outline" className="w-full justify-center">
-                    <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>Log in</Link>
-                  </Button>
-                  <Button asChild className="w-full justify-center bg-blue-600 hover:bg-blue-700">
-                    <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>Sign up</Link>
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
+                    Log in
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="sm"
+                  className="flex-1 h-9 bg-blue-600 hover:bg-blue-700"
+                >
+                  <Link
+                    href="/signup"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Sign up
+                  </Link>
+                </Button>
+              </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </nav>
   );
 }

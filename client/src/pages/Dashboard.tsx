@@ -326,31 +326,43 @@ export default function Dashboard() {
   const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<any>({
     queryKey: ["/api/drifts"],
     enabled: hasConnected,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: alertsResponse, isLoading: isLoadingAlerts } = useQuery<any>({
     queryKey: ["/api/alerts"],
     enabled: hasConnected,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: recommendationsResponse, isLoading: isLoadingRecs } = useQuery<any>({
     queryKey: ["/api/recommendations"],
     enabled: hasConnected,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: resourcesResponse, isLoading: isLoadingResources } = useQuery<any>({
     queryKey: ["/api/resources"],
     enabled: hasConnected,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: driftSummary } = useQuery<any>({
     queryKey: ["/api/drifts/summary"],
     enabled: hasConnected,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: alertSummary } = useQuery<any>({
     queryKey: ["/api/alerts/summary"],
     enabled: hasConnected,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   // Extract arrays from paginated responses

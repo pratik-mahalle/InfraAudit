@@ -1,7 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { CheckCircle, AlertTriangle, XCircle } from "lucide-react";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface ComplianceScoreCardProps {
     score: number;
@@ -10,12 +13,14 @@ interface ComplianceScoreCardProps {
 }
 
 export function ComplianceScoreCard({ score, passing, failing }: ComplianceScoreCardProps) {
+    // When both are 0, show a gray placeholder to avoid empty chart
+    const hasData = passing > 0 || failing > 0;
     const data = {
-        labels: ['Passing', 'Failing'],
+        labels: hasData ? ['Passing', 'Failing'] : ['No Data'],
         datasets: [
             {
-                data: [passing, failing],
-                backgroundColor: ['#10B981', '#EF4444'], // Green, Red
+                data: hasData ? [passing, failing] : [1],
+                backgroundColor: hasData ? ['#10B981', '#EF4444'] : ['#E5E7EB'],
                 borderWidth: 0,
             },
         ],

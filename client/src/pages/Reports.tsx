@@ -94,6 +94,8 @@ export default function Reports() {
   } = useQuery<Report[]>({
     queryKey: ["/api/reports"],
     select: (data) => (Array.isArray(data) ? data : []),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const deleteMutation = useMutation({

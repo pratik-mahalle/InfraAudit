@@ -54,42 +54,47 @@ export default function ResourceUtilizationPage() {
     ? recommendationsResponse 
     : (recommendationsResponse?.data ?? []);
 
-  // Derive utilization metrics from resource data
+  // Derive real utilization metrics from actual resource data
   const resourceCount = resources.length;
   const runningCount = resources.filter(r => r.status === "running" || r.status === "active").length;
-  const cpuUtil = resourceCount > 0 ? Math.round((runningCount / resourceCount) * 60 + 10) : 0;
-  const memUtil = resourceCount > 0 ? Math.min(95, cpuUtil + 20) : 0;
-  const storageUtil = resourceCount > 0 ? Math.min(95, cpuUtil + 5) : 0;
-  const networkUtil = resourceCount > 0 ? Math.min(95, cpuUtil + 30) : 0;
+  const stoppedCount = resources.filter(r => r.status === "stopped" || r.status === "inactive").length;
+  const activePercent = resourceCount > 0 ? Math.round((runningCount / resourceCount) * 100) : 0;
+  const healthPercent = resourceCount > 0 ? Math.round(((resourceCount - stoppedCount) / resourceCount) * 100) : 0;
+
+  // Group by provider for distribution
+  const providerCounts: Record<string, number> = {};
+  resources.forEach(r => { providerCounts[r.provider] = (providerCounts[r.provider] || 0) + 1; });
+  const typeCounts: Record<string, number> = {};
+  resources.forEach(r => { typeCounts[r.type] = (typeCounts[r.type] || 0) + 1; });
 
   const utilizationMetrics: UtilizationMetric[] = [
     {
-      name: "CPU Utilization",
-      value: cpuUtil,
-      status: cpuUtil > 80 ? "critical" : cpuUtil > 60 ? "warning" : "healthy",
-      trend: "down",
-      change: 12,
+      name: "Active Resources",
+      value: activePercent,
+      status: activePercent > 80 ? "healthy" : activePercent > 50 ? "warning" : "critical",
+      trend: activePercent >= 50 ? "up" : "down",
+      change: runningCount,
     },
     {
-      name: "Memory Usage",
-      value: memUtil,
-      status: memUtil > 80 ? "critical" : memUtil > 60 ? "warning" : "healthy",
+      name: "Health Score",
+      value: healthPercent,
+      status: healthPercent > 80 ? "healthy" : healthPercent > 50 ? "warning" : "critical",
+      trend: healthPercent >= 80 ? "up" : "down",
+      change: resourceCount - stoppedCount,
+    },
+    {
+      name: "Total Resources",
+      value: resourceCount,
+      status: "healthy",
       trend: "up",
-      change: 18,
+      change: resourceCount,
     },
     {
-      name: "Storage Usage",
-      value: storageUtil,
-      status: storageUtil > 80 ? "critical" : storageUtil > 60 ? "warning" : "healthy",
-      trend: "down",
-      change: 3,
-    },
-    {
-      name: "Network I/O",
-      value: networkUtil,
-      status: networkUtil > 80 ? "critical" : networkUtil > 60 ? "warning" : "healthy",
+      name: "Providers",
+      value: Object.keys(providerCounts).length,
+      status: "healthy",
       trend: "up",
-      change: 43,
+      change: Object.keys(providerCounts).length,
     },
   ];
 
@@ -110,14 +115,15 @@ export default function ResourceUtilizationPage() {
   const resourceTypes = Array.from(new Set(resources.map((r) => r.type)));
   const providers = Array.from(new Set(resources.map((r) => r.provider)));
 
-  // Compute a simple utilization percentage per resource based on type
-  const getResourceUtilization = (resource: any): { value: number; color: string } => {
-    // Without a real utilization API, estimate based on status
-    const base = resource.status === "running" || resource.status === "active" ? 45 : 10;
-    const hash = resource.name.split("").reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
-    const value = Math.min(95, base + (hash % 40));
-    const color = value > 80 ? "bg-rose-500" : value > 60 ? "bg-amber-500" : "bg-emerald-500";
-    return { value, color };
+  // Show real status-based indicator per resource (no fake utilization without real metrics API)
+  const getResourceUtilization = (resource: any): { value: number; color: string; label: string } => {
+    if (resource.status === "running" || resource.status === "active") {
+      return { value: 100, color: "bg-emerald-500", label: "Active" };
+    } else if (resource.status === "stopped" || resource.status === "inactive") {
+      return { value: 0, color: "bg-gray-400", label: "Stopped" };
+    } else {
+      return { value: 50, color: "bg-amber-500", label: resource.status };
+    }
   };
 
   return (
@@ -143,7 +149,7 @@ export default function ResourceUtilizationPage() {
 
       {/* Utilization Charts */}
       <div className="mb-6">
-        <UtilizationCharts />
+        <UtilizationCharts resources={resources} />
       </div>
 
       {/* Resources List */}
@@ -210,7 +216,7 @@ export default function ResourceUtilizationPage() {
                   <TableHead>Provider</TableHead>
                   <TableHead>Region</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Utilization</TableHead>
+                  <TableHead>Health</TableHead>
                   <TableHead>Monthly Cost</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -248,13 +254,8 @@ export default function ResourceUtilizationPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center">
-                            <div className="w-16 h-2 bg-gray-200 rounded-full mr-2">
-                              <div
-                                className={`h-full ${util.color} rounded-full`}
-                                style={{ width: `${util.value}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs">{util.value}%</span>
+                            <div className={`w-2 h-2 rounded-full mr-2 ${util.color}`}></div>
+                            <span className="text-xs">{util.label}</span>
                           </div>
                         </TableCell>
                         <TableCell>{formatCurrency(resource.cost)}</TableCell>

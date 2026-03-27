@@ -588,7 +588,10 @@ export const api = {
       return request<ComplianceTrend>(`/api/v1/compliance/trend?${params.toString()}`);
     },
 
-    listFrameworks: () => request<ComplianceFramework[]>('/api/v1/compliance/frameworks'),
+    listFrameworks: () =>
+      request<any>('/api/v1/compliance/frameworks').then(
+        (res) => (Array.isArray(res) ? res : res?.frameworks || []) as ComplianceFramework[]
+      ),
 
     getFramework: (id: string) => request<ComplianceFramework>(`/api/v1/compliance/frameworks/${id}`),
 
@@ -599,12 +602,14 @@ export const api = {
     listControls: (frameworkId: string, category?: string) => {
       const params = new URLSearchParams();
       if (category) params.set('category', category);
-      return request<ComplianceControl[]>(`/api/v1/compliance/frameworks/${frameworkId}/controls?${params.toString()}`);
+      return request<any>(`/api/v1/compliance/frameworks/${frameworkId}/controls?${params.toString()}`).then(
+        (res) => (Array.isArray(res) ? res : res?.controls || []) as ComplianceControl[]
+      );
     },
 
     runAssessment: (frameworkId: string) =>
       request<ComplianceAssessment>('/api/v1/compliance/assess', {
-        method: 'POST', body: { frameworkID: frameworkId } // Body param should match what backend expects (json struct tag)
+        method: 'POST', body: { framework_id: frameworkId }
       }),
 
     listAssessments: (frameworkId?: string, limit?: number, offset?: number) => {
@@ -612,7 +617,9 @@ export const api = {
       if (frameworkId) params.set('framework_id', frameworkId);
       if (limit) params.set('limit', limit.toString());
       if (offset) params.set('offset', offset.toString());
-      return request<ComplianceAssessment[]>(`/api/v1/compliance/assessments?${params.toString()}`);
+      return request<any>(`/api/v1/compliance/assessments?${params.toString()}`).then(
+        (res) => (Array.isArray(res) ? res : res?.assessments || []) as ComplianceAssessment[]
+      );
     },
 
     getAssessment: (id: string) => request<ComplianceAssessment>(`/api/v1/compliance/assessments/${id}`),
@@ -622,7 +629,9 @@ export const api = {
     getFailingControls: (frameworkId: string) => {
       const params = new URLSearchParams();
       params.set('framework_id', frameworkId);
-      return request<AssessmentFinding[]>(`/api/v1/compliance/controls/failing?${params.toString()}`);
+      return request<any>(`/api/v1/compliance/controls/failing?${params.toString()}`).then(
+        (res) => (Array.isArray(res) ? res : res?.failingControls || []) as AssessmentFinding[]
+      );
     },
   },
 

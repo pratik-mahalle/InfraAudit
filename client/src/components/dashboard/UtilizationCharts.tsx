@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Card,
   CardContent,
@@ -12,26 +12,19 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
-  LineElement, 
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
   BarElement,
-  Title, 
-  Tooltip, 
+  Title,
+  Tooltip,
   Legend,
   Filler,
   ArcElement
 } from "chart.js";
-import { Line, Bar, Doughnut } from "react-chartjs-2";
+import { Bar, Doughnut } from "react-chartjs-2";
 
 // Register Chart.js components
 ChartJS.register(
@@ -47,136 +40,114 @@ ChartJS.register(
   Filler
 );
 
-export function UtilizationCharts() {
-  const [timeframe, setTimeframe] = useState("7d");
+interface Resource {
+  id?: number;
+  name: string;
+  type: string;
+  provider: string;
+  region: string;
+  status: string;
+  cost?: number;
+}
 
-  // Generate line chart data
-  const lineChartData = {
-    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    datasets: [
-      {
-        label: "CPU Utilization",
-        data: [35, 40, 30, 50, 45, 60, 38],
-        borderColor: "#0066CC",
-        backgroundColor: "rgba(0, 102, 204, 0.1)",
-        fill: true,
-        tension: 0.4,
-      },
-      {
-        label: "Memory Usage",
-        data: [60, 65, 70, 68, 75, 80, 72],
-        borderColor: "#FF9900",
-        backgroundColor: "rgba(255, 153, 0, 0.1)",
-        fill: true,
-        tension: 0.4,
-      },
-      {
-        label: "Storage Usage",
-        data: [50, 52, 53, 54, 55, 56, 54],
-        borderColor: "#00A36C",
-        backgroundColor: "rgba(0, 163, 108, 0.1)",
-        fill: true,
-        tension: 0.4,
-      },
-      {
-        label: "Network I/O",
-        data: [70, 75, 65, 80, 85, 90, 89],
-        borderColor: "#DC3545",
-        backgroundColor: "rgba(220, 53, 69, 0.1)",
-        fill: true,
-        tension: 0.4,
-      }
-    ],
-  };
+interface UtilizationChartsProps {
+  resources?: Resource[];
+}
 
-  // Generate bar chart data
+const CHART_COLORS = [
+  "#0066CC", "#00A36C", "#FF9900", "#DC3545", "#6C757D",
+  "#8B5CF6", "#EC4899", "#14B8A6", "#F59E0B", "#6366F1",
+];
+
+export function UtilizationCharts({ resources = [] }: UtilizationChartsProps) {
+  // Derive chart data from actual resources
+  const typeCounts: Record<string, { total: number; active: number }> = {};
+  const providerCounts: Record<string, number> = {};
+  const statusCounts: Record<string, number> = {};
+
+  resources.forEach(r => {
+    // By type
+    if (!typeCounts[r.type]) typeCounts[r.type] = { total: 0, active: 0 };
+    typeCounts[r.type].total++;
+    if (r.status === "running" || r.status === "active") {
+      typeCounts[r.type].active++;
+    }
+
+    // By provider
+    providerCounts[r.provider] = (providerCounts[r.provider] || 0) + 1;
+
+    // By status
+    statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
+  });
+
+  // Bar chart: active % by resource type
+  const typeLabels = Object.keys(typeCounts);
+  const typeActivePercents = typeLabels.map(t =>
+    typeCounts[t].total > 0 ? Math.round((typeCounts[t].active / typeCounts[t].total) * 100) : 0
+  );
+
   const barChartData = {
-    labels: ["EC2", "RDS", "S3", "Lambda", "API Gateway", "CloudFront"],
+    labels: typeLabels.map(t => t.replace("k8s-", "K8s ").replace("ec2-", "EC2 ").replace("s3-", "S3 ")),
     datasets: [
       {
-        label: "Current Utilization (%)",
-        data: [38, 72, 54, 25, 40, 65],
+        label: "Active (%)",
+        data: typeActivePercents,
         backgroundColor: "#0066CC",
-      }
+      },
+      {
+        label: "Total Count",
+        data: typeLabels.map(t => typeCounts[t].total),
+        backgroundColor: "#00A36C",
+      },
     ],
   };
 
-  // Generate doughnut chart data
+  // Doughnut chart: distribution by provider
+  const providerLabels = Object.keys(providerCounts);
+  const providerValues = providerLabels.map(p => providerCounts[p]);
+
   const doughnutChartData = {
-    labels: ["EC2", "RDS", "S3", "Lambda", "Others"],
+    labels: providerLabels.map(p => p.charAt(0).toUpperCase() + p.slice(1)),
     datasets: [
       {
-        data: [42, 35, 13, 5, 5],
-        backgroundColor: [
-          "#0066CC",
-          "#00A36C",
-          "#FF9900",
-          "#DC3545",
-          "#6C757D",
-        ],
-      }
+        data: providerValues,
+        backgroundColor: CHART_COLORS.slice(0, providerLabels.length),
+      },
     ],
   };
 
-  const lineOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "top" as const,
-        align: "end" as const,
+  // Status distribution doughnut
+  const statusLabels = Object.keys(statusCounts);
+  const statusValues = statusLabels.map(s => statusCounts[s]);
+  const statusColors: Record<string, string> = {
+    running: "#10B981", active: "#10B981",
+    stopped: "#6B7280", inactive: "#6B7280",
+    unknown: "#F59E0B",
+  };
+
+  const statusDoughnutData = {
+    labels: statusLabels.map(s => s.charAt(0).toUpperCase() + s.slice(1)),
+    datasets: [
+      {
+        data: statusValues,
+        backgroundColor: statusLabels.map(s => statusColors[s] || "#6C757D"),
       },
-      tooltip: {
-        mode: "index" as const,
-        intersect: false,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: 100,
-        title: {
-          display: true,
-          text: "Utilization (%)",
-        },
-        grid: {
-          color: "rgba(0, 0, 0, 0.05)",
-        },
-      },
-      x: {
-        grid: {
-          display: false,
-        },
-      },
-    },
+    ],
   };
 
   const barOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: "top" as const,
-        align: "end" as const,
-      },
+      legend: { position: "top" as const, align: "end" as const },
     },
     scales: {
       y: {
         beginAtZero: true,
-        max: 100,
-        title: {
-          display: true,
-          text: "Utilization (%)",
-        },
-        grid: {
-          color: "rgba(0, 0, 0, 0.05)",
-        },
+        title: { display: true, text: "Count / %" },
+        grid: { color: "rgba(0, 0, 0, 0.05)" },
       },
-      x: {
-        grid: {
-          display: false,
-        },
-      },
+      x: { grid: { display: false } },
     },
   };
 
@@ -184,60 +155,62 @@ export function UtilizationCharts() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: "right" as const,
-      },
+      legend: { position: "right" as const },
       tooltip: {
         callbacks: {
           label: function(context: any) {
-            return `${context.label}: ${context.parsed}%`;
-          }
-        }
-      }
+            const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
+            const pct = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
+            return `${context.label}: ${context.parsed} (${pct}%)`;
+          },
+        },
+      },
     },
   };
 
+  if (resources.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold font-inter">Resource Analytics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+            No resources discovered yet. Connect a cloud provider or Kubernetes cluster to see analytics.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold font-inter">Utilization Metrics</CardTitle>
-        <Select
-          value={timeframe}
-          onValueChange={setTimeframe}
-        >
-          <SelectTrigger className="h-8 text-xs border-gray-300 w-[110px]">
-            <SelectValue placeholder="Last 7 days" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7d">Last 7 days</SelectItem>
-            <SelectItem value="30d">Last 30 days</SelectItem>
-            <SelectItem value="90d">Last 90 days</SelectItem>
-          </SelectContent>
-        </Select>
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold font-inter">Resource Analytics</CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="timeline">
+        <Tabs defaultValue="byType">
           <TabsList className="mb-4">
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="byResource">By Resource Type</TabsTrigger>
-            <TabsTrigger value="distribution">Distribution</TabsTrigger>
+            <TabsTrigger value="byType">By Resource Type</TabsTrigger>
+            <TabsTrigger value="byProvider">By Provider</TabsTrigger>
+            <TabsTrigger value="byStatus">By Status</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="timeline">
-            <div className="h-[350px] w-full">
-              <Line data={lineChartData} options={lineOptions} />
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="byResource">
+
+          <TabsContent value="byType">
             <div className="h-[350px] w-full">
               <Bar data={barChartData} options={barOptions} />
             </div>
           </TabsContent>
-          
-          <TabsContent value="distribution">
+
+          <TabsContent value="byProvider">
             <div className="h-[350px] w-full">
               <Doughnut data={doughnutChartData} options={doughnutOptions} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="byStatus">
+            <div className="h-[350px] w-full">
+              <Doughnut data={statusDoughnutData} options={doughnutOptions} />
             </div>
           </TabsContent>
         </Tabs>
