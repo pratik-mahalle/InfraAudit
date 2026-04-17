@@ -1,1424 +1,944 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Check,
-  BarChart3,
+  ArrowRight,
   Shield,
   DollarSign,
-  LineChart,
-  ArrowRight,
-  ChevronRight,
-  Plus,
-  Sparkles,
-  Zap,
+  TrendingDown,
   Cloud,
-  Lock,
+  Zap,
   Bell,
-  TrendingUp,
+  BarChart3,
+  Lock,
   Globe,
-  Server,
-  Database,
-  Cpu,
-  Eye,
-  Target,
-  Rocket,
-  Star,
-  Play,
-  CheckCircle2,
-  ArrowUpRight,
-  Users,
-  Settings,
   AlertTriangle,
+  CheckCircle2,
   Activity,
-  Loader2,
-  Search,
-  Home,
-  Building2,
-  FolderKanban,
-  MessageSquare,
-  FileText,
-  Smartphone,
-  Bot,
-  Mail
+  Database,
+  Server,
+  ArrowUpRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
-// Marquee component for infinite scroll
-function Marquee({ children, className }: { children: React.ReactNode; className?: string }) {
+// ─── Fonts ───────────────────────────────────────────────────────────────────
+const DISPLAY = "'Plus Jakarta Sans', sans-serif";
+const BODY = "'DM Sans', sans-serif";
+
+// ─── Animation helpers ───────────────────────────────────────────────────────
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (delay = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
+
+// Word-by-word stagger for hero headline
+const wordContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+};
+const wordItem = {
+  hidden: { opacity: 0, y: 32, filter: "blur(4px)" },
+  visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+};
+
+// ─── Count-up hook ───────────────────────────────────────────────────────────
+
+function useCountUp(target: number, inView: boolean, duration = 1800) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!inView) return;
+    const start = Date.now();
+    const raf = () => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(eased * target));
+      if (progress < 1) requestAnimationFrame(raf);
+    };
+    requestAnimationFrame(raf);
+  }, [inView, target, duration]);
+  return count;
+}
+
+// ─── Metric item with count-up ───────────────────────────────────────────────
+
+function MetricItem({ prefix = "", value, suffix = "", label, inView }: {
+  prefix?: string; value: number; suffix?: string; label: string; inView: boolean;
+}) {
+  const count = useCountUp(value, inView);
   return (
-    <div className={cn("flex overflow-hidden", className)}>
+    <div className="text-center md:px-8">
+      <div className="text-3xl font-black text-slate-900 mb-1 tabular-nums" style={{ fontFamily: DISPLAY }}>
+        {prefix}{count}{suffix}
+      </div>
+      <div className="text-sm text-slate-500 leading-snug">{label}</div>
+    </div>
+  );
+}
+
+// ─── Dashboard mockup ────────────────────────────────────────────────────────
+
+function DashboardMockup() {
+  return (
+    <div className="relative w-full max-w-5xl mx-auto mt-14" style={{ perspective: "1400px" }}>
       <motion.div
-        className="flex gap-8 whitespace-nowrap"
-        animate={{ x: ["0%", "-50%"] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        initial={{ opacity: 0, y: 56, rotateX: 12 }}
+        animate={{ opacity: 1, y: 0, rotateX: 4 }}
+        transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        style={{ transformStyle: "preserve-3d" }}
       >
-        {children}
-        {children}
+        {/* Subtle float on the whole mockup */}
+        <motion.div
+          animate={{ y: [0, -6, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+        >
+          {/* Browser chrome */}
+          <div className="bg-[#161d2e] rounded-t-2xl px-4 py-3 flex items-center gap-3 border border-slate-700/60">
+            <div className="flex gap-1.5">
+              <div className="w-3 h-3 rounded-full bg-red-500/60" />
+              <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+              <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
+            </div>
+            <div className="flex-1 mx-3 bg-slate-800/80 rounded-md h-6 flex items-center px-3">
+              <div className="w-3 h-3 rounded-full border border-slate-600 mr-2 flex-shrink-0" />
+              <span className="text-slate-500 text-xs font-mono">app.infraaudit.io/dashboard</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs text-slate-500 hidden sm:block">Live</span>
+            </div>
+          </div>
+
+          {/* App shell */}
+          <div className="bg-[#0d1220] border border-t-0 border-slate-700/60 rounded-b-2xl overflow-hidden">
+            {/* Top nav */}
+            <div className="flex items-center justify-between px-5 py-2.5 border-b border-slate-800">
+              <div className="flex items-center gap-5">
+                <span className="text-white text-sm font-semibold">InfraAudit</span>
+                {["Dashboard", "Costs", "Security", "Resources"].map((item, i) => (
+                  <span key={item} className={cn("text-xs font-medium hidden sm:block", i === 0 ? "text-blue-400" : "text-slate-500")}>
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-500 hidden md:block">All systems operational</span>
+                <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">P</div>
+              </div>
+            </div>
+
+            {/* Stat cards */}
+            <div className="grid grid-cols-4 gap-px bg-slate-800/40">
+              {[
+                { label: "Total Spend (MTD)", value: "$47,284", change: "+12% vs last month", warn: true },
+                { label: "Cost Saved", value: "$16,340", change: "This month", pos: true },
+                { label: "Resources Monitored", value: "248", change: "Across 3 clouds", neutral: true },
+                { label: "Active Alerts", value: "7", change: "3 critical", crit: true },
+              ].map((s) => (
+                <div key={s.label} className="bg-[#0d1220] px-4 py-3">
+                  <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wide">{s.label}</div>
+                  <div className="text-lg font-bold text-white">{s.value}</div>
+                  <div className={cn("text-[11px] mt-0.5 font-medium",
+                    s.warn ? "text-amber-400" : s.pos ? "text-emerald-400" : s.crit ? "text-red-400" : "text-slate-500"
+                  )}>{s.change}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Content grid */}
+            <div className="grid grid-cols-3 gap-px bg-slate-800/40">
+              <div className="col-span-2 bg-[#0d1220] p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-slate-300">Cost Trend — Last 30 Days</span>
+                  <span className="text-[11px] text-red-400 font-medium flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" /> Anomaly detected Aug 14
+                  </span>
+                </div>
+                <svg viewBox="0 0 400 90" className="w-full h-20">
+                  <defs>
+                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {[22, 45, 68].map((y) => (
+                    <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="#1e293b" strokeWidth="1" />
+                  ))}
+                  <path d="M0,72 L40,68 L80,62 L120,57 L160,60 L200,52 L240,46 L280,18 L320,38 L360,34 L400,30 L400,90 L0,90 Z" fill="url(#chartGrad)" />
+                  <motion.path
+                    d="M0,72 L40,68 L80,62 L120,57 L160,60 L200,52 L240,46 L280,18 L320,38 L360,34 L400,30"
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 2, delay: 1.2, ease: "easeInOut" }}
+                  />
+                  <circle cx="280" cy="18" r="4" fill="#ef4444" />
+                  <line x1="280" y1="0" x2="280" y2="90" stroke="#ef4444" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+                  <text x="284" y="14" fill="#ef4444" fontSize="8" fontFamily="monospace">+40%</text>
+                </svg>
+              </div>
+              <div className="bg-[#0d1220] p-4">
+                <span className="text-xs font-medium text-slate-300 block mb-2">Live Alerts</span>
+                <div className="space-y-2">
+                  {[
+                    { text: "S3 bucket public access", level: "critical" },
+                    { text: "Idle EC2 instances ×3", level: "warning" },
+                    { text: "Spend spike +40%", level: "critical" },
+                    { text: "IAM drift detected", level: "warning" },
+                    { text: "RDS backup overdue", level: "warning" },
+                  ].map((a, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <div className={cn("w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0",
+                        a.level === "critical" ? "bg-red-500" : "bg-amber-500"
+                      )} />
+                      <span className="text-[11px] text-slate-400 leading-snug">{a.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Resource table */}
+            <div className="bg-[#0d1220] border-t border-slate-800">
+              <div className="px-4 py-2 flex items-center justify-between border-b border-slate-800">
+                <span className="text-xs font-medium text-slate-300">Top Resources by Spend</span>
+                <span className="text-[11px] text-blue-400">View all →</span>
+              </div>
+              <table className="w-full">
+                <tbody>
+                  {[
+                    { name: "prod-api-cluster", provider: "AWS", cost: "$1,240/mo", status: "Healthy", saving: "$340 identified" },
+                    { name: "analytics-warehouse", provider: "GCP", cost: "$890/mo", status: "Warning", saving: "$180 identified" },
+                    { name: "cdn-global-edge", provider: "Azure", cost: "$340/mo", status: "Healthy", saving: "$62 identified" },
+                  ].map((row, i) => (
+                    <tr key={i} className="border-b border-slate-800/60 last:border-0">
+                      <td className="px-4 py-2 text-xs text-slate-300 font-medium font-mono">{row.name}</td>
+                      <td className="px-4 py-2 text-[11px] text-slate-500">{row.provider}</td>
+                      <td className="px-4 py-2 text-xs text-white font-medium">{row.cost}</td>
+                      <td className="px-4 py-2 text-[11px]">
+                        <span className={cn("font-medium", row.status === "Healthy" ? "text-emerald-400" : "text-amber-400")}>{row.status}</span>
+                      </td>
+                      <td className="px-4 py-2 text-[11px] text-blue-400">{row.saving}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Bottom fade */}
+          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#050810] via-[#050810]/70 to-transparent pointer-events-none rounded-b-2xl" />
+        </motion.div>
       </motion.div>
     </div>
   );
 }
 
-// Animated typing effect
-function TypeWriter({ texts, className }: { texts: string[]; className?: string }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [displayText, setDisplayText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
+// ─── FinOps visualization ─────────────────────────────────────────────────────
 
-  useEffect(() => {
-    const currentText = texts[currentIndex];
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        if (displayText.length < currentText.length) {
-          setDisplayText(currentText.slice(0, displayText.length + 1));
-        } else {
-          setTimeout(() => setIsDeleting(true), 2000);
-        }
-      } else {
-        if (displayText.length > 0) {
-          setDisplayText(displayText.slice(0, -1));
-        } else {
-          setIsDeleting(false);
-          setCurrentIndex((prev) => (prev + 1) % texts.length);
-        }
-      }
-    }, isDeleting ? 40 : 100);
-
-    return () => clearTimeout(timeout);
-  }, [displayText, isDeleting, currentIndex, texts]);
+function CostVisualization() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
+  const months = ["Mar", "Apr", "May", "Jun", "Jul", "Aug"];
+  const values = [62, 71, 68, 84, 79, 96];
+  const max = Math.max(...values);
 
   return (
-    <span className={cn("inline-block", className)}>
-      {displayText}
-      <span className="animate-[cursor-blink_1s_infinite] text-current opacity-80">|</span>
-    </span>
-  );
-}
-
-// AI Agent Illustration for Meet section
-function AIAgentIllustration() {
-  return (
-              <div className="relative">
-      <svg viewBox="0 0 200 200" className="w-48 h-48 mx-auto">
-        <defs>
-          <linearGradient id="agentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#60a5fa" />
-            <stop offset="100%" stopColor="#3b82f6" />
-          </linearGradient>
-          <filter id="agentGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        
-        {/* Background circle */}
-        <circle cx="100" cy="100" r="90" fill="rgba(255,255,255,0.1)" />
-        <circle cx="100" cy="100" r="80" fill="rgba(255,255,255,0.05)" />
-        
-        {/* Robot head */}
-        <rect x="55" y="50" width="90" height="75" rx="16" fill="white" />
-        
-        {/* Antenna */}
-        <motion.g
-          animate={{ rotate: [-5, 5, -5] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          style={{ transformOrigin: "100px 50px" }}
-        >
-          <line x1="100" y1="50" x2="100" y2="30" stroke="white" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="100" cy="25" r="6" fill="#60a5fa" filter="url(#agentGlow)" />
-        </motion.g>
-        
-        {/* Eyes */}
-        <motion.g
-          animate={{ scaleY: [1, 0.1, 1] }}
-          transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-        >
-          <rect x="70" y="70" width="20" height="20" rx="4" fill="#1e40af" />
-          <rect x="110" y="70" width="20" height="20" rx="4" fill="#1e40af" />
-          
-          {/* Eye glow */}
-          <rect x="73" y="73" width="8" height="8" rx="2" fill="#60a5fa" />
-          <rect x="113" y="73" width="8" height="8" rx="2" fill="#60a5fa" />
-        </motion.g>
-        
-        {/* Mouth - scanning line */}
-        <motion.rect
-          x="75" y="100"
-          width="50" height="6"
-          rx="3"
-          fill="#3b82f6"
-          animate={{ opacity: [0.5, 1, 0.5], width: [30, 50, 30], x: [85, 75, 85] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        />
-        
-        {/* Body */}
-        <rect x="65" y="130" width="70" height="45" rx="12" fill="white" />
-        
-        {/* Chest indicator */}
-        <motion.circle
-          cx="100" cy="152"
-          r="10"
-          fill="#3b82f6"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
-        <circle cx="100" cy="152" r="5" fill="white" />
-        
-        {/* Side panels */}
-        <rect x="45" y="140" width="15" height="25" rx="4" fill="rgba(255,255,255,0.8)" />
-        <rect x="140" y="140" width="15" height="25" rx="4" fill="rgba(255,255,255,0.8)" />
-        
-        {/* Signal waves */}
-        <motion.circle
-          cx="100" cy="100" r="95"
-          fill="none"
-          stroke="rgba(255,255,255,0.2)"
-          strokeWidth="1"
-          animate={{ r: [95, 110], opacity: [0.3, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
-        <motion.circle
-          cx="100" cy="100" r="95"
-          fill="none"
-          stroke="rgba(255,255,255,0.2)"
-          strokeWidth="1"
-          animate={{ r: [95, 110], opacity: [0.3, 0] }}
-          transition={{ duration: 2, repeat: Infinity, delay: 0.7 }}
-        />
-      </svg>
-
-      {/* Floating data points */}
-      <motion.div
-        className="absolute top-4 right-0 bg-white/20 backdrop-blur px-3 py-1 rounded-full text-white text-xs"
-        animate={{ y: [0, -5, 0] }}
-        transition={{ duration: 2, repeat: Infinity }}
-      >
-        scanning...
-      </motion.div>
-      </div>
-  );
-}
-
-// Product Demo Card - Dashboard Preview
-function DashboardPreview() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.6 }}
-      className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden max-w-5xl mx-auto"
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-            <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
-              <Cloud className="w-4 h-4 text-white" />
+    <div ref={ref} className="bg-white rounded-2xl border border-slate-200 shadow-lg shadow-slate-200/60 overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-0.5">Cloud Spend Overview</div>
+            <div className="text-2xl font-bold text-slate-900">$47,284 <span className="text-base font-normal text-slate-400">/ this month</span></div>
           </div>
-            <span className="font-medium text-sm">InfrAudit</span>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-1.5 bg-red-50 text-red-600 px-2.5 py-1 rounded-full text-xs font-medium">
+            <ArrowUpRight className="w-3.5 h-3.5" />
+            +12% vs last month
           </div>
-          </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Provider
-                </Button>
-          <div className="flex -space-x-2">
-            {["O", "C", "M"].map((letter, i) => (
-              <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-medium border-2 border-white dark:border-gray-900">
-                {letter}
         </div>
-            ))}
-            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-xs font-medium border-2 border-white dark:border-gray-900">
-              +7
-              </div>
-                    </div>
-                    </div>
-              </div>
-              
-      {/* Sidebar + Content */}
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="w-48 border-r border-gray-100 dark:border-gray-800 p-4 hidden md:block">
-          <nav className="space-y-1">
-            {[
-              { icon: Home, label: "Dashboard", active: true },
-              { icon: Server, label: "Resources" },
-              { icon: Shield, label: "Security" },
-              { icon: DollarSign, label: "Costs" },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm",
-                  item.active
-                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                )}
-              >
-                <item.icon className="w-4 h-4" />
-                {item.label}
-              </div>
-                          ))}
-          </nav>
+      </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <p className="text-xs font-medium text-gray-400 mb-2 px-3">PROVIDERS</p>
-            <nav className="space-y-1">
-              {[
-                { label: "AWS", color: "bg-[#FF9900]" },
-                { label: "Azure", color: "bg-[#0078D4]" },
-                { label: "GCP", color: "bg-[#4285F4]" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  <div className={cn("w-3 h-3 rounded-sm", item.color)} />
-                  {item.label}
-                              </div>
-              ))}
-            </nav>
+      <div className="px-5 py-4">
+        <div className="flex items-end gap-2 h-24">
+          {months.map((m, i) => (
+            <div key={m} className="flex-1 flex flex-col items-center gap-1">
+              <div className="w-full flex flex-col justify-end" style={{ height: "80px" }}>
+                <motion.div
+                  className={cn("w-full rounded-t-md", i === months.length - 1 ? "bg-blue-500" : "bg-slate-200")}
+                  initial={{ height: 0 }}
+                  animate={inView ? { height: `${(values[i] / max) * 80}px` } : { height: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 + i * 0.08, ease: [0.22, 1, 0.36, 1] }}
+                />
               </div>
+              <span className="text-[10px] text-slate-400">{m}</span>
             </div>
-            
-        {/* Main Content */}
-        <div className="flex-1 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Cloud Resources</h2>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="gap-1">
-                <div className="w-2 h-2 rounded-full bg-amber-500" />
-                12 Alerts
-              </Badge>
-              <Badge variant="outline" className="gap-1">
-                <div className="w-2 h-2 rounded-full bg-blue-500" />
-                248 Resources
-              </Badge>
-                    </div>
-                  </div>
-                  
-          {/* Table */}
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800/50">
-                <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Resource</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Provider</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
-                    Status<Badge variant="secondary" className="ml-1 text-[10px] px-1">AI</Badge>
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
-                    Cost<Badge variant="secondary" className="ml-1 text-[10px] px-1">AI</Badge>
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {[
-                  { name: "prod-api-server", provider: "AWS", providerColor: "bg-[#FF9900]", status: "Healthy", statusColor: "text-green-600", cost: "$142/mo" },
-                  { name: "analytics-db", provider: "GCP", providerColor: "bg-[#4285F4]", status: "Warning", statusColor: "text-amber-600", cost: "$89/mo" },
-                  { name: "cdn-assets", provider: "Azure", providerColor: "bg-[#0078D4]", status: "Healthy", statusColor: "text-green-600", cost: "$34/mo" },
-                ].map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <td className="px-4 py-3 font-medium">{row.name}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className={cn("w-3 h-3 rounded-sm", row.providerColor)} />
-                        {row.provider}
-                              </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={cn("font-medium", row.statusColor)}>{row.status}</span>
-                    </td>
-                    <td className="px-4 py-3">{row.cost}</td>
-                    <td className="px-4 py-3">
-                      <Button size="sm" variant="ghost">View</Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-                            </div>
-                    
-          {/* AI Scanning Notice */}
+          ))}
+        </div>
+      </div>
+
+      <div className="px-5 pb-5 space-y-2">
+        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Savings Identified by AI</div>
+        {[
+          { label: "Idle EC2 instances (×3)", saving: "$340/mo", icon: Server },
+          { label: "Oversized RDS db.r5.xlarge", saving: "$180/mo", icon: Database },
+          { label: "Unattached EBS volumes", saving: "$62/mo", icon: Cloud },
+        ].map(({ label, saving, icon: Icon }, i) => (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/50"
+            key={label}
+            initial={{ opacity: 0, x: 16 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ delay: 0.6 + i * 0.1, duration: 0.4, ease: "easeOut" }}
+            className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg"
           >
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Bot className="w-4 h-4 text-white" />
-                              </div>
-            <span className="text-sm text-blue-700 dark:text-blue-300">
-              InfrAudit is scanning for cost optimization opportunities...
-            </span>
-            <Loader2 className="w-4 h-4 text-blue-600 animate-spin ml-auto" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 bg-white rounded-md border border-slate-200 flex items-center justify-center">
+                <Icon className="w-3.5 h-3.5 text-slate-500" />
+              </div>
+              <span className="text-xs text-slate-600">{label}</span>
+            </div>
+            <span className="text-xs font-semibold text-emerald-600">{saving}</span>
           </motion.div>
-                            </div>
-                          </div>
-    </motion.div>
+        ))}
+        <div className="flex items-center justify-between pt-2 px-3">
+          <span className="text-sm font-semibold text-slate-700">Total potential savings</span>
+          <span className="text-sm font-bold text-emerald-600">$582/mo</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
-// AI Brain Visualization Component
-function AIBrainVisualization() {
-  const [activeThought, setActiveThought] = useState(0);
-  const thoughts = [
-    { icon: DollarSign, text: "Analyzing cost patterns...", result: "Found $2,340 in savings", color: "text-emerald-500" },
-    { icon: Shield, text: "Scanning security configs...", result: "3 misconfigurations detected", color: "text-amber-500" },
-    { icon: Cpu, text: "Checking resource usage...", result: "12 instances oversized", color: "text-blue-500" },
-    { icon: TrendingUp, text: "Predicting next month...", result: "15% cost increase likely", color: "text-purple-500" },
-  ];
+// ─── DevOps drift feed ────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveThought((prev) => (prev + 1) % thoughts.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+function SecurityDriftFeed() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true });
 
   return (
-    <div className="relative">
-      {/* Central AI Core */}
-      <div className="relative w-80 h-80 mx-auto">
-        {/* Outer rings */}
-        <motion.div
-          className="absolute inset-0 rounded-full border-2 border-blue-500/20"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.div
-          className="absolute inset-4 rounded-full border border-blue-500/30"
-          animate={{ rotate: -360 }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.div
-          className="absolute inset-8 rounded-full border border-dashed border-blue-500/20"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-        />
-        
-        {/* Orbiting thought nodes */}
-        {thoughts.map((thought, i) => {
-          const angle = (i * 90) + (activeThought * 90);
-          const radius = 120;
-          return (
+    <div ref={ref} className="bg-slate-950 rounded-2xl border border-slate-700/60 overflow-hidden shadow-2xl shadow-slate-950/60">
+      <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+            <Shield className="w-4 h-4 text-blue-400" />
+          </div>
+          <div>
+            <div className="text-xs font-semibold text-white">Security Monitor</div>
+            <div className="text-[11px] text-slate-500">prod-cluster · us-east-1</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-bold text-white">87<span className="text-slate-500 text-sm font-normal">/100</span></div>
+          <div className="text-[11px] text-amber-400">Security Score</div>
+        </div>
+      </div>
+
+      {/* Compliance bars */}
+      <div className="grid grid-cols-3 gap-px bg-slate-800/40">
+        {[
+          { label: "CIS Benchmarks", pct: 91, color: "bg-emerald-500" },
+          { label: "SOC 2", pct: 84, color: "bg-blue-500" },
+          { label: "NIST 800-53", pct: 79, color: "bg-amber-500" },
+        ].map((f, i) => (
+          <div key={f.label} className="bg-slate-950 px-4 py-3">
+            <div className="text-[10px] text-slate-500 mb-1.5">{f.label}</div>
+            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <motion.div
+                className={cn("h-full rounded-full", f.color)}
+                initial={{ width: 0 }}
+                animate={inView ? { width: `${f.pct}%` } : { width: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 + i * 0.1, ease: [0.22, 1, 0.36, 1] }}
+              />
+            </div>
+            <div className="text-xs font-semibold text-white mt-1">{f.pct}%</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Drift events */}
+      <div className="px-5 py-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Live Drift Feed</span>
+        </div>
+        <div className="space-y-0 font-mono text-[11px]">
+          {[
+            { level: "CRITICAL", msg: "sg-0x4f opened to 0.0.0.0/0", time: "2s ago", color: "text-red-400 bg-red-500/10" },
+            { level: "WARNING", msg: "S3 bucket public access enabled", time: "1m ago", color: "text-amber-400 bg-amber-500/10" },
+            { level: "RESOLVED", msg: "IAM policy over-permissive fixed", time: "5m ago", color: "text-emerald-400 bg-emerald-500/10" },
+            { level: "INFO", msg: "Drift: prod-vpc route table changed", time: "8m ago", color: "text-blue-400 bg-blue-500/10" },
+            { level: "WARNING", msg: "EKS node group missing PodSecurity", time: "12m ago", color: "text-amber-400 bg-amber-500/10" },
+          ].map((e, i) => (
             <motion.div
               key={i}
-              className={cn(
-                "absolute w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500",
-                i === activeThought 
-                  ? "bg-blue-600 shadow-lg shadow-blue-500/30 scale-110" 
-                  : "bg-slate-800 opacity-60"
-              )}
-              style={{
-                left: `calc(50% + ${Math.cos((angle * Math.PI) / 180) * radius}px - 24px)`,
-                top: `calc(50% + ${Math.sin((angle * Math.PI) / 180) * radius}px - 24px)`,
-              }}
+              initial={{ opacity: 0, x: -12 }}
+              animate={inView ? { opacity: 1, x: 0 } : {}}
+              transition={{ delay: 0.4 + i * 0.08, duration: 0.35, ease: "easeOut" }}
+              className="flex items-start gap-3 py-2 border-b border-slate-800/60 last:border-0"
             >
-              <thought.icon className="w-5 h-5 text-white" />
+              <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold flex-shrink-0", e.color)}>
+                {e.level}
+              </span>
+              <span className="text-slate-300 flex-1 leading-relaxed">{e.msg}</span>
+              <span className="text-slate-600 flex-shrink-0">{e.time}</span>
             </motion.div>
-          );
-        })}
-        
-        {/* Central brain */}
-        <div className="absolute inset-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-2xl shadow-blue-500/20">
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Bot className="w-16 h-16 text-white" />
-          </motion.div>
-                              </div>
-          
-        {/* Pulse effect */}
-        <motion.div
-          className="absolute inset-16 rounded-full bg-blue-500"
-          animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
-                            </div>
-              
-      {/* Current thought display */}
-      <motion.div
-        key={activeThought}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mt-8 text-center"
-      >
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 text-sm text-slate-300 mb-3">
-          <Loader2 className="w-3 h-3 animate-spin" />
-          {thoughts[activeThought].text}
-                          </div>
-        <p className={cn("text-lg font-semibold", thoughts[activeThought].color)}>
-          {thoughts[activeThought].result}
-        </p>
-      </motion.div>
-                    </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="px-5 pb-4 flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-2 bg-blue-500/5 border border-blue-500/20 rounded-lg px-3 py-2">
+          <Zap className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+          <span className="text-[11px] text-blue-300">Auto-remediation available for 2 issues</span>
+        </div>
+        <button className="text-[11px] font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-lg transition-colors whitespace-nowrap">
+          Fix now
+        </button>
+      </div>
+    </div>
   );
 }
 
-// Live Insights Feed
-function LiveInsightsFeed() {
-  const insights = [
-    { time: "2s ago", text: "Detected idle load balancer in us-east-1", type: "warning" },
-    { time: "15s ago", text: "Security group sg-0x4f opened to 0.0.0.0/0", type: "critical" },
-    { time: "1m ago", text: "Auto-scaled down dev cluster (saved $12/hr)", type: "success" },
-    { time: "3m ago", text: "Backup completed for prod-db-primary", type: "info" },
-    { time: "5m ago", text: "Reserved instance recommendation: m5.xlarge", type: "savings" },
-  ];
-
-  return (
-    <div className="space-y-3">
-      {insights.map((insight, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, x: -20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: i * 0.1 }}
-          className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/50"
-        >
-          <div className={cn(
-            "w-2 h-2 rounded-full mt-2 flex-shrink-0",
-            insight.type === "critical" && "bg-red-500",
-            insight.type === "warning" && "bg-amber-500",
-            insight.type === "success" && "bg-emerald-500",
-            insight.type === "info" && "bg-blue-500",
-            insight.type === "savings" && "bg-purple-500",
-          )} />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-slate-200 truncate">{insight.text}</p>
-            <p className="text-xs text-slate-500">{insight.time}</p>
-                            </div>
-        </motion.div>
-                          ))}
-                        </div>
-  );
-}
-
-// Animated Task List
-function AnimatedTaskList() {
-  const tasks = [
-    "Detected 3 idle EC2 instances",
-    "Found unused EBS volumes",
-    "Identified over-provisioned RDS",
-    "Flagged public S3 bucket",
-    "Analyzed cost anomaly spike",
-    "Generated savings report",
-    "Scheduled resource cleanup",
-    "Sent Slack notification",
-  ];
-
-  return (
-    <div className="space-y-3">
-      {tasks.map((task, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, x: 20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: i * 0.15 }}
-          className="flex items-center gap-3"
-        >
-          <CheckCircle2 className="w-5 h-5 text-white" />
-          <span className={cn(
-            "text-white/90",
-            i > 4 && "text-white/60"
-          )}>
-            {task}
-          </span>
-        </motion.div>
-      ))}
-              </div>
-  );
-}
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const { user } = useAuth();
-  const [prompt, setPrompt] = useState("");
   const [, setLocation] = useLocation();
-  
+  const metricsRef = useRef(null);
+  const metricsInView = useInView(metricsRef, { once: true, margin: "-60px" });
+
   useEffect(() => {
-    if (user) {
-      setLocation("/dashboard");
-    }
+    if (user) setLocation("/dashboard");
   }, [user, setLocation]);
-  
+
+  // Headline words split for stagger animation
+  const line1 = ["Cut", "your", "cloud", "bill"];
+  const line2 = ["by", "35%."];
+  const line3 = ["Without", "the", "guesswork."];
+
   return (
-    <div className="flex flex-col min-h-screen bg-white dark:bg-slate-950">
-      
-      {/* Hero Section - Headroom Style */}
-      <section className="relative pt-24 pb-32 px-6 overflow-hidden bg-[#faf9f7] dark:bg-slate-950">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            {/* Large Typography with Typing Effect */}
-            <div className="relative mb-8">
-              <h1 className="text-5xl md:text-7xl lg:text-[8rem] font-black tracking-tight leading-[0.95]">
-                <span className="text-gray-300 dark:text-gray-700">CLOUD ON</span>
-                <br />
-                <span className="text-black-400 dark:text-black-100">
-                  <TypeWriter 
-                    texts={[
-                      "AUTOPILOT",
-                      "OBSERVABILITY", 
-                      "AUTOMATION",
-                      "FINOPS",
-                      "INTELLIGENCE",
-                      "RELIABILITY"
-                    ]} 
-                  />
-                </span>
-              </h1>
-            </div>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-lg md:text-xl font-medium text-gray-700 dark:text-gray-300 mb-8 max-w-xl mx-auto"
-            >
-                          Cut costs. Reduce risk. Sleep better.
+    <div className="flex flex-col min-h-screen bg-white" style={{ fontFamily: BODY }}>
 
-            </motion.p>
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <section className="relative bg-[#050810] overflow-hidden -mt-14 pt-28 pb-0">
+        <div
+          className="absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage: `linear-gradient(#3b82f6 1px, transparent 1px), linear-gradient(to right, #3b82f6 1px, transparent 1px)`,
+            backgroundSize: "64px 64px",
+          }}
+        />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[420px] bg-blue-600/6 rounded-full blur-3xl pointer-events-none" />
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-3 justify-center mb-12"
-            >
-              <Button asChild size="lg" className="h-11 px-6 bg-blue-600 hover:bg-blue-700 rounded-full text-white">
-                  <Link href="/auth">
-                  Get started
-                  </Link>
-                </Button>
-            </motion.div>
-
-            {/* AI Prompt Input */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="max-w-2xl mx-auto"
-            >
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 flex items-center justify-center gap-2">
-                Connect your cloud, get instant insights
-                <span className="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center text-[10px] text-gray-400">?</span>
-              </p>
-              <div className="relative">
-                <Textarea
-                  placeholder="I need to optimize my AWS costs and find security vulnerabilities..."
-                  className="min-h-[80px] pr-24 rounded-xl border-gray-300 dark:border-gray-700 resize-none"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                />
-                <Button 
-                  className="absolute bottom-3 right-3 rounded-lg"
-                  onClick={() => setLocation("/auth")}
-                >
-                  Analyze
-                </Button>
-              </div>
-            </motion.div>
-            </div>
-                    </div>
-      </section>
-
-      {/* Dashboard Preview Section */}
-      <section className="py-20 px-6 bg-gray-50 dark:bg-slate-900/50">
-        <div className="max-w-7xl mx-auto">
-          <DashboardPreview />
-          
-          {/* Marquee */}
-          <div className="mt-16 text-center">
-            <p className="text-sm text-gray-400 mb-4">Trusted by DevOps teams worldwide</p>
-            <Marquee className="py-4">
-              {["AWS", "Azure", "GCP", "Kubernetes", "Terraform", "Docker", "Jenkins", "GitHub"].map((item) => (
-                <span key={item} className="text-gray-300 dark:text-gray-600 text-lg font-medium px-4">
-                  {item}
-                </span>
-              ))}
-            </Marquee>
-          </div>
-        </div>
-      </section>
-      
-      {/* Meet InfrAudit Section - Clean Modern Design */}
-      <section className="py-28 px-6 bg-slate-900 relative overflow-hidden">
-        {/* Simple gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-600/10 to-transparent" />
-        
-        <div className="max-w-6xl mx-auto relative z-10">
-          {/* Header */}
+        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+          {/* Eyebrow badge */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium px-3.5 py-1.5 rounded-full mb-10"
           >
-            <span className="inline-block px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-400 text-sm font-medium border border-blue-500/20 mb-6">
-              Meet InfrAudit
-            </span>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-              Your AI-powered
-              <br />
-              <span className="text-blue-400">cloud assistant</span>
-            </h2>
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-              Monitors your infrastructure 24/7 so you can focus on building
-            </p>
+            <Zap className="w-3.5 h-3.5" />
+            Now with AI cost forecasting — predict spend 90 days out
           </motion.div>
-          
-          {/* Feature Cards Grid */}
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Eye,
-                title: "Always Watching",
-                description: "Continuous monitoring across AWS, Azure, and GCP",
-                stat: "24/7",
-                statLabel: "Monitoring",
-                color: "from-blue-500 to-cyan-500"
-              },
-              {
-                icon: Zap,
-                title: "Instant Alerts",
-                description: "Get notified immediately when issues are detected",
-                stat: "<1s",
-                statLabel: "Response",
-                color: "from-violet-500 to-purple-500"
-              },
-              {
-                icon: DollarSign,
-                title: "Cost Savings",
-                description: "AI identifies waste and optimization opportunities",
-                stat: "35%",
-                statLabel: "Avg. Savings",
-                color: "from-emerald-500 to-teal-500"
-              }
-            ].map((feature, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="group bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6 hover:bg-slate-800 hover:border-slate-600 transition-all duration-300"
-              >
-                <div className={cn("w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center mb-4", feature.color)}>
-                  <feature.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-slate-400 mb-4">{feature.description}</p>
-                <div className="pt-4 border-t border-slate-700/50">
-                  <span className={cn("text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent", feature.color)}>{feature.stat}</span>
-                  <span className="text-slate-500 text-sm ml-2">{feature.statLabel}</span>
-                </div>
-              </motion.div>
-            ))}
-              </div>
-              
-          {/* Live Activity Preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-16 bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-2xl p-6 max-w-3xl mx-auto"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-sm font-medium text-slate-300">Live Activity</span>
-                </div>
-            <div className="space-y-3">
-              {[
-                { text: "Detected 3 idle EC2 instances in us-east-1", time: "2s ago", type: "warning" },
-                { text: "Security scan completed - All clear", time: "1m ago", type: "success" },
-                { text: "Cost anomaly detected: 40% spike in compute", time: "5m ago", type: "alert" },
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
-                  className="flex items-center justify-between py-3 px-4 bg-slate-900/50 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-2 h-2 rounded-full",
-                      item.type === "warning" && "bg-amber-500",
-                      item.type === "success" && "bg-emerald-500",
-                      item.type === "alert" && "bg-red-500"
-                    )} />
-                    <span className="text-slate-300 text-sm">{item.text}</span>
-                </div>
-                  <span className="text-slate-500 text-xs">{item.time}</span>
-                </motion.div>
-              ))}
-              </div>
-          </motion.div>
-                </div>
-      </section>
-      
-      {/* All your cloud handled section */}
-      <section className="py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-                <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                All your cloud complexity,
-                <br />
-                handled by InfrAudit
-            </h2>
-              
-              <div className="grid grid-cols-3 gap-6 mt-12">
-                {[
-                  { icon: Zap, text: "InfrAudit quickly takes action for you, because manual monitoring is slow" },
-                  { icon: Eye, text: "InfrAudit tracks, follows up, and alerts you while you build features" },
-                  { icon: Shield, text: "Rest easy knowing your infrastructure is secure without constant checking" },
-                ].map((item, i) => (
-                  <div key={i} className="text-center">
-                    <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                      <item.icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.text}</p>
-                      </div>
+
+          {/* Animated headline */}
+          <div className="mb-6 overflow-hidden">
+            <motion.h1
+              variants={wordContainer}
+              initial="hidden"
+              animate="visible"
+              className="text-5xl md:text-6xl lg:text-[5.5rem] font-black text-white leading-[1.08] tracking-tight"
+              style={{ fontFamily: DISPLAY }}
+            >
+              {/* Line 1 */}
+              <span className="block">
+                {line1.map((word) => (
+                  <motion.span key={word} variants={wordItem} className="inline-block mr-[0.22em]">
+                    {word}
+                  </motion.span>
                 ))}
-              </div>
-            </div>
-            
-            <DashboardPreview />
-                </div>
-                </div>
-      </section>
-      
-      {/* Always thinking for you - Reimagined */}
-      <section className="py-24 px-6 bg-slate-950 text-white overflow-hidden relative">
-        {/* Background grid */}
-        <div className="absolute inset-0 opacity-[0.02]" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }} />
-        
-        <div className="max-w-7xl mx-auto relative z-10">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
+              </span>
+              {/* Line 2 */}
+              <span className="block">
+                {line2.map((word, i) => (
+                  <motion.span
+                    key={word}
+                    variants={wordItem}
+                    className={cn("inline-block mr-[0.22em]", i === 1 ? "text-blue-400" : "text-blue-400")}
+                  >
+                    {word}
+                  </motion.span>
+                ))}
+              </span>
+              {/* Line 3 */}
+              <span className="block text-slate-500">
+                {line3.map((word) => (
+                  <motion.span key={word} variants={wordItem} className="inline-block mr-[0.22em]">
+                    {word}
+                  </motion.span>
+                ))}
+              </span>
+            </motion.h1>
+          </div>
+
+          {/* Subheadline */}
+          <motion.p
+            initial="hidden"
+            animate="visible"
+            custom={0.5}
+            variants={fadeUp}
+            className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed mb-10"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm mb-6">
-              <Activity className="w-4 h-4" />
-              Always On. Always Learning.
-                </div>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4">
-              Your AI That Never Sleeps
-            </h2>
-            <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-              While you're away, InfrAudit continuously analyzes your infrastructure, 
-              finds optimization opportunities, and keeps everything secure.
-            </p>
+            InfraAudit gives DevOps and FinOps teams a single platform to monitor costs,
+            detect security drift, and act on AI-powered recommendations — across AWS, Azure, GCP, and Kubernetes.
+          </motion.p>
+
+          {/* CTAs */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            custom={0.65}
+            variants={fadeUp}
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-5"
+          >
+            <Button
+              asChild
+              size="lg"
+              className="h-12 px-7 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-full shadow-lg shadow-blue-900/40 transition-all"
+            >
+              <Link href="/auth">
+                Start free trial <ArrowRight className="ml-2 w-4 h-4" />
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="h-12 px-7 border-slate-700 bg-transparent text-white hover:bg-slate-800 hover:border-slate-600 rounded-full font-semibold transition-all"
+            >
+              <Link href="/contact">Get a demo</Link>
+            </Button>
           </motion.div>
-          
-          {/* Main Content */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* AI Brain Visualization */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-            >
-              <AIBrainVisualization />
-            </motion.div>
-            
-            {/* Live Insights Feed */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-sm text-slate-400 font-medium">Live Insights Feed</span>
-                </div>
-              <LiveInsightsFeed />
-              
-              {/* Stats row */}
-              <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-slate-800">
-                <div>
-                  <div className="text-2xl font-bold text-emerald-400">$47K</div>
-                  <div className="text-xs text-slate-500">Saved this month</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-blue-400">248</div>
-                  <div className="text-xs text-slate-500">Resources monitored</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-purple-400">99.9%</div>
-                  <div className="text-xs text-slate-500">Uptime maintained</div>
+
+          <motion.p
+            initial="hidden"
+            animate="visible"
+            custom={0.75}
+            variants={fadeUp}
+            className="text-slate-600 text-sm"
+          >
+            14-day free trial · No credit card required · Cancel anytime
+          </motion.p>
+        </div>
+
+        <div className="relative z-10 max-w-5xl mx-auto px-6">
+          <DashboardMockup />
+        </div>
+      </section>
+
+      {/* ── METRICS STRIP ────────────────────────────────────────────────── */}
+      <section ref={metricsRef} className="bg-white border-b border-slate-100 py-14">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 md:divide-x divide-slate-100">
+            <MetricItem prefix="$" value={2} suffix="M+" label="Savings identified for customers" inView={metricsInView} />
+            <MetricItem value={50} suffix="K+" label="Cloud resources monitored daily" inView={metricsInView} />
+            <MetricItem value={35} suffix="%" label="Average cost reduction" inView={metricsInView} />
+            <MetricItem value={99} suffix=".9%" label="Platform uptime SLA" inView={metricsInView} />
+          </div>
+        </div>
+      </section>
+
+      {/* ── FINOPS SECTION ───────────────────────────────────────────────── */}
+      <section className="py-28 px-6 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={fadeUp}>
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+                <DollarSign className="w-3.5 h-3.5" />
+                For FinOps Teams
               </div>
-            </div>
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-5" style={{ fontFamily: DISPLAY }}>
+                Know exactly where
+                <br />every dollar goes
+              </h2>
+              <p className="text-slate-500 text-lg leading-relaxed mb-8">
+                InfraAudit ingests billing data across all your cloud providers and surfaces
+                waste, anomalies, and forecasts — before your next invoice surprises you.
+              </p>
+              <ul className="space-y-3.5 mb-10">
+                {[
+                  "AI-detected cost anomalies with root-cause analysis",
+                  "30, 60, and 90-day spend forecasting",
+                  "Per-team and per-project cost allocation",
+                  "Reserved instance and spot pricing recommendations",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-slate-600">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/auth" className="inline-flex items-center gap-2 text-blue-600 font-semibold text-sm hover:gap-3 transition-all">
+                See cost optimization in action <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 32 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <CostVisualization />
             </motion.div>
           </div>
         </div>
       </section>
-      
-      {/* How It Works Section - Modern Cards */}
-      <section className="py-24 px-6 bg-gray-50 dark:bg-slate-900/30">
+
+      {/* ── DEVOPS SECTION ───────────────────────────────────────────────── */}
+      <section className="py-28 px-6 bg-slate-50 border-y border-slate-100">
         <div className="max-w-6xl mx-auto">
-          {/* Section Header */}
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -32 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="order-2 lg:order-1"
+            >
+              <SecurityDriftFeed />
+            </motion.div>
+
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+              variants={fadeUp}
+              className="order-1 lg:order-2"
+            >
+              <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+                <Shield className="w-3.5 h-3.5" />
+                For DevOps & Platform Teams
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-5" style={{ fontFamily: DISPLAY }}>
+                Catch drift before
+                <br />it becomes an incident
+              </h2>
+              <p className="text-slate-500 text-lg leading-relaxed mb-8">
+                InfraAudit continuously scans your infrastructure for misconfigurations,
+                security gaps, and drift from your IaC baselines — across AWS, Azure, GCP, and Kubernetes.
+              </p>
+              <ul className="space-y-3.5 mb-10">
+                {[
+                  "Real-time drift detection against Terraform and CloudFormation baselines",
+                  "CIS Benchmarks, SOC 2, and NIST 800-53 compliance scanning",
+                  "Slack and webhook alerts with one-click remediation",
+                  "Vulnerability scanning powered by Trivy and NVD",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-slate-600">{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/auth" className="inline-flex items-center gap-2 text-blue-600 font-semibold text-sm hover:gap-3 transition-all">
+                See security monitoring <ArrowRight className="w-4 h-4" />
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
+      <section className="py-28 px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
+            variants={fadeUp}
             className="text-center mb-16"
           >
-            <span className="inline-block px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-medium mb-4">
-              How it works
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Three steps to cloud clarity
+            <div className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-4">How it works</div>
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900" style={{ fontFamily: DISPLAY }}>
+              Up and running in minutes
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Get started in minutes. No complex setup required.
-            </p>
           </motion.div>
-          
-          {/* Steps */}
+
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 step: "01",
                 title: "Connect your cloud",
-                description: "Link your AWS, Azure, or GCP accounts with read-only access. Your data never leaves your infrastructure.",
-                color: "from-blue-500 to-cyan-500",
-                features: ["One-click OAuth", "Read-only access", "SOC2 compliant"]
+                desc: "Link AWS, Azure, GCP, or Kubernetes with read-only OAuth. No agents to install. SOC 2 compliant.",
+                tags: ["One-click OAuth", "Read-only access", "SOC 2 compliant"],
               },
               {
-                step: "02", 
+                step: "02",
                 title: "AI analyzes everything",
-                description: "Our AI scans your resources, identifies waste, security gaps, and optimization opportunities in real-time.",
-                color: "from-violet-500 to-purple-500",
-                features: ["Cost anomalies", "Security risks", "Performance issues"]
+                desc: "Gemini-powered AI scans costs, security, drift, and compliance 24/7. Results in under 60 seconds.",
+                tags: ["Cost anomalies", "Security drift", "Compliance gaps"],
               },
               {
                 step: "03",
                 title: "Act on insights",
-                description: "Get actionable recommendations with one-click fixes. Automate remediation or review manually.",
-                color: "from-emerald-500 to-teal-500",
-                features: ["Auto-remediation", "Slack alerts", "Weekly reports"]
-              }
+                desc: "Get actionable recommendations with one-click fixes, Slack alerts, and weekly digests for your team.",
+                tags: ["Auto-remediation", "Slack alerts", "Weekly reports"],
+              },
             ].map((item, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial="hidden"
+                whileInView="visible"
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.15 }}
-                className="relative group"
+                custom={i * 0.12}
+                variants={fadeUp}
+                className="bg-white border border-slate-200 rounded-2xl p-7 hover:border-blue-200 hover:shadow-md hover:shadow-blue-50 transition-all"
               >
-                <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-gray-200 dark:border-gray-800 h-full hover:shadow-xl hover:shadow-gray-200/50 dark:hover:shadow-slate-900/50 transition-all duration-300 hover:-translate-y-1">
-                  {/* Step number with gradient */}
-                  <div className={cn(
-                    "inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br text-white font-bold text-lg mb-6",
-                    item.color
-                  )}>
-                    {item.step}
-                      </div>
-                  
-                  <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-                    {item.description}
-                  </p>
-                  
-                  {/* Feature pills */}
-                  <div className="flex flex-wrap gap-2">
-                    {item.features.map((feature, j) => (
-                      <span 
-                        key={j}
-                        className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400"
-                      >
-                        {feature}
-                      </span>
-                    ))}
-                      </div>
-                    </div>
-                    
-                {/* Connector line (except last) */}
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-1/2 -right-4 w-8 border-t-2 border-dashed border-gray-300 dark:border-gray-700" />
+                <div
+                  className="w-12 h-12 rounded-xl bg-slate-950 flex items-center justify-center mb-5 text-white font-black text-sm"
+                  style={{ fontFamily: DISPLAY }}
+                >
+                  {item.step}
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-5">{item.desc}</p>
+                <div className="flex flex-wrap gap-2">
+                  {item.tags.map((tag) => (
+                    <span key={tag} className="text-[11px] font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURE GRID ─────────────────────────────────────────────────── */}
+      <section className="py-28 px-6 bg-slate-50 border-y border-slate-100">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            className="text-center mb-14"
+          >
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4" style={{ fontFamily: DISPLAY }}>
+              Everything your cloud team needs
+            </h2>
+            <p className="text-slate-500 text-lg max-w-xl mx-auto">
+              One platform. All your clouds. No context switching.
+            </p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { icon: Globe, title: "Multi-Cloud Dashboard", desc: "Unified view across AWS, Azure, GCP, and Kubernetes. One login to see everything." },
+              { icon: BarChart3, title: "AI Cost Recommendations", desc: "Gemini-powered insights with quantified ROI estimates for every suggestion." },
+              { icon: Lock, title: "Compliance Automation", desc: "CIS Benchmarks, SOC 2, and NIST 800-53 scanning out of the box — with PDF export." },
+              { icon: TrendingDown, title: "Cost Forecasting", desc: "30, 60, and 90-day AI spend predictions with anomaly detection and alerts." },
+              { icon: Activity, title: "Drift Detection", desc: "IaC baseline comparison with auto-remediation and full audit trail." },
+              { icon: Bell, title: "Slack & Webhooks", desc: "Alerts delivered where your team already works. Customizable severity thresholds." },
+            ].map(({ icon: Icon, title, desc }, i) => (
+              <motion.div
+                key={title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                custom={i * 0.07}
+                variants={fadeUp}
+                className="bg-white border border-slate-200 rounded-2xl p-6 hover:border-blue-200 hover:shadow-md hover:shadow-blue-50 transition-all group"
+              >
+                <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:border-blue-500 transition-colors">
+                  <Icon className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">{title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING TEASER ───────────────────────────────────────────────── */}
+      <section className="py-28 px-6 bg-[#050810]">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            className="text-center mb-14"
+          >
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-4" style={{ fontFamily: DISPLAY }}>
+              Simple, transparent pricing
+            </h2>
+            <p className="text-slate-400 text-lg">Start free. Scale as you grow. No hidden fees.</p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              {
+                tier: "Community",
+                price: "Free",
+                sub: "Self-hosted · MIT License",
+                cta: "Deploy on GitHub",
+                ctaHref: "https://github.com/pratik-mahalle/InfraAudit",
+                external: true,
+                highlight: false,
+                features: ["Core monitoring features", "AWS, Azure, GCP support", "Community support", "MIT License"],
+              },
+              {
+                tier: "Professional",
+                price: "$89",
+                sub: "per month · billed annually",
+                cta: "Start free trial",
+                ctaHref: "/auth",
+                external: false,
+                highlight: true,
+                badge: "Most popular",
+                features: ["Up to 200 resources", "Cost forecasting (30/60/90-day)", "Slack integration", "30-day data retention", "Priority support"],
+              },
+              {
+                tier: "Enterprise",
+                price: "Custom",
+                sub: "Unlimited resources · Annual contract",
+                cta: "Talk to sales",
+                ctaHref: "/contact",
+                external: false,
+                highlight: false,
+                features: ["Unlimited resources", "Custom compliance policies", "SSO / SAML", "Multi-account support", "Dedicated success manager"],
+              },
+            ].map(({ tier, price, sub, cta, ctaHref, external, highlight, badge, features }, i) => (
+              <motion.div
+                key={tier}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                custom={i * 0.1}
+                variants={fadeUp}
+                className={cn(
+                  "rounded-2xl p-7 border flex flex-col",
+                  highlight ? "bg-blue-600 border-blue-500 shadow-xl shadow-blue-900/40" : "bg-slate-900/60 border-slate-700/60"
+                )}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className={cn("text-sm font-semibold", highlight ? "text-blue-100" : "text-slate-300")}>{tier}</span>
+                  {badge && (
+                    <span className="text-[10px] font-bold bg-white/20 text-white px-2 py-0.5 rounded-full">{badge}</span>
+                  )}
+                </div>
+                <div className="text-4xl font-black mt-3 mb-1 text-white" style={{ fontFamily: DISPLAY }}>
+                  {price}
+                  {price !== "Free" && price !== "Custom" && (
+                    <span className="text-base font-normal ml-1 opacity-60">/mo</span>
+                  )}
+                </div>
+                <div className={cn("text-xs mb-6", highlight ? "text-blue-200" : "text-slate-500")}>{sub}</div>
+                <ul className="space-y-3 flex-1 mb-7">
+                  {features.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5">
+                      <Check className={cn("w-4 h-4 flex-shrink-0 mt-0.5", highlight ? "text-blue-100" : "text-slate-400")} />
+                      <span className={cn("text-sm", highlight ? "text-blue-50" : "text-slate-300")}>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                {external ? (
+                  <a
+                    href={ctaHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "block text-center py-2.5 rounded-xl text-sm font-semibold transition-colors",
+                      highlight ? "bg-white text-blue-700 hover:bg-blue-50" : "bg-slate-800 text-white hover:bg-slate-700 border border-slate-700"
+                    )}
+                  >
+                    {cta}
+                  </a>
+                ) : (
+                  <Link href={ctaHref}>
+                    <span className={cn(
+                      "block text-center py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors",
+                      highlight ? "bg-white text-blue-700 hover:bg-blue-50" : "bg-slate-800 text-white hover:bg-slate-700 border border-slate-700"
+                    )}>
+                      {cta}
+                    </span>
+                  </Link>
                 )}
               </motion.div>
             ))}
-                      </div>
-          
-          {/* Testimonial Card */}
-                      </div>
-      </section>
-
-      {/* Feature Showcase - Floating Cards */}
-      <section className="py-32 px-6 relative overflow-hidden bg-gradient-to-b from-white via-blue-50/30 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-        <div className="max-w-7xl mx-auto relative min-h-[700px] flex items-center justify-center">
-          
-          {/* Central Content */}
-          <div className="text-center relative z-10 max-w-2xl">
-            {/* Logo/Icon */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="w-16 h-16 mx-auto mb-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20"
-            >
-              <Cloud className="w-8 h-8 text-white" />
-            </motion.div>
-            
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-4"
-            >
-              Monitor, optimize, and secure
-              <br />
-              <span className="text-gray-400 dark:text-slate-500">all in one place</span>
-            </motion.h2>
-            
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-gray-600 dark:text-gray-400 text-lg mb-8"
-            >
-              Unified cloud management that saves you time and money.
-            </motion.p>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-            >
-              <Button asChild size="lg" className="h-12 px-8 bg-blue-600 hover:bg-blue-700 rounded-full">
-                <Link href="/auth">
-                  Start for free
-                </Link>
-              </Button>
-            </motion.div>
-                    </div>
-                    
-          {/* Floating Card 1 - Cost Alert (Top Left) */}
-          <motion.div
-            initial={{ opacity: 0, x: -50, y: -30 }}
-            whileInView={{ opacity: 1, x: 0, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            className="absolute left-4 lg:left-16 top-8 lg:top-20"
-          >
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-slate-900/50 border border-gray-100 dark:border-slate-700 w-56"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-amber-600" />
-                      </div>
-                      <div>
-                  <p className="font-semibold text-sm">Cost Alert</p>
-                  <p className="text-xs text-gray-500">2 minutes ago</p>
-                      </div>
-                    </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Unusual spending detected in <span className="font-medium text-amber-600">us-east-1</span>
-              </p>
-              <div className="mt-3 flex gap-2">
-                <Button size="sm" variant="outline" className="h-7 text-xs">Dismiss</Button>
-                <Button size="sm" className="h-7 text-xs bg-amber-500 hover:bg-amber-600">View</Button>
-                  </div>
-            </motion.div>
-          </motion.div>
-          
-          {/* Floating Card 2 - Savings (Top Right) */}
-          <motion.div
-            initial={{ opacity: 0, x: 50, y: -30 }}
-            whileInView={{ opacity: 1, x: 0, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4 }}
-            className="absolute right-4 lg:right-16 top-16 lg:top-8"
-          >
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-slate-900/50 border border-gray-100 dark:border-slate-700 w-52"
-            >
-              <p className="text-xs text-gray-500 mb-1">Monthly Savings</p>
-              <p className="text-3xl font-bold text-emerald-600">$4,280</p>
-              <div className="flex items-center gap-1 mt-1">
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
-                <span className="text-xs text-emerald-600 font-medium">+23% from last month</span>
-                </div>
-              <div className="mt-3 h-12 flex items-end gap-1">
-                {[40, 55, 45, 70, 65, 80, 95].map((h, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-emerald-500/20 rounded-t"
-                    style={{ height: `${h}%` }}
-                  >
-                    <div 
-                      className="w-full bg-emerald-500 rounded-t" 
-                      style={{ height: `${h * 0.7}%` }}
-                    />
-              </div>
-                ))}
-            </div>
-            </motion.div>
-          </motion.div>
-          
-          {/* Floating Card 3 - Sticky Note (Left Middle) */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.5 }}
-            className="absolute left-8 lg:left-32 bottom-32 lg:bottom-40 hidden md:block"
-          >
-            <motion.div
-              animate={{ rotate: [-2, 2, -2], y: [0, -5, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="bg-yellow-100 dark:bg-yellow-200 rounded-lg p-4 shadow-lg w-44 transform -rotate-3"
-            >
-              <div className="w-2 h-2 rounded-full bg-red-400 absolute -top-1 left-1/2 -translate-x-1/2" />
-              <p className="text-sm text-yellow-900 font-handwriting leading-relaxed">
-                Check idle resources in staging environment before EOD
-              </p>
-              <div className="mt-2 flex items-center gap-2">
-                <div className="w-5 h-5 rounded bg-blue-500 flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" />
-                </div>
-                <span className="text-xs text-yellow-700">Priority: High</span>
-              </div>
-            </motion.div>
-          </motion.div>
-          
-          {/* Floating Card 4 - Security Scan (Right Middle) */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.6 }}
-            className="absolute right-4 lg:right-24 bottom-48 lg:bottom-52 hidden md:block"
-          >
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-slate-900/50 border border-gray-100 dark:border-slate-700 w-56"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-semibold text-sm">Security Scan</p>
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200 text-xs">
-                  Passed
-                </Badge>
-                </div>
-              <div className="space-y-2">
-                {[
-                  { label: "IAM Policies", status: true },
-                  { label: "Network ACLs", status: true },
-                  { label: "Encryption", status: true },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{item.label}</span>
-                </div>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-          
-          {/* Floating Card 5 - Today's Tasks (Bottom Left) */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.7 }}
-            className="absolute left-8 lg:left-48 bottom-4 lg:bottom-8"
-          >
-            <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-slate-900/50 border border-gray-100 dark:border-slate-700 w-64"
-            >
-              <p className="font-semibold text-sm mb-3">Today's Tasks</p>
-              <div className="space-y-2">
-                {[
-                  { task: "Review cost recommendations", progress: 80, color: "bg-blue-500" },
-                  { task: "Update security policies", progress: 45, color: "bg-violet-500" },
-                ].map((item, i) => (
-                  <div key={i}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-gray-600 dark:text-gray-400">{item.task}</span>
-                      <span className="font-medium">{item.progress}%</span>
-                </div>
-                    <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                      <div className={cn("h-full rounded-full", item.color)} style={{ width: `${item.progress}%` }} />
-                </div>
-              </div>
-                ))}
-            </div>
-            </motion.div>
-          </motion.div>
-          
-          {/* Floating Card 6 - Integrations (Bottom Right) */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.8 }}
-            className="absolute right-8 lg:right-40 bottom-4 lg:bottom-16"
-          >
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-              className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl shadow-gray-200/50 dark:shadow-slate-900/50 border border-gray-100 dark:border-slate-700"
-            >
-              <p className="font-semibold text-sm mb-3">50+ Integrations</p>
-              <div className="flex gap-2">
-                {[
-                  { bg: "bg-[#FF9900]", label: "AWS" },
-                  { bg: "bg-[#0078D4]", label: "Azure" },
-                  { bg: "bg-[#4285F4]", label: "GCP" },
-                  { bg: "bg-[#326CE5]", label: "K8s" },
-                ].map((item, i) => (
-                  <div 
-                    key={i}
-                    className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold", item.bg)}
-                  >
-                    {item.label.charAt(0)}
           </div>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-          
-        </div>
-      </section>
-      
-      {/* Big Typography Section - Clean & Modern */}
-      <section className="py-40 px-6 relative bg-white dark:bg-slate-950">
-        <div className="max-w-5xl mx-auto text-center">
-          <motion.h2 
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[1.1]"
-          >
-            <span className="text-gray-400 dark:text-slate-600">Everything you need to</span>
-            <br />
-            <TypeWriter 
-              texts={[
-                "secure your cloud",
-                "optimize costs",
-                "scale confidently",
-                "automate everything",
-                "monitor 24/7"
-              ]}
-              className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent"
-            />
-            <br />
-            <span className="text-gray-400 dark:text-slate-600">your cloud infrastructure</span>
-          </motion.h2>
-          
+
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="mt-8 text-lg text-gray-500 dark:text-slate-400 max-w-2xl mx-auto"
+            variants={fadeUp}
+            className="text-center text-slate-500 text-sm mt-8"
           >
-            One platform. All your clouds. Complete visibility.
+            All plans include a 14-day free trial · Annual billing saves ~20%
           </motion.p>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="mt-10 flex flex-wrap justify-center gap-3"
-          >
-            {["Cost Optimization", "Security Scanning", "Compliance", "Multi-Cloud", "Real-time Alerts"].map((tag, i) => (
-              <span 
-                key={i}
-                className="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700"
-              >
-                {tag}
-              </span>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-      
-      {/* Saves hours section */}
-      <section className="py-24 px-6 bg-gray-50 dark:bg-slate-900/50">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              InfrAudit saves hours of work for you and your team
-            </h2>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Eye,
-                title: "Instant insights",
-                description: "Unlock insights and decisions from your infrastructure data instantly"
-              },
-              {
-                icon: Target,
-                title: "Smart routing",
-                description: "Route tasks to the right person, automatically based on expertise"
-              },
-              {
-                icon: Shield,
-                title: "Human in the loop",
-                description: "Critical decisions, always reviewed by a human when it matters"
-              }
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="text-center"
-              >
-                <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center">
-                  <item.icon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                    </div>
-                <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400">{item.description}</p>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* CTA Section - Clean Gradient Design */}
-      <section className="py-28 px-6 relative overflow-hidden">
-        {/* Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800" />
-        
-        {/* Decorative Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl" />
-        </div>
-        
-        {/* Content */}
-        <div className="max-w-4xl mx-auto relative z-10">
+      {/* ── FINAL CTA ────────────────────────────────────────────────────── */}
+      <section className="py-32 px-6 bg-slate-950 border-t border-slate-800">
+        <div className="max-w-3xl mx-auto text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
-            className="text-center"
+            variants={fadeUp}
           >
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-              Ready to optimize
+            <h2 className="text-5xl md:text-6xl font-black text-white leading-tight mb-5" style={{ fontFamily: DISPLAY }}>
+              Stop guessing.
               <br />
-              your cloud?
+              <span className="text-blue-400">Start knowing.</span>
             </h2>
-            <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
-              Join thousands of DevOps teams already saving time and money with InfrAudit.
+            <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto">
+              InfraAudit gives your team complete visibility and control over your cloud — from day one.
             </p>
-            
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Button asChild size="lg" className="h-14 px-10 bg-white hover:bg-gray-100 text-blue-700 rounded-full text-lg font-semibold shadow-xl shadow-blue-900/20 transition-all duration-300 hover:scale-105">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 px-8 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-full shadow-lg shadow-blue-900/40 text-base"
+              >
                 <Link href="/auth">
-                  Start free trial
+                  Start free trial — 14 days free <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="h-14 px-10  bg-white hover:bg-gray-100 text-blue-700 rounded-full text-lg font-semibold shadow-xl shadow-blue-900/20 transition-all duration-300 hover:scale-105">
-                <Link href="/contact">
-                  Talk to sales
-                </Link>
+              <Button
+                asChild
+                variant="ghost"
+                size="lg"
+                className="h-12 px-8 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full text-base"
+              >
+                <Link href="/contact">Get a demo</Link>
               </Button>
             </div>
-            
-            {/* Trust indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-6 text-blue-100 text-sm">
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5" />
-                14-day free trial
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5" />
-                No credit card required
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="w-5 h-5" />
-                Cancel anytime
-              </div>
-            </div>
-          </motion.div>
-          
-          {/* Stats Row */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto"
-          >
-            {[
-              { value: "50K+", label: "Resources Monitored" },
-              { value: "$2M+", label: "Savings Identified" },
-              { value: "99.9%", label: "Uptime SLA" },
-            ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">{stat.value}</div>
-                <div className="text-blue-200 text-sm">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-      
-      {/* Testimonial Footer */}
-      <section className="py-16 px-6 border-t border-gray-200 dark:border-gray-800">
-        <div className="max-w-4xl mx-auto">
-          <blockquote className="text-center">
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 italic mb-6">
-              "I never imagined having a tool that's fully customized to how we manage our cloud. InfrAudit is a game changer for our DevOps team."
+            <p className="text-slate-600 text-sm mt-6">
+              No credit card required · Setup in 5 minutes · Cancel anytime
             </p>
-            <footer>
-              <div className="font-semibold">Aarav Shah, DevOps Lead</div>
-              <div className="text-sm text-gray-500">Using InfrAudit for 5 months</div>
-            </footer>
-          </blockquote>
+          </motion.div>
         </div>
       </section>
+
     </div>
   );
 }
