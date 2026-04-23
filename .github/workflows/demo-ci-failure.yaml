@@ -13,6 +13,8 @@ on:
           - flaky_test
           - dependency_failure
           - deploy_failure
+          - oom_runner
+          - timeout
 
 jobs:
   lint:
@@ -62,27 +64,35 @@ jobs:
         if: env.SCENARIO == 'test_failure'
         run: |
           # Simulates a regression introduced by commit 3f8a2c1
-          # stripTrailingSlash() applied too eagerly in OAuth redirect builder
+          # A refactor normalised all URLs by stripping trailing slashes AND
+          # prepending base to path directly — but forgot paths already have a leading /,
+          # producing double-slash URLs that break OAuth provider callbacks.
           node -e "
           const VITE_API_BASE_URL = 'https://api.infraudit.com';
 
+          // BROKEN version introduced in commit 3f8a2c1 (forgot to strip leading slash from path)
           function buildOAuthRedirect(base, path) {
-            return base.replace(/\/+$/, '') + '/' + path.replace(/^\//, '');
+            return base.replace(/\/+$/, '') + path;  // bug: path still has leading //, making //auth/callback
           }
 
-          const result = buildOAuthRedirect(VITE_API_BASE_URL, '/auth/callback');
+          const result = buildOAuthRedirect(VITE_API_BASE_URL, '//auth/callback');
           const expected = VITE_API_BASE_URL + '/auth/callback';
 
+          console.log('Testing OAuth redirect URL construction...');
+          console.log('  Input base: ' + VITE_API_BASE_URL);
+          console.log('  Input path: //auth/callback  (double-slash from middleware chain)');
+          console.log('  Got:        ' + result);
+          console.log('  Expected:   ' + expected);
+
           if (result !== expected) {
-            console.error('FAIL: buildOAuthRedirect');
-            console.error('  expected: ' + expected);
-            console.error('  got:      ' + result);
             console.error('');
-            console.error('Regression in commit 3f8a2c1 — stripTrailingSlash() broke');
-            console.error('OAuth callback URL construction. Auth redirects now 404.');
+            console.error('FAIL: buildOAuthRedirect produced malformed URL');
+            console.error('Root cause: commit 3f8a2c1 removed path.replace(/^\\/+/, \"/\")');
+            console.error('Impact: OAuth provider rejects callback — users cannot log in');
+            console.error('Fix: restore leading-slash normalisation before concatenation');
             process.exit(1);
           }
-          console.log('PASS: buildOAuthRedirect');
+          console.log('PASS');
           "
 
   integration-tests:
@@ -256,3 +266,148 @@ jobs:
         run: |
           echo "Demo mode: skipping real push to avoid registry clutter."
           echo "In production this pushes and triggers ArgoCD image sync."
+
+  # ─── Use case (d): Runner / infra OOM ─────────────────────────────────────
+  runner-infra:
+    name: "Runner Health Check"
+    runs-on: ubuntu-latest
+    needs: lint
+    env:
+      SCENARIO: ${{ github.event.inputs.scenario }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Simulate OOM-killed build process
+        if: env.SCENARIO == 'oom_runner'
+        run: |
+          echo "Starting heavy compilation step..."
+          echo "Allocating memory for parallel test suite (128 workers)..."
+          # Simulate OOM: allocate memory until killed
+          node -e "
+          const arrays = [];
+          let mb = 0;
+          console.log('Allocating memory to simulate OOM condition...');
+          try {
+            while (true) {
+              arrays.push(new Array(1024 * 1024).fill('x'));
+              mb++;
+              if (mb % 100 === 0) process.stdout.write('.');
+            }
+          } catch(e) {
+            // Node throws before OS sends SIGKILL in runners — simulate the exit
+            console.error('');
+            console.error('Killed');
+            console.error('');
+            console.error('::error::Process exited with signal 9 (SIGKILL / OOM)');
+            console.error('Runner memory exhausted during parallel test execution.');
+            console.error('Runner had 7.8GB used of 8GB limit when process was killed.');
+            console.error('Syslog: kernel: Out of memory: Killed process 1234 (node) score 892');
+            console.error('Fix: reduce --max-workers, add --max-old-space-size, or upgrade runner.');
+            process.exit(137);
+          }
+          " || EXIT=$?
+          echo "::error::Process exited with code 137 (OOM kill — not a test failure)"
+          exit 137
+
+      - name: Runner health check (passing scenarios)
+        if: env.SCENARIO != 'oom_runner'
+        run: |
+          echo "Runner health:"
+          echo "  Memory: $(free -h | awk '/^Mem/{print $2}') total, $(free -h | awk '/^Mem/{print $7}') available"
+          echo "  Disk:   $(df -h / | awk 'NR==2{print $4}') free"
+          echo "  CPU:    $(nproc) cores"
+          echo "Runner is healthy."
+
+  # ─── Use case (g): Timeout / signal 15 ───────────────────────────────────
+  timeout-check:
+    name: "End-to-End Smoke Test"
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 2
+    env:
+      SCENARIO: ${{ github.event.inputs.scenario }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: E2E smoke test — simulate hung process
+        if: env.SCENARIO == 'timeout'
+        run: |
+          echo "Starting E2E smoke test against staging environment..."
+          echo "Waiting for staging deploy to be ready..."
+          echo "Polling https://staging.infraudit.com/health ..."
+          # Simulate a hung process waiting for a staging env that never comes up
+          # (e.g. the previous deploy step failed silently, staging is unreachable)
+          for i in $(seq 1 90); do
+            echo "  attempt $i/90: GET /health → connection refused (staging unreachable)"
+            sleep 2
+          done
+          echo "::error::E2E smoke test timed out after 3 minutes"
+          echo "Staging environment never became healthy — likely a silent deploy failure upstream."
+          echo "Check: infraudit-backend ArgoCD app is Degraded (ImagePullBackOff)"
+          exit 1
+
+      - name: E2E smoke test (passing scenarios)
+        if: env.SCENARIO != 'timeout'
+        run: |
+          echo "Smoke testing API endpoints..."
+          echo "  GET /health → 200 OK"
+          echo "  GET /api/v1/clusters → 200 OK"
+          echo "  GET /api/v1/alerts → 200 OK"
+          echo "All smoke tests passed."
+
+  # ─── Mode B: Notify DrDroid on failure (webhook-driven) ──────────────────
+  notify-drdroid:
+    name: "Notify DrDroid (Mode B)"
+    runs-on: ubuntu-latest
+    needs: [lint, unit-tests, integration-tests, build, docker, runner-infra, timeout-check]
+    if: failure()
+    env:
+      SCENARIO: ${{ github.event.inputs.scenario }}
+      DRDROID_WEBHOOK_URL: ${{ secrets.DRDROID_WEBHOOK_URL }}
+    steps:
+      - name: Collect failed jobs summary
+        id: summary
+        run: |
+          echo "run_url=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_OUTPUT"
+          echo "repo=${{ github.repository }}" >> "$GITHUB_OUTPUT"
+          echo "run_id=${{ github.run_id }}" >> "$GITHUB_OUTPUT"
+
+      - name: POST failure to DrDroid webhook
+        if: env.DRDROID_WEBHOOK_URL != ''
+        env:
+          RUN_URL: ${{ steps.summary.outputs.run_url }}
+          RUN_ID: ${{ steps.summary.outputs.run_id }}
+          REPO: ${{ steps.summary.outputs.repo }}
+        run: |
+          PAYLOAD=$(cat <<EOF
+          {
+            "event_type": "github_actions_failure",
+            "run_id": "$RUN_ID",
+            "run_url": "$RUN_URL",
+            "repo": "$REPO",
+            "scenario": "$SCENARIO",
+            "triggered_by": "${{ github.actor }}",
+            "branch": "${{ github.ref_name }}",
+            "message": "CI/CD pipeline failed — auto-investigation requested"
+          }
+          EOF
+          )
+          echo "Notifying DrDroid at $DRDROID_WEBHOOK_URL"
+          HTTP_STATUS=$(curl -s -o /tmp/drdroid_response.txt -w "%{http_code}" \
+            -X POST "$DRDROID_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+          echo "DrDroid response (HTTP $HTTP_STATUS):"
+          cat /tmp/drdroid_response.txt
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "DrDroid notified successfully — investigation will post to Slack."
+          else
+            echo "::warning::DrDroid webhook returned $HTTP_STATUS — check DRDROID_WEBHOOK_URL secret"
+          fi
+
+      - name: Webhook not configured
+        if: env.DRDROID_WEBHOOK_URL == ''
+        run: |
+          echo "::warning::DRDROID_WEBHOOK_URL secret not set — Mode B (auto-notify) is disabled."
+          echo "To enable: add DRDROID_WEBHOOK_URL to repo secrets."
+          echo "Get the webhook URL from DrDroid → Agent Setup → Webhooks."
