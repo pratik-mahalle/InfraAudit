@@ -6,7 +6,6 @@
     RUN npm ci
     
     COPY client ./client
-    COPY shared ./shared
     COPY tsconfig.json ./
     COPY vite.config.ts ./
     COPY tailwind.config.ts ./
