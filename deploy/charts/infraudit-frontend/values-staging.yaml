@@ -1,0 +1,17 @@
+# Staging overrides for infraudit-frontend
+
+replicaCount: 1
+
+image:
+  tag: "latest"
+
+autoscaling:
+  enabled: false
+
+resources:
+  requests:
+    cpu: "25m"
+    memory: "32Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"

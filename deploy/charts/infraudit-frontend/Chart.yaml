@@ -1,0 +1,9 @@
+apiVersion: v2
+name: infraudit-frontend
+description: InfraAudit React Frontend (Nginx SPA)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+maintainers:
+  - name: Pratik Mahalle
+    email: support@infraaudit.com

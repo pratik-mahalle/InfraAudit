@@ -1,0 +1,123 @@
+# Default values for infraudit-frontend
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/pratikmahalle/infraaudit-frontend
+  tag: "latest"
+  pullPolicy: Always
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+ingress:
+  enabled: false
+  # Handled by the unified ALB ingress in deploy/cluster/
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Nginx configuration for SPA routing (no SSL — TLS terminates at ALB)
+nginxConfig: |
+  worker_processes auto;
+  error_log /var/log/nginx/error.log warn;
+  pid /tmp/nginx.pid;
+
+  events {
+    worker_connections 1024;
+  }
+
+  http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    # Run Nginx as non-root
+    client_body_temp_path /tmp/client_temp;
+    proxy_temp_path       /tmp/proxy_temp;
+    fastcgi_temp_path     /tmp/fastcgi_temp;
+    uwsgi_temp_path       /tmp/uwsgi_temp;
+    scgi_temp_path        /tmp/scgi_temp;
+
+    sendfile        on;
+    tcp_nopush      on;
+    tcp_nodelay     on;
+    keepalive_timeout  65;
+    types_hash_max_size 2048;
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    server {
+      listen 80;
+      server_name _;
+
+      root /usr/share/nginx/html;
+      index index.html;
+
+      # Cache static assets aggressively
+      location ~* \.(?:js|css|png|jpg|jpeg|gif|svg|ico|woff2?)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+      }
+
+      # Health check endpoint
+      location /nginx-health {
+        access_log off;
+        return 200 "ok";
+        add_header Content-Type text/plain;
+      }
+
+      # SPA fallback for client-side routes
+      location / {
+        try_files $uri /index.html;
+      }
+    }
+  }

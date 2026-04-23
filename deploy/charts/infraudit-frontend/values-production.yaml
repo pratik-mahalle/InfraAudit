@@ -1,0 +1,19 @@
+# Production overrides for infraudit-frontend
+
+replicaCount: 2
+
+image:
+  tag: "latest"  # Updated by CI pipeline on each deploy
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+
+resources:
+  requests:
+    cpu: "50m"
+    memory: "64Mi"
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
