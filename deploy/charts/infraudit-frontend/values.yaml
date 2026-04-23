@@ -3,11 +3,12 @@
 replicaCount: 2
 
 image:
-  repository: ghcr.io/pratikmahalle/infraaudit-frontend
+  repository: ghcr.io/pratik-mahalle/infraaudit-frontend
   tag: "latest"
   pullPolicy: Always
 
-imagePullSecrets: []
+imagePullSecrets:
+  - name: ghcr-login
 
 nameOverride: ""
 fullnameOverride: ""
