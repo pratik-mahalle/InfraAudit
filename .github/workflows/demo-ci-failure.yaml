@@ -1,0 +1,258 @@
+name: "Demo: CI/CD Pipeline Failure Scenarios"
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: "Failure scenario to trigger"
+        required: true
+        default: "test_failure"
+        type: choice
+        options:
+          - test_failure
+          - flaky_test
+          - dependency_failure
+          - deploy_failure
+
+jobs:
+  lint:
+    name: "Lint & Type Check"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run check --if-present || true
+
+      - name: Lint
+        run: npm run lint --if-present || true
+
+  unit-tests:
+    name: "Unit Tests"
+    runs-on: ubuntu-latest
+    needs: lint
+    env:
+      SCENARIO: ${{ github.event.inputs.scenario }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests (passing scenarios)
+        if: env.SCENARIO != 'test_failure'
+        run: npm test --if-present || echo "No test script configured — skipping"
+
+      - name: Run tests with regression
+        if: env.SCENARIO == 'test_failure'
+        run: |
+          # Simulates a regression introduced by commit 3f8a2c1
+          # stripTrailingSlash() applied too eagerly in OAuth redirect builder
+          node -e "
+          const VITE_API_BASE_URL = 'https://api.infraudit.com';
+
+          function buildOAuthRedirect(base, path) {
+            return base.replace(/\/+$/, '') + '/' + path.replace(/^\//, '');
+          }
+
+          const result = buildOAuthRedirect(VITE_API_BASE_URL, '/auth/callback');
+          const expected = VITE_API_BASE_URL + '/auth/callback';
+
+          if (result !== expected) {
+            console.error('FAIL: buildOAuthRedirect');
+            console.error('  expected: ' + expected);
+            console.error('  got:      ' + result);
+            console.error('');
+            console.error('Regression in commit 3f8a2c1 — stripTrailingSlash() broke');
+            console.error('OAuth callback URL construction. Auth redirects now 404.');
+            process.exit(1);
+          }
+          console.log('PASS: buildOAuthRedirect');
+          "
+
+  integration-tests:
+    name: "Integration Tests"
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    env:
+      SCENARIO: ${{ github.event.inputs.scenario }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Flaky test — API client singleton race condition
+        if: env.SCENARIO == 'flaky_test'
+        run: |
+          node -e "
+          const seed = Math.floor(Date.now() / 60000) % 3;
+          const pass = seed !== 1;
+          console.log('Testing ApiClient singleton initialization...');
+          if (!pass) {
+            console.error('FAIL: ApiClient.getInstance() returned null');
+            console.error('Race condition: module loaded before env vars injected.');
+            console.error('This test has failed 5 of 20 recent runs on main');
+            console.error('without any related code changes — likely a flake.');
+            process.exit(1);
+          }
+          console.log('PASS: API client initialized correctly');
+          "
+
+      - name: Dependency conflict — vite peer version mismatch
+        if: env.SCENARIO == 'dependency_failure'
+        run: |
+          node -e "
+          const vitePkg = require('./node_modules/vite/package.json');
+          const actualVite = vitePkg.version;
+          const major = parseInt(actualVite.split('.')[0]);
+          if (major >= 5) {
+            throw new Error(
+              'Peer dep conflict: vite@' + actualVite + ' incompatible with ' +
+              'vite-plugin-react@^4. Dependabot bumped vite but not the plugin. ' +
+              'Pin vite to ^4.5.0 or upgrade vite-plugin-react to ^5.'
+            );
+          }
+          console.log('Dependency check passed — vite@' + actualVite);
+          " 2>&1
+          echo "::error::Dependency conflict after automated package update (Dependabot PR #42)"
+          exit 1
+
+      - name: Deploy validation — required secrets check
+        if: env.SCENARIO == 'deploy_failure'
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+        run: |
+          MISSING=0
+          if [ -z "$GHCR_TOKEN" ]; then
+            echo "::error::GHCR_TOKEN is not set or has been rotated by the platform team."
+            echo "Update: Settings > Secrets and variables > Actions > GHCR_TOKEN"
+            MISSING=1
+          fi
+          if [ -z "$KUBE_CONFIG" ]; then
+            echo "::error::KUBE_CONFIG secret is missing. Required for kubectl deploy step."
+            MISSING=1
+          fi
+          if [ "$MISSING" -ne 0 ]; then
+            echo "Deploy blocked: required secrets missing or expired."
+            echo "Last successful deploy was 3 hours ago."
+            exit 1
+          fi
+          echo "All secrets present."
+
+      - name: Standard integration test
+        if: env.SCENARIO == 'test_failure'
+        run: |
+          node -e "
+          const routes = ['/health', '/api/v1/clusters', '/api/v1/alerts', '/auth/callback'];
+          routes.forEach(r => console.log('PASS: route ' + r));
+          console.log('Integration tests passed.');
+          "
+
+  build:
+    name: "Build"
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'https://api.infraudit.com' }}
+          VITE_OAUTH_BACKEND_BASE: ${{ vars.VITE_OAUTH_BACKEND_BASE || 'https://api.infraudit.com' }}
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist-demo
+          path: dist/
+          if-no-files-found: warn
+
+  docker:
+    name: "Build & Push Docker Image"
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      SCENARIO: ${{ github.event.inputs.scenario }}
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR (non-deploy-failure scenarios)
+        if: env.SCENARIO != 'deploy_failure'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build Docker image
+        env:
+          SHORT_SHA: ${{ steps.sha.outputs.short }}
+        run: |
+          echo "Building: $REGISTRY/$IMAGE_NAME:demo-${SHORT_SHA}"
+          docker build \
+            --build-arg VITE_API_BASE_URL=https://api.infraudit.com \
+            --build-arg VITE_OAUTH_BACKEND_BASE=https://api.infraudit.com \
+            -t "$REGISTRY/$IMAGE_NAME:demo-${SHORT_SHA}" \
+            --load \
+            . 2>&1 | tail -5
+          echo "Build complete."
+
+      - name: Push image (deploy_failure — token expired)
+        if: env.SCENARIO == 'deploy_failure'
+        env:
+          SHORT_SHA: ${{ steps.sha.outputs.short }}
+        run: |
+          echo "Pushing $REGISTRY/$IMAGE_NAME:demo-${SHORT_SHA}..."
+          echo "::error::denied: installation not allowed to Write organization package"
+          echo "GHCR_TOKEN expired or has read-only scope."
+          echo "Last successful push was 3 hours ago."
+          echo "Renew with write:packages scope: Settings > Secrets > GHCR_TOKEN"
+          exit 1
+
+      - name: Image push skipped (demo)
+        if: env.SCENARIO != 'deploy_failure'
+        run: |
+          echo "Demo mode: skipping real push to avoid registry clutter."
+          echo "In production this pushes and triggers ArgoCD image sync."
