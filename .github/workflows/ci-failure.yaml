@@ -1,4 +1,4 @@
-name: "Demo: CI/CD Pipeline Failure Scenarios"
+name: "CI/CD Pipeline Failure Scenarios"
 
 on:
   workflow_dispatch:
