@@ -1,6 +1,7 @@
 import {
   CostOverview, CostTrend, CostForecast, CostAnomaly, CostOptimization,
   ComplianceOverview, ComplianceTrend, ComplianceFramework, ComplianceControl, ComplianceAssessment, AssessmentFinding,
+  ResourceComplianceStatus,
   ScheduledJob, JobExecution, RemediationAction, NotificationPreference,
   Webhook
 } from '@/types';
@@ -415,6 +416,8 @@ export const api = {
     get: (id: number) => request<Anomaly>(`/api/anomalies/${id}`),
 
     getSummary: () => request<Record<string, number>>('/api/anomalies/summary'),
+
+    detect: () => request<{ message: string }>('/api/anomalies/detect', { method: 'POST' }),
   },
 
   // ============================================
@@ -633,6 +636,9 @@ export const api = {
         (res) => (Array.isArray(res) ? res : res?.failingControls || []) as AssessmentFinding[]
       );
     },
+
+    getResourceCompliance: (resourceId: string) =>
+      request<ResourceComplianceStatus>(`/api/v1/compliance/resources/${resourceId}`),
   },
 
   // ============================================

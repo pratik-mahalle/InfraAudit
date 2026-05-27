@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "wouter";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { CostTrendChart } from "@/components/dashboard/CostTrendChart";
 import { CostProviderBreakdown } from "@/components/cost/CostProviderBreakdown";
 import { CostOptimizationsList } from "@/components/cost/CostOptimizationsList";
 import { CloudIcon } from "lucide-react";
+import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -67,6 +69,24 @@ export default function CostOptimization() {
   const { data: anomalies, isLoading: isLoadingAnomalies } = useCostAnomalies();
   const { data: optimizations, isLoading: isLoadingOptimizations } = useCostOptimizations();
   const { mutate: syncCosts, isPending: isSyncing } = useSyncCosts();
+  const queryClient = useQueryClient();
+  const { mutate: detectAnomalies, isPending: isDetecting } = useMutation({
+    mutationFn: () => api.anomalies.detect(),
+    onSuccess: () => {
+      toast({
+        title: "Anomaly Scan Complete",
+        description: "Cost anomalies have been re-evaluated using statistical analysis.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/anomalies"] });
+    },
+    onError: () => {
+      toast({
+        title: "Scan Failed",
+        description: "Failed to run anomaly detection.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Handle actions
   const handleSync = () => {
@@ -170,6 +190,15 @@ export default function CostOptimization() {
             >
               <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
               {isSyncing ? "Syncing..." : "Sync Costs"}
+            </Button>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2"
+              onClick={() => detectAnomalies()}
+              disabled={isDetecting}
+            >
+              <AlertCircle className={`h-4 w-4 ${isDetecting ? "animate-pulse" : ""}`} />
+              {isDetecting ? "Scanning..." : "Scan Anomalies"}
             </Button>
             <Button className="flex items-center gap-2" onClick={handleExportReport}>
               <Download className="h-4 w-4" />

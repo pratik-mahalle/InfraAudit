@@ -288,6 +288,30 @@ export interface ComplianceOverview {
   bySeverity: Record<string, number>;
 }
 
+export interface ResourceControlStatus {
+  frameworkId: string;
+  controlId: string;
+  title: string;
+  status: 'passed' | 'failed' | 'not_checked';
+  severity?: string;
+  reason?: string;
+  remediation?: string;
+  lastChecked: string;
+}
+
+export interface ResourceComplianceStatus {
+  resourceId: string;
+  resourceType: string;
+  provider: string;
+  controlStatuses: ResourceControlStatus[];
+  overallStatus: 'compliant' | 'non_compliant' | 'partial';
+  lastChecked: string;
+  totalControls: number;
+  passedControls: number;
+  failedControls: number;
+  score: number;
+}
+
 // Jobs & Automation
 export interface ScheduledJob {
   id: string;
