@@ -56,7 +56,7 @@ export default function Profile() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/settings")}>
+          <Card className="rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/settings?tab=cloud")}>
             <CardContent className="flex items-center gap-4 py-5">
               <div className="p-3 rounded-lg bg-blue-500/10">
                 <Cloud className="h-5 w-5 text-blue-500" />
@@ -69,7 +69,7 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/settings")}>
+          <Card className="rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/settings?tab=security")}>
             <CardContent className="flex items-center gap-4 py-5">
               <div className="p-3 rounded-lg bg-emerald-500/10">
                 <Shield className="h-5 w-5 text-emerald-500" />
@@ -82,13 +82,13 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/settings")}>
+          <Card className="rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/settings?tab=notifications")}>
             <CardContent className="flex items-center gap-4 py-5">
               <div className="p-3 rounded-lg bg-violet-500/10">
                 <Bell className="h-5 w-5 text-violet-500" />
               </div>
               <div className="flex-1">
-                <div className="text-2xl font-semibold">Configured</div>
+                <div className="text-2xl font-semibold">{connectedProviders > 0 ? "Active" : "—"}</div>
                 <div className="text-sm text-muted-foreground">Notifications</div>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -113,7 +113,7 @@ export default function Profile() {
               <div
                 key={item.tab}
                 className="flex items-center justify-between p-4 rounded-xl border hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
-                onClick={() => navigate("/settings")}
+                onClick={() => navigate(`/settings?tab=${item.tab}`)}
               >
                 <div className="flex items-center gap-4">
                   <item.icon className="h-5 w-5 text-muted-foreground" />

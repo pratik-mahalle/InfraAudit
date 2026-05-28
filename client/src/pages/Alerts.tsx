@@ -34,7 +34,9 @@ import {
 import { formatTimeAgo, getSeverityColor, getSeverityBgColor } from "@/lib/utils";
 import { useAlerts, useAlertSummary, useAcknowledgeAlert, useResolveAlert } from "@/hooks/use-alerts";
 import { useResources } from "@/hooks/use-resources";
+import { useNotificationPreferences } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 export default function Alerts() {
   const [alertType, setAlertType] = useState<string>("all");
@@ -43,6 +45,11 @@ export default function Alerts() {
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+
+  // Fetch notification channel preferences from real API
+  const { data: notifPrefsResponse } = useNotificationPreferences();
+  const notifPrefs = Array.isArray(notifPrefsResponse) ? notifPrefsResponse : (notifPrefsResponse as any)?.data ?? [];
 
   // Fetch paginated alerts from the real backend
   const { data: alertsResponse, isLoading: isLoadingAlerts } = useAlerts();
@@ -383,7 +390,7 @@ export default function Alerts() {
         </TabsContent>
       </Tabs>
 
-      {/* Notification Settings */}
+      {/* Notification Settings — driven by real API data */}
       <Card>
         <CardHeader>
           <CardTitle>Notification Channels</CardTitle>
@@ -393,74 +400,52 @@ export default function Alerts() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div className="flex items-center space-x-4">
-                <div className="bg-[#4A154B] p-2 rounded">
-                  <svg viewBox="0 0 54 54" className="h-5 w-5 text-white">
-                    <path
-                      fill="currentColor"
-                      d="M19.712.133a5.381 5.381 0 0 0-5.376 5.387 5.381 5.381 0 0 0 5.376 5.386h5.376V5.52A5.381 5.381 0 0 0 19.712.133m0 14.365H5.376A5.381 5.381 0 0 0 0 19.884a5.381 5.381 0 0 0 5.376 5.387h14.336a5.381 5.381 0 0 0 5.376-5.387 5.381 5.381 0 0 0-5.376-5.386"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M53.76 19.884a5.381 5.381 0 0 0-5.376-5.386 5.381 5.381 0 0 0-5.376 5.386v5.387h5.376a5.381 5.381 0 0 0 5.376-5.387m-14.336 0V5.52A5.381 5.381 0 0 0 34.048.133a5.381 5.381 0 0 0-5.376 5.387v14.364a5.381 5.381 0 0 0 5.376 5.387 5.381 5.381 0 0 0 5.376-5.387"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M34.048 54a5.381 5.381 0 0 0 5.376-5.387 5.381 5.381 0 0 0-5.376-5.386h-5.376v5.386A5.381 5.381 0 0 0 34.048 54m0-14.365h14.336a5.381 5.381 0 0 0 5.376-5.386 5.381 5.381 0 0 0-5.376-5.387H34.048a5.381 5.381 0 0 0-5.376 5.387 5.381 5.381 0 0 0 5.376 5.386"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M0 34.249a5.381 5.381 0 0 0 5.376 5.386 5.381 5.381 0 0 0 5.376-5.386v-5.387H5.376A5.381 5.381 0 0 0 0 34.25m14.336-.001v14.364A5.381 5.381 0 0 0 19.712 54a5.381 5.381 0 0 0 5.376-5.387V34.25a5.381 5.381 0 0 0-5.376-5.387 5.381 5.381 0 0 0-5.376 5.387"
-                    />
-                  </svg>
+            {(["slack", "email", "webhook"] as const).map((channel) => {
+              const pref = notifPrefs.find((p: any) => p.channel === channel);
+              const isEnabled = pref?.enabled ?? false;
+              const channelConfig: Record<string, { label: string; desc: string; bgColor: string; icon: React.ReactNode }> = {
+                slack: {
+                  label: "Slack",
+                  desc: pref?.settings?.channel ? `Sending to ${pref.settings.channel}` : "Slack notifications",
+                  bgColor: "bg-[#4A154B]",
+                  icon: <Bell className="h-5 w-5 text-white" />,
+                },
+                email: {
+                  label: "Email",
+                  desc: pref?.settings?.recipients ? `Sending to ${pref.settings.recipients}` : "Email notifications",
+                  bgColor: "bg-blue-600",
+                  icon: <BellRing className="h-5 w-5 text-white" />,
+                },
+                webhook: {
+                  label: "Webhook",
+                  desc: pref?.settings?.url ? `Posting to ${pref.settings.url}` : "Webhook notifications",
+                  bgColor: "bg-gray-800",
+                  icon: <Settings className="h-5 w-5 text-white" />,
+                },
+              };
+              const cfg = channelConfig[channel];
+              return (
+                <div key={channel} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className={`${cfg.bgColor} p-2 rounded`}>{cfg.icon}</div>
+                    <div>
+                      <h3 className="font-medium">{cfg.label}</h3>
+                      <p className="text-sm text-gray-500">{cfg.desc}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    {isEnabled ? (
+                      <Badge variant="success">Enabled</Badge>
+                    ) : (
+                      <Badge variant="outline">Disabled</Badge>
+                    )}
+                    <Button variant="outline" size="sm" onClick={() => navigate("/settings?tab=notifications")}>
+                      Configure
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-medium">Slack</h3>
-                  <p className="text-sm text-gray-500">Send alerts to Slack channel #cloud-alerts</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Badge variant="success">Connected</Badge>
-                <Button variant="outline" size="sm">Configure</Button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div className="flex items-center space-x-4">
-                <div className="bg-blue-600 p-2 rounded">
-                  <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M21.2,12.2c0,1.1-0.3,2.2-0.8,3.2c-0.5,1-1.3,1.8-2.2,2.3C17.2,18.3,16,18.6,14.7,18.6c-1.1,0-2.2-0.3-3.2-0.8l-6.5,1.9l1.9-6.5        c-0.5-1-0.8-2.1-0.8-3.2c0-1.3,0.3-2.5,0.9-3.5c0.5-1,1.3-1.8,2.3-2.2c1-0.5,2.1-0.8,3.2-0.8c1.3,0,2.5,0.3,3.5,0.9c1,0.5,1.8,1.3,2.2,2.3C20.9,9.7,21.2,10.9,21.2,12.2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-medium">Email</h3>
-                  <p className="text-sm text-gray-500">Send alerts to devops@company.com</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Badge variant="success">Connected</Badge>
-                <Button variant="outline" size="sm">Configure</Button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div className="flex items-center space-x-4">
-                <div className="bg-gray-800 p-2 rounded">
-                  <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M21.5,1h-19C1.7,1,1,1.7,1,2.5v19C1,22.3,1.7,23,2.5,23h19c0.8,0,1.5-0.7,1.5-1.5v-19C23,1.7,22.3,1,21.5,1z M8.7,19H6.2v-8h2.5V19z M7.4,9.8c-0.8,0-1.4-0.7-1.4-1.4c0-0.8,0.6-1.4,1.4-1.4c0.8,0,1.4,0.6,1.4,1.4C8.9,9.1,8.2,9.8,7.4,9.8z M19,19h-2.5v-4c0-2.5-3-2.3-3,0v4H11v-8h2.5v1.5c1.3-2.4,5.5-2.6,5.5,2.3V19z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-medium">PagerDuty</h3>
-                  <p className="text-sm text-gray-500">Send critical alerts to on-call team</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Badge variant="outline">Not Connected</Badge>
-                <Button variant="outline" size="sm">Connect</Button>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

@@ -20,7 +20,7 @@ import { WebhookManager } from "@/components/settings/WebhookManager";
 import { apiRequest, queryClient, unwrapResponse } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
 import api from "@/lib/api";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 
 type ApiKey = { id: number; name: string; keyPrefix: string; rawKey?: string; created: string; lastUsed: string | null; expiresAt?: string };
 type TeamMember = { id: number; name: string; email: string; role: string; status: string; createdAt: string };
@@ -29,6 +29,14 @@ export default function Settings() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const searchString = useSearch();
+  const tabFromUrl = new URLSearchParams(searchString).get("tab") || "notifications";
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+
+  useEffect(() => {
+    const t = new URLSearchParams(searchString).get("tab");
+    if (t) setActiveTab(t);
+  }, [searchString]);
 
   // Profile — pre-fill from auth user
   const [fullName, setFullName] = useState(user?.fullName || "");
@@ -296,7 +304,7 @@ export default function Settings() {
     <DashboardLayout>
       <PageHeader title="Settings" description="Configure and customize your InfraAudit experience" />
 
-      <Tabs defaultValue="notifications" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="profile"><User className="h-4 w-4 mr-2" />Profile</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>

@@ -31,7 +31,8 @@ import { formatCurrency } from "@/lib/utils";
 import { UtilizationMetric } from "@/types";
 import { useResources } from "@/hooks/use-resources";
 import api from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import {
   RefreshCw,
   Search,
@@ -41,6 +42,8 @@ export default function ResourceUtilizationPage() {
   const [resourceType, setResourceType] = useState("all");
   const [provider, setProvider] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
 
   // Fetch resources from Go backend (paginated response)
   const { data: resourcesResponse, isLoading: isLoadingResources } = useResources();
@@ -132,7 +135,10 @@ export default function ResourceUtilizationPage() {
         title="Resource Utilization"
         description="Monitor and optimize resource usage across cloud providers"
         actions={
-          <Button className="flex items-center gap-2">
+          <Button className="flex items-center gap-2" onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/recommendations"] });
+          }}>
             <RefreshCw className="h-4 w-4" />
             Refresh Metrics
           </Button>
@@ -264,6 +270,7 @@ export default function ResourceUtilizationPage() {
                             variant="ghost"
                             size="sm"
                             className="h-8 text-primary hover:text-primary/80"
+                            onClick={() => navigate(`/resources/${resource.id}`)}
                           >
                             Details
                           </Button>
