@@ -6,7 +6,8 @@ import {
     ComplianceTrend,
     ComplianceAssessment,
     ComplianceControl,
-    AssessmentFinding
+    AssessmentFinding,
+    ResourceComplianceStatus
 } from '@/types';
 
 export function useComplianceOverview() {
@@ -87,6 +88,14 @@ export function useRunAssessment() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['/api/v1/compliance'] });
         },
+    });
+}
+
+export function useResourceCompliance(resourceId: string) {
+    return useQuery({
+        queryKey: ['/api/v1/compliance/resources', resourceId],
+        queryFn: () => api.compliance.getResourceCompliance(resourceId),
+        enabled: !!resourceId,
     });
 }
 

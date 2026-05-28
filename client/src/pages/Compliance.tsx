@@ -3,6 +3,7 @@ import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
     useComplianceOverview,
     useFrameworks,
@@ -17,8 +18,9 @@ import { FrameworkSelector } from "@/components/compliance/FrameworkSelector";
 import { ControlsTable } from "@/components/compliance/ControlsTable";
 import { AssessmentHistory } from "@/components/compliance/AssessmentHistory";
 import { FailingControlsList } from "@/components/compliance/FailingControlsList";
+import { ResourceCompliancePanel } from "@/components/compliance/ResourceCompliancePanel";
 import { Badge } from "@/components/ui/badge";
-import { PlayCircle, Download, FileText } from "lucide-react";
+import { PlayCircle, Download, FileText, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,6 +29,8 @@ export default function Compliance() {
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState("overview");
     const [selectedFrameworkId, setSelectedFrameworkId] = useState<string>("");
+    const [resourceIdInput, setResourceIdInput] = useState("");
+    const [lookupResourceId, setLookupResourceId] = useState("");
 
     // Data fetching
     const { data: overview, isLoading: isLoadingOverview } = useComplianceOverview();
@@ -96,6 +100,7 @@ export default function Compliance() {
                     <TabsTrigger value="overview">Dashboard</TabsTrigger>
                     <TabsTrigger value="frameworks">Frameworks</TabsTrigger>
                     <TabsTrigger value="controls">Controls</TabsTrigger>
+                    <TabsTrigger value="resources">Resources</TabsTrigger>
                     <TabsTrigger value="reports">Reports & History</TabsTrigger>
                 </TabsList>
 
@@ -181,6 +186,38 @@ export default function Compliance() {
                         controls={controls || []}
                         isLoading={isLoadingControls}
                     />
+                </TabsContent>
+
+                {/* Resources Tab */}
+                <TabsContent value="resources" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Resource Compliance Lookup</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <form
+                                className="flex gap-2"
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    setLookupResourceId(resourceIdInput.trim());
+                                }}
+                            >
+                                <Input
+                                    placeholder="Enter resource ID (e.g. i-0abc123, arn:aws:...)"
+                                    value={resourceIdInput}
+                                    onChange={(e) => setResourceIdInput(e.target.value)}
+                                    className="flex-1"
+                                />
+                                <Button type="submit" disabled={!resourceIdInput.trim()}>
+                                    <Search className="h-4 w-4 mr-2" />
+                                    Lookup
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+                    {lookupResourceId && (
+                        <ResourceCompliancePanel resourceId={lookupResourceId} />
+                    )}
                 </TabsContent>
 
                 {/* Reports Tab */}
