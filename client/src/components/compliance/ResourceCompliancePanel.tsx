@@ -116,7 +116,7 @@ export function ResourceCompliancePanel({ resourceId }: ResourceCompliancePanelP
           <CardTitle>Control Status</CardTitle>
         </CardHeader>
         <CardContent>
-          {status.controlStatuses.length === 0 ? (
+          {(status.controlStatuses ?? []).length === 0 ? (
             <p className="text-muted-foreground text-center py-4">No controls evaluated.</p>
           ) : (
             <Table>
@@ -130,7 +130,7 @@ export function ResourceCompliancePanel({ resourceId }: ResourceCompliancePanelP
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {status.controlStatuses.map((cs) => (
+                {(status.controlStatuses ?? []).map((cs) => (
                   <TableRow key={`${cs.frameworkId}-${cs.controlId}`}>
                     <TableCell className="font-mono text-sm">{cs.controlId}</TableCell>
                     <TableCell>{cs.title}</TableCell>
