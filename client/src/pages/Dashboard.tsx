@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { CloudProviderIntegration } from "@/components/dashboard/CloudProviderIntegration";
+import { NotificationChannels } from "@/components/dashboard/SlackNotifications";
 import api from "@/lib/api";
 
 // Icons
@@ -699,6 +700,9 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* ── Notification Channels ─────────────────────────── */}
+        <NotificationChannels onConfigure={() => navigate("/settings?tab=notifications")} />
 
         {/* ── Recommendations ──────────────────────────────── */}
         <Card className="border border-gray-200/60 dark:border-slate-800/60">

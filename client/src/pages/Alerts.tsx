@@ -402,23 +402,23 @@ export default function Alerts() {
           <div className="space-y-4">
             {(["slack", "email", "webhook"] as const).map((channel) => {
               const pref = notifPrefs.find((p: any) => p.channel === channel);
-              const isEnabled = pref?.enabled ?? false;
+              const isEnabled = pref?.is_enabled ?? pref?.isEnabled ?? pref?.enabled ?? false;
               const channelConfig: Record<string, { label: string; desc: string; bgColor: string; icon: React.ReactNode }> = {
                 slack: {
                   label: "Slack",
-                  desc: pref?.settings?.channel ? `Sending to ${pref.settings.channel}` : "Slack notifications",
+                  desc: pref?.config?.webhook_url ? "Webhook configured" : "Slack notifications",
                   bgColor: "bg-[#4A154B]",
                   icon: <Bell className="h-5 w-5 text-white" />,
                 },
                 email: {
                   label: "Email",
-                  desc: pref?.settings?.recipients ? `Sending to ${pref.settings.recipients}` : "Email notifications",
+                  desc: pref?.config?.to ? `Sending to ${Array.isArray(pref.config.to) ? pref.config.to.join(', ') : pref.config.to}` : "Email notifications",
                   bgColor: "bg-blue-600",
                   icon: <BellRing className="h-5 w-5 text-white" />,
                 },
                 webhook: {
                   label: "Webhook",
-                  desc: pref?.settings?.url ? `Posting to ${pref.settings.url}` : "Webhook notifications",
+                  desc: "Webhook notifications",
                   bgColor: "bg-gray-800",
                   icon: <Settings className="h-5 w-5 text-white" />,
                 },

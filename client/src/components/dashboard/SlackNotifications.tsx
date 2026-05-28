@@ -1,4 +1,6 @@
-import React from "react";
+import { useNotificationPreferences } from "@/hooks/use-notifications";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/api";
 import {
   Card,
   CardContent,
@@ -6,72 +8,156 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Bell, Mail, MessageSquare, ArrowRight, Loader2 } from "lucide-react";
 
-interface SlackNotificationsProps {
-  isConnected: boolean;
-  alertsSentToday: number;
+interface NotificationChannelsProps {
+  onConfigure?: () => void;
 }
 
-export function SlackNotifications({
-  isConnected = true,
-  alertsSentToday = 12,
-}: SlackNotificationsProps) {
+export function NotificationChannels({ onConfigure }: NotificationChannelsProps) {
+  const { data: preferences, isLoading: isLoadingPrefs } = useNotificationPreferences();
+
+  const { data: historyData, isLoading: isLoadingHistory } = useQuery<any>({
+    queryKey: ["/api/v1/notifications/history"],
+    queryFn: () => api.notifications.getHistory(10, 0),
+  });
+
+  const isLoading = isLoadingPrefs || isLoadingHistory;
+
+  // Parse preferences
+  const prefs = Array.isArray(preferences) ? preferences : [];
+  const slackPref = prefs.find((p: any) => p.channel === "slack");
+  const emailPref = prefs.find((p: any) => p.channel === "email");
+
+  const slackEnabled = slackPref?.is_enabled ?? slackPref?.isEnabled ?? false;
+  const emailEnabled = emailPref?.is_enabled ?? emailPref?.isEnabled ?? false;
+
+  // Parse recent logs
+  const logs = historyData?.logs || [];
+  const sentCount = logs.filter((l: any) => l.status === "sent").length;
+  const failedCount = logs.filter((l: any) => l.status === "failed").length;
+
+  if (isLoading) {
+    return (
+      <Card className="border border-gray-200/60 dark:border-slate-800/60">
+        <CardContent className="flex items-center justify-center py-10">
+          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-semibold font-inter">
-          Slack Notifications
-        </CardTitle>
-        <Badge variant={isConnected ? "success" : "destructive"} className="text-xs">
-          {isConnected ? "Connected" : "Disconnected"}
-        </Badge>
+    <Card className="border border-gray-200/60 dark:border-slate-800/60">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bell className="h-5 w-5 text-purple-500" />
+            Notification Channels
+          </CardTitle>
+          {onConfigure && (
+            <Button variant="ghost" size="sm" onClick={onConfigure} className="gap-1 text-xs">
+              Configure <ArrowRight className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="mb-4 rounded-lg border border-gray-300 overflow-hidden">
-          <div className="bg-[#4A154B] text-white p-2 text-sm font-medium">
-            <div className="flex items-center">
-              <svg viewBox="0 0 54 54" className="h-5 w-5 mr-2">
-                <path
-                  fill="currentColor"
-                  d="M19.712.133a5.381 5.381 0 0 0-5.376 5.387 5.381 5.381 0 0 0 5.376 5.386h5.376V5.52A5.381 5.381 0 0 0 19.712.133m0 14.365H5.376A5.381 5.381 0 0 0 0 19.884a5.381 5.381 0 0 0 5.376 5.387h14.336a5.381 5.381 0 0 0 5.376-5.387 5.381 5.381 0 0 0-5.376-5.386"
-                />
-                <path
-                  fill="currentColor"
-                  d="M53.76 19.884a5.381 5.381 0 0 0-5.376-5.386 5.381 5.381 0 0 0-5.376 5.386v5.387h5.376a5.381 5.381 0 0 0 5.376-5.387m-14.336 0V5.52A5.381 5.381 0 0 0 34.048.133a5.381 5.381 0 0 0-5.376 5.387v14.364a5.381 5.381 0 0 0 5.376 5.387 5.381 5.381 0 0 0 5.376-5.387"
-                />
-                <path
-                  fill="currentColor"
-                  d="M34.048 54a5.381 5.381 0 0 0 5.376-5.387 5.381 5.381 0 0 0-5.376-5.386h-5.376v5.386A5.381 5.381 0 0 0 34.048 54m0-14.365h14.336a5.381 5.381 0 0 0 5.376-5.386 5.381 5.381 0 0 0-5.376-5.387H34.048a5.381 5.381 0 0 0-5.376 5.387 5.381 5.381 0 0 0 5.376 5.386"
-                />
-                <path
-                  fill="currentColor"
-                  d="M0 34.249a5.381 5.381 0 0 0 5.376 5.386 5.381 5.381 0 0 0 5.376-5.386v-5.387H5.376A5.381 5.381 0 0 0 0 34.25m14.336-.001v14.364A5.381 5.381 0 0 0 19.712 54a5.381 5.381 0 0 0 5.376-5.387V34.25a5.381 5.381 0 0 0-5.376-5.387 5.381 5.381 0 0 0-5.376 5.387"
-                />
-              </svg>
-              InfrAudit Alerts
-              <span className="mr-2">InfrAudit</span>
+      <CardContent className="space-y-4">
+        {/* Slack channel */}
+        <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200/60 dark:border-slate-800/60">
+          <div className="flex items-center gap-3">
+            <div className="bg-[#4A154B] p-2 rounded-lg">
+              <MessageSquare className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">Slack</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {slackEnabled ? "Webhook configured" : "Not configured"}
+              </div>
             </div>
           </div>
-          <div className="p-3 bg-white">
-            <div className="mb-2">
-              <span className="font-medium">🚨 Critical Alert:</span> Cost anomaly detected in EC2
+          <Badge
+            variant="outline"
+            className={
+              slackEnabled
+                ? "text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                : "text-xs bg-gray-500/10 text-gray-500 border-gray-500/30"
+            }
+          >
+            {slackEnabled ? "Active" : "Inactive"}
+          </Badge>
+        </div>
+
+        {/* Email channel */}
+        <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200/60 dark:border-slate-800/60">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-2 rounded-lg">
+              <Mail className="h-4 w-4 text-white" />
             </div>
-            <div className="text-xs text-gray-600 mb-2">
-              Unexpected 43% increase in compute costs over the last 24 hours. <a href="#" className="text-blue-600">View details →</a>
-            </div>
-            <div className="text-xs text-gray-500 mt-2">
-              <span className="mr-2">InfrAudit</span>
-              <span>Today at 9:15 AM</span>
+            <div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">Email</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {emailEnabled ? "Recipients configured" : "Not configured"}
+              </div>
             </div>
           </div>
+          <Badge
+            variant="outline"
+            className={
+              emailEnabled
+                ? "text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                : "text-xs bg-gray-500/10 text-gray-500 border-gray-500/30"
+            }
+          >
+            {emailEnabled ? "Active" : "Inactive"}
+          </Badge>
         </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-500">{alertsSentToday} alerts sent today</span>
-          <a href="#" className="text-primary text-sm font-medium hover:underline">
-            Configure
-          </a>
-        </div>
+
+        {/* Recent activity summary */}
+        {logs.length > 0 && (
+          <div className="pt-2 border-t border-gray-100 dark:border-slate-800">
+            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+              <span>
+                Recent: {sentCount} sent{failedCount > 0 ? `, ${failedCount} failed` : ""}
+              </span>
+              {onConfigure && (
+                <button
+                  onClick={onConfigure}
+                  className="text-primary hover:underline"
+                >
+                  View history
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* No channels configured prompt */}
+        {!slackEnabled && !emailEnabled && (
+          <div className="text-center py-2">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              No notification channels configured
+            </p>
+            {onConfigure && (
+              <Button variant="outline" size="sm" onClick={onConfigure}>
+                Set up notifications
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
+}
+
+// Keep backward-compatible export for existing imports
+export function SlackNotifications({
+  isConnected = false,
+  alertsSentToday = 0,
+}: {
+  isConnected?: boolean;
+  alertsSentToday?: number;
+}) {
+  return <NotificationChannels />;
 }

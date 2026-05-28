@@ -701,15 +701,18 @@ export const api = {
       return res?.preferences || res || [];
     },
 
-    updatePreference: (channel: string, settings: any) =>
-      request(`/api/v1/notifications/preferences/${channel}`, {
+    updatePreference: (channel: string, settings: any) => {
+      const { enabled, isEnabled, is_enabled, ...config } = settings;
+      return request(`/api/v1/notifications/preferences/${channel}`, {
         method: 'PUT',
-        body: { isEnabled: settings.enabled ?? settings.isEnabled ?? true, config: settings },
-      }),
+        body: { is_enabled: enabled ?? isEnabled ?? is_enabled ?? true, config },
+      });
+    },
 
     getHistory: (limit?: number, offset?: number) => {
       const params = new URLSearchParams();
       if (limit) params.set('limit', limit.toString());
+      if (offset) params.set('offset', offset.toString());
       return request('/api/v1/notifications/history?' + params.toString());
     },
 

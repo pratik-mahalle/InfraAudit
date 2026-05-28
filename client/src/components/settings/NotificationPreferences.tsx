@@ -28,7 +28,9 @@ export function NotificationPreferences() {
                 : emailPref.config.to);
         }
         const slackPref = preferences.find((p: any) => p.channel === 'slack');
-        if (slackPref?.config?.webhookUrl) {
+        if (slackPref?.config?.webhook_url) {
+            setSlackWebhookUrl(slackPref.config.webhook_url);
+        } else if (slackPref?.config?.webhookUrl) {
             setSlackWebhookUrl(slackPref.config.webhookUrl);
         }
     }, [preferences]);
@@ -37,7 +39,7 @@ export function NotificationPreferences() {
     const getPref = (channel: string): { isEnabled: boolean; config: any } => {
         if (Array.isArray(preferences)) {
             const found = preferences.find((p: any) => p.channel === channel);
-            if (found) return { isEnabled: found.isEnabled ?? found.enabled ?? false, config: found.config || {} };
+            if (found) return { isEnabled: found.is_enabled ?? found.isEnabled ?? found.enabled ?? false, config: found.config || {} };
         }
         return { isEnabled: false, config: {} };
     };
@@ -75,7 +77,7 @@ export function NotificationPreferences() {
         }
         updatePreference({
             channel: 'slack',
-            settings: { enabled: getPref('slack').isEnabled, webhookUrl: slackWebhookUrl.trim() }
+            settings: { enabled: getPref('slack').isEnabled, webhook_url: slackWebhookUrl.trim() }
         }, {
             onSuccess: () => toast({ title: "Saved", description: "Slack webhook URL updated." }),
             onError: () => toast({ title: "Failed", description: "Could not save Slack webhook.", variant: "destructive" })

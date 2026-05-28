@@ -113,9 +113,9 @@ export function WebhookManager() {
                                     <TableCell className="font-mono text-xs">{hook.url}</TableCell>
                                     <TableCell>{hook.events.join(', ')}</TableCell>
                                     <TableCell>
-                                        <span className={`flex items-center gap-1 text-xs ${hook.isEnabled ? 'text-green-600' : 'text-gray-500'}`}>
+                                        <span className={`flex items-center gap-1 text-xs ${hook.is_enabled ? 'text-green-600' : 'text-gray-500'}`}>
                                             <Activity className="w-3 h-3" />
-                                            {hook.isEnabled ? 'Active' : 'Disabled'}
+                                            {hook.is_enabled ? 'Active' : 'Disabled'}
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-right">

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,94 +6,60 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, CheckCircle2, XCircle, Send, BellRing } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Send, BellRing, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-
-interface SlackStatus {
-  slack: {
-    configured: boolean;
-    channel: string | null;
-  };
-}
+import { useNotificationPreferences, useUpdatePreference, useSendTestNotification } from "@/hooks/use-notifications";
 
 const SlackNotificationSettings = () => {
   const { toast } = useToast();
-  const [message, setMessage] = useState("Test notification from CloudGuard");
+  const [webhookUrl, setWebhookUrl] = useState("");
   const [notificationType, setNotificationType] = useState("alert");
-  
-  // Query Slack configuration status
-  const { 
-    data: status, 
-    isLoading: isStatusLoading,
-    refetch: refetchStatus
-  } = useQuery<SlackStatus>({
-    queryKey: ["/api/notifications/status"],
-    queryFn: ({ signal }) => fetch("/api/notifications/status", { signal }).then(res => res.json()),
-  });
 
-  // Send test notification
-  const testMutation = useMutation({
-    mutationFn: async (data: { type: string }) => {
-      const response = await apiRequest("POST", "/api/notifications/test", data);
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Test notification sent",
-        description: "A test notification has been sent to Slack",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to send test notification",
-        description: error.message,
-        variant: "destructive",
-      });
+  const { data: preferences, isLoading: isStatusLoading } = useNotificationPreferences();
+  const { mutate: updatePreference, isPending: isSaving } = useUpdatePreference();
+  const { mutate: testNotification, isPending: isTesting } = useSendTestNotification();
+
+  // Parse Slack preference from backend
+  const prefs = Array.isArray(preferences) ? preferences : [];
+  const slackPref = prefs.find((p: any) => p.channel === "slack");
+  const isEnabled = slackPref?.is_enabled ?? slackPref?.isEnabled ?? false;
+  const hasWebhook = !!(slackPref?.config?.webhook_url || slackPref?.config?.webhookUrl);
+  const isConfigured = isEnabled && hasWebhook;
+
+  useEffect(() => {
+    if (slackPref?.config?.webhook_url) {
+      setWebhookUrl(slackPref.config.webhook_url);
+    } else if (slackPref?.config?.webhookUrl) {
+      setWebhookUrl(slackPref.config.webhookUrl);
     }
-  });
+  }, [slackPref]);
 
-  // Send custom message
-  const messageMutation = useMutation({
-    mutationFn: async (data: { message: string, type: "simple" | "rich" }) => {
-      const response = await apiRequest("POST", "/api/notifications/slack", data);
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Message sent",
-        description: "Your message has been sent to Slack",
-        variant: "default",
-      });
-      setMessage("");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to send message",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleSendTestNotification = (type: string) => {
-    testMutation.mutate({ type });
-  };
-
-  const handleSendMessage = () => {
-    if (!message.trim()) {
-      toast({
-        title: "Message required",
-        description: "Please enter a message to send",
-        variant: "destructive",
-      });
+  const handleSaveWebhook = () => {
+    if (!webhookUrl.trim()) {
+      toast({ title: "Webhook URL required", description: "Enter a Slack webhook URL.", variant: "destructive" });
       return;
     }
+    updatePreference({
+      channel: "slack",
+      settings: { enabled: true, webhook_url: webhookUrl.trim() },
+    }, {
+      onSuccess: () => toast({ title: "Saved", description: "Slack webhook URL configured." }),
+      onError: () => toast({ title: "Failed", description: "Could not save Slack configuration.", variant: "destructive" }),
+    });
+  };
 
-    messageMutation.mutate({
-      message,
-      type: "simple"
+  const handleSendTest = () => {
+    const typeLabels: Record<string, string> = {
+      alert: "Alert notification",
+      security: "Security drift notification",
+      cost: "Cost anomaly notification",
+    };
+    testNotification({
+      channel: "slack",
+      message: `Test ${typeLabels[notificationType] || notificationType} from InfraAudit`,
+    }, {
+      onSuccess: () => toast({ title: "Test sent", description: "Test notification queued for Slack." }),
+      onError: (err: any) => toast({ title: "Failed", description: err?.message || "Could not send test.", variant: "destructive" }),
     });
   };
 
@@ -115,12 +80,12 @@ const SlackNotificationSettings = () => {
             <div className="flex justify-center py-4">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : status?.slack.configured ? (
+          ) : isConfigured ? (
             <Alert className="bg-emerald-50 border-emerald-200">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
               <AlertTitle className="text-emerald-800">Slack is configured</AlertTitle>
               <AlertDescription className="text-emerald-700">
-                Notifications will be sent to channel: <Badge variant="outline" className="ml-1 font-mono">{status.slack.channel}</Badge>
+                Notifications will be sent via your configured webhook
               </AlertDescription>
             </Alert>
           ) : (
@@ -128,18 +93,35 @@ const SlackNotificationSettings = () => {
               <XCircle className="h-4 w-4" />
               <AlertTitle>Slack is not configured</AlertTitle>
               <AlertDescription>
-                Please add the SLACK_BOT_TOKEN and SLACK_CHANNEL_ID environment secrets to enable Slack notifications
+                Enter your Slack Incoming Webhook URL below to enable notifications
               </AlertDescription>
             </Alert>
           )}
 
+          {/* Webhook URL */}
           <div className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label>Webhook URL</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  placeholder="https://hooks.slack.com/services/..."
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                />
+                <Button onClick={handleSaveWebhook} disabled={isSaving}>
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Test notification */}
             <div>
               <Label htmlFor="notificationType">Test notification type</Label>
               <Select
                 value={notificationType}
                 onValueChange={setNotificationType}
-                disabled={!status?.slack.configured || testMutation.isPending}
+                disabled={!isConfigured || isTesting}
               >
                 <SelectTrigger id="notificationType" className="mt-1.5">
                   <SelectValue placeholder="Select notification type" />
@@ -152,64 +134,25 @@ const SlackNotificationSettings = () => {
               </Select>
             </div>
 
-            <Button 
-              variant="outline" 
-              className="w-full"
-              disabled={!status?.slack.configured || testMutation.isPending}
-              onClick={() => handleSendTestNotification(notificationType)}
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              disabled={!isConfigured || isTesting}
+              onClick={handleSendTest}
             >
-              {testMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending test notification...
-                </>
+              {isTesting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>
-                  Send test notification
-                </>
+                <Send className="h-4 w-4" />
               )}
+              Send test notification
             </Button>
           </div>
-
-          <div className="mt-6 pt-4 border-t">
-            <Label htmlFor="message">Custom message</Label>
-            <div className="mt-1.5 flex gap-2">
-              <Input
-                id="message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Enter a message to send to Slack"
-                disabled={!status?.slack.configured || messageMutation.isPending}
-              />
-              <Button
-                disabled={!status?.slack.configured || !message.trim() || messageMutation.isPending}
-                onClick={handleSendMessage}
-              >
-                {messageMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
         </CardContent>
-        <CardFooter className="bg-muted/20 flex justify-between">
+        <CardFooter className="bg-muted/20">
           <p className="text-sm text-muted-foreground">
-            Slack notifications are processed through a secure webhook integration
+            Slack notifications are delivered via incoming webhooks
           </p>
-          <Button
-            variant="ghost" 
-            size="sm"
-            onClick={() => refetchStatus()}
-            disabled={isStatusLoading}
-          >
-            {isStatusLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Refresh status"
-            )}
-          </Button>
         </CardFooter>
       </Card>
     </div>

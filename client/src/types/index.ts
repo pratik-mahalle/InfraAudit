@@ -349,14 +349,15 @@ export interface RemediationAction {
   requestedAt: string;
 }
 
-// Notifications
+// Notifications — backend returns snake_case JSON
 export interface NotificationPreference {
-  id: number;
-  userId: number;
+  id: string;
+  user_id: number;
   channel: 'email' | 'slack' | 'webhook';
-  enabled: boolean;
-  settings: Record<string, any>;
-  categories: string[]; // ["security", "cost", "compliance"]
+  is_enabled: boolean;
+  config: Record<string, any>;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Webhook {
@@ -364,8 +365,8 @@ export interface Webhook {
   name: string;
   url: string;
   events: string[];
-  isEnabled: boolean;
-  secretToken?: string;
-  lastTriggeredAt?: string;
-  failureCount: number;
+  is_enabled: boolean;
+  last_triggered?: string;
+  created_at: string;
+  updated_at: string;
 }
