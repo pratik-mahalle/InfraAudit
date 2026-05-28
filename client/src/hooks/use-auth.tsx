@@ -21,9 +21,11 @@ type AuthContextType = {
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 async function fetchProfile(accessToken: string): Promise<User | null> {
   try {
-    const res = await fetch("/api/user", {
+    const res = await fetch(`${API_BASE}/api/user`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       credentials: "include",
     });
@@ -128,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null);
     // Also clear Go backend cookies
     try {
-      await fetch("/api/logout", { method: "POST", credentials: "include" });
+      await fetch(`${API_BASE}/api/logout`, { method: "POST", credentials: "include" });
     } catch {
       // Ignore errors clearing server cookies
     }
