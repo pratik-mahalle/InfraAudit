@@ -1,8 +1,8 @@
 import React, { ReactNode, useState } from "react";
 import { Search } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useDriftStream } from "@/hooks/use-drift-stream";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -11,20 +11,9 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, hideSidebar = false }: DashboardLayoutProps) {
-  const [searchQuery, setSearchQuery] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const { toast } = useToast();
+  const [commandOpen, setCommandOpen] = useState(false);
   useDriftStream();
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      toast({
-        title: "Search",
-        description: `Searching for "${searchQuery}"`,
-      });
-    }
-  };
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -32,32 +21,29 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
 
   return (
     <div className="flex w-full min-h-screen">
-      {/* Sidebar */}
       {!hideSidebar && (
         <Sidebar isCollapsed={sidebarCollapsed} onToggle={toggleSidebar} />
       )}
 
-      {/* Main Content */}
       <main
         className={cn(
           "flex-1 bg-background pb-10 transition-all duration-300",
           !hideSidebar && (sidebarCollapsed ? "ml-14" : "ml-56")
         )}
       >
-        {/* Search Bar */}
+        {/* Search Trigger */}
         <div className="px-4 md:px-6 lg:px-8 py-4 flex justify-center">
-          <form onSubmit={handleSearch} className="relative max-w-md w-full">
-            <input
-              type="text"
-              placeholder="Search resources, alerts, or configs..."
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent text-sm bg-white dark:bg-slate-900"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <div className="absolute left-3 top-2.5 text-muted-foreground">
-              <Search className="h-4 w-4" />
-            </div>
-          </form>
+          <button
+            type="button"
+            onClick={() => setCommandOpen(true)}
+            className="relative max-w-md w-full flex items-center gap-3 pl-10 pr-4 py-2 rounded-lg border border-border text-sm text-muted-foreground bg-white dark:bg-slate-900 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            <Search className="absolute left-3 h-4 w-4" />
+            <span>Search pages, actions...</span>
+            <kbd className="ml-auto hidden sm:inline-flex h-5 items-center gap-1 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-1.5 text-[10px] font-medium text-gray-500">
+              ⌘K
+            </kbd>
+          </button>
         </div>
 
         {/* Page Content */}
@@ -65,6 +51,8 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
           {children}
         </div>
       </main>
+
+      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
     </div>
   );
 }

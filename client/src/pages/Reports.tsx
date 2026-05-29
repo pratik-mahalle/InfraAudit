@@ -34,13 +34,17 @@ import { cn } from "@/lib/utils";
 type Report = {
   id: number;
   status: string;
-  resourceCount: number;
-  driftCount: number;
-  securityScore: number;
+  totalResources: number;
+  totalDrifts: number;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
   startedAt: string;
   completedAt: string | null;
-  providers: string[];
   reportData: any;
+  errorMessage?: string;
+  createdAt: string;
 };
 
 function SecurityScoreBadge({ score }: { score: number | null | undefined }) {
@@ -188,7 +192,7 @@ export default function Reports() {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <StatusBadge status={report.status} />
-                      <SecurityScoreBadge score={report.securityScore} />
+                      <SecurityScoreBadge score={report.reportData?.security_score} />
                     </div>
                     <CardTitle className="text-base mt-3 flex items-center gap-2">
                       <FileText className="h-4 w-4 text-gray-500" />
@@ -203,11 +207,11 @@ export default function Reports() {
                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                       <span className="flex items-center gap-1.5">
                         <Server className="h-3.5 w-3.5" />
-                        {report.resourceCount ?? 0} resources
+                        {report.totalResources ?? 0} resources
                       </span>
                       <span className="flex items-center gap-1.5">
                         <AlertTriangle className="h-3.5 w-3.5" />
-                        {report.driftCount ?? 0} drifts
+                        {report.totalDrifts ?? 0} drifts
                       </span>
                     </div>
 

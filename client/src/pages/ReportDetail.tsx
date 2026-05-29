@@ -1,4 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
+import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
@@ -17,6 +20,7 @@ import {
   Search,
   Cloud,
   FileText,
+  Mail,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,13 +47,17 @@ import { cn } from "@/lib/utils";
 type Report = {
   id: number;
   status: string;
-  resourceCount: number;
-  driftCount: number;
-  securityScore: number;
+  totalResources: number;
+  totalDrifts: number;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
   startedAt: string;
   completedAt: string | null;
-  providers: string[];
   reportData: any;
+  errorMessage?: string;
+  createdAt: string;
 };
 
 // ─── Security Score Gauge ──────────────────────────────────────────
@@ -153,6 +161,11 @@ export default function ReportDetail() {
 
   const [resourceSearch, setResourceSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState<string | null>(null);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailAddress, setEmailAddress] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+
+  const reportContentRef = useRef<HTMLDivElement>(null);
 
   const {
     data: report,
@@ -162,6 +175,100 @@ export default function ReportDetail() {
     queryKey: [`/api/reports/${reportId}`],
     enabled: !!reportId,
   });
+
+  const handleDownloadPdf = useCallback(async () => {
+    const el = reportContentRef.current;
+    if (!el || !report) return;
+
+    toast.loading("Generating PDF (current tab only)...", { id: "pdf" });
+
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+
+      // Header
+      pdf.setFontSize(18);
+      pdf.setTextColor(30, 64, 175);
+      pdf.text("InfraAudit", margin, 15);
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Report #${report.id} — ${new Date().toLocaleDateString()}`, margin, 22);
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(margin, 25, pageWidth - margin, 25);
+
+      // Content
+      const contentWidth = pageWidth - margin * 2;
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = contentWidth / imgWidth;
+      const startY = 30;
+      const usableHeight = pageHeight - startY - margin;
+
+      let srcY = 0;
+      let page = 0;
+
+      while (srcY < imgHeight) {
+        if (page > 0) pdf.addPage();
+        const sliceHeight = Math.min(usableHeight / ratio, imgHeight - srcY);
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = imgWidth;
+        sliceCanvas.height = sliceHeight;
+        const ctx = sliceCanvas.getContext("2d")!;
+        ctx.drawImage(canvas, 0, srcY, imgWidth, sliceHeight, 0, 0, imgWidth, sliceHeight);
+        const sliceData = sliceCanvas.toDataURL("image/png");
+        pdf.addImage(sliceData, "PNG", margin, page === 0 ? startY : margin, contentWidth, sliceHeight * ratio);
+        srcY += sliceHeight;
+        page++;
+      }
+
+      pdf.save(`infraudit-report-${report.id}.pdf`);
+      toast.success("PDF downloaded!", { id: "pdf" });
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      toast.error("Failed to generate PDF", { id: "pdf" });
+    }
+  }, [report]);
+
+  const handleEmailReport = useCallback(async () => {
+    const trimmed = emailAddress.trim();
+    if (!trimmed) {
+      toast.error("Please enter an email address");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    setEmailSending(true);
+    try {
+      const res = await fetch(`/api/reports/${reportId}/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: trimmed }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Failed to send email");
+      }
+      toast.success("Report emailed successfully!");
+      setEmailOpen(false);
+      setEmailAddress("");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send email");
+    } finally {
+      setEmailSending(false);
+    }
+  }, [emailAddress, reportId]);
 
   if (isLoading) {
     return (
@@ -255,7 +362,7 @@ export default function ReportDetail() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6" ref={reportContentRef}>
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -273,14 +380,24 @@ export default function ReportDetail() {
               </p>
             </div>
           </div>
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={() => window.print()}
-          >
-            <Download className="h-4 w-4" />
-            Download as PDF
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleDownloadPdf}
+            >
+              <Download className="h-4 w-4" />
+              Download PDF
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setEmailOpen(true)}
+            >
+              <Mail className="h-4 w-4" />
+              Email Report
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -313,7 +430,7 @@ export default function ReportDetail() {
                   <CardTitle className="text-base">Security Score</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <SecurityGauge score={report.securityScore ?? 0} />
+                  <SecurityGauge score={reportData?.security_score ?? 0} />
                 </CardContent>
               </Card>
 
@@ -322,13 +439,13 @@ export default function ReportDetail() {
                 <StatCard
                   icon={Server}
                   label="Total Resources"
-                  value={report.resourceCount ?? 0}
+                  value={report.totalResources ?? 0}
                   color="from-blue-500 to-blue-600"
                 />
                 <StatCard
                   icon={AlertTriangle}
                   label="Total Drifts"
-                  value={report.driftCount ?? 0}
+                  value={report.totalDrifts ?? 0}
                   color="from-orange-500 to-orange-600"
                 />
                 <StatCard
@@ -365,7 +482,7 @@ export default function ReportDetail() {
                   </CardContent>
                 </Card>
               )}
-              {report.providers && report.providers.length > 0 && (
+              {reportData?.providers && reportData.providers.length > 0 && (
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center gap-3">
@@ -375,9 +492,9 @@ export default function ReportDetail() {
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Providers</p>
                         <div className="flex gap-2 mt-1 flex-wrap">
-                          {report.providers.map((p) => (
-                            <Badge key={p} variant="secondary" className="capitalize">
-                              {p}
+                          {reportData.providers.map((p: any) => (
+                            <Badge key={p.provider || p} variant="secondary" className="capitalize">
+                              {p.provider || p}
                             </Badge>
                           ))}
                         </div>
@@ -632,6 +749,34 @@ export default function ReportDetail() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Email Dialog */}
+      {emailOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setEmailOpen(false)} />
+          <div className="relative z-10 w-full max-w-md rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Email Report</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Send a summary of Report #{report.id} to an email address.
+            </p>
+            <Input
+              type="email"
+              placeholder="recipient@example.com"
+              value={emailAddress}
+              onChange={(e) => setEmailAddress(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleEmailReport()}
+              autoFocus
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setEmailOpen(false)}>Cancel</Button>
+              <Button onClick={handleEmailReport} disabled={emailSending} className="gap-2">
+                {emailSending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Send
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Print styles */}
       <style>{`
