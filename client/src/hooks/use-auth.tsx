@@ -13,7 +13,8 @@ type AuthContextType = {
   signUpWithEmail: (
     email: string,
     password: string,
-    metadata?: { username?: string; fullName?: string }
+    metadata?: { username?: string; fullName?: string },
+    inviteToken?: string
   ) => Promise<void>;
   signInWithOAuth: (provider: "google" | "github") => Promise<void>;
   signOut: () => Promise<void>;
@@ -89,7 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (
       email: string,
       password: string,
-      metadata?: { username?: string; fullName?: string }
+      metadata?: { username?: string; fullName?: string },
+      inviteToken?: string
     ) => {
       const { error } = await supabase.auth.signUp({
         email,
@@ -102,9 +104,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
       if (error) throw new Error(error.message);
+      if (inviteToken) {
+        sessionStorage.setItem('pendingInvite', inviteToken);
+      }
       toast({
         title: "Registration successful",
-        description: "Welcome to InfraAudit!",
+        description: "Account created!",
       });
     },
     [toast]

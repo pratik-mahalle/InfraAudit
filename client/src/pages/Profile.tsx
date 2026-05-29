@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Settings, Shield, Cloud, Bell, Key, ChevronRight } from "lucide-react";
+import { LogOut, Settings, Shield, Cloud, Bell, Key, ChevronRight, Building2 } from "lucide-react";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
@@ -38,6 +38,12 @@ export default function Profile() {
                 <p className="text-muted-foreground">{user.email}</p>
                 <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
                   <Badge variant="secondary" className="capitalize">{user.role || "viewer"}</Badge>
+                  {user.orgName && (
+                    <Badge variant="outline" className="gap-1">
+                      <Building2 className="h-3 w-3" />
+                      {user.orgName}
+                    </Badge>
+                  )}
                   {user.planType && <Badge variant="outline">{user.planType} Plan</Badge>}
                   <Badge variant="outline">Member since {memberSince}</Badge>
                 </div>

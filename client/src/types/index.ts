@@ -11,6 +11,7 @@ export interface User {
   jobTitle?: string;
   company?: string;
   organizationId?: number;
+  orgName?: string;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   subscriptionStatus?: string;

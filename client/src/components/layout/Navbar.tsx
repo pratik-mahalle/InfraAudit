@@ -315,6 +315,9 @@ export function Navbar() {
                       {user.fullName || user.username}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">{user.username}</p>
+                    {user.orgName && (
+                      <p className="text-xs text-slate-500 truncate px-1">{user.orgName}</p>
+                    )}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-slate-800" />
                   <Link href="/settings">

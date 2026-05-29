@@ -645,7 +645,12 @@ export default function Settings() {
                     <div key={m.id} className="grid grid-cols-4 p-4 items-center">
                       <div className="flex items-center gap-2">
                         {m.name}
-                        {m.status === "invited" && <Badge variant="outline" className="text-xs">Invited</Badge>}
+                        {m.status === 'invited' && (
+                          <Badge variant="outline" className="text-yellow-600 border-yellow-400 text-xs">Pending</Badge>
+                        )}
+                        {m.status === 'active' && (
+                          <Badge variant="outline" className="text-green-600 border-green-400 text-xs">Active</Badge>
+                        )}
                       </div>
                       <div className="text-sm text-muted-foreground">{m.email}</div>
                       <div>

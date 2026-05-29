@@ -17,6 +17,7 @@ import CloudProviders from "@/pages/CloudProviders";
 import Documentation from "@/pages/documentation";
 import AuthPage from "@/pages/auth-page";
 import SignupPage from "@/pages/signup-page";
+import InvitePage from "@/pages/InvitePage";
 import HomePage from "@/pages/HomePage";
 import SubscriptionPage from "@/pages/SubscriptionPage";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
@@ -98,6 +99,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/auth/callback" component={AuthPage} />
       <Route path="/signup" component={SignupPage} />
+      <Route path="/invite/:token" component={InvitePage} />
 
       {/* All other routes - with MainLayout */}
       <Route path="*">

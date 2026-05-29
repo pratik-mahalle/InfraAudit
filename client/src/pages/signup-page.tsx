@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect, Link } from "wouter";
+import { Redirect, Link, useSearch } from "wouter";
 import { Loader2, Cloud, AlertCircle } from "lucide-react";
+import { OrgSetupStep } from "@/components/auth/OrgSetupStep";
 
 // OAuth Icons
 const GoogleIcon = () => (
@@ -23,7 +24,7 @@ const GitHubIcon = () => (
 );
 
 export default function SignupPage() {
-    const { user, signUpWithEmail, signInWithOAuth } = useAuth();
+    const { user, session, signUpWithEmail, signInWithOAuth } = useAuth();
     const [showEmailForm, setShowEmailForm] = useState(false);
     const [formData, setFormData] = useState({
         username: "",
@@ -34,9 +35,26 @@ export default function SignupPage() {
     });
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [step, setStep] = useState<'form' | 'org'>('form');
 
-    if (user) {
+    const inviteToken = new URLSearchParams(useSearch()).get('invite') || undefined;
+
+    if (user && step === 'form') {
         return <Redirect to="/dashboard" />;
+    }
+
+    if (step === 'org') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 p-8">
+                <div className="w-full max-w-sm">
+                    <OrgSetupStep
+                        accessToken={session?.access_token || ''}
+                        inviteToken={inviteToken}
+                        onComplete={() => { window.location.href = '/dashboard'; }}
+                    />
+                </div>
+            </div>
+        );
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,7 +76,8 @@ export default function SignupPage() {
             await signUpWithEmail(formData.email, formData.password, {
                 username: formData.username,
                 fullName: formData.fullName,
-            });
+            }, inviteToken);
+            setStep('org');
         } catch (err: any) {
             setError(err.message || "Registration failed. Please try again.");
         } finally {
