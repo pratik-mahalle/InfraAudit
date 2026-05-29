@@ -8,7 +8,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
-  const { user, session } = useAuth();
+  const { user, session, isLoading: authLoading } = useAuth();
   const [details, setDetails] = useState<{ org_name: string; role: string } | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -26,6 +26,13 @@ export default function InvitePage() {
       .finally(() => setIsLoading(false));
   }, [token]);
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+      </div>
+    );
+  }
   if (!user && !session) {
     return <Redirect to={`/signup?invite=${token}`} />;
   }

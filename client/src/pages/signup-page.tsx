@@ -76,7 +76,7 @@ export default function SignupPage() {
             await signUpWithEmail(formData.email, formData.password, {
                 username: formData.username,
                 fullName: formData.fullName,
-            }, inviteToken);
+            });
             setStep('org');
         } catch (err: any) {
             setError(err.message || "Registration failed. Please try again.");
