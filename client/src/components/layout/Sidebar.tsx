@@ -21,6 +21,11 @@ import {
     Lock,
     Eye,
     FileCode,
+    Calculator,
+    CreditCard,
+    FileText,
+    User,
+    Blocks,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +67,7 @@ const navGroups: NavGroup[] = [
             { label: "Cost Analysis", href: "/cost", icon: BarChart3 },
             { label: "Predictions", href: "/cost-prediction", icon: TrendingUp },
             { label: "Billing Import", href: "/billing-import", icon: DollarSign },
+            { label: "ROI Calculator", href: "/roi-calculator", icon: Calculator },
         ],
     },
     {
@@ -78,6 +84,7 @@ const navGroups: NavGroup[] = [
             { label: "Cloud Providers", href: "/cloud-providers", icon: Cloud },
             { label: "Kubernetes", href: "/kubernetes", icon: Cpu },
             { label: "IaC Management", href: "/iac", icon: FileCode },
+            { label: "Architecture", href: "/architecture-playground", icon: Blocks },
         ],
     },
     {
@@ -88,9 +95,17 @@ const navGroups: NavGroup[] = [
             { label: "AI Analysis", href: "/ai-demo", icon: Sparkles },
         ],
     },
+    {
+        label: "Reports",
+        items: [
+            { label: "Reports", href: "/reports", icon: FileText },
+        ],
+    },
 ];
 
 const bottomNavItems: NavItem[] = [
+    { label: "Subscription", href: "/subscription", icon: CreditCard },
+    { label: "Profile", href: "/profile", icon: User },
     { label: "Settings", href: "/settings", icon: Settings },
     { label: "Help", href: "/documentation", icon: HelpCircle },
 ];
