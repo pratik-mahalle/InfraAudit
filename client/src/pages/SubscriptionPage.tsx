@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import PlanSelector from '@/components/subscription/PlanSelector';
 import { useAuth } from '@/hooks/use-auth';
 import { Redirect } from 'wouter';
+import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle, InfoIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -24,12 +25,12 @@ const SubscriptionPage = () => {
   }
 
   return (
-    <>
+    <DashboardLayout>
       <Helmet>
         <title>Subscription Plans - InfraAudit</title>
         <meta name="description" content="Choose the right InfraAudit subscription plan for your organization's cloud monitoring needs." />
       </Helmet>
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto space-y-8">
           <div>
@@ -44,7 +45,7 @@ const SubscriptionPage = () => {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Organization Account</AlertTitle>
               <AlertDescription>
-                You're viewing the subscription for <span className="font-medium">{user.organization?.name || 'your organization'}</span>. 
+                You're viewing the subscription for <span className="font-medium">{'your organization'}</span>. 
                 All changes will affect all users in your organization.
               </AlertDescription>
             </Alert>
@@ -121,7 +122,7 @@ const SubscriptionPage = () => {
           </Tabs>
         </div>
       </div>
-    </>
+    </DashboardLayout>
   );
 };
 

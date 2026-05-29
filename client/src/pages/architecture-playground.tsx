@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { DashboardLayout } from '@/layouts/DashboardLayout';
 import ReactFlow, {
   ReactFlowProvider,
   addEdge,
@@ -105,7 +106,7 @@ export function ArchitecturePlaygroundPage() {
         animated: true,
         style: { stroke: '#3b82f6', strokeWidth: 2 },
         labelStyle: { fill: '#3b82f6', fontWeight: 700 },
-        markerEnd: { type: 'arrow', color: '#3b82f6' },
+        markerEnd: { type: 'arrow' as any, color: '#3b82f6' },
       }, eds));
     },
     [nodes, setEdges]
@@ -294,6 +295,7 @@ export function ArchitecturePlaygroundPage() {
   }, []);
 
   return (
+    <DashboardLayout>
     <div className="flex flex-col w-full h-screen p-4 bg-background">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
@@ -494,6 +496,7 @@ export function ArchitecturePlaygroundPage() {
         )}
       </div>
     </div>
+    </DashboardLayout>
   );
 }
 

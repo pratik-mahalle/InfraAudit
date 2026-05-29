@@ -78,6 +78,7 @@ export interface SecurityDrift {
   id: number;
   resourceId: number;
   driftType: string;
+  description?: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
   details: Record<string, any>;
   detectedAt: string;
@@ -106,11 +107,11 @@ export interface Alert {
   id: number;
   title: string;
   message: string;
-  type: 'security' | 'cost' | 'resource';
+  type: string;
   severity: 'critical' | 'high' | 'medium' | 'low';
   resourceId?: number;
   createdAt: string;
-  status: 'open' | 'acknowledged' | 'resolved';
+  status: string;
 }
 
 export interface Recommendation {

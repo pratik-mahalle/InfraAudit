@@ -98,7 +98,7 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
     onSuccess: (data) => {
       toast({
         title: 'Recommendations Generated',
-        description: `Generated ${data.recommendations?.length || 0} optimization recommendations`,
+        description: `Generated ${(data as any).recommendations?.length || 0} optimization recommendations`,
         variant: 'default',
       });
       

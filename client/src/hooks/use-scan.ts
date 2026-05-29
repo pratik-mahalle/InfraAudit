@@ -98,9 +98,9 @@ export function useScan() {
                 {
                   altText: "Retry",
                   onClick: () => startScan(),
-                },
+                } as any,
                 "Retry"
-              ),
+              ) as any,
             });
           }
         } catch {
@@ -118,9 +118,9 @@ export function useScan() {
           {
             altText: "Retry",
             onClick: () => startScan(),
-          },
+          } as any,
           "Retry"
-        ),
+        ) as any,
       });
     }
   }, [isScanning, toast, dismiss, navigate, stopPolling]);

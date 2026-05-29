@@ -3,7 +3,6 @@ import api from '@/lib/api';
 import {
     ComplianceOverview,
     ComplianceFramework,
-    ComplianceTrend,
     ComplianceAssessment,
     ComplianceControl,
     AssessmentFinding,

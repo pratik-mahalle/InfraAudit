@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
+import { getQueryFn } from '@/lib/queryClient';
 import { Helmet } from 'react-helmet';
 import { AiAnalysisPanel } from '@/components/ai/AiAnalysisPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,21 +9,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Server, Database, HardDrive, Cloud, CloudOff } from 'lucide-react';
 
+interface ResourceDetail {
+  id: number;
+  name: string;
+  type: string;
+  provider: string;
+  region: string;
+  status: string;
+  cost?: number;
+  costPerMonth?: number;
+  utilization?: number;
+  resourceId?: string;
+  tags?: Record<string, string>;
+  metadata?: Record<string, any>;
+  createdAt: string;
+}
+
 export default function ResourceDetailPage() {
   const { id } = useParams();
-  const resourceId = parseInt(id);
+  const resourceId = parseInt(id ?? '0');
 
   // Fetch resource details
-  const { data: resource, isLoading, error } = useQuery({
+  const { data: resource, isLoading, error } = useQuery<ResourceDetail>({
     queryKey: [`/api/resources/${resourceId}`],
-    queryFn: () => apiRequest(`/api/resources/${resourceId}`),
+    queryFn: getQueryFn({ on401: 'throw' }),
     enabled: !isNaN(resourceId),
   });
 
   // Fetch recommendations for this resource
-  const { data: recommendations } = useQuery({
-    queryKey: ['/api/recommendations', resourceId],
-    queryFn: () => apiRequest(`/api/recommendations?resourceId=${resourceId}`),
+  const { data: recommendations } = useQuery<any[]>({
+    queryKey: [`/api/recommendations?resourceId=${resourceId}`],
+    queryFn: getQueryFn({ on401: 'throw' }),
     enabled: !isNaN(resourceId),
   });
 

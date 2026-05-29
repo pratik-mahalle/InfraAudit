@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, DollarSign, BarChart, Shield, TrendingDown, HelpCircle, Download, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { DashboardLayout } from '@/layouts/DashboardLayout';
 
 // Chart imports (commented out for now)
 // import { Bar, Line } from 'react-chartjs-2';
@@ -251,12 +252,12 @@ export default function RoiCalculator() {
   };
   
   return (
-    <>
+    <DashboardLayout>
       <Helmet>
         <title>ROI Calculator | InfrAudit</title>
         <meta name="description" content="Calculate your potential cost savings and ROI with InfrAudit's cloud optimization platform." />
       </Helmet>
-      
+
       <div className="container max-w-7xl mx-auto py-12 px-4 md:px-6">
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full mb-4">
@@ -601,6 +602,6 @@ export default function RoiCalculator() {
           </div>
         </div>
       </div>
-    </>
+    </DashboardLayout>
   );
 }

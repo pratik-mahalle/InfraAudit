@@ -1,4 +1,4 @@
-import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ThemeProvider as NextThemesProvider, type ThemeProviderProps as NextThemeProviderProps } from "next-themes";
 import { ReactNode } from "react";
 
 interface ThemeProviderProps {
@@ -6,15 +6,14 @@ interface ThemeProviderProps {
   attribute?: string;
   defaultTheme?: string;
   enableSystem?: boolean;
-  [key: string]: any;
 }
 
-export function ThemeProvider({ 
-  children, 
-  ...props 
+export function ThemeProvider({
+  children,
+  ...props
 }: ThemeProviderProps) {
   return (
-    <NextThemesProvider {...props}>
+    <NextThemesProvider {...(props as NextThemeProviderProps)}>
       {children}
     </NextThemesProvider>
   );

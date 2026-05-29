@@ -76,7 +76,8 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
   });
   const resources: Resource[] = Array.isArray(resourcesResponse) ? resourcesResponse : (resourcesResponse?.data ?? []);
 
-  const getResourceName = (id: number) => {
+  const getResourceName = (id: number | undefined) => {
+    if (id === undefined) return 'Unknown';
     const resource = resources?.find((r) => r.id === id);
     return resource ? resource.name : `Resource ID: ${id}`;
   };
@@ -91,7 +92,7 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
           searchQuery === "" ||
           resourceName.includes(searchQuery.toLowerCase()) ||
           drift.driftType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          drift.description.toLowerCase().includes(searchQuery.toLowerCase());
+          drift.description?.toLowerCase().includes(searchQuery.toLowerCase());
         
         return matchesSeverity && matchesStatus && matchesSearch;
       })
@@ -778,7 +779,7 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
                               <div className="flex items-center gap-2">
                                 {alert.type === 'security' ? (
                                   <ShieldAlert className="h-4 w-4 text-danger" />
-                                ) : alert.type === 'performance' ? (
+                                ) : alert.type === 'resource' ? (
                                   <AlertTriangle className="h-4 w-4 text-warning" />
                                 ) : alert.type === 'cost' ? (
                                   <Database className="h-4 w-4 text-primary" />
@@ -799,7 +800,7 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
                               <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                                 alert.status === 'open' 
                                   ? 'bg-warning bg-opacity-10 text-warning' 
-                                  : alert.status === 'investigating'
+                                  : alert.status === 'acknowledged'
                                     ? 'bg-primary bg-opacity-10 text-primary'
                                     : 'bg-secondary bg-opacity-10 text-secondary'
                               }`}>
@@ -873,7 +874,7 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
                                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                                   alert.status === 'open' 
                                     ? 'bg-warning bg-opacity-10 text-warning' 
-                                    : alert.status === 'investigating'
+                                    : alert.status === 'acknowledged'
                                       ? 'bg-primary bg-opacity-10 text-primary'
                                       : 'bg-secondary bg-opacity-10 text-secondary'
                                 }`}>

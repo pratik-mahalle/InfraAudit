@@ -1,6 +1,6 @@
 import {
   CostOverview, CostTrend, CostForecast, CostAnomaly, CostOptimization,
-  ComplianceOverview, ComplianceTrend, ComplianceFramework, ComplianceControl, ComplianceAssessment, AssessmentFinding,
+  ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, AssessmentFinding,
   ResourceComplianceStatus,
   ScheduledJob, JobExecution, RemediationAction, NotificationPreference,
   Webhook
@@ -588,7 +588,7 @@ export const api = {
       const params = new URLSearchParams();
       if (frameworkId) params.set('framework_id', frameworkId);
       if (days) params.set('days', days.toString());
-      return request<ComplianceTrend>(`/api/v1/compliance/trend?${params.toString()}`);
+      return request<any>(`/api/v1/compliance/trend?${params.toString()}`);
     },
 
     listFrameworks: () =>

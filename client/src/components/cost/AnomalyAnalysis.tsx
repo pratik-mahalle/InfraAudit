@@ -107,16 +107,16 @@ export function AnomalyAnalysis({ anomaly, isOpen, onClose }: AnomalyAnalysisPro
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-1">Previous Cost</h3>
-              <p className="font-medium">{formatCurrency(anomaly.previousCost)}</p>
+              <p className="font-medium">{formatCurrency(anomaly.previousCost ?? 0)}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-1">Current Cost</h3>
-              <p className="font-medium text-red-600">{formatCurrency(anomaly.currentCost)}</p>
+              <p className="font-medium text-red-600">{formatCurrency(anomaly.currentCost ?? 0)}</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-1">Increase</h3>
               <p className="font-medium text-red-600">
-                {anomaly.percentage.toFixed(1)}%
+                {(anomaly.percentage ?? 0).toFixed(1)}%
               </p>
             </div>
             <div>
