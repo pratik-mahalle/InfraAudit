@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermission } from "@/hooks/use-permission";
 import { Lock, Key, User, Bell, Shield, Cloud, Users, Webhook, Loader2, Copy, Check } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -28,6 +29,7 @@ type TeamMember = { id: number; name: string; email: string; role: string; statu
 export default function Settings() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { hasPermission, isOwner } = usePermission();
   const [, navigate] = useLocation();
   const searchString = useSearch();
   const tabFromUrl = new URLSearchParams(searchString).get("tab") || "notifications";
@@ -312,7 +314,9 @@ export default function Settings() {
           <TabsTrigger value="webhooks"><Webhook className="h-4 w-4 mr-2" />Webhooks</TabsTrigger>
           <TabsTrigger value="security"><Shield className="h-4 w-4 mr-2" />Security</TabsTrigger>
           <TabsTrigger value="cloud"><Cloud className="h-4 w-4 mr-2" />Cloud</TabsTrigger>
-          <TabsTrigger value="team"><Users className="h-4 w-4 mr-2" />Team</TabsTrigger>
+          {hasPermission('manage_team') && (
+            <TabsTrigger value="team"><Users className="h-4 w-4 mr-2" />Team</TabsTrigger>
+          )}
         </TabsList>
 
         {/* ==================== Profile Settings ==================== */}
@@ -608,26 +612,27 @@ export default function Settings() {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2"><Label>Current Role</Label><Input value={user?.role || "Admin"} disabled /></div>
-                <div className="space-y-2 md:col-span-2"><Label>Invite Team Member</Label>
-                  <div className="flex gap-2">
-                    <Input placeholder="user@company.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
-                    <Select value={inviteRole} onValueChange={setInviteRole}>
-                      <SelectTrigger className="w-36"><SelectValue placeholder="Role" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Admin">Admin</SelectItem>
-                        <SelectItem value="Editor">Editor</SelectItem>
-                        <SelectItem value="Viewer">Viewer</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      onClick={() => { if (inviteEmail) inviteMutation.mutate({ email: inviteEmail, role: inviteRole }); }}
-                      disabled={inviteMutation.isPending || !inviteEmail}
-                    >
-                      {inviteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Invite
-                    </Button>
+                {isOwner && (
+                  <div className="space-y-2 md:col-span-2"><Label>Invite Team Member</Label>
+                    <div className="flex gap-2">
+                      <Input placeholder="user@company.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+                      <Select value={inviteRole} onValueChange={setInviteRole}>
+                        <SelectTrigger className="w-36"><SelectValue placeholder="Role" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Admin">Admin</SelectItem>
+                          <SelectItem value="Viewer">Viewer</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        onClick={() => { if (inviteEmail) inviteMutation.mutate({ email: inviteEmail, role: inviteRole }); }}
+                        disabled={inviteMutation.isPending || !inviteEmail}
+                      >
+                        {inviteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Invite
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
               <div className="border rounded-xl divide-y">
                 <div className="grid grid-cols-4 font-medium p-4"><div>Name</div><div>Email</div><div>Role</div><div className="text-right">Actions</div></div>
@@ -644,24 +649,25 @@ export default function Settings() {
                       </div>
                       <div className="text-sm text-muted-foreground">{m.email}</div>
                       <div>
-                        <Select value={m.role} onValueChange={(v) => updateRoleMutation.mutate({ id: m.id, role: v })}>
+                        <Select value={m.role} onValueChange={(v) => updateRoleMutation.mutate({ id: m.id, role: v })} disabled={!isOwner}>
                           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Admin">Admin</SelectItem>
-                            <SelectItem value="Editor">Editor</SelectItem>
                             <SelectItem value="Viewer">Viewer</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="text-right space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeMemberMutation.mutate(m.id)}
-                          disabled={removeMemberMutation.isPending}
-                        >
-                          Remove
-                        </Button>
+                        {isOwner && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeMemberMutation.mutate(m.id)}
+                            disabled={removeMemberMutation.isPending}
+                          >
+                            Remove
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))

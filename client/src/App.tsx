@@ -119,7 +119,7 @@ function Router() {
             <ProtectedRoute path="/recommendations">
               <WithTrialCheck><Recommendations /></WithTrialCheck>
             </ProtectedRoute>
-            <ProtectedRoute path="/billing-import">
+            <ProtectedRoute path="/billing-import" permission="manage_billing">
               <WithTrialCheck><BillingImport /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/cost">
@@ -131,28 +131,28 @@ function Router() {
             <ProtectedRoute path="/resources">
               <WithTrialCheck><ResourceUtilization /></WithTrialCheck>
             </ProtectedRoute>
-            <ProtectedRoute path="/settings">
+            <ProtectedRoute path="/settings" permission="manage_settings">
               <WithTrialCheck><Settings /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/profile">
               <WithTrialCheck><Profile /></WithTrialCheck>
             </ProtectedRoute>
-            <ProtectedRoute path="/cloud-providers">
+            <ProtectedRoute path="/cloud-providers" permission="manage_providers">
               <WithTrialCheck><CloudProviders /></WithTrialCheck>
             </ProtectedRoute>
-            <ProtectedRoute path="/kubernetes">
+            <ProtectedRoute path="/kubernetes" permission="manage_providers">
               <WithTrialCheck><KubernetesPage /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/architecture-playground">
               <WithTrialCheck><ArchitecturePlaygroundPage /></WithTrialCheck>
             </ProtectedRoute>
-            <ProtectedRoute path="/subscription/success">
+            <ProtectedRoute path="/subscription/success" permission="manage_billing">
               <WithTrialCheck><SubscriptionSuccess /></WithTrialCheck>
             </ProtectedRoute>
-            <ProtectedRoute path="/subscription/cancel">
+            <ProtectedRoute path="/subscription/cancel" permission="manage_billing">
               <WithTrialCheck><SubscriptionCancel /></WithTrialCheck>
             </ProtectedRoute>
-            <ProtectedRoute path="/subscription">
+            <ProtectedRoute path="/subscription" permission="manage_billing">
               <WithTrialCheck><SubscriptionPage /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/roi-calculator">

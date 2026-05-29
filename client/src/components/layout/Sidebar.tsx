@@ -34,6 +34,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { usePermission } from "@/hooks/use-permission";
+import { Permission } from "@/lib/permissions";
 
 interface SidebarProps {
     isCollapsed?: boolean;
@@ -44,6 +46,7 @@ interface NavItem {
     label: string;
     href: string;
     icon: React.ElementType;
+    permission?: Permission;
 }
 
 interface NavGroup {
@@ -81,8 +84,8 @@ const navGroups: NavGroup[] = [
     {
         label: "Infrastructure",
         items: [
-            { label: "Cloud Providers", href: "/cloud-providers", icon: Cloud },
-            { label: "Kubernetes", href: "/kubernetes", icon: Cpu },
+            { label: "Cloud Providers", href: "/cloud-providers", icon: Cloud, permission: "manage_providers" },
+            { label: "Kubernetes", href: "/kubernetes", icon: Cpu, permission: "manage_providers" },
             { label: "IaC Management", href: "/iac", icon: FileCode },
             { label: "Architecture", href: "/architecture-playground", icon: Blocks },
         ],
@@ -106,13 +109,17 @@ const navGroups: NavGroup[] = [
 const bottomNavItems: NavItem[] = [
     { label: "Subscription", href: "/subscription", icon: CreditCard },
     { label: "Profile", href: "/profile", icon: User },
-    { label: "Settings", href: "/settings", icon: Settings },
+    { label: "Settings", href: "/settings", icon: Settings, permission: "manage_settings" },
     { label: "Help", href: "/documentation", icon: HelpCircle },
 ];
 
 export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
     const [location] = useLocation();
     const isActive = (href: string) => location === href;
+    const { hasPermission } = usePermission();
+
+    const filterByPermission = (items: NavItem[]) =>
+        items.filter(item => !item.permission || hasPermission(item.permission));
 
     // Collapsed view — icon-only with tooltips
     if (isCollapsed) {
@@ -126,34 +133,38 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
                     </div>
 
                     <nav className="flex-1 py-2 overflow-y-auto">
-                        {navGroups.map((group) => (
-                            <div key={group.label} className="mb-1">
-                                {group.items.map((item) => (
-                                    <Tooltip key={item.href + item.label}>
-                                        <TooltipTrigger asChild>
-                                            <Link href={item.href}>
-                                                <span
-                                                    className={cn(
-                                                        "flex items-center justify-center h-8 w-8 mx-auto rounded-md transition-colors my-0.5",
-                                                        isActive(item.href)
-                                                            ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600"
-                                                            : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
-                                                    )}
-                                                >
-                                                    <item.icon className="h-4 w-4" />
-                                                </span>
-                                            </Link>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="right" className="text-xs">{item.label}</TooltipContent>
-                                    </Tooltip>
-                                ))}
-                                <div className="mx-3 my-1.5 border-b border-gray-100 dark:border-gray-800" />
-                            </div>
-                        ))}
+                        {navGroups.map((group) => {
+                            const visibleItems = filterByPermission(group.items);
+                            if (visibleItems.length === 0) return null;
+                            return (
+                                <div key={group.label} className="mb-1">
+                                    {visibleItems.map((item) => (
+                                        <Tooltip key={item.href + item.label}>
+                                            <TooltipTrigger asChild>
+                                                <Link href={item.href}>
+                                                    <span
+                                                        className={cn(
+                                                            "flex items-center justify-center h-8 w-8 mx-auto rounded-md transition-colors my-0.5",
+                                                            isActive(item.href)
+                                                                ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600"
+                                                                : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
+                                                        )}
+                                                    >
+                                                        <item.icon className="h-4 w-4" />
+                                                    </span>
+                                                </Link>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="right" className="text-xs">{item.label}</TooltipContent>
+                                        </Tooltip>
+                                    ))}
+                                    <div className="mx-3 my-1.5 border-b border-gray-100 dark:border-gray-800" />
+                                </div>
+                            );
+                        })}
                     </nav>
 
                     <div className="py-2 border-t border-gray-200 dark:border-gray-800">
-                        {bottomNavItems.map((item) => (
+                        {filterByPermission(bottomNavItems).map((item) => (
                             <Tooltip key={item.label}>
                                 <TooltipTrigger asChild>
                                     <Link href={item.href}>
@@ -184,34 +195,38 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
             </div>
 
             <nav className="flex-1 py-2 px-2 overflow-y-auto">
-                {navGroups.map((group) => (
-                    <div key={group.label} className="mb-3">
-                        <div className="px-2 mb-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
-                                {group.label}
-                            </span>
-                        </div>
-                        {group.items.map((item) => (
-                            <Link key={item.href + item.label} href={item.href}>
-                                <span
-                                    className={cn(
-                                        "flex items-center gap-2.5 px-2 h-8 rounded-md text-[13px] transition-colors relative",
-                                        isActive(item.href)
-                                            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 font-medium before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:rounded-full before:bg-blue-500"
-                                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-200"
-                                    )}
-                                >
-                                    <item.icon className="h-4 w-4 shrink-0" />
-                                    <span className="truncate">{item.label}</span>
+                {navGroups.map((group) => {
+                    const visibleItems = filterByPermission(group.items);
+                    if (visibleItems.length === 0) return null;
+                    return (
+                        <div key={group.label} className="mb-3">
+                            <div className="px-2 mb-1">
+                                <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                                    {group.label}
                                 </span>
-                            </Link>
-                        ))}
-                    </div>
-                ))}
+                            </div>
+                            {visibleItems.map((item) => (
+                                <Link key={item.href + item.label} href={item.href}>
+                                    <span
+                                        className={cn(
+                                            "flex items-center gap-2.5 px-2 h-8 rounded-md text-[13px] transition-colors relative",
+                                            isActive(item.href)
+                                                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 font-medium before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:rounded-full before:bg-blue-500"
+                                                : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-200"
+                                        )}
+                                    >
+                                        <item.icon className="h-4 w-4 shrink-0" />
+                                        <span className="truncate">{item.label}</span>
+                                    </span>
+                                </Link>
+                            ))}
+                        </div>
+                    );
+                })}
             </nav>
 
             <div className="py-2 px-2 border-t border-gray-200 dark:border-gray-800">
-                {bottomNavItems.map((item) => (
+                {filterByPermission(bottomNavItems).map((item) => (
                     <Link key={item.label} href={item.href}>
                         <span
                             className={cn(

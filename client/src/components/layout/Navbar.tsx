@@ -31,6 +31,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AskInfraAudit } from "@/components/ai/AskInfraAudit";
+import { RoleGate } from "@/components/auth/RoleGate";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -321,11 +322,13 @@ export function Navbar() {
                       <Settings className="mr-2 h-4 w-4 text-slate-500" />Settings
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/subscription">
-                    <DropdownMenuItem className="cursor-pointer hover:bg-white/5 text-slate-300 hover:text-white rounded-lg mx-1">
-                      <CreditCard className="mr-2 h-4 w-4 text-slate-500" />Subscription
-                    </DropdownMenuItem>
-                  </Link>
+                  <RoleGate permission="manage_billing">
+                    <Link href="/subscription">
+                      <DropdownMenuItem className="cursor-pointer hover:bg-white/5 text-slate-300 hover:text-white rounded-lg mx-1">
+                        <CreditCard className="mr-2 h-4 w-4 text-slate-500" />Subscription
+                      </DropdownMenuItem>
+                    </Link>
+                  </RoleGate>
                   <Link href="/documentation">
                     <DropdownMenuItem className="cursor-pointer hover:bg-white/5 text-slate-300 hover:text-white rounded-lg mx-1">
                       <BookOpen className="mr-2 h-4 w-4 text-slate-500" />Documentation

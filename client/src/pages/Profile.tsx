@@ -37,7 +37,7 @@ export default function Profile() {
                 <h1 className="text-2xl font-bold">{user.fullName || user.username}</h1>
                 <p className="text-muted-foreground">{user.email}</p>
                 <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
-                  <Badge variant="secondary" className="capitalize">{user.role || "admin"}</Badge>
+                  <Badge variant="secondary" className="capitalize">{user.role || "viewer"}</Badge>
                   {user.planType && <Badge variant="outline">{user.planType} Plan</Badge>}
                   <Badge variant="outline">Member since {memberSince}</Badge>
                 </div>
