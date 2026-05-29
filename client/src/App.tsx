@@ -46,6 +46,7 @@ import ReportDetail from "@/pages/ReportDetail";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import ExpiredTrialRedirect from "@/components/trial/ExpiredTrialRedirect";
+import { Analytics } from "@vercel/analytics/react";
 
 // Protected routes that don't show footer
 const PROTECTED_ROUTES = [
@@ -209,6 +210,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Router />
+            <Analytics />
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
