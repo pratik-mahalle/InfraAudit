@@ -201,8 +201,16 @@ export interface CostTrend {
   dataPoints: { date: string; cost: number }[];
 }
 
+export interface ForecastPoint {
+  date: string;
+  cost: number;
+  lowerBound: number;
+  upperBound: number;
+}
+
 export interface CostForecast {
   provider: string;
+  model: string;
   period: string;
   forecastedCost: number;
   confidenceLevel: number;
@@ -210,6 +218,31 @@ export interface CostForecast {
   upperBound: number;
   currency: string;
   endDate: string;
+  dataPoints: ForecastPoint[];
+  historical: { date: string; cost: number }[];
+}
+
+export interface AIForecastResult {
+  summary: string;
+  costDrivers: string[];
+  riskFactors: string[];
+  recommendations: string[];
+  forecast30d?: number;
+  forecast60d?: number;
+  forecast90d?: number;
+}
+
+export interface ROIData {
+  currentMonthlySpend: number;
+  currency: string;
+  providerBreakdown: Record<string, number>;
+  resourceCount: number;
+  appliedSavings: number;
+  pendingSavings: number;
+  totalPotentialSavings: number;
+  optimizationCount: number;
+  securityIncidents: number;
+  driftCount: number;
 }
 
 export interface CostOptimization {

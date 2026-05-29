@@ -1,607 +1,501 @@
-import React, { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Loader2, DollarSign, BarChart, Shield, TrendingDown, HelpCircle, Download, Mail } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { DashboardLayout } from '@/layouts/DashboardLayout';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { toast } from "sonner";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+import { Link } from "wouter";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { useROIData } from "@/hooks/use-costs";
+import {
+  DollarSign,
+  TrendingUp,
+  Shield,
+  Clock,
+  RefreshCw,
+  Download,
+  Mail,
+  Server,
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
-// Chart imports (commented out for now)
-// import { Bar, Line } from 'react-chartjs-2';
-// import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
-// ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
-
-type CloudProvider = 'aws' | 'azure' | 'gcp' | 'multi';
-type CompanySize = 'startup' | 'smb' | 'enterprise';
-
-interface CalculatorInputs {
-  monthlyCloudSpend: number;
-  companySize: CompanySize;
-  resourceCount: number;
-  cloudProvider: CloudProvider;
-  securityIncidents: number;
-  enableAI: boolean;
-  optimizationLevel: number; // 1-3
-}
-
-interface SavingsResult {
-  costSavings: {
-    monthly: number;
-    yearly: number;
-    threeYear: number;
-    percentage: number;
-  };
-  securitySavings: {
-    incidentReduction: number;
-    costAvoidance: number;
-  };
-  timeToValue: number; // days
-  roi: number; // percentage
-  paybackPeriod: number; // months
+function SavingsCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  color,
+  isReal,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  sub: string;
+  color: string;
+  isReal?: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-4">
+      <div className="flex items-start gap-3">
+        <div className={cn("p-2.5 rounded-lg text-white", color)}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
+            {isReal && (
+              <Badge variant="outline" className="text-[9px] px-1 py-0 text-green-600 border-green-300 dark:border-green-700">
+                real
+              </Badge>
+            )}
+          </div>
+          <p className="text-lg font-bold text-gray-900 dark:text-white mt-0.5">{value}</p>
+          <p className="text-xs text-gray-400 mt-0.5 truncate">{sub}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function RoiCalculator() {
-  const { toast } = useToast();
-  const [calculating, setCalculating] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [activeTab, setActiveTab] = useState<'calculator' | 'results'>('calculator');
-  
-  const [inputs, setInputs] = useState<CalculatorInputs>({
-    monthlyCloudSpend: 10000,
-    companySize: 'smb',
-    resourceCount: 100,
-    cloudProvider: 'aws',
-    securityIncidents: 2,
-    enableAI: true,
-    optimizationLevel: 2,
-  });
-  
-  const [results, setResults] = useState<SavingsResult>({
-    costSavings: {
-      monthly: 0,
-      yearly: 0,
-      threeYear: 0,
-      percentage: 0,
-    },
-    securitySavings: {
-      incidentReduction: 0,
-      costAvoidance: 0,
-    },
-    timeToValue: 0,
-    roi: 0,
-    paybackPeriod: 0,
-  });
-  
-  // Format currency values
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0,
-    }).format(value);
+  const { data: roiData, isLoading: roiLoading } = useROIData();
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Inputs — pre-filled from real data once loaded
+  const [monthlySpend, setMonthlySpend] = useState(0);
+  const [provider, setProvider] = useState("aws");
+  const [resourceCount, setResourceCount] = useState(0);
+  const [overrideMode, setOverrideMode] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailAddress, setEmailAddress] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+
+  // Pre-fill when data loads
+  useEffect(() => {
+    if (roiData && !overrideMode) {
+      setMonthlySpend(roiData.currentMonthlySpend);
+      setResourceCount(roiData.resourceCount || 0);
+      const firstProvider = Object.keys(roiData.providerBreakdown || {})[0];
+      if (firstProvider) setProvider(firstProvider);
+    }
+  }, [roiData, overrideMode]);
+
+  const handleReset = () => {
+    setOverrideMode(false);
+    if (roiData) {
+      setMonthlySpend(roiData.currentMonthlySpend);
+      setResourceCount(roiData.resourceCount || 0);
+      const firstProvider = Object.keys(roiData.providerBreakdown || {})[0];
+      if (firstProvider) setProvider(firstProvider);
+    }
   };
-  
-  // Format percentage values
-  const formatPercentage = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'percent',
-      maximumFractionDigits: 1,
-    }).format(value / 100);
-  };
-  
-  // Handle input changes
-  const handleInputChange = (field: keyof CalculatorInputs, value: any) => {
-    setInputs((prev) => ({ ...prev, [field]: value }));
-  };
-  
-  // Calculate estimated savings
-  const calculateSavings = () => {
-    setCalculating(true);
-    
-    // Simulate calculation delay
-    setTimeout(() => {
-      try {
-        // Base savings percentage based on company size and cloud provider
-        let baseSavingsPercentage = 0;
-        
-        switch (inputs.companySize) {
-          case 'startup':
-            baseSavingsPercentage = 25; // 25% baseline savings for startups
-            break;
-          case 'smb':
-            baseSavingsPercentage = 22; // 22% baseline savings for SMBs
-            break;
-          case 'enterprise':
-            baseSavingsPercentage = 18; // 18% baseline savings for enterprises (already have some optimizations)
-            break;
-        }
-        
-        // Adjust for cloud provider
-        switch (inputs.cloudProvider) {
-          case 'aws':
-            // Base case, no adjustment
-            break;
-          case 'azure':
-            baseSavingsPercentage *= 1.05; // 5% more savings potential
-            break;
-          case 'gcp':
-            baseSavingsPercentage *= 1.02; // 2% more savings potential
-            break;
-          case 'multi':
-            baseSavingsPercentage *= 1.15; // 15% more savings potential for multi-cloud
-            break;
-        }
-        
-        // Adjust for resource count (more resources = more optimization opportunities)
-        const resourceFactor = Math.min(1.3, 1 + (inputs.resourceCount / 1000) * 0.3);
-        baseSavingsPercentage *= resourceFactor;
-        
-        // Adjust for AI enablement
-        if (inputs.enableAI) {
-          baseSavingsPercentage *= 1.2; // 20% more savings with AI-powered recommendations
-        }
-        
-        // Adjust for optimization level
-        baseSavingsPercentage *= (0.8 + (inputs.optimizationLevel * 0.2));
-        
-        // Cap at 45% maximum savings
-        baseSavingsPercentage = Math.min(45, baseSavingsPercentage);
-        
-        // Calculate cost savings
-        const monthlySavings = inputs.monthlyCloudSpend * (baseSavingsPercentage / 100);
-        const yearlySavings = monthlySavings * 12;
-        const threeYearSavings = yearlySavings * 3;
-        
-        // Calculate security savings
-        const incidentReduction = inputs.securityIncidents * 0.6; // 60% reduction in security incidents
-        const costPerIncident = inputs.companySize === 'enterprise' ? 150000 : 
-                                inputs.companySize === 'smb' ? 50000 : 20000;
-        const securityCostAvoidance = incidentReduction * costPerIncident;
-        
-        // Calculate ROI metrics
-        // Assume annual InfrAudit cost is 10% of annual savings
-        const annualCost = yearlySavings * 0.1;
-        const threeYearCost = annualCost * 3;
-        const roi = ((threeYearSavings + securityCostAvoidance) / threeYearCost - 1) * 100;
-        const paybackPeriod = (annualCost / yearlySavings) * 12; // in months
-        
-        // Time to value based on company size
-        const timeToValue = inputs.companySize === 'enterprise' ? 21 : 
-                           inputs.companySize === 'smb' ? 14 : 7; // days
-        
-        // First update the results state
-        setResults({
-          costSavings: {
-            monthly: monthlySavings,
-            yearly: yearlySavings,
-            threeYear: threeYearSavings,
-            percentage: baseSavingsPercentage,
-          },
-          securitySavings: {
-            incidentReduction: incidentReduction,
-            costAvoidance: securityCostAvoidance,
-          },
-          timeToValue: timeToValue,
-          roi: roi,
-          paybackPeriod: paybackPeriod,
-        });
-        
-        // Then update UI states in the correct order
-        setShowResults(true);
-        setCalculating(false);
-        
-        // Use a small delay to ensure state updates have propagated before switching tabs
-        setTimeout(() => {
-          setActiveTab('results');
-          
-          toast({
-            title: "ROI Analysis Complete",
-            description: `Estimated ${formatPercentage(baseSavingsPercentage)} cost reduction with InfrAudit`,
-          });
-        }, 100);
-        
-      } catch (error) {
-        console.error("Error calculating savings:", error);
-        setCalculating(false);
-        toast({
-          title: "Calculation Error",
-          description: "There was an error calculating your potential savings. Please try again.",
-          variant: "destructive"
-        });
+
+  // Calculations using real data as base
+  const realAppliedSavings = roiData?.appliedSavings ?? 0;
+  const realPendingSavings = roiData?.pendingSavings ?? 0;
+  const annualizedApplied = realAppliedSavings * 12;
+  const annualizedPending = realPendingSavings * 12;
+  const totalAnnualSavings = annualizedApplied + annualizedPending;
+  const annualSpend = monthlySpend * 12;
+  const roiPercent = annualSpend > 0 ? (totalAnnualSavings / annualSpend) * 100 : 0;
+  const paybackMonths = totalAnnualSavings > 0
+    ? Math.max(1, Math.ceil((annualSpend * 0.03) / (totalAnnualSavings / 12)))
+    : 0;
+  const securitySavings = (roiData?.securityIncidents ?? 0) * 1500 * 0.6;
+  const operationalSavings = resourceCount * 8 * 12;
+
+  // 3-year projection data
+  const projectionData = Array.from({ length: 36 }, (_, i) => ({
+    month: `M${i + 1}`,
+    spend: annualSpend / 12,
+    withInfraAudit: Math.max(0, annualSpend / 12 - (totalAnnualSavings / 12) * Math.min(1, (i + 1) / 3)),
+    cumulativeSavings: (totalAnnualSavings / 12) * (i + 1),
+  }));
+
+  const handleDownloadPdf = useCallback(async () => {
+    const el = contentRef.current;
+    if (!el) return;
+    toast.loading("Generating PDF...", { id: "roi-pdf" });
+    try {
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff", logging: false });
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 10;
+      pdf.setFontSize(18);
+      pdf.setTextColor(30, 64, 175);
+      pdf.text("InfraAudit ROI Report", margin, 15);
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Generated ${new Date().toLocaleDateString()}`, margin, 22);
+      pdf.setDrawColor(200, 200, 200);
+      pdf.line(margin, 25, pageWidth - margin, 25);
+      const contentWidth = pageWidth - margin * 2;
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = contentWidth / imgWidth;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const startY = 30;
+      const usableHeight = pageHeight - startY - margin;
+      let srcY = 0;
+      let page = 0;
+      while (srcY < imgHeight) {
+        if (page > 0) pdf.addPage();
+        const sliceHeight = Math.min(usableHeight / ratio, imgHeight - srcY);
+        const sliceCanvas = document.createElement("canvas");
+        sliceCanvas.width = imgWidth;
+        sliceCanvas.height = sliceHeight;
+        sliceCanvas.getContext("2d")!.drawImage(canvas, 0, srcY, imgWidth, sliceHeight, 0, 0, imgWidth, sliceHeight);
+        pdf.addImage(sliceCanvas.toDataURL("image/png"), "PNG", margin, page === 0 ? startY : margin, contentWidth, sliceHeight * ratio);
+        srcY += sliceHeight;
+        page++;
       }
-    }, 1500);
-  };
-  
-  // Reset calculator
-  const resetCalculator = () => {
-    setInputs({
-      monthlyCloudSpend: 10000,
-      companySize: 'smb',
-      resourceCount: 100,
-      cloudProvider: 'aws',
-      securityIncidents: 2,
-      enableAI: true,
-      optimizationLevel: 2,
-    });
-    setShowResults(false);
-    setActiveTab('calculator');
-  };
-  
-  // Generate PDF report (placeholder)
-  const generateReport = () => {
-    toast({
-      title: "Report Generation",
-      description: "Your ROI report is being prepared and will be available for download soon.",
-    });
-  };
-  
-  // Send results via email (placeholder)
-  const emailResults = () => {
-    toast({
-      title: "Email Sent",
-      description: "A detailed ROI analysis has been sent to your email address.",
-    });
-  };
-  
+      pdf.save("infraudit-roi-report.pdf");
+      toast.success("PDF downloaded!", { id: "roi-pdf" });
+    } catch {
+      toast.error("Failed to generate PDF", { id: "roi-pdf" });
+    }
+  }, []);
+
+  const handleEmailROI = useCallback(async () => {
+    const trimmed = emailAddress.trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    setEmailSending(true);
+    try {
+      const res = await fetch("/api/reports/roi/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: trimmed, annualSavings: totalAnnualSavings, roiPercent }),
+      });
+      if (!res.ok) throw new Error("Failed to send email");
+      toast.success("ROI report emailed!");
+      setEmailOpen(false);
+      setEmailAddress("");
+    } catch {
+      toast.error("Failed to send email. Check SMTP configuration.");
+    } finally {
+      setEmailSending(false);
+    }
+  }, [emailAddress, totalAnnualSavings, roiPercent]);
+
+  if (roiLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Empty state — no cost data
+  const hasData = (roiData?.currentMonthlySpend ?? 0) > 0 || (roiData?.appliedSavings ?? 0) > 0 || (roiData?.pendingSavings ?? 0) > 0;
+  if (!hasData && !overrideMode) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">ROI Calculator</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Calculate your return on investment with InfraAudit</p>
+          </div>
+          <Card className="border-dashed">
+            <CardContent className="py-16 text-center space-y-4">
+              <DollarSign className="h-12 w-12 mx-auto text-gray-300" />
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white">No cost data yet</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
+                  Import billing data or run a scan to get real ROI calculations based on your actual infrastructure.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <Link href="/billing-import">
+                  <Button variant="default">Import Billing Data</Button>
+                </Link>
+                <Link href="/reports">
+                  <Button variant="outline">Run a Scan</Button>
+                </Link>
+                <Button variant="ghost" onClick={() => setOverrideMode(true)}>
+                  Enter manually
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <Helmet>
-        <title>ROI Calculator | InfrAudit</title>
-        <meta name="description" content="Calculate your potential cost savings and ROI with InfrAudit's cloud optimization platform." />
-      </Helmet>
-
-      <div className="container max-w-7xl mx-auto py-12 px-4 md:px-6">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full mb-4">
-            <DollarSign className="h-8 w-8 text-blue-600" />
+      <div className="space-y-6" ref={contentRef}>
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">ROI Calculator</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              {overrideMode ? "Manual mode — enter your own values" : "Pre-filled from your real cost and optimization data"}
+            </p>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-4">Cloud Savings Calculator</h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Estimate how much your organization could save with InfrAudit's AI-powered cloud optimization platform.
-          </p>
+          <div className="flex items-center gap-2">
+            {overrideMode && (
+              <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1.5">
+                <RefreshCw className="h-3.5 w-3.5" />
+                Reset to actual
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleDownloadPdf}>
+              <Download className="h-4 w-4" />
+              Download PDF
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setEmailOpen(true)}>
+              <Mail className="h-4 w-4" />
+              Email
+            </Button>
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 lg:col-start-3">
+
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Left: Inputs */}
+          <div className="lg:col-span-2 space-y-4">
             <Card>
               <CardHeader>
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'calculator' | 'results')}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="calculator" disabled={calculating}>Input Parameters</TabsTrigger>
-                    <TabsTrigger value="results" disabled={!showResults || calculating}>Savings Analysis</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <CardTitle className="text-base">Your Infrastructure</CardTitle>
+                <CardDescription>
+                  {!overrideMode ? "Pre-filled from real data — edit to model scenarios" : "Manual values — click 'Reset to actual' to restore real data"}
+                </CardDescription>
               </CardHeader>
-              
-              <CardContent className="pt-6">
-                {activeTab === 'calculator' && (
-                  <div className="space-y-8">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="monthly-spend" className="text-base">
-                          Monthly Cloud Spend
-                        </Label>
-                        <div className="flex items-center mt-2">
-                          <DollarSign className="h-5 w-5 text-muted-foreground mr-2" />
-                          <Input
-                            id="monthly-spend"
-                            type="number"
-                            value={inputs.monthlyCloudSpend}
-                            onChange={(e) => handleInputChange('monthlyCloudSpend', parseInt(e.target.value) || 0)}
-                            placeholder="Monthly cloud spend in USD"
-                            className="flex-1"
-                          />
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Your current average monthly spending across all cloud providers.
-                        </p>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="company-size" className="text-base">Company Size</Label>
-                          <Select
-                            value={inputs.companySize}
-                            onValueChange={(value) => handleInputChange('companySize', value as CompanySize)}
-                          >
-                            <SelectTrigger id="company-size" className="mt-2">
-                              <SelectValue placeholder="Select company size" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="startup">Startup (1-50 employees)</SelectItem>
-                              <SelectItem value="smb">SMB (51-500 employees)</SelectItem>
-                              <SelectItem value="enterprise">Enterprise (500+ employees)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="cloud-provider" className="text-base">Primary Cloud Provider</Label>
-                          <Select
-                            value={inputs.cloudProvider}
-                            onValueChange={(value) => handleInputChange('cloudProvider', value as CloudProvider)}
-                          >
-                            <SelectTrigger id="cloud-provider" className="mt-2">
-                              <SelectValue placeholder="Select cloud provider" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="aws">AWS</SelectItem>
-                              <SelectItem value="azure">Azure</SelectItem>
-                              <SelectItem value="gcp">Google Cloud</SelectItem>
-                              <SelectItem value="multi">Multi-Cloud</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="resource-count" className="text-base">
-                          Number of Cloud Resources
-                        </Label>
-                        <div className="flex items-center mt-2">
-                          <Input
-                            id="resource-count"
-                            type="number"
-                            value={inputs.resourceCount}
-                            onChange={(e) => handleInputChange('resourceCount', parseInt(e.target.value) || 0)}
-                            placeholder="Approximate number of resources"
-                            className="flex-1"
-                          />
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Total EC2 instances, S3 buckets, databases, containers, etc.
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="security-incidents" className="text-base">
-                          Security Incidents per Year
-                        </Label>
-                        <div className="flex items-center mt-2">
-                          <Input
-                            id="security-incidents"
-                            type="number"
-                            value={inputs.securityIncidents}
-                            onChange={(e) => handleInputChange('securityIncidents', parseInt(e.target.value) || 0)}
-                            placeholder="Number of security incidents"
-                            className="flex-1"
-                          />
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Security incidents, breaches, or compliance violations related to cloud resources.
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between">
-                            <Label htmlFor="optimization-level" className="text-base">Optimization Level</Label>
-                            <span className="text-sm text-muted-foreground">
-                              {inputs.optimizationLevel === 1 ? 'Basic' : 
-                               inputs.optimizationLevel === 2 ? 'Standard' : 'Advanced'}
-                            </span>
-                          </div>
-                          <Slider
-                            id="optimization-level"
-                            min={1}
-                            max={3}
-                            step={1}
-                            value={[inputs.optimizationLevel]}
-                            onValueChange={(value) => handleInputChange('optimizationLevel', value[0])}
-                            className="mt-2"
-                          />
-                          <div className="flex justify-between mt-1">
-                            <span className="text-xs text-muted-foreground">Basic</span>
-                            <span className="text-xs text-muted-foreground">Standard</span>
-                            <span className="text-xs text-muted-foreground">Advanced</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center justify-between space-x-2">
-                          <Label htmlFor="enable-ai" className="text-base cursor-pointer">
-                            Enable AI-Powered Optimizations
-                          </Label>
-                          <Switch
-                            id="enable-ai"
-                            checked={inputs.enableAI}
-                            onCheckedChange={(checked) => handleInputChange('enableAI', checked)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <Button
-                      onClick={calculateSavings}
-                      disabled={calculating}
-                      className="w-full"
-                      size="lg"
-                    >
-                      {calculating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Calculating Savings...
-                        </>
-                      ) : (
-                        <>
-                          Calculate Potential Savings
-                        </>
-                      )}
-                    </Button>
+              <CardContent className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="monthlySpend">Monthly Cloud Spend</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-gray-400 text-sm">$</span>
+                    <Input
+                      id="monthlySpend"
+                      type="number"
+                      min={0}
+                      value={monthlySpend || ""}
+                      onChange={(e) => { setMonthlySpend(parseFloat(e.target.value) || 0); setOverrideMode(true); }}
+                      className="pl-7"
+                      placeholder="0.00"
+                    />
                   </div>
-                )}
-                
-                {activeTab === 'results' && showResults && (
-                  <div className="space-y-8">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <Card className="bg-muted/40">
-                        <CardContent className="p-4 text-center">
-                          <p className="text-sm text-muted-foreground mb-1">Annual Savings</p>
-                          <p className="text-2xl font-bold text-primary">
-                            {formatCurrency(results.costSavings.yearly)}
-                          </p>
-                        </CardContent>
-                      </Card>
-                      <Card className="bg-muted/40">
-                        <CardContent className="p-4 text-center">
-                          <p className="text-sm text-muted-foreground mb-1">Cost Reduction</p>
-                          <p className="text-2xl font-bold text-primary">
-                            {formatPercentage(results.costSavings.percentage)}
-                          </p>
-                        </CardContent>
-                      </Card>
-                      <Card className="bg-muted/40">
-                        <CardContent className="p-4 text-center">
-                          <p className="text-sm text-muted-foreground mb-1">ROI</p>
-                          <p className="text-2xl font-bold text-primary">
-                            {formatPercentage(results.roi)}
-                          </p>
-                        </CardContent>
-                      </Card>
-                      <Card className="bg-muted/40">
-                        <CardContent className="p-4 text-center">
-                          <p className="text-sm text-muted-foreground mb-1">Payback Period</p>
-                          <p className="text-2xl font-bold text-primary">
-                            {results.paybackPeriod.toFixed(1)} months
-                          </p>
-                        </CardContent>
-                      </Card>
+                  {roiData && !overrideMode && (
+                    <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      From your current billing data
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="provider">Primary Cloud Provider</Label>
+                  <Select value={provider} onValueChange={(v) => { setProvider(v); setOverrideMode(true); }}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="aws">Amazon Web Services</SelectItem>
+                      <SelectItem value="gcp">Google Cloud Platform</SelectItem>
+                      <SelectItem value="azure">Microsoft Azure</SelectItem>
+                      <SelectItem value="multi">Multi-Cloud</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="resourceCount">Resource Count</Label>
+                  <Input
+                    id="resourceCount"
+                    type="number"
+                    min={0}
+                    value={resourceCount || ""}
+                    onChange={(e) => { setResourceCount(parseInt(e.target.value) || 0); setOverrideMode(true); }}
+                    placeholder="0"
+                  />
+                </div>
+
+                {roiData && (
+                  <div className="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-1.5">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">From your optimization data:</p>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">Applied optimizations</span>
+                      <span className="font-medium text-green-600">${realAppliedSavings.toFixed(2)}/mo saved</span>
                     </div>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg flex items-center">
-                            <BarChart className="h-5 w-5 mr-2 text-blue-500" />
-                            Cost Savings Breakdown
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Monthly Savings</span>
-                              <span className="font-medium">{formatCurrency(results.costSavings.monthly)}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Annual Savings</span>
-                              <span className="font-medium">{formatCurrency(results.costSavings.yearly)}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">3-Year Savings</span>
-                              <span className="font-medium">{formatCurrency(results.costSavings.threeYear)}</span>
-                            </div>
-                            <Separator />
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium">Total Cost Reduction</span>
-                              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
-                                {formatPercentage(results.costSavings.percentage)}
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          {/* Placeholder for chart */}
-                          <div className="mt-6 h-40 bg-muted/30 rounded-md flex items-center justify-center">
-                            <p className="text-sm text-muted-foreground">Cost savings visualization</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-lg flex items-center">
-                            <Shield className="h-5 w-5 mr-2 text-green-500" />
-                            Security & Compliance Benefits
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Reduced Security Incidents</span>
-                              <span className="font-medium">{results.securitySavings.incidentReduction.toFixed(1)} per year</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Security Cost Avoidance</span>
-                              <span className="font-medium">{formatCurrency(results.securitySavings.costAvoidance)}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Time to Value</span>
-                              <span className="font-medium">{results.timeToValue} days</span>
-                            </div>
-                            <Separator />
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium">Total 3-Year Benefits</span>
-                              <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-                                {formatCurrency(results.costSavings.threeYear + results.securitySavings.costAvoidance)}
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          {/* Placeholder for chart */}
-                          <div className="mt-6 h-40 bg-muted/30 rounded-md flex items-center justify-center">
-                            <p className="text-sm text-muted-foreground">Security benefits visualization</p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <Button
-                        variant="outline"
-                        onClick={resetCalculator}
-                        className="flex-1"
-                      >
-                        <TrendingDown className="mr-2 h-4 w-4" />
-                        Recalculate
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        onClick={generateReport}
-                        className="flex-1"
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Download PDF Report
-                      </Button>
-                      <Button
-                        onClick={emailResults}
-                        className="flex-1"
-                      >
-                        <Mail className="mr-2 h-4 w-4" />
-                        Email Results
-                      </Button>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">Pending optimizations</span>
+                      <span className="font-medium text-blue-600">${realPendingSavings.toFixed(2)}/mo potential</span>
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
-            
-            <div className="mt-8 bg-muted/50 rounded-lg p-6">
-              <h2 className="text-xl font-medium mb-4 flex items-center">
-                <HelpCircle className="h-5 w-5 mr-2 text-blue-500" />
-                How We Calculate Savings
-              </h2>
-              <p className="text-sm text-muted-foreground mb-4">
-                Our ROI calculator uses proprietary algorithms based on data from hundreds of cloud environments to estimate your potential savings. The calculation considers:
-              </p>
-              <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
-                <li>Typical resource utilization patterns for your industry and company size</li>
-                <li>Cost optimization opportunities across compute, storage, networking, and database resources</li>
-                <li>Potential security incident reduction and associated cost avoidance</li>
-                <li>Implementation and management costs of the InfrAudit platform</li>
-              </ul>
-              <p className="text-sm text-muted-foreground mt-4">
-                Note: Actual results may vary based on your specific cloud environment and implementation approach. Contact us for a detailed analysis.
-              </p>
+          </div>
+
+          {/* Right: Results */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Hero */}
+            <Card className="border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/10">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-700 dark:text-green-400">Projected Annual Savings</p>
+                    <p className="text-4xl font-bold text-green-700 dark:text-green-300 mt-1">
+                      ${totalAnnualSavings.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </p>
+                    <p className="text-sm text-green-600 dark:text-green-500 mt-1">
+                      {roiPercent.toFixed(1)}% ROI · {paybackMonths > 0 ? `${paybackMonths} month payback` : "No payback data yet"}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-green-500 text-white shadow-lg">
+                    <TrendingUp className="h-6 w-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Savings Breakdown */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <SavingsCard
+                icon={Server}
+                label="Infrastructure"
+                value={`$${annualizedApplied.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr`}
+                sub={`$${realAppliedSavings.toFixed(2)}/mo applied`}
+                color="bg-blue-500"
+                isReal
+              />
+              <SavingsCard
+                icon={Shield}
+                label="Security"
+                value={`$${securitySavings.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr`}
+                sub={`${roiData?.securityIncidents ?? 0} incidents reduced`}
+                color="bg-orange-500"
+              />
+              <SavingsCard
+                icon={Clock}
+                label="Operational"
+                value={`$${operationalSavings.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr`}
+                sub={`${resourceCount} resources × 8 hrs/yr`}
+                color="bg-violet-500"
+              />
             </div>
+
+            {/* Before / After */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Before vs After InfraAudit</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-500">Without InfraAudit</span>
+                      <span className="font-semibold">${annualSpend.toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</span>
+                    </div>
+                    <div className="h-3 bg-red-100 dark:bg-red-900/30 rounded-full overflow-hidden">
+                      <div className="h-full bg-red-400 dark:bg-red-500 rounded-full" style={{ width: "100%" }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-500">With InfraAudit</span>
+                      <span className="font-semibold text-green-600">${Math.max(0, annualSpend - totalAnnualSavings).toLocaleString(undefined, { maximumFractionDigits: 0 })}/yr</span>
+                    </div>
+                    <div className="h-3 bg-green-100 dark:bg-green-900/30 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-green-500 rounded-full"
+                        style={{ width: annualSpend > 0 ? `${Math.max(5, 100 - roiPercent)}%` : "5%" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 3-Year Projection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">3-Year Cumulative Savings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={180}>
+                  <AreaChart data={projectionData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="savingsGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="month" tick={{ fontSize: 10 }} interval={5} />
+                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} width={50} />
+                    <Tooltip formatter={(v: number) => [`$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, "Cumulative Savings"]} />
+                    <Area type="monotone" dataKey="cumulativeSavings" name="Cumulative Savings" stroke="#22c55e" strokeWidth={2} fill="url(#savingsGrad)" dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
+
+      {/* Email Dialog */}
+      {emailOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setEmailOpen(false)} />
+          <div className="relative z-10 w-full max-w-md rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Email ROI Report</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Send your ROI summary to an email address.
+            </p>
+            <Input
+              type="email"
+              placeholder="recipient@example.com"
+              value={emailAddress}
+              onChange={(e) => setEmailAddress(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleEmailROI()}
+              autoFocus
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setEmailOpen(false)}>Cancel</Button>
+              <Button onClick={handleEmailROI} disabled={emailSending} className="gap-2">
+                {emailSending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Send
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

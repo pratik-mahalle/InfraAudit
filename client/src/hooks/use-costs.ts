@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { CostOverview, CostTrend, CostAnomaly, CostForecast, CostOptimization } from '@/types';
+import { CostOverview, CostTrend, CostAnomaly, CostForecast, CostOptimization, AIForecastResult, ROIData } from '@/types';
 
 export function useCostOverview() {
     return useQuery({
@@ -24,10 +24,10 @@ export function useCostTrends(provider = '', period = 'monthly') {
     });
 }
 
-export function useCostForecast(provider = '', days = 30) {
+export function useCostForecast(provider = '', days = 30, model = 'linear') {
     return useQuery({
-        queryKey: ['/api/v1/costs/forecast', provider, days],
-        queryFn: () => api.costs.getForecast(provider, days),
+        queryKey: ['/api/v1/costs/forecast', provider, days, model],
+        queryFn: () => api.costs.getForecast(provider, days, model),
     });
 }
 
@@ -71,5 +71,18 @@ export function useDetectAnomalies() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/anomalies'] });
         },
+    });
+}
+
+export function useAIForecast() {
+    return useMutation({
+        mutationFn: () => api.costs.getAIForecast(),
+    });
+}
+
+export function useROIData() {
+    return useQuery({
+        queryKey: ['/api/v1/costs/roi'],
+        queryFn: () => api.costs.getROI(),
     });
 }

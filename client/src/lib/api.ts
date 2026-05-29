@@ -1,5 +1,6 @@
 import {
   CostOverview, CostTrend, CostForecast, CostAnomaly, CostOptimization,
+  AIForecastResult, ROIData,
   ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, AssessmentFinding,
   ResourceComplianceStatus,
   ScheduledJob, JobExecution, RemediationAction, NotificationPreference,
@@ -541,12 +542,16 @@ export const api = {
       return request<CostTrend>(`/api/v1/costs/trends?${params.toString()}`);
     },
 
-    getForecast: (provider?: string, days?: number) => {
+    getForecast: (provider?: string, days?: number, model?: string) => {
       const params = new URLSearchParams();
       if (provider) params.set('provider', provider);
       if (days) params.set('days', days.toString());
+      if (model) params.set('model', model);
       return request<CostForecast>(`/api/v1/costs/forecast?${params.toString()}`);
     },
+
+    getAIForecast: () => request<AIForecastResult>('/api/v1/costs/forecast/ai', { method: 'POST' }),
+    getROI: () => request<ROIData>('/api/v1/costs/roi'),
 
     sync: (provider?: string) => {
       const params = new URLSearchParams();

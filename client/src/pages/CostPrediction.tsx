@@ -1,591 +1,671 @@
 import React, { useState } from "react";
+import { toast } from "sonner";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCostOverview, useCostForecast, useCostTrends, useCostOptimizations, useSyncCosts, useCostAnomalies } from "@/hooks/use-costs";
-import type { CostOverview, CostForecast, CostTrend, CostOptimization } from "@/types";
-import { useRecommendations } from "@/hooks/use-recommendations";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Helmet } from "react-helmet";
-import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-
-// Components
-import { PredictionGauge } from "@/components/prediction/PredictionGauge";
-import { CostBreakdownChart } from "@/components/prediction/CostBreakdownChart";
-import { SavingsOpportunities } from "@/components/prediction/SavingsOpportunities";
-import { ForecastChart } from "@/components/prediction/ForecastChart";
-import KubernetesCostAnalytics from "@/components/costs/KubernetesCostAnalytics";
-
-// Icons
 import {
-  Loader2,
+  useCostOverview,
+  useCostForecast,
+  useCostTrends,
+  useCostAnomalies,
+  useAIForecast,
+  useSyncCosts,
+} from "@/hooks/use-costs";
+import {
+  BarChart3,
   TrendingUp,
   TrendingDown,
-  Zap,
-  Server,
-  Brain,
+  Minus,
+  RefreshCw,
   Sparkles,
-  Calculator,
-  ArrowRight,
-  Calendar,
+  AlertTriangle,
   DollarSign,
   Target,
-  BarChart3,
-  PieChart,
-  Activity,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  RefreshCw,
-  Download,
-  Settings,
-  Lightbulb,
-  Rocket,
-  Cpu,
-  HardDrive,
-  Database,
-  Globe,
-  Cloud
+  Brain,
+  ChevronRight,
+  Loader2,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+
+type ForecastModel = "linear" | "ma" | "wma";
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  sub,
+  color = "from-blue-500 to-blue-600",
+  loading,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  sub?: string;
+  color?: string;
+  loading?: boolean;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-5">
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
+          {loading ? (
+            <div className="h-8 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+          ) : (
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+          )}
+          {sub && <p className="text-xs text-gray-400">{sub}</p>}
+        </div>
+        <div className={cn("p-3 rounded-xl bg-gradient-to-br text-white shadow-lg", color)}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const MODEL_OPTIONS: { value: ForecastModel; label: string; desc: string }[] = [
+  { value: "linear", label: "Linear", desc: "Best for steady growth trends" },
+  { value: "ma", label: "Moving Avg", desc: "Smooths out cost spikes" },
+  { value: "wma", label: "Weighted MA", desc: "Prioritizes recent data" },
+];
+
+const TIMEFRAMES = [
+  { value: 30, label: "30 Days" },
+  { value: 60, label: "60 Days" },
+  { value: 90, label: "90 Days" },
+];
 
 export default function CostPrediction() {
-  const [predictionModel, setPredictionModel] = useState<"linear" | "movingAverage" | "weightedMovingAverage">("linear");
+  const [model, setModel] = useState<ForecastModel>("linear");
   const [timeframe, setTimeframe] = useState(30);
-  const [activeTab, setActiveTab] = useState("overview");
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const [aiEnabled, setAIEnabled] = useState(false);
 
-  // Real data hooks — fetching from Go backend via api.costs.*
-  const { data: overviewData, isLoading: isLoadingOverview } = useCostOverview();
-  const { data: forecastData, isLoading: isLoadingForecast } = useCostForecast('', timeframe);
-  const { data: trendsData, isLoading: isLoadingTrends } = useCostTrends();
-  const { data: optimizationsData, isLoading: isLoadingOptimizations } = useCostOptimizations();
-  const { data: recommendationsData } = useRecommendations();
+  const { data: overview, isLoading: overviewLoading } = useCostOverview();
+  const { data: forecast, isLoading: forecastLoading } = useCostForecast("", timeframe, model);
+  const { data: trends } = useCostTrends();
+  const { data: anomalies } = useCostAnomalies("open", 5, 0);
+  const syncMutation = useSyncCosts();
+  const aiMutation = useAIForecast();
 
-  // Sync costs mutation (triggers cost sync from cloud providers)
-  const syncCostsMutation = useSyncCosts();
-
-  const handleGenerateForecast = () => {
-    toast({
-      title: "Generating Forecast",
-      description: "Syncing cost data and generating predictions...",
-    });
-    syncCostsMutation.mutate(undefined, {
-      onSuccess: () => {
-        // Invalidate all cost-related queries to ensure all charts and widgets are updated
-        queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
-        toast({
-          title: "Forecast Updated",
-          description: "Cost forecast has been updated with latest data.",
-        });
-      },
-      onError: () => {
-        toast({
-          title: "Sync Failed",
-          description: "Unable to sync cost data. Please try again.",
-          variant: "destructive",
-        });
-      },
+  const handleSync = () => {
+    syncMutation.mutate(undefined, {
+      onSuccess: () => toast.success("Cost data synced"),
+      onError: () => toast.error("Failed to sync cost data"),
     });
   };
 
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  // Derive stats from real API data
-  const overview = overviewData as CostOverview | undefined;
-  const forecast = forecastData as CostForecast | undefined;
-  const trends = trendsData as CostTrend | undefined;
-  const optimizations = (Array.isArray(optimizationsData) ? optimizationsData : []) as CostOptimization[];
-
-  const stats = {
-    currentSpend: overview?.monthlyCost ?? 0,
-    predictedSpend: forecast?.forecastedCost ?? 0,
-    budget: forecast?.upperBound ?? Math.ceil((overview?.monthlyCost ?? 0) * 1.3),
-    previousMonth: trends?.previousCost ?? 0,
-    potentialSavings: overview?.potentialSavings ?? 0,
-    savingsOpportunities: optimizations.length,
-    accuracy: forecast?.confidenceLevel ?? 0,
-  };
-
-  // Build cost breakdown from real overview by-service data
-  const costCategoryIcons: Record<string, { icon: React.ReactNode; color: string }> = {
-    "Compute": { icon: <Cpu className="h-4 w-4" />, color: "#3b82f6" },
-    "Storage": { icon: <HardDrive className="h-4 w-4" />, color: "#10b981" },
-    "Database": { icon: <Database className="h-4 w-4" />, color: "#8b5cf6" },
-    "Networking": { icon: <Globe className="h-4 w-4" />, color: "#f59e0b" },
-    "Other": { icon: <Cloud className="h-4 w-4" />, color: "#6b7280" },
-  };
-
-  const categoryColors = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b", "#6b7280", "#ef4444", "#06b6d4"];
-
-  const costBreakdownData = (() => {
-    const byService = (overview as any)?.byService;
-    if (byService && typeof byService === 'object' && Object.keys(byService).length > 0) {
-      return Object.entries(byService).map(([name, value], i) => ({
-        name,
-        value: typeof value === 'number' ? value : 0,
-        color: categoryColors[i % categoryColors.length],
-        icon: costCategoryIcons[name]?.icon ?? <Cloud className="h-4 w-4" />,
-        change: 0,
-      }));
-    }
-    return undefined; // let component use its default
-  })();
-
-  // Map optimizations to SavingsOpportunities format
-  const savingsOpportunities = optimizations.length > 0
-    ? optimizations.map((opt, i) => ({
-      id: opt.id ?? String(i),
-      title: opt.optimizationType ?? 'Optimization',
-      description: opt.description ?? '',
-      potentialSavings: opt.estimatedSavings ?? 0,
-      confidence: opt.confidence ?? 80,
-      difficulty: 'medium' as 'easy' | 'medium' | 'hard',
-      category: 'compute' as const,
-      impact: 'medium' as const,
-      timeToImplement: '1-2 hours',
-      affectedResources: 1,
-    }))
-    : undefined; // let component use its default
-
-  // Build AI insights from real recommendations
-  const aiInsights = (() => {
-    const recs = Array.isArray((recommendationsData as any)?.data) ? (recommendationsData as any).data : [];
-    if (recs.length > 0) {
-      return recs.slice(0, 3).map((rec: any) => ({
-        icon: rec.type === 'cost_optimization'
-          ? <AlertTriangle className="h-4 w-4" />
-          : rec.type === 'security_improvement'
-            ? <CheckCircle2 className="h-4 w-4" />
-            : <Clock className="h-4 w-4" />,
-        title: rec.title ?? 'Recommendation',
-        description: rec.description ?? '',
-        type: rec.priority === 'critical' || rec.priority === 'high' ? 'warning' : rec.type === 'cost_optimization' ? 'success' : 'info',
-      }));
-    }
-    return null; // will use fallback
-  })();
-
-  // Build ForecastChart data from real trends + forecast
-  const forecastChartData = (() => {
-    const points: { date: string; actual: number; forecast?: number; budget?: number; lowerBound?: number; upperBound?: number }[] = [];
-    const trendPoints = (trends as any)?.dataPoints as { date: string; cost: number }[] | undefined;
-    const budgetLine = stats.budget > 0 ? Math.round(stats.budget / 30) : undefined; // daily budget
-
-    // Historical data from trends
-    if (trendPoints && trendPoints.length > 0) {
-      for (const dp of trendPoints) {
-        const d = new Date(dp.date);
-        points.push({
-          date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          actual: Math.round(dp.cost),
-          budget: budgetLine,
+  const handleToggleAI = () => {
+    if (!aiEnabled) {
+      setAIEnabled(true);
+      if (!aiMutation.data && !aiMutation.isPending) {
+        aiMutation.mutate(undefined, {
+          onError: () => toast.error("AI analysis failed — check your Gemini API key"),
         });
       }
+    } else {
+      setAIEnabled(false);
     }
+  };
 
-    // Future projection from forecast
-    if (forecast && forecast.forecastedCost > 0) {
-      const daysToForecast = timeframe;
-      const dailyForecast = forecast.forecastedCost / timeframe;
-      const dailyLower = forecast.lowerBound / timeframe;
-      const dailyUpper = forecast.upperBound / timeframe;
-      const today = new Date();
-
-      for (let i = 1; i <= daysToForecast; i++) {
-        const d = new Date(today);
-        d.setDate(d.getDate() + i);
-        const uncertainty = i * 2; // grows with time
-        points.push({
-          date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          actual: undefined as any,
-          forecast: Math.round(dailyForecast),
-          budget: budgetLine,
-          lowerBound: Math.max(0, Math.round(dailyLower - uncertainty)),
-          upperBound: Math.round(dailyUpper + uncertainty),
-        });
+  // Build combined chart data: historical (actual) + forecast (predicted)
+  const chartData = React.useMemo(() => {
+    const points: { date: string; actual?: number; forecast?: number; lower?: number; upper?: number }[] = [];
+    if (forecast?.historical) {
+      for (const h of forecast.historical) {
+        points.push({ date: h.date, actual: h.cost });
       }
     }
-
-    return points.length > 0 ? points : undefined; // undefined = component uses its default
-  })();
-
-  // Compute weekly forecast breakdown from forecast data
-  const weekCount = Math.min(Math.max(Math.ceil(timeframe / 7), 1), 4);
-  const weeklyForecast = (() => {
-    if (!forecast) {
-      return Array.from({ length: weekCount }, (_, i) => ({
-        week: `Week ${i + 1}`,
-        amount: 0,
-        change: 0,
-      }));
+    if (forecast?.dataPoints) {
+      for (const p of forecast.dataPoints) {
+        points.push({ date: p.date, forecast: p.cost, lower: p.lowerBound, upper: p.upperBound });
+      }
     }
-    const baseWeekly = forecast.forecastedCost / weekCount;
-    const changeRate = (trends?.changePercent ?? 0) / 100;
-    return Array.from({ length: weekCount }, (_, i) => ({
-      week: `Week ${i + 1}`,
-      amount: Math.round(baseWeekly * (1 + changeRate * (i / Math.max(weekCount - 1, 1)))),
-      change: parseFloat((Math.abs(changeRate) * 100 * ((i + 1) / weekCount)).toFixed(1)),
-    }));
-  })();
+    return points;
+  }, [forecast]);
+
+  // Weekly breakdown from forecast data points
+  const weeklyData = React.useMemo(() => {
+    if (!forecast?.dataPoints?.length) return [];
+    const weeks: { week: string; predicted: number; lower: number; upper: number }[] = [];
+    const pts = forecast.dataPoints;
+    for (let i = 0; i < pts.length; i += 7) {
+      const chunk = pts.slice(i, i + 7);
+      const total = chunk.reduce((s, p) => s + p.cost, 0);
+      const lower = chunk.reduce((s, p) => s + p.lowerBound, 0);
+      const upper = chunk.reduce((s, p) => s + p.upperBound, 0);
+      weeks.push({
+        week: chunk.length < 7 ? `Week ${weeks.length + 1} (partial)` : `Week ${weeks.length + 1}`,
+        predicted: total,
+        lower,
+        upper,
+      });
+    }
+    return weeks;
+  }, [forecast]);
+
+  const trendIcon =
+    overview?.trend?.trend === "up" ? TrendingUp :
+    overview?.trend?.trend === "down" ? TrendingDown : Minus;
+  const trendColor =
+    overview?.trend?.trend === "up" ? "text-red-500" :
+    overview?.trend?.trend === "down" ? "text-green-500" : "text-gray-500";
 
   return (
     <DashboardLayout>
-      <Helmet>
-        <title>Cost Prediction | InfraAudit</title>
-        <meta name="description" content="AI-powered cloud cost prediction and optimization recommendations." />
-      </Helmet>
-
-      <div className="space-y-8">
-        {/* Minimalist Hero */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border/40">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-light tracking-tight text-foreground">
-              Cost <span className="font-semibold">Prediction</span>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+              Cost Prediction
             </h1>
-            <p className="text-muted-foreground mt-2 font-medium flex items-center gap-2">
-              <Brain className="h-4 w-4 opacity-70" />
-              Machine learning powered forecasts
-              <span className="text-muted-foreground/30">•</span>
-              {stats.accuracy}% accuracy
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              Statistical forecasting based on your billing history and scan data
             </p>
           </div>
-
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            <Select
-              value={predictionModel}
-              onValueChange={(value) => setPredictionModel(value as any)}
-            >
-              <SelectTrigger className="w-[180px] bg-background">
-                <SelectValue placeholder="Model" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="linear">Linear</SelectItem>
-                <SelectItem value="movingAverage">Moving Average</SelectItem>
-                <SelectItem value="weightedMovingAverage">Weighted Average</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={timeframe.toString()}
-              onValueChange={(value) => setTimeframe(parseInt(value))}
-            >
-              <SelectTrigger className="w-[120px] bg-background">
-                <SelectValue placeholder="Days" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">7 Days</SelectItem>
-                <SelectItem value="30">30 Days</SelectItem>
-                <SelectItem value="60">60 Days</SelectItem>
-                <SelectItem value="90">90 Days</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button
-              onClick={handleGenerateForecast}
-              disabled={syncCostsMutation.isPending}
-              variant="default"
-              className="gap-2"
-            >
-              {syncCostsMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              Update
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSync}
+            disabled={syncMutation.isPending}
+            className="gap-2 self-start sm:self-auto"
+          >
+            <RefreshCw className={cn("h-4 w-4", syncMutation.isPending && "animate-spin")} />
+            Sync Costs
+          </Button>
         </div>
 
-        {/* Clean Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="bg-transparent border-b border-border/40 w-full justify-start rounded-none p-0 h-auto">
-            <TabsTrigger
-              value="overview"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3 font-medium text-muted-foreground data-[state=active]:text-foreground"
-            >
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="forecast"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3 font-medium text-muted-foreground data-[state=active]:text-foreground"
-            >
+        {/* Stat Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            icon={DollarSign}
+            label="Current Month"
+            value={overview ? `$${overview.monthlyCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—"}
+            color="from-blue-500 to-blue-600"
+            loading={overviewLoading}
+          />
+          <StatCard
+            icon={Target}
+            label={`${timeframe}-Day Forecast`}
+            value={forecast ? `$${forecast.forecastedCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—"}
+            sub={`Model: ${model.toUpperCase()}`}
+            color="from-violet-500 to-violet-600"
+            loading={forecastLoading}
+          />
+          <StatCard
+            icon={BarChart3}
+            label="Confidence"
+            value={forecast ? `${Math.round((forecast.confidenceLevel ?? 0) * 100)}%` : "—"}
+            sub={forecast?.historical?.length ? `Based on ${forecast.historical.length} days of data` : "No history yet"}
+            color={
+              (forecast?.confidenceLevel ?? 0) >= 0.7 ? "from-green-500 to-green-600" :
+              (forecast?.confidenceLevel ?? 0) >= 0.4 ? "from-yellow-500 to-yellow-600" :
+              "from-red-500 to-red-600"
+            }
+            loading={forecastLoading}
+          />
+          <StatCard
+            icon={trendIcon}
+            label="Cost Trend"
+            value={overview?.trend ? `${overview.trend.changePercent > 0 ? "+" : ""}${overview.trend.changePercent.toFixed(1)}%` : "—"}
+            sub={overview?.trend?.trend ?? "stable"}
+            color="from-orange-500 to-orange-600"
+            loading={overviewLoading}
+          />
+        </div>
+
+        <Tabs defaultValue="forecast" className="w-full">
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="forecast" className="gap-1.5">
+              <TrendingUp className="h-3.5 w-3.5" />
               Forecast
             </TabsTrigger>
-            <TabsTrigger
-              value="optimization"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3 font-medium text-muted-foreground data-[state=active]:text-foreground"
-            >
-              Optimization
+            <TabsTrigger value="analysis" className="gap-1.5">
+              <BarChart3 className="h-3.5 w-3.5" />
+              Analysis
             </TabsTrigger>
-            <TabsTrigger
-              value="kubernetes"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-3 font-medium text-muted-foreground data-[state=active]:text-foreground"
-            >
-              Kubernetes
+            <TabsTrigger value="ai" className="gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              AI Insights
             </TabsTrigger>
           </TabsList>
-        </Tabs>
 
-        <div className="mt-8">
-          <AnimatePresence mode="wait">
-            {activeTab === "overview" && (
-              <motion.div
-                key="overview"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-6"
-              >
-                {/* Clean Stats Row */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    {
-                      label: "Current Month",
-                      value: formatCurrency(stats.currentSpend),
-                      change: trends ? `${trends.changePercent > 0 ? '+' : ''}${trends.changePercent.toFixed(1)}%` : '--',
-                      trend: trends?.trend ?? "stable",
-                    },
-                    {
-                      label: "Predicted Total",
-                      value: formatCurrency(stats.predictedSpend),
-                      change: stats.currentSpend > 0 && stats.predictedSpend > 0
-                        ? `${stats.predictedSpend >= stats.currentSpend ? '+' : ''}${((stats.predictedSpend - stats.currentSpend) / stats.currentSpend * 100).toFixed(1)}%`
-                        : '--',
-                      trend: stats.predictedSpend > stats.currentSpend ? "up" : stats.predictedSpend < stats.currentSpend ? "down" : "stable",
-                    },
-                    {
-                      label: "Potential Savings",
-                      value: formatCurrency(stats.potentialSavings),
-                      change: `${stats.savingsOpportunities} insights`,
-                      trend: "down",
-                    },
-                    {
-                      label: "Budget Remaining",
-                      value: formatCurrency(Math.max(stats.budget - stats.currentSpend, 0)),
-                      change: stats.budget > 0 ? `${Math.round(((stats.budget - stats.currentSpend) / stats.budget) * 100)}% left` : '--',
-                      trend: "stable",
-                    }
-                  ].map((stat, i) => (
-                    <Card key={i} className="rounded-xl shadow-none border-border/50">
-                      <CardContent className="p-6">
-                        <p className="text-sm font-medium text-muted-foreground tracking-tight">{stat.label}</p>
-                        <div className="mt-2 flex items-baseline gap-2">
-                          <span className="text-3xl font-semibold tracking-tight">{stat.value}</span>
+          {/* Tab 1: Forecast */}
+          <TabsContent value="forecast" className="space-y-6 mt-6">
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Forecast Model</p>
+                <div className="flex gap-2">
+                  {MODEL_OPTIONS.map((m) => (
+                    <Button
+                      key={m.value}
+                      size="sm"
+                      variant={model === m.value ? "default" : "outline"}
+                      onClick={() => setModel(m.value)}
+                      title={m.desc}
+                    >
+                      {m.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Horizon</p>
+                <div className="flex gap-2">
+                  {TIMEFRAMES.map((t) => (
+                    <Button
+                      key={t.value}
+                      size="sm"
+                      variant={timeframe === t.value ? "default" : "outline"}
+                      onClick={() => setTimeframe(t.value)}
+                    >
+                      {t.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Low confidence warning */}
+            {!forecastLoading && forecast && (forecast.confidenceLevel ?? 1) < 0.4 && (
+              <div className="flex items-center gap-2 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 px-4 py-3">
+                <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                  Limited historical data — forecast accuracy may be low. Import billing data or run more scans to improve predictions.
+                </p>
+              </div>
+            )}
+
+            {/* Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Cost Forecast</CardTitle>
+                <CardDescription>
+                  Historical actual costs (solid) + {timeframe}-day forecast (dashed) with confidence interval
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {forecastLoading ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                  </div>
+                ) : chartData.length === 0 ? (
+                  <div className="h-64 flex flex-col items-center justify-center text-center gap-2">
+                    <BarChart3 className="h-8 w-8 text-gray-300" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No cost data available yet.</p>
+                    <p className="text-xs text-gray-400">Import billing data or run a scan to see forecasts.</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                      <defs>
+                        <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="forecastGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2} />
+                          <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={(v) => v.slice(5)}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={(v) => `$${v.toLocaleString()}`}
+                        width={70}
+                      />
+                      <Tooltip
+                        formatter={(v: number, name: string) => [`$${v.toFixed(2)}`, name]}
+                        labelFormatter={(l) => `Date: ${l}`}
+                      />
+                      <Legend />
+                      <Area
+                        type="monotone"
+                        dataKey="actual"
+                        name="Actual"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        fill="url(#actualGrad)"
+                        connectNulls={false}
+                        dot={false}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="forecast"
+                        name="Forecast"
+                        stroke="#8b5cf6"
+                        strokeWidth={2}
+                        strokeDasharray="5 3"
+                        fill="url(#forecastGrad)"
+                        connectNulls={false}
+                        dot={false}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="lower"
+                        name="Lower Bound"
+                        stroke="none"
+                        strokeWidth={0}
+                        fill="#8b5cf6"
+                        fillOpacity={0}
+                        dot={false}
+                        legendType="none"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="upper"
+                        name="Confidence Band"
+                        stroke="#8b5cf6"
+                        strokeWidth={0}
+                        fill="#8b5cf6"
+                        fillOpacity={0.08}
+                        dot={false}
+                        legendType="none"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Weekly breakdown */}
+            {weeklyData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Weekly Forecast Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                          <th className="text-left py-2 pr-4 text-gray-500 font-medium">Week</th>
+                          <th className="text-right py-2 px-4 text-gray-500 font-medium">Predicted</th>
+                          <th className="text-right py-2 px-4 text-gray-500 font-medium">Lower</th>
+                          <th className="text-right py-2 pl-4 text-gray-500 font-medium">Upper</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {weeklyData.map((w) => (
+                          <tr key={w.week} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                            <td className="py-2.5 pr-4 font-medium text-gray-900 dark:text-white">{w.week}</td>
+                            <td className="py-2.5 px-4 text-right text-violet-600 dark:text-violet-400 font-semibold">
+                              ${w.predicted.toFixed(2)}
+                            </td>
+                            <td className="py-2.5 px-4 text-right text-gray-500">${w.lower.toFixed(2)}</td>
+                            <td className="py-2.5 pl-4 text-right text-gray-500">${w.upper.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Tab 2: Analysis */}
+          <TabsContent value="analysis" className="space-y-6 mt-6">
+            {/* Top services */}
+            {overview?.topServices && overview.topServices.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Cost by Service</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart
+                      data={overview.topServices.slice(0, 10)}
+                      layout="vertical"
+                      margin={{ left: 80, right: 20 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                      <YAxis type="category" dataKey="serviceName" tick={{ fontSize: 11 }} width={80} />
+                      <Tooltip formatter={(v: number) => [`$${v.toFixed(2)}`, "Cost"]} />
+                      <Bar dataKey="cost" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Provider breakdown */}
+            {overview?.byProvider && Object.keys(overview.byProvider).length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Cost by Provider</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(overview.byProvider).map(([provider, amount]) => (
+                    <Card key={provider}>
+                      <CardContent className="pt-5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-500 capitalize">{provider}</p>
+                          <Badge variant="secondary" className="capitalize">{provider}</Badge>
                         </div>
-                        <div className="mt-3 flex items-center text-sm font-medium">
-                          <span className={cn(
-                            "px-2 py-0.5 rounded-md",
-                            stat.trend === "up" ? "bg-red-500/10 text-red-600 dark:text-red-400" :
-                              stat.trend === "down" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
-                                "bg-secondary text-secondary-foreground"
-                          )}>
-                            {stat.change}
-                          </span>
-                        </div>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                          ${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
+              </div>
+            )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <PredictionGauge
-                    currentSpend={stats.currentSpend}
-                    predictedSpend={stats.predictedSpend}
-                    budget={stats.budget}
-                    previousMonthSpend={stats.previousMonth}
-                  />
-                  <CostBreakdownChart data={costBreakdownData} totalCost={stats.currentSpend || undefined} />
-                </div>
-
-                <ForecastChart data={forecastChartData} budget={stats.budget > 0 ? Math.round(stats.budget / 30) : undefined} model={predictionModel} />
-
-                {/* Clean ROI Calculator CTA */}
-                <Card className="rounded-xl shadow-none border-emerald-500/20 bg-emerald-500/5">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2.5 bg-emerald-500/10 rounded-lg">
-                          <Calculator className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                        <div>
-                          <h3 className="text-base font-semibold text-emerald-950 dark:text-emerald-50">
-                            Calculate Your Return on Investment
-                          </h3>
-                          <p className="text-sm text-emerald-800/80 dark:text-emerald-200/80">
-                            Estimate how much you could save with our optimization features.
-                          </p>
-                        </div>
+            {/* Recent anomalies */}
+            {anomalies && anomalies.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                    Recent Cost Anomalies
+                  </CardTitle>
+                  <CardDescription>Anomalies may affect forecast accuracy</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {anomalies.map((a) => (
+                    <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{a.serviceName || a.provider}</p>
+                        <p className="text-xs text-gray-500">{a.anomalyType} · {a.deviation?.toFixed(1)}% deviation</p>
                       </div>
-                      <Button asChild variant="outline" className="border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300">
-                        <a href="/roi-calculator" className="flex items-center gap-2">
-                          Open Calculator
-                          <ArrowRight className="h-4 w-4" />
-                        </a>
-                      </Button>
+                      <Badge
+                        className={cn(
+                          "capitalize",
+                          a.severity === "critical" && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                          a.severity === "high" && "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+                          a.severity === "medium" && "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+                        )}
+                        variant="outline"
+                      >
+                        {a.severity}
+                      </Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Empty state */}
+            {!overviewLoading && !overview?.topServices?.length && !anomalies?.length && (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <BarChart3 className="h-8 w-8 mx-auto mb-3 text-gray-300" />
+                  <p className="text-gray-500 dark:text-gray-400">No analysis data available yet.</p>
+                  <p className="text-sm text-gray-400 mt-1">Import billing data or connect a cloud provider to see analysis.</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Tab 3: AI Insights */}
+          <TabsContent value="ai" className="space-y-6 mt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Gemini AI Analysis</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">AI-powered cost forecast and recommendations</p>
+              </div>
+              <Button
+                variant={aiEnabled ? "default" : "outline"}
+                className="gap-2"
+                onClick={handleToggleAI}
+              >
+                <Sparkles className="h-4 w-4" />
+                {aiEnabled ? "AI Enabled" : "Enable AI Analysis"}
+              </Button>
+            </div>
+
+            {!aiEnabled && (
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center space-y-3">
+                  <Brain className="h-10 w-10 mx-auto text-violet-400" />
+                  <p className="font-medium text-gray-900 dark:text-white">AI Analysis powered by Gemini</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                    Enable to get a natural-language cost analysis including trend summary, key cost drivers, risk factors, and actionable recommendations.
+                  </p>
+                  <Button variant="default" className="gap-2 mt-2" onClick={handleToggleAI}>
+                    <Sparkles className="h-4 w-4" />
+                    Enable AI Analysis
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {aiEnabled && aiMutation.isPending && (
+              <Card>
+                <CardContent className="py-12 flex flex-col items-center gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+                  <p className="text-sm text-gray-500">Analyzing your cost data with Gemini AI...</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {aiEnabled && aiMutation.isError && (
+              <Card className="border-red-200 dark:border-red-800">
+                <CardContent className="py-8 text-center space-y-3">
+                  <AlertTriangle className="h-8 w-8 mx-auto text-red-400" />
+                  <p className="text-sm text-red-600 dark:text-red-400">AI analysis failed. Check that GEMINI_API_KEY is configured on the server.</p>
+                  <Button variant="outline" size="sm" onClick={() => aiMutation.mutate(undefined)}>Retry</Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {aiEnabled && aiMutation.isSuccess && aiMutation.data && (
+              <div className="space-y-4">
+                {/* Summary */}
+                <Card className="border-violet-200 dark:border-violet-800 bg-violet-50/30 dark:bg-violet-900/10">
+                  <CardContent className="pt-5">
+                    <div className="flex gap-3">
+                      <Sparkles className="h-5 w-5 text-violet-500 shrink-0 mt-0.5" />
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{aiMutation.data.summary}</p>
                     </div>
                   </CardContent>
                 </Card>
-              </motion.div>
-            )}
 
-            {activeTab === "forecast" && (
-              <motion.div
-                key="forecast"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-6"
-              >
-                <ForecastChart data={forecastChartData} budget={stats.budget > 0 ? Math.round(stats.budget / 30) : undefined} model={predictionModel} />
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <PredictionGauge
-                    currentSpend={stats.currentSpend}
-                    predictedSpend={stats.predictedSpend}
-                    budget={stats.budget}
-                    previousMonthSpend={stats.previousMonth}
-                  />
-
-                  <Card className="rounded-xl shadow-none border-border/50">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base font-medium flex items-center gap-2">
-                        <Calendar className="h-4 w-4 opacity-70" />
-                        Weekly Forecast
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {weeklyForecast.map((item, index) => (
-                          <div
-                            key={item.week}
-                            className="flex items-center justify-between p-3 rounded-lg border border-border/40 bg-card/50"
-                          >
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-medium">{item.week}</span>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-semibold">{formatCurrency(item.amount)}</p>
-                              <p className={cn(
-                                "text-xs",
-                                item.change > 5 ? "text-red-500" : "text-muted-foreground"
-                              )}>
-                                +{item.change}% vs avg
-                              </p>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Cost Drivers */}
+                  {aiMutation.data.costDrivers?.length > 0 && (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-gray-700 dark:text-gray-300">Cost Drivers</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {aiMutation.data.costDrivers.map((d, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <ChevronRight className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{d}</p>
                           </div>
                         ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Risk Factors */}
+                  {aiMutation.data.riskFactors?.length > 0 && (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-gray-700 dark:text-gray-300">Risk Factors</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {aiMutation.data.riskFactors.map((r, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <AlertTriangle className="h-3.5 w-3.5 text-orange-500 shrink-0 mt-0.5" />
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{r}</p>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Recommendations */}
+                  {aiMutation.data.recommendations?.length > 0 && (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-gray-700 dark:text-gray-300">Recommendations</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {aiMutation.data.recommendations.map((rec, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <Target className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                            <p className="text-xs text-gray-600 dark:text-gray-400">{rec}</p>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
-              </motion.div>
-            )}
 
-            {activeTab === "optimization" && (
-              <motion.div
-                key="optimization"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-6"
-              >
-                <SavingsOpportunities
-                  opportunities={savingsOpportunities}
-                  onApply={(id) => {
-                    toast({
-                      title: "Recommendation Applied",
-                      description: "The optimization has been scheduled for implementation.",
-                    });
-                  }}
-                />
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <CostBreakdownChart data={costBreakdownData} totalCost={stats.currentSpend || undefined} />
-
-                  <Card className="rounded-xl shadow-none border-border/50">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base font-medium flex items-center gap-2">
-                        <Lightbulb className="h-4 w-4 opacity-70" />
-                        AI Insights
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {(aiInsights ?? [
-                        {
-                          title: "Connect Cloud Providers",
-                          description: "Add your AWS, Azure, or GCP accounts to get real AI-powered insights",
-                          type: "warning"
-                        },
-                        {
-                          title: "Sync Cost Data",
-                          description: "Click 'Update' to sync your latest cost data",
-                          type: "success"
-                        },
-                        {
-                          title: "AI Analysis Ready",
-                          description: "Identify patterns and savings automatically",
-                          type: "info"
-                        }
-                      ]).map((insight: any, i: number) => (
-                        <div
-                          key={i}
-                          className="p-4 rounded-lg border border-border/40 bg-card/50 flex flex-col gap-1"
-                        >
-                          <h4 className="text-sm font-medium text-foreground">
-                            {insight.title}
-                          </h4>
-                          <p className="text-sm text-muted-foreground">
-                            {insight.description}
+                {/* 30/60/90 day forecast from AI */}
+                {(aiMutation.data.forecast30d || aiMutation.data.forecast60d || aiMutation.data.forecast90d) && (
+                  <div className="grid grid-cols-3 gap-4">
+                    {[
+                      { label: "30-Day AI Forecast", value: aiMutation.data.forecast30d },
+                      { label: "60-Day AI Forecast", value: aiMutation.data.forecast60d },
+                      { label: "90-Day AI Forecast", value: aiMutation.data.forecast90d },
+                    ].map((f) => f.value ? (
+                      <Card key={f.label}>
+                        <CardContent className="pt-5">
+                          <p className="text-xs text-gray-500">{f.label}</p>
+                          <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
+                            ${f.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                </div>
-              </motion.div>
+                        </CardContent>
+                      </Card>
+                    ) : null)}
+                  </div>
+                )}
+              </div>
             )}
-
-            {activeTab === "kubernetes" && (
-              <motion.div
-                key="kubernetes"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Card className="rounded-xl shadow-none border-border/50">
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-base font-medium flex items-center gap-2">
-                      <Server className="h-4 w-4 opacity-70" />
-                      Cluster Analytics
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <KubernetesCostAnalytics />
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
