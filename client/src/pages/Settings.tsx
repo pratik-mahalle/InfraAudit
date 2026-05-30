@@ -197,7 +197,7 @@ export default function Settings() {
   });
 
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("Viewer");
+  const [inviteRole, setInviteRole] = useState("viewer");
 
   const inviteMutation = useMutation({
     mutationFn: async ({ email, role }: { email: string; role: string }) => {
@@ -619,8 +619,8 @@ export default function Settings() {
                       <Select value={inviteRole} onValueChange={setInviteRole}>
                         <SelectTrigger className="w-36"><SelectValue placeholder="Role" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Viewer">Viewer</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="viewer">Viewer</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button
