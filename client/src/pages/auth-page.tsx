@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, Link } from "wouter";
 import { Loader2, Cloud, AlertCircle } from "lucide-react";
+import { isPersonalEmail, BUSINESS_EMAIL_ERROR } from "@/lib/utils";
 
 // OAuth Icons
 const GoogleIcon = () => (
@@ -37,6 +38,10 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
+    if (isPersonalEmail(email)) {
+      setAuthError(BUSINESS_EMAIL_ERROR);
+      return;
+    }
     setIsLoading(true);
     try {
       await signInWithEmail(email, password);

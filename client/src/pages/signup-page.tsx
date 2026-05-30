@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, Link, useSearch } from "wouter";
 import { Loader2, Cloud, AlertCircle } from "lucide-react";
+import { isPersonalEmail, BUSINESS_EMAIL_ERROR } from "@/lib/utils";
 
 // OAuth Icons
 const GoogleIcon = () => (
@@ -125,6 +126,10 @@ export default function SignupPage() {
         e.preventDefault();
         setError("");
 
+        if (isPersonalEmail(formData.email)) {
+            setError(BUSINESS_EMAIL_ERROR);
+            return;
+        }
         if (formData.password !== formData.confirmPassword) {
             setError("Passwords don't match");
             return;

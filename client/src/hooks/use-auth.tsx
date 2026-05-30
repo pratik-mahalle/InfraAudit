@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { unwrapResponse } from "@/lib/queryClient";
+import { isPersonalEmail, BUSINESS_EMAIL_ERROR } from "@/lib/utils";
 
 type AuthContextType = {
   user: User | null;
@@ -65,11 +66,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPendingApproval(false);
       return;
     }
+    // Block personal emails from OAuth logins
+    const oauthEmail = sess.user?.email;
+    if (oauthEmail && isPersonalEmail(oauthEmail)) {
+      await supabase.auth.signOut();
+      toast({
+        title: "Business email required",
+        description: BUSINESS_EMAIL_ERROR,
+        variant: "destructive",
+      });
+      setUser(null);
+      setNeedsSignup(false);
+      setPendingApproval(false);
+      return;
+    }
     const result = await fetchProfile(sess.access_token);
     setUser(result.user);
     setNeedsSignup(result.needsSignup);
     setPendingApproval(result.pendingApproval);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     // Get initial session
@@ -93,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithEmail = useCallback(
     async (email: string, password: string) => {
+      if (isPersonalEmail(email)) throw new Error(BUSINESS_EMAIL_ERROR);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw new Error(error.message);
       toast({
@@ -109,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string,
       metadata?: { username?: string; fullName?: string }
     ) => {
+      if (isPersonalEmail(email)) throw new Error(BUSINESS_EMAIL_ERROR);
       const { error } = await supabase.auth.signUp({
         email,
         password,

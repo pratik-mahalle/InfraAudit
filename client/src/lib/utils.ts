@@ -97,3 +97,29 @@ export function truncate(str: string, length: number): string {
   if (str.length <= length) return str;
   return str.substring(0, length) + '...';
 }
+
+const PERSONAL_EMAIL_DOMAINS = new Set([
+  "gmail.com", "googlemail.com",
+  "yahoo.com", "yahoo.co.in", "yahoo.co.uk",
+  "hotmail.com", "outlook.com", "live.com", "msn.com",
+  "aol.com",
+  "icloud.com", "me.com", "mac.com",
+  "protonmail.com", "proton.me",
+  "zoho.com",
+  "yandex.com", "yandex.ru",
+  "mail.com",
+  "gmx.com", "gmx.net",
+  "tutanota.com", "tuta.io",
+  "fastmail.com",
+  "hey.com",
+  "pm.me",
+  "rediffmail.com",
+]);
+
+export function isPersonalEmail(email: string): boolean {
+  const domain = email.split("@")[1]?.toLowerCase();
+  if (!domain) return false;
+  return PERSONAL_EMAIL_DOMAINS.has(domain);
+}
+
+export const BUSINESS_EMAIL_ERROR = "Please use a business email address. Personal email addresses (Gmail, Yahoo, etc.) are not allowed.";
