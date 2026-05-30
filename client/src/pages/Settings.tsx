@@ -657,8 +657,8 @@ export default function Settings() {
                         <Select value={m.role} onValueChange={(v) => updateRoleMutation.mutate({ id: m.id, role: v })} disabled={!isOwner}>
                           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Admin">Admin</SelectItem>
-                            <SelectItem value="Viewer">Viewer</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="viewer">Viewer</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
