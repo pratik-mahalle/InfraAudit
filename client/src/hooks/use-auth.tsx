@@ -36,7 +36,7 @@ async function fetchProfile(accessToken: string): Promise<ProfileResult> {
     if (!res.ok) return { user: null, needsSignup: false };
     const json = await res.json();
     const data = unwrapResponse<any>(json);
-    if (data?.needsSignup) {
+    if (data?.needsSignup || data?.needsOrg) {
       return { user: null, needsSignup: true };
     }
     return { user: data as User, needsSignup: false };
