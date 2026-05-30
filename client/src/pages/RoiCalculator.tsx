@@ -131,19 +131,29 @@ export default function RoiCalculator() {
   const effectiveSpend = overrideMode && calculatedValues ? calculatedValues.monthlySpend : monthlySpend;
   const effectiveResourceCount = overrideMode && calculatedValues ? calculatedValues.resourceCount : resourceCount;
 
-  // Calculations using real data as base
+  // Calculations using real data as base, with estimates for manual mode
   const realAppliedSavings = roiData?.appliedSavings ?? 0;
   const realPendingSavings = roiData?.pendingSavings ?? 0;
-  const annualizedApplied = realAppliedSavings * 12;
-  const annualizedPending = realPendingSavings * 12;
-  const totalAnnualSavings = annualizedApplied + annualizedPending;
+  const hasRealSavings = realAppliedSavings > 0 || realPendingSavings > 0;
   const annualSpend = effectiveSpend * 12;
+
+  // Infrastructure savings: real data if available, otherwise estimate 15% of spend
+  const infraSavingsMonthly = hasRealSavings ? realAppliedSavings + realPendingSavings : effectiveSpend * 0.15;
+  const infraSavingsAnnual = infraSavingsMonthly * 12;
+
+  // Security savings: real incidents if available, otherwise estimate from resource count
+  const realIncidents = roiData?.securityIncidents ?? 0;
+  const estimatedIncidents = overrideMode && realIncidents === 0 ? Math.max(1, Math.floor(effectiveResourceCount / 10)) : realIncidents;
+  const securitySavings = estimatedIncidents * 1500 * 0.6;
+
+  // Operational savings from resource count
+  const operationalSavings = effectiveResourceCount * 8 * 12;
+
+  const totalAnnualSavings = infraSavingsAnnual + securitySavings + operationalSavings;
   const roiPercent = annualSpend > 0 ? (totalAnnualSavings / annualSpend) * 100 : 0;
   const paybackMonths = totalAnnualSavings > 0
     ? Math.max(1, Math.ceil((annualSpend * 0.03) / (totalAnnualSavings / 12)))
     : 0;
-  const securitySavings = (roiData?.securityIncidents ?? 0) * 1500 * 0.6;
-  const operationalSavings = effectiveResourceCount * 8 * 12;
 
   // 3-year projection data
   const projectionData = Array.from({ length: 36 }, (_, i) => ({
@@ -413,16 +423,16 @@ export default function RoiCalculator() {
               <SavingsCard
                 icon={Server}
                 label="Infrastructure"
-                value={`$${annualizedApplied.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr`}
-                sub={`$${realAppliedSavings.toFixed(2)}/mo applied`}
+                value={`$${infraSavingsAnnual.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr`}
+                sub={hasRealSavings ? `$${(realAppliedSavings + realPendingSavings).toFixed(2)}/mo applied` : `~15% of $${effectiveSpend.toLocaleString()}/mo`}
                 color="bg-blue-500"
-                isReal
+                isReal={hasRealSavings}
               />
               <SavingsCard
                 icon={Shield}
                 label="Security"
                 value={`$${securitySavings.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr`}
-                sub={`${roiData?.securityIncidents ?? 0} incidents reduced`}
+                sub={`${estimatedIncidents} incidents reduced`}
                 color="bg-orange-500"
               />
               <SavingsCard
