@@ -97,6 +97,8 @@ export default function RoiCalculator() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
   const [emailSending, setEmailSending] = useState(false);
+  const [needsCalculation, setNeedsCalculation] = useState(false);
+  const [calculatedValues, setCalculatedValues] = useState<{ monthlySpend: number; resourceCount: number } | null>(null);
 
   // Pre-fill when data loads
   useEffect(() => {
@@ -110,6 +112,8 @@ export default function RoiCalculator() {
 
   const handleReset = () => {
     setOverrideMode(false);
+    setNeedsCalculation(false);
+    setCalculatedValues(null);
     if (roiData) {
       setMonthlySpend(roiData.currentMonthlySpend);
       setResourceCount(roiData.resourceCount || 0);
@@ -118,19 +122,28 @@ export default function RoiCalculator() {
     }
   };
 
+  const handleCalculate = () => {
+    setCalculatedValues({ monthlySpend, resourceCount });
+    setNeedsCalculation(false);
+  };
+
+  // Use calculated values in override mode, live values otherwise
+  const effectiveSpend = overrideMode && calculatedValues ? calculatedValues.monthlySpend : monthlySpend;
+  const effectiveResourceCount = overrideMode && calculatedValues ? calculatedValues.resourceCount : resourceCount;
+
   // Calculations using real data as base
   const realAppliedSavings = roiData?.appliedSavings ?? 0;
   const realPendingSavings = roiData?.pendingSavings ?? 0;
   const annualizedApplied = realAppliedSavings * 12;
   const annualizedPending = realPendingSavings * 12;
   const totalAnnualSavings = annualizedApplied + annualizedPending;
-  const annualSpend = monthlySpend * 12;
+  const annualSpend = effectiveSpend * 12;
   const roiPercent = annualSpend > 0 ? (totalAnnualSavings / annualSpend) * 100 : 0;
   const paybackMonths = totalAnnualSavings > 0
     ? Math.max(1, Math.ceil((annualSpend * 0.03) / (totalAnnualSavings / 12)))
     : 0;
   const securitySavings = (roiData?.securityIncidents ?? 0) * 1500 * 0.6;
-  const operationalSavings = resourceCount * 8 * 12;
+  const operationalSavings = effectiveResourceCount * 8 * 12;
 
   // 3-year projection data
   const projectionData = Array.from({ length: 36 }, (_, i) => ({
@@ -245,7 +258,7 @@ export default function RoiCalculator() {
                 <Link href="/reports">
                   <Button variant="outline">Run a Scan</Button>
                 </Link>
-                <Button variant="ghost" onClick={() => setOverrideMode(true)}>
+                <Button variant="ghost" onClick={() => { setOverrideMode(true); setNeedsCalculation(true); }}>
                   Enter manually
                 </Button>
               </div>
@@ -305,7 +318,7 @@ export default function RoiCalculator() {
                       type="number"
                       min={0}
                       value={monthlySpend || ""}
-                      onChange={(e) => { setMonthlySpend(parseFloat(e.target.value) || 0); setOverrideMode(true); }}
+                      onChange={(e) => { setMonthlySpend(parseFloat(e.target.value) || 0); setOverrideMode(true); setNeedsCalculation(true); }}
                       className="pl-7"
                       placeholder="0.00"
                     />
@@ -320,7 +333,7 @@ export default function RoiCalculator() {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="provider">Primary Cloud Provider</Label>
-                  <Select value={provider} onValueChange={(v) => { setProvider(v); setOverrideMode(true); }}>
+                  <Select value={provider} onValueChange={(v) => { setProvider(v); setOverrideMode(true); setNeedsCalculation(true); }}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -340,7 +353,7 @@ export default function RoiCalculator() {
                     type="number"
                     min={0}
                     value={resourceCount || ""}
-                    onChange={(e) => { setResourceCount(parseInt(e.target.value) || 0); setOverrideMode(true); }}
+                    onChange={(e) => { setResourceCount(parseInt(e.target.value) || 0); setOverrideMode(true); setNeedsCalculation(true); }}
                     placeholder="0"
                   />
                 </div>
@@ -357,6 +370,17 @@ export default function RoiCalculator() {
                       <span className="font-medium text-blue-600">${realPendingSavings.toFixed(2)}/mo potential</span>
                     </div>
                   </div>
+                )}
+
+                {overrideMode && (
+                  <Button
+                    onClick={handleCalculate}
+                    className="w-full mt-2 gap-2"
+                    disabled={!needsCalculation}
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    {needsCalculation ? "Calculate ROI" : "Calculated"}
+                  </Button>
                 )}
               </CardContent>
             </Card>
@@ -405,7 +429,7 @@ export default function RoiCalculator() {
                 icon={Clock}
                 label="Operational"
                 value={`$${operationalSavings.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/yr`}
-                sub={`${resourceCount} resources × 8 hrs/yr`}
+                sub={`${effectiveResourceCount} resources × 8 hrs/yr`}
                 color="bg-violet-500"
               />
             </div>
