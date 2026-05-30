@@ -66,25 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setPendingApproval(false);
       return;
     }
-    // Block personal emails from OAuth logins
-    const oauthEmail = sess.user?.email;
-    if (oauthEmail && isPersonalEmail(oauthEmail)) {
-      await supabase.auth.signOut();
-      toast({
-        title: "Business email required",
-        description: BUSINESS_EMAIL_ERROR,
-        variant: "destructive",
-      });
-      setUser(null);
-      setNeedsSignup(false);
-      setPendingApproval(false);
-      return;
-    }
     const result = await fetchProfile(sess.access_token);
     setUser(result.user);
     setNeedsSignup(result.needsSignup);
     setPendingApproval(result.pendingApproval);
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     // Get initial session
