@@ -10,6 +10,7 @@ type AuthContextType = {
   session: Session | null;
   isLoading: boolean;
   needsSignup: boolean;
+  pendingApproval: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (
     email: string,
@@ -25,7 +26,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-type ProfileResult = { user: User | null; needsSignup: boolean };
+type ProfileResult = { user: User | null; needsSignup: boolean; pendingApproval: boolean };
 
 async function fetchProfile(accessToken: string): Promise<ProfileResult> {
   try {
@@ -33,15 +34,18 @@ async function fetchProfile(accessToken: string): Promise<ProfileResult> {
       headers: { Authorization: `Bearer ${accessToken}` },
       credentials: "include",
     });
-    if (!res.ok) return { user: null, needsSignup: false };
+    if (!res.ok) return { user: null, needsSignup: false, pendingApproval: false };
     const json = await res.json();
     const data = unwrapResponse<any>(json);
     if (data?.needsSignup || data?.needsOrg) {
-      return { user: null, needsSignup: true };
+      return { user: null, needsSignup: true, pendingApproval: false };
     }
-    return { user: data as User, needsSignup: false };
+    if (data?.pending_approval) {
+      return { user: data as User, needsSignup: false, pendingApproval: true };
+    }
+    return { user: data as User, needsSignup: false, pendingApproval: false };
   } catch {
-    return { user: null, needsSignup: false };
+    return { user: null, needsSignup: false, pendingApproval: false };
   }
 }
 
@@ -51,17 +55,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [needsSignup, setNeedsSignup] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   // Fetch profile from Go backend using Supabase JWT
   const loadProfile = useCallback(async (sess: Session | null) => {
     if (!sess?.access_token) {
       setUser(null);
       setNeedsSignup(false);
+      setPendingApproval(false);
       return;
     }
     const result = await fetchProfile(sess.access_token);
     setUser(result.user);
     setNeedsSignup(result.needsSignup);
+    setPendingApproval(result.pendingApproval);
   }, []);
 
   useEffect(() => {
@@ -183,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         isLoading,
         needsSignup,
+        pendingApproval,
         signInWithEmail,
         signUpWithEmail,
         signInWithOAuth,

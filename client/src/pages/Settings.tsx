@@ -680,8 +680,107 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          {isOwner && <UserApprovals />}
         </TabsContent>
       </Tabs>
     </DashboardLayout>
+  );
+}
+
+type PendingUser = { id: number; email: string; full_name?: string; role: string; approved: boolean; created_at: string };
+
+function UserApprovals() {
+  const { toast } = useToast();
+  const { data: users, isLoading, refetch } = useQuery<PendingUser[]>({
+    queryKey: ["/api/v1/admin/users"],
+    select: (data: any) => {
+      const unwrapped = data?.data || data;
+      return Array.isArray(unwrapped) ? unwrapped : [];
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("POST", `/api/v1/admin/users/${id}/approve`);
+    },
+    onSuccess: () => {
+      toast({ title: "User approved", description: "The user can now access InfraAudit." });
+      refetch();
+    },
+    onError: () => {
+      toast({ title: "Failed to approve user", variant: "destructive" });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/v1/admin/users/${id}/approve`);
+    },
+    onSuccess: () => {
+      toast({ title: "User access revoked" });
+      refetch();
+    },
+    onError: () => {
+      toast({ title: "Failed to revoke access", variant: "destructive" });
+    },
+  });
+
+  const pendingUsers = users?.filter(u => !u.approved) || [];
+  const approvedUsers = users?.filter(u => u.approved) || [];
+
+  return (
+    <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
+      <CardHeader>
+        <CardTitle>User Approvals</CardTitle>
+        <CardDescription>Approve or revoke access for users who have signed up</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center p-4"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading users...</div>
+        ) : !users?.length ? (
+          <p className="text-sm text-muted-foreground text-center p-4">No users found.</p>
+        ) : (
+          <>
+            {pendingUsers.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-amber-600 dark:text-amber-400 mb-2">Pending Approval ({pendingUsers.length})</h4>
+                <div className="border rounded-xl divide-y">
+                  {pendingUsers.map(u => (
+                    <div key={u.id} className="flex items-center justify-between p-3">
+                      <div>
+                        <p className="text-sm font-medium">{u.full_name || u.email}</p>
+                        <p className="text-xs text-muted-foreground">{u.email} &middot; Signed up {new Date(u.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <Button size="sm" onClick={() => approveMutation.mutate(u.id)} disabled={approveMutation.isPending}>
+                        Approve
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {approvedUsers.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">Approved ({approvedUsers.length})</h4>
+                <div className="border rounded-xl divide-y">
+                  {approvedUsers.map(u => (
+                    <div key={u.id} className="flex items-center justify-between p-3">
+                      <div>
+                        <p className="text-sm font-medium">{u.full_name || u.email}</p>
+                        <p className="text-xs text-muted-foreground">{u.email} &middot; {u.role}</p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => rejectMutation.mutate(u.id)} disabled={rejectMutation.isPending}>
+                        Revoke
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

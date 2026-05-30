@@ -12,6 +12,7 @@ export interface User {
   company?: string;
   organizationId?: number;
   orgName?: string;
+  approved?: boolean;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   subscriptionStatus?: string;
