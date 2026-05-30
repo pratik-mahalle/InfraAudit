@@ -9,6 +9,7 @@ type AuthContextType = {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
+  needsSignup: boolean;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (
     email: string,
@@ -17,23 +18,30 @@ type AuthContextType = {
   ) => Promise<void>;
   signInWithOAuth: (provider: "google" | "github") => Promise<void>;
   signOut: () => Promise<void>;
+  completeSignup: (orgName: string, fullName?: string) => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
-async function fetchProfile(accessToken: string): Promise<User | null> {
+type ProfileResult = { user: User | null; needsSignup: boolean };
+
+async function fetchProfile(accessToken: string): Promise<ProfileResult> {
   try {
     const res = await fetch(`${API_BASE}/api/user`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       credentials: "include",
     });
-    if (!res.ok) return null;
+    if (!res.ok) return { user: null, needsSignup: false };
     const json = await res.json();
-    return unwrapResponse<User>(json);
+    const data = unwrapResponse<any>(json);
+    if (data?.needsSignup) {
+      return { user: null, needsSignup: true };
+    }
+    return { user: data as User, needsSignup: false };
   } catch {
-    return null;
+    return { user: null, needsSignup: false };
   }
 }
 
@@ -42,15 +50,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [needsSignup, setNeedsSignup] = useState(false);
 
   // Fetch profile from Go backend using Supabase JWT
   const loadProfile = useCallback(async (sess: Session | null) => {
     if (!sess?.access_token) {
       setUser(null);
+      setNeedsSignup(false);
       return;
     }
-    const profile = await fetchProfile(sess.access_token);
-    setUser(profile);
+    const result = await fetchProfile(sess.access_token);
+    setUser(result.user);
+    setNeedsSignup(result.needsSignup);
   }, []);
 
   useEffect(() => {
@@ -123,6 +134,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const completeSignup = useCallback(
+    async (orgName: string, fullName?: string) => {
+      const token = session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+      const res = await fetch(`${API_BASE}/api/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({ org_name: orgName, full_name: fullName || "" }),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        const msg = (json.error as Record<string, unknown>)?.message || "Signup failed";
+        throw new Error(String(msg));
+      }
+      // Reload profile after successful signup
+      setNeedsSignup(false);
+      await loadProfile(session);
+    },
+    [session, loadProfile]
+  );
+
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw new Error(error.message);
@@ -146,10 +182,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         isLoading,
+        needsSignup,
         signInWithEmail,
         signUpWithEmail,
         signInWithOAuth,
         signOut,
+        completeSignup,
       }}
     >
       {children}

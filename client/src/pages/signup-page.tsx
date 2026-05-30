@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, Link, useSearch } from "wouter";
 import { Loader2, Cloud, AlertCircle } from "lucide-react";
-import { OrgSetupStep } from "@/components/auth/OrgSetupStep";
 
 // OAuth Icons
 const GoogleIcon = () => (
@@ -24,7 +23,7 @@ const GitHubIcon = () => (
 );
 
 export default function SignupPage() {
-    const { user, session, signUpWithEmail, signInWithOAuth } = useAuth();
+    const { user, needsSignup, session, signUpWithEmail, signInWithOAuth, completeSignup } = useAuth();
     const [showEmailForm, setShowEmailForm] = useState(false);
     const [formData, setFormData] = useState({
         username: "",
@@ -32,26 +31,86 @@ export default function SignupPage() {
         email: "",
         password: "",
         confirmPassword: "",
+        orgName: "",
     });
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [step, setStep] = useState<'form' | 'org'>('form');
 
-    const inviteToken = new URLSearchParams(useSearch()).get('invite') || undefined;
-
-    if (user && step === 'form') {
+    // User already has a profile + org — go to dashboard
+    if (user && !needsSignup) {
         return <Redirect to="/dashboard" />;
     }
 
-    if (step === 'org') {
+    // OAuth user who needs to complete signup — show org name form
+    if (needsSignup && session) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 p-8">
                 <div className="w-full max-w-sm">
-                    <OrgSetupStep
-                        accessToken={session?.access_token || ''}
-                        inviteToken={inviteToken}
-                        onComplete={() => { window.location.href = '/dashboard'; }}
-                    />
+                    <Link href="/">
+                        <div className="flex items-center justify-center gap-2 mb-8 cursor-pointer">
+                            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                                <Cloud className="h-4 w-4 text-white" />
+                            </div>
+                            <span className="text-xl font-semibold dark:text-white">InfrAudit</span>
+                        </div>
+                    </Link>
+
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        One last step
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        Name your organization to get started.
+                    </p>
+
+                    {error && (
+                        <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                        </div>
+                    )}
+
+                    <form
+                        onSubmit={async (e) => {
+                            e.preventDefault();
+                            if (!formData.orgName.trim()) {
+                                setError("Organization name is required");
+                                return;
+                            }
+                            setIsLoading(true);
+                            setError("");
+                            try {
+                                await completeSignup(formData.orgName, formData.fullName);
+                                window.location.href = "/dashboard";
+                            } catch (err: any) {
+                                setError(err.message || "Failed to complete signup");
+                            } finally {
+                                setIsLoading(false);
+                            }
+                        }}
+                        className="space-y-4"
+                    >
+                        <div>
+                            <Label htmlFor="orgName">Organization Name</Label>
+                            <Input
+                                id="orgName"
+                                placeholder="Acme Corp"
+                                value={formData.orgName}
+                                onChange={(e) => { setFormData(prev => ({ ...prev, orgName: e.target.value })); setError(""); }}
+                                required
+                                className="mt-1"
+                            />
+                        </div>
+                        <Button type="submit" className="w-full h-11" disabled={isLoading}>
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Setting up...
+                                </>
+                            ) : (
+                                "Get Started"
+                            )}
+                        </Button>
+                    </form>
                 </div>
             </div>
         );
@@ -70,14 +129,21 @@ export default function SignupPage() {
             setError("Passwords don't match");
             return;
         }
+        if (!formData.orgName.trim()) {
+            setError("Organization name is required");
+            return;
+        }
 
         setIsLoading(true);
         try {
+            // 1. Create Supabase auth account
             await signUpWithEmail(formData.email, formData.password, {
                 username: formData.username,
                 fullName: formData.fullName,
             });
-            setStep('org');
+            // 2. Create profile + org on backend
+            await completeSignup(formData.orgName, formData.fullName);
+            window.location.href = "/dashboard";
         } catch (err: any) {
             setError(err.message || "Registration failed. Please try again.");
         } finally {
@@ -192,7 +258,7 @@ export default function SignupPage() {
 
                 {/* Footer */}
                 <div className="relative z-10 text-slate-600 text-sm">
-                    © 2024 InfrAudit. All rights reserved.
+                    &copy; 2024 InfrAudit. All rights reserved.
                 </div>
             </div>
 
@@ -277,12 +343,12 @@ export default function SignupPage() {
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <Label htmlFor="username">Username</Label>
+                                    <Label htmlFor="orgName">Organization Name</Label>
                                     <Input
-                                        id="username"
-                                        name="username"
-                                        placeholder="johndoe"
-                                        value={formData.username}
+                                        id="orgName"
+                                        name="orgName"
+                                        placeholder="Acme Corp"
+                                        value={formData.orgName}
                                         onChange={handleChange}
                                         required
                                         className="mt-1"
@@ -362,7 +428,7 @@ export default function SignupPage() {
                                 onClick={() => setShowEmailForm(false)}
                                 className="mt-4 w-full text-center text-sm text-gray-500 hover:text-gray-700"
                             >
-                                ← Back to other options
+                                &larr; Back to other options
                             </button>
                         </>
                     )}

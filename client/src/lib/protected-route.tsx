@@ -18,7 +18,7 @@ export function ProtectedRoute({ path, permission, component: Component, childre
     <Route
       path={path}
       component={() => {
-        const { user, isLoading } = useAuth();
+        const { user, isLoading, needsSignup } = useAuth();
         const { hasPermission } = usePermission();
         const { toast } = useToast();
 
@@ -40,6 +40,10 @@ export function ProtectedRoute({ path, permission, component: Component, childre
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             </div>
           );
+        }
+
+        if (needsSignup) {
+          return <Redirect to="/signup" />;
         }
 
         if (!user) {
