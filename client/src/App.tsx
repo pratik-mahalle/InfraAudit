@@ -44,6 +44,8 @@ import IaCManagement from "@/pages/IaCManagement";
 import Alerts from "@/pages/Alerts";
 import Reports from "@/pages/Reports";
 import ReportDetail from "@/pages/ReportDetail";
+import SBOMPage from "@/pages/SBOMPage";
+import PoliciesPage from "@/pages/PoliciesPage";
 import { AuthProvider } from "./hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import ExpiredTrialRedirect from "@/components/trial/ExpiredTrialRedirect";
@@ -72,6 +74,8 @@ const PROTECTED_ROUTES = [
   "/recommendations",
   "/billing-import",
   "/iac",
+  "/sbom",
+  "/policies",
   "/reports",
   "/alerts",
   "/ai-demo",
@@ -168,6 +172,12 @@ function Router() {
             </ProtectedRoute>
             <ProtectedRoute path="/iac">
               <WithTrialCheck><IaCManagement /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/sbom">
+              <WithTrialCheck><SBOMPage /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/policies">
+              <WithTrialCheck><PoliciesPage /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/alerts">
               <WithTrialCheck><Alerts /></WithTrialCheck>

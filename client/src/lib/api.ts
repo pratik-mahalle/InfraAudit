@@ -243,6 +243,58 @@ export interface Vulnerability {
   detectedAt: string;
 }
 
+// Phase 2A: SBOM
+export interface SBOMReport {
+  id: number;
+  user_id: number;
+  resource_id: string;
+  format: string;
+  content: string;
+  component_count: number;
+  generated_at: string;
+  created_at: string;
+}
+
+export interface SBOMGenerateRequest {
+  resource_id: string;
+  image: string;
+  format: string;
+}
+
+// Phase 2A: Policies (OPA/Rego)
+export interface PolicyItem {
+  id: number;
+  user_id: number;
+  name: string;
+  description: string;
+  rego_code: string;
+  category: string;
+  severity: string;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PolicyViolation {
+  id: number;
+  user_id: number;
+  policy_id: number;
+  resource_id: string;
+  violation_detail: string;
+  severity: string;
+  status: string;
+  detected_at: string;
+  created_at: string;
+}
+
+export interface PolicyTemplate {
+  name: string;
+  description: string;
+  category: string;
+  severity: string;
+  rego_code: string;
+}
+
 export const api = {
   // ============================================
   // Authentication
@@ -750,6 +802,78 @@ export const api = {
     test: (id: string) => request(`/api/v1/webhooks/${id}/test`, { method: 'POST' }),
 
     getEvents: () => request<string[]>('/api/v1/webhooks/events'),
+  },
+
+  // ============================================
+  // Phase 2A: SBOM
+  // ============================================
+  sbom: {
+    generate: (data: SBOMGenerateRequest) =>
+      request<SBOMReport>('/api/v1/sbom/generate', { method: 'POST', body: data }),
+
+    list: (params?: { resource_id?: string; page?: number; page_size?: number }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.resource_id) searchParams.set('resource_id', params.resource_id);
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.page_size) searchParams.set('page_size', params.page_size.toString());
+      const qs = searchParams.toString();
+      return request<{ data: SBOMReport[]; totalItems: number; page: number; pageSize: number; totalPages: number }>(
+        `/api/v1/sbom/reports${qs ? `?${qs}` : ''}`
+      );
+    },
+
+    get: (id: number) => request<SBOMReport>(`/api/v1/sbom/reports/${id}`),
+
+    download: async (id: number) => {
+      const report = await request<SBOMReport>(`/api/v1/sbom/reports/${id}`);
+      const blob = new Blob([report.content], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sbom-${id}.${report.format}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+
+    delete: (id: number) =>
+      request(`/api/v1/sbom/reports/${id}`, { method: 'DELETE' }),
+  },
+
+  // ============================================
+  // Phase 2A: Policies (OPA/Rego)
+  // ============================================
+  policies: {
+    list: () => request<PolicyItem[]>('/api/v1/policies'),
+
+    get: (id: number) => request<PolicyItem>(`/api/v1/policies/${id}`),
+
+    create: (data: { name: string; description: string; rego_code: string; category: string; severity: string }) =>
+      request<PolicyItem>('/api/v1/policies', { method: 'POST', body: data }),
+
+    update: (id: number, data: Partial<PolicyItem>) =>
+      request(`/api/v1/policies/${id}`, { method: 'PUT', body: data }),
+
+    delete: (id: number) =>
+      request(`/api/v1/policies/${id}`, { method: 'DELETE' }),
+
+    listTemplates: () => request<PolicyTemplate[]>('/api/v1/policies/templates'),
+
+    generate: (description: string) =>
+      request<{ rego_code: string }>('/api/v1/policies/generate', { method: 'POST', body: { description } }),
+
+    evaluate: () =>
+      request<{ new_violations: number }>('/api/v1/policies/evaluate', { method: 'POST' }),
+
+    listViolations: (params?: { policy_id?: number; status?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.policy_id) searchParams.set('policy_id', params.policy_id.toString());
+      if (params?.status) searchParams.set('status', params.status);
+      const qs = searchParams.toString();
+      return request<PolicyViolation[]>(`/api/v1/policies/violations${qs ? `?${qs}` : ''}`);
+    },
+
+    updateViolationStatus: (id: number, status: string) =>
+      request(`/api/v1/policies/violations/${id}/status`, { method: 'PUT', body: { status } }),
   },
 };
 

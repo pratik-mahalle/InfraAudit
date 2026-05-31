@@ -26,6 +26,7 @@ import {
     FileText,
     User,
     Blocks,
+    Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,6 +80,8 @@ const navGroups: NavGroup[] = [
             { label: "Security Dashboard", href: "/security", icon: Shield },
             { label: "Compliance", href: "/compliance", icon: FileCheck },
             { label: "Vulnerabilities", href: "/vulnerabilities", icon: Lock },
+            { label: "SBOM", href: "/sbom", icon: FileText },
+            { label: "Policies", href: "/policies", icon: Scale },
         ],
     },
     {
