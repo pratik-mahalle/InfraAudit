@@ -358,16 +358,16 @@ export function CloudProviderIntegration() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="aws" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="aws" className="flex gap-2 items-center">
+              <TabsList className="flex w-full overflow-x-auto justify-start sm:grid sm:grid-cols-3 h-auto sm:h-10 no-scrollbar p-1 gap-1">
+                <TabsTrigger value="aws" className="flex gap-2 items-center shrink-0">
                   <SiAmazonwebservices className="h-4 w-4" />
                   AWS
                 </TabsTrigger>
-                <TabsTrigger value="gcp" className="flex gap-2 items-center">
+                <TabsTrigger value="gcp" className="flex gap-2 items-center shrink-0">
                   <SiGooglecloud className="h-4 w-4" />
                   GCP
                 </TabsTrigger>
-                <TabsTrigger value="azure" className="flex gap-2 items-center">
+                <TabsTrigger value="azure" className="flex gap-2 items-center shrink-0">
                   <CloudIcon className="h-4 w-4" />
                   Azure
                 </TabsTrigger>

@@ -494,26 +494,26 @@ export function CloudProviderSetup() {
         </div>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-4 mb-4">
-              <TabsTrigger value="aws" disabled={isAwsConnected}>
+            <TabsList className="flex w-full overflow-x-auto justify-start sm:grid sm:grid-cols-4 h-auto sm:h-10 no-scrollbar p-1 gap-1 mb-4">
+              <TabsTrigger value="aws" disabled={isAwsConnected} className="shrink-0">
                 <div className="flex items-center">
                   <SiAmazon className="h-4 w-4 mr-2 text-orange-500" />
                   AWS
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="gcp" disabled={isGcpConnected}>
+              <TabsTrigger value="gcp" disabled={isGcpConnected} className="shrink-0">
                 <div className="flex items-center">
                   <SiGooglecloud className="h-4 w-4 mr-2 text-blue-500" />
                   GCP
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="azure" disabled={isAzureConnected}>
+              <TabsTrigger value="azure" disabled={isAzureConnected} className="shrink-0">
                 <div className="flex items-center">
                   <Cloud className="h-4 w-4 mr-2 text-blue-700" />
                   Azure
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="kubernetes">
+              <TabsTrigger value="kubernetes" className="shrink-0">
                 <div className="flex items-center">
                   <Server className="h-4 w-4 mr-2 text-blue-400" />
                   Kubernetes
