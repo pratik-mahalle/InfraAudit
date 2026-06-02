@@ -31,7 +31,7 @@ export function AlertFilterBar({
   setSearchQuery,
 }: AlertFilterBarProps) {
   return (
-    <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+    <div className="bg-card border p-4 rounded-xl shadow-sm mb-6">
       <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
         <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
           <div className="relative">
