@@ -18,6 +18,7 @@ import {
   Activity,
   Bell,
   ExternalLink,
+  Search,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -32,6 +33,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AskInfraAudit } from "@/components/ai/AskInfraAudit";
 import { RoleGate } from "@/components/auth/RoleGate";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -222,6 +224,7 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [location] = useLocation();
 
   useEffect(() => {
@@ -294,6 +297,23 @@ export function Navbar() {
 
               <NavLink href="/pricing">Pricing</NavLink>
               <NavLink href="/about">About</NavLink>
+            </div>
+          )}
+
+          {/* Search Bar — Authenticated only */}
+          {user && (
+            <div className="hidden md:flex flex-grow max-w-xs lg:max-w-sm justify-center mx-auto">
+              <button
+                type="button"
+                onClick={() => setCommandOpen(true)}
+                className="relative w-full flex items-center gap-3 pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/5 text-xs text-muted-foreground bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+              >
+                <Search className="absolute left-2.5 h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                <span>Search pages, actions...</span>
+                <kbd className="ml-auto inline-flex h-4 items-center gap-0.5 rounded border border-slate-200 dark:border-slate-800 !bg-slate-100 dark:!bg-slate-800 px-1 text-[9px] font-medium !text-slate-500 dark:!text-slate-400">
+                  ⌘K
+                </kbd>
+              </button>
             </div>
           )}
 
@@ -490,6 +510,9 @@ export function Navbar() {
           </>
         )}
       </AnimatePresence>
+      {user && (
+        <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+      )}
     </>
   );
 }
