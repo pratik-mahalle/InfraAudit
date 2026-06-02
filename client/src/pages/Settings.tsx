@@ -312,15 +312,15 @@ export default function Settings() {
       <PageHeader title="Settings" description="Configure and customize your InfraAudit experience" />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-7 w-full">
-          <TabsTrigger value="profile"><User className="h-4 w-4 mr-2" />Profile</TabsTrigger>
-          <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="notifications"><Bell className="h-4 w-4 mr-2" />Alerts</TabsTrigger>
-          <TabsTrigger value="webhooks"><Webhook className="h-4 w-4 mr-2" />Webhooks</TabsTrigger>
-          <TabsTrigger value="security"><Shield className="h-4 w-4 mr-2" />Security</TabsTrigger>
-          <TabsTrigger value="cloud"><Cloud className="h-4 w-4 mr-2" />Cloud</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto justify-start md:grid md:grid-cols-7 h-auto md:h-10 no-scrollbar p-1 gap-1">
+          <TabsTrigger value="profile" className="shrink-0"><User className="h-4 w-4 mr-2" />Profile</TabsTrigger>
+          <TabsTrigger value="account" className="shrink-0">Account</TabsTrigger>
+          <TabsTrigger value="notifications" className="shrink-0"><Bell className="h-4 w-4 mr-2" />Alerts</TabsTrigger>
+          <TabsTrigger value="webhooks" className="shrink-0"><Webhook className="h-4 w-4 mr-2" />Webhooks</TabsTrigger>
+          <TabsTrigger value="security" className="shrink-0"><Shield className="h-4 w-4 mr-2" />Security</TabsTrigger>
+          <TabsTrigger value="cloud" className="shrink-0"><Cloud className="h-4 w-4 mr-2" />Cloud</TabsTrigger>
           {hasPermission('manage_team') && (
-            <TabsTrigger value="team"><Users className="h-4 w-4 mr-2" />Team</TabsTrigger>
+            <TabsTrigger value="team" className="shrink-0"><Users className="h-4 w-4 mr-2" />Team</TabsTrigger>
           )}
         </TabsList>
 

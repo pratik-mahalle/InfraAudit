@@ -574,3 +574,12 @@ html {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(75, 85, 99, 0.7);
 }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
