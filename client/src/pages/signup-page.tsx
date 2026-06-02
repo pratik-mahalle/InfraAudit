@@ -263,7 +263,7 @@ export default function SignupPage() {
 
                 {/* Footer */}
                 <div className="relative z-10 text-slate-600 text-sm">
-                    &copy; 2024 InfrAudit. All rights reserved.
+                    &copy; 2026 InfrAudit. All rights reserved.
                 </div>
             </div>
 

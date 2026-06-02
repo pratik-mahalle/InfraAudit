@@ -1,7 +1,22 @@
 // Demo data for exploring InfraAudit without connecting real infrastructure
 // This provides realistic mock data for dashboards and analysis
 
-import { Recommendation, SecurityDrift, Alert, UtilizationMetric } from "@/types";
+import {
+  Recommendation,
+  SecurityDrift,
+  Alert,
+  UtilizationMetric,
+  ComplianceOverview,
+  ComplianceFramework,
+  ComplianceControl,
+  ComplianceAssessment,
+  AssessmentFinding,
+  ScheduledJob,
+  JobExecution,
+  RemediationAction,
+  NotificationPreference,
+  Webhook
+} from "@/types";
 
 // Demo cloud resources
 export const demoResources = [
@@ -311,6 +326,96 @@ export const demoCluster = {
     computeCost: 43377.84,
     status: "Demo",
 };
+
+// Demo compliance overview
+export const demoComplianceOverview: ComplianceOverview = {
+    totalControls: 85,
+    passedControls: 68,
+    failedControls: 17,
+    compliancePercent: 80,
+    byFramework: [
+        { frameworkId: "cis-aws-v1.4", frameworkName: "CIS AWS Foundations Benchmark v1.4", totalControls: 45, passedControls: 38, failedControls: 7, compliancePercent: 84, lastAssessment: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() },
+        { frameworkId: "soc2-type-ii", frameworkName: "SOC 2 Type II Security & Trust", totalControls: 25, passedControls: 20, failedControls: 5, compliancePercent: 80, lastAssessment: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() },
+        { frameworkId: "nist-800-53", frameworkName: "NIST SP 800-53 Rev. 5", totalControls: 15, passedControls: 10, failedControls: 5, compliancePercent: 66, lastAssessment: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
+    ],
+    bySeverity: {
+        critical: 2,
+        high: 5,
+        medium: 6,
+        low: 4,
+    }
+};
+
+// Demo compliance frameworks
+export const demoComplianceFrameworks: ComplianceFramework[] = [
+    { id: "cis-aws-v1.4", name: "CIS AWS Foundations Benchmark v1.4", version: "1.4.0", description: "Prescriptive guidelines for securing AWS services", provider: "AWS", isEnabled: true },
+    { id: "soc2-type-ii", name: "SOC 2 Type II Security & Trust", version: "2017", description: "Security controls mapping to Trust Services Criteria", provider: "Multi-cloud", isEnabled: true },
+    { id: "nist-800-53", name: "NIST SP 800-53 Rev. 5", version: "5.0.0", description: "Security and Privacy Controls for Information Systems and Organizations", provider: "Multi-cloud", isEnabled: false }
+];
+
+// Demo compliance controls
+export const demoComplianceControls: Record<string, ComplianceControl[]> = {
+    "cis-aws-v1.4": [
+        { id: "cis-1.1", frameworkId: "cis-aws-v1.4", controlId: "1.1", title: "Avoid the use of the 'root' account", description: "Ensure root credentials are not used for everyday tasks.", category: "IAM", severity: "critical" },
+        { id: "cis-1.2", frameworkId: "cis-aws-v1.4", controlId: "1.2", title: "Ensure MFA is enabled for all IAM users", description: "Multi-Factor Authentication adds an extra layer of protection.", category: "IAM", severity: "high", remediation: "Enable MFA in IAM console" },
+        { id: "cis-2.1", frameworkId: "cis-aws-v1.4", controlId: "2.1", title: "Ensure CloudTrail is enabled in all regions", description: "Enable full trail logging for security auditing.", category: "Logging", severity: "high" },
+        { id: "cis-3.1", frameworkId: "cis-aws-v1.4", controlId: "3.1", title: "Ensure no security groups allow 0.0.0.0/0 to port 22", description: "Avoid open SSH access.", category: "Networking", severity: "critical" }
+    ],
+    "soc2-type-ii": [
+        { id: "soc-cc1.1", frameworkId: "soc2-type-ii", controlId: "CC1.1", title: "Access Control for Live Databases", description: "Production database access must be tightly controlled and logged.", category: "Access Control", severity: "critical" },
+        { id: "soc-cc2.2", frameworkId: "soc2-type-ii", controlId: "CC2.2", title: "Vulnerability Scanning Schedule", description: "Verify regular automated dependency and image scanning is running.", category: "Vulnerability Management", severity: "medium" }
+    ]
+};
+
+// Demo compliance assessments
+export const demoComplianceAssessments: ComplianceAssessment[] = [
+    { id: "assess-001", frameworkId: "cis-aws-v1.4", frameworkName: "CIS AWS Foundations Benchmark v1.4", assessmentDate: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), totalControls: 45, passedControls: 38, failedControls: 7, notApplicableControls: 0, compliancePercent: 84, status: "completed" },
+    { id: "assess-002", frameworkId: "soc2-type-ii", frameworkName: "SOC 2 Type II Security & Trust", assessmentDate: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), totalControls: 25, passedControls: 20, failedControls: 5, notApplicableControls: 0, compliancePercent: 80, status: "completed" }
+];
+
+// Demo assessment findings
+export const demoAssessmentFindings: AssessmentFinding[] = [
+    { controlId: "cis-1.2", controlTitle: "Ensure MFA is enabled for all IAM users", category: "IAM", severity: "high", status: "failed", affectedCount: 4, affectedResources: ["iam-user/deploy-bot", "iam-user/analytics-reader"], remediation: "Open IAM, select user, go to Security Credentials, enable MFA device." },
+    { controlId: "cis-3.1", controlTitle: "Ensure no security groups allow 0.0.0.0/0 to port 22", category: "Networking", severity: "critical", status: "failed", affectedCount: 1, affectedResources: ["sg-0abc123def456 (default)"], remediation: "Go to VPC Security Groups, remove Rule permitting Port 22 from 0.0.0.0/0." }
+];
+
+// Demo jobs list
+export const demoJobs: ScheduledJob[] = [
+    { id: "job-001", name: "Daily Cloud Drift Detection", description: "Scans cloud resources in AWS & GCP to identify active configuration changes.", type: "Drift Scan", schedule: "0 2 * * *", enabled: true, lastRun: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(), nextRun: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(), status: "idle" },
+    { id: "job-002", name: "Weekly CIS Compliance Audit", description: "Performs deep auditing against CIS Benchmark requirements.", type: "Compliance Assessment", schedule: "0 0 * * 0", enabled: true, lastRun: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), nextRun: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(), status: "idle" },
+    { id: "job-003", name: "Cost Anomaly Engine Scanner", description: "Calculates cost spikes and deviations on AWS billing metrics.", type: "Cost Analysis", schedule: "*/30 * * * *", enabled: false, lastRun: new Date(Date.now() - 15 * 60 * 1000).toISOString(), status: "idle" }
+];
+
+// Demo job executions
+export const demoJobExecutions: JobExecution[] = [
+    { id: 9001, jobId: "job-001", status: "success", startedAt: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(), completedAt: new Date(Date.now() - 20 * 60 * 60 * 1000 + 45000).toISOString(), duration: "45s" },
+    { id: 9002, jobId: "job-002", status: "success", startedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), completedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 120000).toISOString(), duration: "2m 0s" },
+    { id: 9003, jobId: "job-003", status: "failure", startedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(), completedAt: new Date(Date.now() - 15 * 60 * 1000 + 5000).toISOString(), duration: "5s", errorMessage: "Rate limiting threshold hit on GCP Cost API" }
+];
+
+// Demo remediation actions
+export const demoRemediationActions: RemediationAction[] = [
+    { id: "rem-001", driftId: 2001, actionType: "Disable S3 Public Access", description: "Restrict access policies on s3://data-exports-prod bucket.", severity: "critical", status: "pending_approval", requestedBy: 1, requestedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
+    { id: "rem-002", driftId: 2002, actionType: "Block Open SSH Access", description: "Remove 0.0.0.0/0 SSH inbound rule from Security Group sg-0abc123def456.", severity: "high", status: "pending_approval", requestedBy: 1, requestedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString() }
+];
+
+// Demo notification preferences
+export const demoNotificationPreferences: NotificationPreference[] = [
+    { id: "pref-slack", user_id: 1, channel: "slack", is_enabled: true, config: { webhook_url: "https://hooks.slack.com/services/...", channel_name: "#infraaudit-alerts" }, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: "pref-email", user_id: 1, channel: "email", is_enabled: true, config: { frequency: "immediate", digest_hour: 8 }, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { id: "pref-webhook", user_id: 1, channel: "webhook", is_enabled: false, config: { endpoint_url: "" }, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+];
+
+// Demo webhooks
+export const demoWebhooks: Webhook[] = [
+    { id: "web-001", name: "Production Teams Alert Dispatcher", url: "https://api.company.com/webhooks/alerts", events: ["drift_detected", "vulnerability_found"], is_enabled: true, last_triggered: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), updated_at: new Date().toISOString() }
+];
+
+// Demo Kubernetes clusters
+export const demoK8sClusters = [
+    { id: "aks-prod-1", name: "aks-prod-westus", provider: "azure", nodeCount: 12, version: "v1.28.3", isConnected: true },
+    { id: "gke-prod-1", name: "gke-production-central", provider: "gcp", nodeCount: 24, version: "v1.27.6", isConnected: true }
+];
 
 // Function to check if demo mode is active
 export function isDemoMode(): boolean {

@@ -6,8 +6,9 @@ import {
   ScheduledJob, JobExecution, RemediationAction, NotificationPreference,
   Webhook
 } from '@/types';
-import { unwrapResponse } from '@/lib/queryClient';
+import { unwrapResponse, apiRequest } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
+import { isDemoMode } from '@/lib/demo-data';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -19,10 +20,10 @@ type RequestOptions = {
 };
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, headers = {}, params } = options;
+  const { method = 'GET', body, params } = options;
 
   // Build query string from params
-  let url = `${API_BASE}${endpoint}`;
+  let url = endpoint;
   if (params) {
     const searchParams = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
@@ -34,36 +35,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     if (qs) url += `${url.includes('?') ? '&' : '?'}${qs}`;
   }
 
-  // Get Supabase session token for Go backend authentication
-  const authHeaders: Record<string, string> = {};
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    authHeaders['Authorization'] = `Bearer ${session.access_token}`;
-  }
-
-  const config: RequestInit = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders,
-      ...headers,
-    },
-    credentials: 'include',
-  };
-
-  if (body) {
-    config.body = JSON.stringify(body);
-  }
-
-  const response = await fetch(url, config);
-
-  if (!response.ok) {
-    // Handle Go error envelope: { success: false, error: { code, message } }
-    const errorJson = await response.json().catch(() => ({ message: 'Request failed' }));
-    const errorMsg = errorJson.error?.message || errorJson.message || `HTTP error! status: ${response.status}`;
-    throw new Error(errorMsg);
-  }
-
+  const response = await apiRequest(method, url, body);
   const json = await response.json();
   return unwrapResponse<T>(json);
 }
@@ -525,6 +497,19 @@ export const api = {
   // ============================================
   iac: {
     upload: async (file: File) => {
+      if (isDemoMode()) {
+        return {
+          success: true,
+          data: {
+            id: Math.floor(Math.random() * 1000) + 5000,
+            name: file.name.replace(/\.[^/.]+$/, ""),
+            fileName: file.name,
+            type: file.name.endsWith('.tf') ? 'terraform' : file.name.endsWith('.json') ? 'terraform' : 'kubernetes',
+            resourceCount: Math.floor(Math.random() * 10) + 2,
+            createdAt: new Date().toISOString()
+          }
+        };
+      }
       const formData = new FormData();
       formData.append('file', file);
       const { data: { session } } = await supabase.auth.getSession();

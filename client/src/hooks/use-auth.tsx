@@ -1,10 +1,11 @@
 import { createContext, ReactNode, useContext, useEffect, useState, useCallback } from "react";
-import { Session, AuthError } from "@supabase/supabase-js";
+import { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { unwrapResponse } from "@/lib/queryClient";
 import { isPersonalEmail, BUSINESS_EMAIL_ERROR } from "@/lib/utils";
+import { isDemoMode, enableDemoMode, disableDemoMode } from "@/lib/demo-data";
 
 type AuthContextType = {
   user: User | null;
@@ -21,6 +22,7 @@ type AuthContextType = {
   signInWithOAuth: (provider: "google" | "github") => Promise<void>;
   signOut: () => Promise<void>;
   completeSignup: (orgName: string, fullName?: string) => Promise<void>;
+  signInDemo: () => Promise<void>;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -60,6 +62,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Fetch profile from Go backend using Supabase JWT
   const loadProfile = useCallback(async (sess: Session | null) => {
+    if (isDemoMode()) {
+      setUser({
+        id: 1,
+        email: "demo@company.com",
+        username: "demo_admin",
+        fullName: "Demo Admin",
+        role: "admin",
+        planType: "enterprise",
+        orgName: "Acme Corp",
+        approved: true,
+      });
+      setNeedsSignup(false);
+      setPendingApproval(false);
+      return;
+    }
+
     if (!sess?.access_token) {
       setUser(null);
       setNeedsSignup(false);
@@ -73,16 +91,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (isDemoMode()) {
+      setSession({
+        access_token: "demo-jwt-token",
+        token_type: "bearer",
+        expires_in: 3600,
+        refresh_token: "demo-refresh-token",
+        user: {
+          id: "demo-id",
+          app_metadata: {},
+          user_metadata: {},
+          aud: "authenticated",
+          created_at: new Date().toISOString(),
+        }
+      } as any);
+      loadProfile(null).finally(() => setIsLoading(false));
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       setSession(initialSession);
       loadProfile(initialSession).finally(() => setIsLoading(false));
+    }).catch(() => {
+      // In case Supabase client completely fails to connect (e.g. invalid keys)
+      setIsLoading(false);
     });
 
     // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (isDemoMode()) return;
       setSession(newSession);
       loadProfile(newSession);
     });
@@ -146,6 +186,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const completeSignup = useCallback(
     async (orgName: string, fullName?: string) => {
+      if (isDemoMode()) {
+        setNeedsSignup(false);
+        return;
+      }
       const token = session?.access_token;
       if (!token) throw new Error("Not authenticated");
       const res = await fetch(`${API_BASE}/api/auth/signup`, {
@@ -169,9 +213,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [session, loadProfile]
   );
 
+  const signInDemo = useCallback(async () => {
+    enableDemoMode();
+    setSession({
+      access_token: "demo-jwt-token",
+      token_type: "bearer",
+      expires_in: 3600,
+      refresh_token: "demo-refresh-token",
+      user: {
+        id: "demo-id",
+        app_metadata: {},
+        user_metadata: {},
+        aud: "authenticated",
+        created_at: new Date().toISOString(),
+      }
+    } as any);
+    setUser({
+      id: 1,
+      email: "demo@company.com",
+      username: "demo_admin",
+      fullName: "Demo Admin",
+      role: "admin",
+      planType: "enterprise",
+      orgName: "Acme Corp",
+      approved: true,
+    });
+    setNeedsSignup(false);
+    setPendingApproval(false);
+    toast({
+      title: "Demo Mode Enabled",
+      description: "You have been logged in as demo administrator.",
+    });
+  }, [toast]);
+
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw new Error(error.message);
+    const wasDemo = isDemoMode();
+    if (wasDemo) {
+      disableDemoMode();
+    }
+    
+    try {
+      if (!wasDemo) {
+        await supabase.auth.signOut();
+      }
+    } catch {
+      // Ignore Supabase client signout errors in offline state
+    }
+    
     setUser(null);
     setSession(null);
     // Also clear Go backend cookies
@@ -199,6 +287,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signInWithOAuth,
         signOut,
         completeSignup,
+        signInDemo,
       }}
     >
       {children}

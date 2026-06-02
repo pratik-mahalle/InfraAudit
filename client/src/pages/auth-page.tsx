@@ -24,7 +24,7 @@ const GitHubIcon = () => (
 );
 
 export default function AuthPage() {
-  const { user, signInWithEmail, signInWithOAuth } = useAuth();
+  const { user, signInWithEmail, signInWithOAuth, signInDemo } = useAuth();
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -157,7 +157,7 @@ export default function AuthPage() {
 
         {/* Footer */}
         <div className="relative z-10 text-slate-600 text-sm">
-          © 2024 InfrAudit. All rights reserved.
+          © 2026 InfrAudit. All rights reserved.
         </div>
       </div>
 
@@ -219,6 +219,20 @@ export default function AuthPage() {
               >
                 Sign in with Email
               </Button>
+
+              {/* Demo Mode Button (Local development/testing only) */}
+              {(import.meta.env.DEV || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") && (
+                <div className="mt-6 pt-6 border-t border-dashed border-gray-200 dark:border-slate-800">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full h-11 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white border-0 shadow-lg shadow-indigo-500/10"
+                    onClick={signInDemo}
+                  >
+                    🚀 Skip Authentication (Offline Demo Mode)
+                  </Button>
+                </div>
+              )}
 
               {/* Sign Up Link */}
               <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
