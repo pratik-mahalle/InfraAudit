@@ -76,10 +76,10 @@ function ProductDropdown({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -6, scale: 0.97 }}
       transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[520px] bg-[#0a0f1e] border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden"
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[520px] bg-white dark:bg-[#0a0f1e] border border-slate-200 dark:border-slate-700/50 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden"
     >
       {/* Header */}
-      <div className="px-5 pt-4 pb-3 border-b border-slate-800/60">
+      <div className="px-5 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800/60">
         <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">Platform</p>
       </div>
 
@@ -87,12 +87,12 @@ function ProductDropdown({ onClose }: { onClose: () => void }) {
       <div className="p-3 grid grid-cols-2 gap-1">
         {PRODUCTS.map(({ icon: Icon, label, desc, href, color }) => (
           <Link key={label} href={href} onClick={onClose}>
-            <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+            <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer group">
               <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5", color)}>
                 <Icon className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors leading-snug">
+                <div className="text-sm font-medium text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white transition-colors leading-snug">
                   {label}
                 </div>
                 <div className="text-xs text-slate-500 mt-0.5 leading-snug">{desc}</div>
@@ -105,7 +105,7 @@ function ProductDropdown({ onClose }: { onClose: () => void }) {
       {/* Footer CTA */}
       <div className="mx-3 mb-3 p-3 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-between">
         <div>
-          <div className="text-xs font-semibold text-blue-300">Start free — no credit card needed</div>
+          <div className="text-xs font-semibold text-blue-600 dark:text-blue-300">Start free — no credit card needed</div>
           <div className="text-[11px] text-slate-500 mt-0.5">14-day trial with full access</div>
         </div>
         <Link href="/auth" onClick={onClose}>
@@ -127,14 +127,14 @@ function DevelopersDropdown({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -6, scale: 0.97 }}
       transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-52 bg-[#0a0f1e] border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden"
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-52 bg-white dark:bg-[#0a0f1e] border border-slate-200 dark:border-slate-700/50 rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 overflow-hidden"
     >
       <div className="p-2">
         {DEVELOPERS.map(({ icon: Icon, label, href, external }) => {
           const inner = (
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
-              <Icon className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors" />
-              <span className="text-sm text-slate-300 group-hover:text-white transition-colors flex-1">{label}</span>
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer group">
+              <Icon className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
+              <span className="text-sm text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors flex-1">{label}</span>
               {external && <ExternalLink className="w-3 h-3 text-slate-600" />}
             </div>
           );
@@ -179,7 +179,9 @@ function NavItem({
         onClick={onToggle}
         className={cn(
           "flex items-center gap-1 h-8 px-3 text-sm font-medium rounded-lg transition-colors",
-          isOpen ? "text-white" : "text-slate-400 hover:text-white"
+          isOpen 
+            ? "text-slate-900 dark:text-white" 
+            : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
         )}
       >
         {label}
@@ -202,7 +204,9 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
       <span
         className={cn(
           "h-8 px-3 flex items-center text-sm font-medium rounded-lg transition-colors cursor-pointer",
-          active ? "text-white" : "text-slate-400 hover:text-white"
+          active 
+            ? "text-slate-900 dark:text-white" 
+            : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
         )}
       >
         {children}
@@ -249,19 +253,22 @@ export function Navbar() {
       <nav
         className={cn(
           "fixed top-0 inset-x-0 z-50 h-14 transition-all duration-300",
-          scrolled
-            ? "bg-slate-950/90 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/20"
+          scrolled || user
+            ? "bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 shadow-sm dark:shadow-lg dark:shadow-black/20"
             : "bg-transparent"
         )}
       >
-        <div className="max-w-6xl mx-auto px-4 h-full flex items-center justify-between gap-6">
+        <div className={cn(
+          "h-full flex items-center justify-between gap-6 px-4 md:px-6 lg:px-8",
+          user ? "w-full max-w-none" : "max-w-6xl mx-auto w-full"
+        )}>
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-700/30 group-hover:bg-blue-500 transition-colors">
+            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-700/30 group-hover:bg-blue-500 group-hover:scale-105 group-hover:shadow-blue-500/50 group-hover:rotate-3 transition-all duration-300">
               <Cloud className="w-4 h-4 text-white" />
             </div>
-            <span className="text-base font-bold text-white tracking-tight">
+            <span className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
               Infra<span className="text-blue-400">Audit</span>
             </span>
           </Link>
@@ -308,10 +315,10 @@ export function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-52 bg-[#0a0f1e] border border-slate-700/50 rounded-xl shadow-2xl shadow-black/40 text-slate-200"
+                  className="w-52 bg-white dark:bg-[#0a0f1e] border border-slate-200 dark:border-slate-700/50 rounded-xl shadow-2xl shadow-black/10 dark:shadow-black/40 text-slate-700 dark:text-slate-200"
                 >
                   <DropdownMenuLabel className="font-normal px-3 py-2.5">
-                    <p className="text-sm font-semibold text-white leading-none">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white leading-none">
                       {user.fullName || user.username}
                     </p>
                     <p className="text-xs text-slate-500 mt-1">{user.username}</p>
@@ -319,28 +326,28 @@ export function Navbar() {
                       <p className="text-xs text-slate-500 truncate px-1">{user.orgName}</p>
                     )}
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-800" />
+                  <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
                   <Link href="/settings">
-                    <DropdownMenuItem className="cursor-pointer hover:bg-white/5 text-slate-300 hover:text-white rounded-lg mx-1">
-                      <Settings className="mr-2 h-4 w-4 text-slate-500" />Settings
+                    <DropdownMenuItem className="cursor-pointer hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg mx-1">
+                      <Settings className="mr-2 h-4 w-4 text-slate-400 dark:text-slate-500" />Settings
                     </DropdownMenuItem>
                   </Link>
                   <RoleGate permission="manage_billing">
                     <Link href="/subscription">
-                      <DropdownMenuItem className="cursor-pointer hover:bg-white/5 text-slate-300 hover:text-white rounded-lg mx-1">
-                        <CreditCard className="mr-2 h-4 w-4 text-slate-500" />Subscription
+                      <DropdownMenuItem className="cursor-pointer hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg mx-1">
+                        <CreditCard className="mr-2 h-4 w-4 text-slate-400 dark:text-slate-500" />Subscription
                       </DropdownMenuItem>
                     </Link>
                   </RoleGate>
                   <Link href="/documentation">
-                    <DropdownMenuItem className="cursor-pointer hover:bg-white/5 text-slate-300 hover:text-white rounded-lg mx-1">
-                      <BookOpen className="mr-2 h-4 w-4 text-slate-500" />Documentation
+                    <DropdownMenuItem className="cursor-pointer hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg mx-1">
+                      <BookOpen className="mr-2 h-4 w-4 text-slate-400 dark:text-slate-500" />Documentation
                     </DropdownMenuItem>
                   </Link>
-                  <DropdownMenuSeparator className="bg-slate-800" />
+                  <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800" />
                   <DropdownMenuItem
                     onClick={() => signOut()}
-                    className="cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg mx-1 mb-1"
+                    className="cursor-pointer text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg mx-1 mb-1"
                   >
                     <LogOut className="mr-2 h-4 w-4" />Log out
                   </DropdownMenuItem>
@@ -351,7 +358,7 @@ export function Navbar() {
                 {/* Desktop CTAs */}
                 <div className="hidden md:flex items-center gap-1">
                   <Link href="/auth">
-                    <span className="h-8 px-3 flex items-center text-sm font-medium text-slate-400 hover:text-white transition-colors cursor-pointer rounded-lg">
+                    <span className="h-8 px-3 flex items-center text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer rounded-lg">
                       Log in
                     </span>
                   </Link>
@@ -364,7 +371,7 @@ export function Navbar() {
 
                 {/* Mobile toggle */}
                 <button
-                  className="md:hidden h-8 w-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                  className="md:hidden h-8 w-8 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                   onClick={() => setMobileOpen(true)}
                   aria-label="Open menu"
                 >
@@ -396,21 +403,21 @@ export function Navbar() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed top-0 inset-x-0 z-50 bg-[#070c19] border-b border-slate-800/60 shadow-2xl shadow-black/50"
+              className="fixed top-0 inset-x-0 z-50 bg-white dark:bg-[#070c19] border-b border-slate-200 dark:border-slate-800/60 shadow-2xl shadow-black/10 dark:shadow-black/50"
             >
               {/* Mobile header */}
-              <div className="flex items-center justify-between h-14 px-4 border-b border-slate-800/60">
+              <div className="flex items-center justify-between h-14 px-4 border-b border-slate-100 dark:border-slate-800/60">
                 <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5">
                   <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
                     <Cloud className="w-4 h-4 text-white" />
                   </div>
-                  <span className="text-base font-bold text-white">
+                  <span className="text-base font-bold text-slate-900 dark:text-white">
                     Infra<span className="text-blue-400">Audit</span>
                   </span>
                 </Link>
                 <button
                   onClick={() => setMobileOpen(false)}
-                  className="h-8 w-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                  className="h-8 w-8 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -420,22 +427,22 @@ export function Navbar() {
               <div className="p-4 space-y-1 max-h-[calc(100vh-120px)] overflow-y-auto">
                 {/* Products section */}
                 <div className="pb-3">
-                  <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-3 mb-2">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest px-3 mb-2">
                     Products
                   </p>
                   {PRODUCTS.map(({ icon: Icon, label, href, color }) => (
                     <Link key={label} href={href} onClick={() => setMobileOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer">
                         <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0", color)}>
                           <Icon className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-sm font-medium text-slate-300">{label}</span>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</span>
                       </div>
                     </Link>
                   ))}
                 </div>
 
-                <div className="h-px bg-slate-800/60" />
+                <div className="h-px bg-slate-100 dark:bg-slate-800/60" />
 
                 {/* Other links */}
                 <div className="py-3 space-y-1">
@@ -445,7 +452,7 @@ export function Navbar() {
                     { label: "About", href: "/about" },
                   ].map(({ label, href }) => (
                     <Link key={label} href={href} onClick={() => setMobileOpen(false)}>
-                      <div className="px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer text-sm font-medium text-slate-300 hover:text-white">
+                      <div className="px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
                         {label}
                       </div>
                     </Link>
@@ -455,20 +462,20 @@ export function Navbar() {
                     target="_blank"
                     rel="noopener"
                     onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium text-slate-300 hover:text-white"
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                   >
-                    <Github className="h-4 w-4 text-slate-500" />
+                    <Github className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                     GitHub
                     <ExternalLink className="h-3 w-3 text-slate-600 ml-auto" />
                   </a>
                 </div>
 
-                <div className="h-px bg-slate-800/60" />
+                <div className="h-px bg-slate-100 dark:bg-slate-800/60" />
 
                 {/* Mobile CTAs */}
                 <div className="pt-4 grid grid-cols-2 gap-2">
                   <Link href="/auth" onClick={() => setMobileOpen(false)}>
-                    <span className="flex items-center justify-center h-10 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:text-white hover:border-slate-600 transition-colors cursor-pointer">
+                    <span className="flex items-center justify-center h-10 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer">
                       Log in
                     </span>
                   </Link>
