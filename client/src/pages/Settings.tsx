@@ -22,6 +22,7 @@ import { apiRequest, queryClient, unwrapResponse } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
 import api from "@/lib/api";
 import { useLocation, useSearch } from "wouter";
+import { useTheme } from "next-themes";
 
 type ApiKey = { id: number; name: string; keyPrefix: string; rawKey?: string; created: string; lastUsed: string | null; expiresAt?: string };
 type TeamMember = { id: number; name: string; email: string; role: string; status: string; createdAt: string };
@@ -63,34 +64,38 @@ export default function Settings() {
     }
   }, [user]);
 
+  const { theme: nextTheme, setTheme: setNextTheme } = useTheme();
+
   // Account preferences (stored in localStorage)
   const [timezone, setTimezone] = useState(() => localStorage.getItem("ia_timezone") || "UTC");
   const [language, setLanguage] = useState(() => localStorage.getItem("ia_language") || "en");
-  const [theme, setThemeState] = useState<"light" | "dark" | "auto">(() =>
-    (localStorage.getItem("ia_theme") as "light" | "dark" | "auto") || "auto"
-  );
+  const [theme, setThemeState] = useState<"light" | "dark" | "auto">(() => {
+    const saved = localStorage.getItem("ia_theme");
+    if (saved === "light" || saved === "dark" || saved === "auto") return saved;
+    if (nextTheme === "system") return "auto";
+    if (nextTheme === "light" || nextTheme === "dark") return nextTheme;
+    return "auto";
+  });
 
   // Apply theme to document immediately on change
   const setTheme = (newTheme: "light" | "dark" | "auto") => {
     setThemeState(newTheme);
     localStorage.setItem("ia_theme", newTheme);
-    const root = document.documentElement;
-    if (newTheme === "dark") {
-      root.classList.add("dark");
-    } else if (newTheme === "light") {
-      root.classList.remove("dark");
+    if (newTheme === "auto") {
+      setNextTheme("system");
     } else {
-      // Auto: follow system preference
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.toggle("dark", prefersDark);
+      setNextTheme(newTheme);
     }
   };
 
-  // Apply saved theme on mount
+  // Sync state if nextTheme changes externally
   useEffect(() => {
-    setTheme(theme);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (nextTheme === "system") {
+      setThemeState("auto");
+    } else if (nextTheme === "light" || nextTheme === "dark") {
+      setThemeState(nextTheme);
+    }
+  }, [nextTheme]);
 
   // Security — 2FA
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);

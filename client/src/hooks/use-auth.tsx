@@ -75,6 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       setNeedsSignup(false);
       setPendingApproval(false);
+      if (!localStorage.getItem("ia_theme")) {
+        localStorage.setItem("ia_theme", "dark");
+        localStorage.setItem("theme", "dark");
+      }
       return;
     }
 
@@ -88,6 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(result.user);
     setNeedsSignup(result.needsSignup);
     setPendingApproval(result.pendingApproval);
+    if (result.user && !localStorage.getItem("ia_theme")) {
+      localStorage.setItem("ia_theme", "dark");
+      localStorage.setItem("theme", "dark");
+    }
   }, []);
 
   useEffect(() => {
@@ -215,6 +223,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInDemo = useCallback(async () => {
     enableDemoMode();
+    localStorage.setItem("ia_theme", "dark");
+    localStorage.setItem("theme", "dark");
     setSession({
       access_token: "demo-jwt-token",
       token_type: "bearer",
