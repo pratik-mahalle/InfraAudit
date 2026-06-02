@@ -254,7 +254,134 @@ function mockFetch(url: string, method: string = "GET", body?: any): Response {
       data = [];
     }
   } else {
-    data = { success: true, message: "Action simulated in demo mode" };
+    // Write operations: POST, PUT, DELETE
+    if (method === "PUT" && path.startsWith("/api/v1/notifications/preferences/")) {
+      const channel = path.split("/").pop();
+      const pref = demoNotificationPreferences.find(p => p.channel === channel);
+      if (pref && body) {
+        pref.is_enabled = body.is_enabled ?? pref.is_enabled;
+        if (body.config) {
+          pref.config = { ...pref.config, ...body.config };
+        }
+      }
+      data = { success: true, data: pref };
+    }
+    else if (method === "PUT" && path.startsWith("/api/alerts/")) {
+      const id = parseInt(path.split("/").pop() || "0", 10);
+      const alert = demoAlerts.find(a => a.id === id);
+      if (alert && body) {
+        Object.assign(alert, body);
+      }
+      data = { success: true, data: alert };
+    }
+    else if (method === "PUT" && path.startsWith("/api/drifts/")) {
+      const id = parseInt(path.split("/").pop() || "0", 10);
+      const drift = demoSecurityDrifts.find(d => d.id === id);
+      if (drift && body) {
+        Object.assign(drift, body);
+      }
+      data = { success: true, data: drift };
+    }
+    else if (method === "POST" && path.startsWith("/api/v1/compliance/frameworks/") && path.endsWith("/enable")) {
+      const fwId = path.split("/")[5];
+      const fw = demoComplianceFrameworks.find(f => f.id === fwId);
+      if (fw) fw.isEnabled = true;
+      data = { success: true, message: "Framework enabled" };
+    }
+    else if (method === "POST" && path.startsWith("/api/v1/compliance/frameworks/") && path.endsWith("/disable")) {
+      const fwId = path.split("/")[5];
+      const fw = demoComplianceFrameworks.find(f => f.id === fwId);
+      if (fw) fw.isEnabled = false;
+      data = { success: true, message: "Framework disabled" };
+    }
+    else if (method === "POST" && path === "/api/v1/jobs") {
+      const newJob = {
+        id: "job-" + Math.floor(Math.random() * 1000 + 100),
+        name: body?.name || "New Job",
+        description: body?.description || "",
+        type: body?.type || "Custom Scan",
+        schedule: body?.schedule || "0 0 * * *",
+        enabled: body?.enabled !== false,
+        status: "idle" as const
+      };
+      demoJobs.push(newJob);
+      data = { success: true, data: newJob };
+    }
+    else if (method === "PUT" && path.startsWith("/api/v1/jobs/")) {
+      const id = path.split("/").pop() || "";
+      const job = demoJobs.find(j => j.id === id);
+      if (job && body) {
+        Object.assign(job, body);
+      }
+      data = { success: true, data: job };
+    }
+    else if (method === "DELETE" && path.startsWith("/api/v1/jobs/")) {
+      const id = path.split("/").pop() || "";
+      const idx = demoJobs.findIndex(j => j.id === id);
+      if (idx !== -1) {
+        demoJobs.splice(idx, 1);
+      }
+      data = { success: true, message: "Job deleted" };
+    }
+    else if (method === "POST" && path.startsWith("/api/v1/jobs/") && path.endsWith("/run")) {
+      const jobId = path.split("/")[4];
+      const job = demoJobs.find(j => j.id === jobId);
+      if (job) {
+        job.status = "running";
+        job.lastRun = new Date().toISOString();
+        // Add a mock execution
+        const execId = Math.floor(Math.random() * 1000) + 10000;
+        demoJobExecutions.unshift({
+          id: execId,
+          jobId: jobId,
+          status: "running",
+          startedAt: new Date().toISOString()
+        });
+        // Auto-resolve to success after a second
+        setTimeout(() => {
+          job.status = "idle";
+          const exec = demoJobExecutions.find(e => e.id === execId);
+          if (exec) {
+            exec.status = "success";
+            exec.completedAt = new Date().toISOString();
+            exec.duration = "15s";
+          }
+        }, 3000);
+      }
+      data = { success: true, message: "Job run triggered" };
+    }
+    else if (method === "POST" && path === "/api/v1/webhooks") {
+      const newWebhook = {
+        id: "web-" + Math.floor(Math.random() * 1000 + 100),
+        name: body?.name || "New Webhook",
+        url: body?.url || "",
+        events: body?.events || [],
+        is_enabled: body?.is_enabled !== false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      demoWebhooks.push(newWebhook);
+      data = { success: true, data: newWebhook };
+    }
+    else if (method === "PUT" && path.startsWith("/api/v1/webhooks/")) {
+      const id = path.split("/").pop() || "";
+      const webhook = demoWebhooks.find(w => w.id === id);
+      if (webhook && body) {
+        Object.assign(webhook, body);
+      }
+      data = { success: true, data: webhook };
+    }
+    else if (method === "DELETE" && path.startsWith("/api/v1/webhooks/")) {
+      const id = path.split("/").pop() || "";
+      const idx = demoWebhooks.findIndex(w => w.id === id);
+      if (idx !== -1) {
+        demoWebhooks.splice(idx, 1);
+      }
+      data = { success: true, message: "Webhook deleted" };
+    }
+    else {
+      data = { success: true, message: "Action simulated in demo mode" };
+    }
   }
 
   return new Response(JSON.stringify(data), {
