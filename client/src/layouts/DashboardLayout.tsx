@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { useDriftStream } from "@/hooks/use-drift-stream";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -14,6 +14,25 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   useDriftStream();
+
+  // Automatically collapse sidebar on smaller screens (below 1024px)
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+    
+    const handleMediaQueryChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      if (event.matches) {
+        setSidebarCollapsed(true);
+      } else {
+        setSidebarCollapsed(false);
+      }
+    };
+
+    // Initial check
+    handleMediaQueryChange(mediaQuery);
+
+    mediaQuery.addEventListener("change", handleMediaQueryChange);
+    return () => mediaQuery.removeEventListener("change", handleMediaQueryChange);
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
