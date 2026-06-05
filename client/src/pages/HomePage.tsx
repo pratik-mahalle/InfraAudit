@@ -29,18 +29,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
 
-// ─── Cloud provider logos (devicons via jsDelivr CDN) ────────────────────────
+// ─── Cloud provider logos (locally hosted in /public/logos/) ─────────────────
 const CLOUD_LOGOS: Record<string, string> = {
-  AWS:              "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/amazonwebservices/amazonwebservices-original.svg",
-  GCP:              "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/googlecloud/googlecloud-original.svg",
-  K8s:              "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kubernetes/kubernetes-plain.svg",
-  Azure:            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/azure/azure-original.svg",
-  "Amazon Web Services": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/amazonwebservices/amazonwebservices-original.svg",
-  "Microsoft Azure":     "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/azure/azure-original.svg",
-  "Google Cloud":        "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/googlecloud/googlecloud-original.svg",
-  "Kubernetes":          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kubernetes/kubernetes-plain.svg",
-  "Terraform":           "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/terraform/terraform-original.svg",
-  "CloudFormation":      "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/amazonwebservices/amazonwebservices-original.svg",
+  AWS:              "/logos/aws.svg",
+  GCP:              "/logos/gcp.svg",
+  K8s:              "/logos/k8s.svg",
+  Azure:            "/logos/azure.svg",
 };
 
 // ─── Design tokens ───────────────────────────────────────────────────────────
@@ -515,24 +509,6 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* ── CLOUD PROVIDERS STRIP ────────────────────────────────────────── */}
-      <section className="py-8 border-b border-slate-100 bg-white">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-            <span className="text-xs text-slate-400 uppercase tracking-widest" style={{ fontFamily: MONO }}>
-              Monitors
-            </span>
-            {["Amazon Web Services", "Microsoft Azure", "Google Cloud", "Kubernetes", "Terraform", "CloudFormation"].map((p) => (
-              <span key={p} className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors" style={{ fontFamily: BODY }}>
-                {CLOUD_LOGOS[p] && (
-                  <img src={CLOUD_LOGOS[p]} alt={p} className="w-4 h-4 shrink-0" />
-                )}
-                {p}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── SECURITY PILLARS ─────────────────────────────────────────────── */}
       <section className="py-24 px-6 bg-white">
