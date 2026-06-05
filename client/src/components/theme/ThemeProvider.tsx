@@ -6,6 +6,7 @@ interface ThemeProviderProps {
   attribute?: string;
   defaultTheme?: string;
   enableSystem?: boolean;
+  forcedTheme?: string;
 }
 
 export function ThemeProvider({

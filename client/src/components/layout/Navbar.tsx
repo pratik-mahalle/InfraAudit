@@ -27,6 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -249,7 +250,9 @@ export function Navbar() {
       <nav
         className={cn(
           "fixed top-0 inset-x-0 z-50 h-14 transition-all duration-300",
-          scrolled
+          user
+            ? "bg-white border-b border-gray-200"
+            : scrolled
             ? "bg-slate-950/90 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/20"
             : "bg-transparent"
         )}
@@ -257,13 +260,8 @@ export function Navbar() {
         <div className="max-w-6xl mx-auto px-4 h-full flex items-center justify-between gap-6">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 group">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-700/30 group-hover:bg-blue-500 transition-colors">
-              <Cloud className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-base font-bold text-white tracking-tight">
-              Infra<span className="text-blue-400">Audit</span>
-            </span>
+          <Link href="/" className="flex items-center flex-shrink-0">
+            <InfraAuditLogo height={28} variant={user ? "light" : "dark"} />
           </Link>
 
           {/* Center nav — public only */}

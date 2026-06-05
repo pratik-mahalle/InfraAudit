@@ -10,7 +10,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
     <!-- Favicon -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -27,6 +27,12 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="InfrAudit - Cloud Monitoring Made Effortless" />
     <meta name="twitter:description" content="AI-powered cloud monitoring and cost optimization across AWS, Azure, GCP and Kubernetes." />
+    <!-- Force light mode before any CSS/JS runs -->
+    <script>
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    </script>
   </head>
   <body>
     <div id="root"></div>

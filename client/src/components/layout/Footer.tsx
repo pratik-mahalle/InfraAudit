@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "wouter";
-import { Github, Twitter, Linkedin, Cloud, Circle } from "lucide-react";
+import { Github, Twitter, Linkedin, Circle } from "lucide-react";
+import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
 
 const FONT_DISPLAY = "'Plus Jakarta Sans', sans-serif";
 
@@ -58,13 +59,8 @@ export function Footer() {
           {/* Brand column — spans 2 cols */}
           <div className="col-span-2">
             <Link href="/">
-              <span className="flex items-center gap-2.5 cursor-pointer mb-4 w-fit group">
-                <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center group-hover:bg-blue-500 transition-colors">
-                  <Cloud className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-base font-bold text-white tracking-tight">
-                  Infra<span className="text-blue-400">Audit</span>
-                </span>
+              <span className="flex items-center cursor-pointer mb-4 w-fit">
+                <InfraAuditLogo height={26} variant="dark" />
               </span>
             </Link>
 

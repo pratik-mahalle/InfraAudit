@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, Link, useSearch } from "wouter";
-import { Loader2, Cloud, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
 import { isPersonalEmail, BUSINESS_EMAIL_ERROR } from "@/lib/utils";
 
 // OAuth Icons
@@ -48,11 +49,8 @@ export default function SignupPage() {
             <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 p-8">
                 <div className="w-full max-w-sm">
                     <Link href="/">
-                        <div className="flex items-center justify-center gap-2 mb-8 cursor-pointer">
-                            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                                <Cloud className="h-4 w-4 text-white" />
-                            </div>
-                            <span className="text-xl font-semibold dark:text-white">InfrAudit</span>
+                        <div className="flex items-center justify-center mb-8 cursor-pointer">
+                            <InfraAuditLogo height={28} variant="light" />
                         </div>
                     </Link>
 
@@ -183,11 +181,8 @@ export default function SignupPage() {
                 {/* Logo */}
                 <div className="relative z-10">
                     <Link href="/">
-                        <div className="flex items-center gap-2.5 cursor-pointer">
-                            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
-                                <Cloud className="h-5 w-5 text-white" />
-                            </div>
-                            <span className="text-xl font-bold text-white">InfrAudit</span>
+                        <div className="flex items-center cursor-pointer">
+                            <InfraAuditLogo height={32} variant="dark" />
                         </div>
                     </Link>
                 </div>
