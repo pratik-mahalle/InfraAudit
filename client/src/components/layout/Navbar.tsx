@@ -54,12 +54,12 @@ interface DevItem {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const PRODUCTS: ProductItem[] = [
-  { icon: TrendingDown, label: "Cost Optimizer",    desc: "AI-powered savings recommendations",       href: "/auth", color: "text-emerald-400 bg-emerald-500/10" },
-  { icon: Shield,       label: "Security Monitor",  desc: "Drift & misconfiguration detection",       href: "/auth", color: "text-blue-400 bg-blue-500/10" },
-  { icon: BarChart3,    label: "AI Insights",       desc: "Gemini-powered infrastructure analysis",   href: "/auth", color: "text-violet-400 bg-violet-500/10" },
-  { icon: Cloud,        label: "Cloud Providers",   desc: "AWS, Azure, GCP, and Kubernetes",          href: "/auth", color: "text-sky-400 bg-sky-500/10" },
-  { icon: Activity,     label: "Drift Detection",   desc: "IaC baseline comparison & auto-remediation", href: "/auth", color: "text-amber-400 bg-amber-500/10" },
-  { icon: Bell,         label: "Alerts & Reports",  desc: "Slack, webhooks, and weekly digests",      href: "/auth", color: "text-rose-400 bg-rose-500/10" },
+  { icon: Shield,       label: "Security Monitor",  desc: "Drift & misconfiguration detection",           href: "/auth", color: "text-red-400 bg-red-500/10" },
+  { icon: Activity,     label: "Drift Detection",   desc: "IaC baseline comparison & auto-remediation",   href: "/auth", color: "text-amber-400 bg-amber-500/10" },
+  { icon: BarChart3,    label: "Vulnerability Scan", desc: "CVE scanning via Trivy + NVD",                href: "/auth", color: "text-orange-400 bg-orange-500/10" },
+  { icon: Cloud,        label: "Compliance",        desc: "CIS, SOC 2, NIST 800-53, PCI-DSS",            href: "/auth", color: "text-blue-400 bg-blue-500/10" },
+  { icon: TrendingDown, label: "Cost Optimizer",    desc: "AI-powered savings recommendations",           href: "/auth", color: "text-emerald-400 bg-emerald-500/10" },
+  { icon: Bell,         label: "Alerts & Reports",  desc: "Slack, webhooks, and weekly digests",          href: "/auth", color: "text-violet-400 bg-violet-500/10" },
 ];
 
 const DEVELOPERS: DevItem[] = [
@@ -104,14 +104,14 @@ function ProductDropdown({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Footer CTA */}
-      <div className="mx-3 mb-3 p-3 rounded-xl bg-blue-600/10 border border-blue-500/20 flex items-center justify-between">
+      <div className="mx-3 mb-3 p-3 rounded-xl bg-red-600/10 border border-red-500/20 flex items-center justify-between">
         <div>
-          <div className="text-xs font-semibold text-blue-300">Start free — no credit card needed</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">14-day trial with full access</div>
+          <div className="text-xs font-semibold text-red-300">Start your 14-day trial</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">Full access · No credit card required</div>
         </div>
         <Link href="/auth" onClick={onClose}>
-          <span className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap">
-            Get started →
+          <span className="text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap">
+            Start trial →
           </span>
         </Link>
       </div>
@@ -398,13 +398,8 @@ export function Navbar() {
             >
               {/* Mobile header */}
               <div className="flex items-center justify-between h-14 px-4 border-b border-slate-800/60">
-                <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <Cloud className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-base font-bold text-white">
-                    Infra<span className="text-blue-400">Audit</span>
-                  </span>
+                <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center">
+                  <InfraAuditLogo height={26} variant="dark" />
                 </Link>
                 <button
                   onClick={() => setMobileOpen(false)}

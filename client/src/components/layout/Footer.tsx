@@ -9,12 +9,12 @@ const NAV_COLUMNS = [
   {
     heading: "Product",
     links: [
-      { label: "Cost Optimizer",    href: "/auth" },
-      { label: "Security Monitor",  href: "/auth" },
-      { label: "AI Insights",       href: "/auth" },
-      { label: "Drift Detection",   href: "/auth" },
-      { label: "Compliance",        href: "/auth" },
-      { label: "Pricing",           href: "/pricing" },
+      { label: "Security Monitor",     href: "/auth" },
+      { label: "Drift Detection",      href: "/auth" },
+      { label: "Vulnerability Scanner",href: "/auth" },
+      { label: "Compliance",           href: "/auth" },
+      { label: "Cost Optimizer",       href: "/auth" },
+      { label: "Pricing",              href: "/pricing" },
     ],
   },
   {
@@ -23,7 +23,6 @@ const NAV_COLUMNS = [
       { label: "Documentation",  href: "/documentation" },
       { label: "API Reference",  href: "/api" },
       { label: "Changelog",      href: "/documentation" },
-      { label: "GitHub",         href: "https://github.com/pratik-mahalle/InfraAudit", external: true },
     ],
   },
   {
@@ -65,7 +64,7 @@ export function Footer() {
             </Link>
 
             <p className="text-sm text-slate-500 leading-relaxed max-w-[220px] mb-6">
-              AI-powered cloud cost optimization and security monitoring for DevOps and FinOps teams.
+              Cloud security intelligence for DevOps and SecOps teams. Drift detection, vulnerability scanning, and compliance — all in one platform.
             </p>
 
             {/* Social icons */}
@@ -153,7 +152,7 @@ export function Footer() {
 
           {/* Right */}
           <p className="text-xs text-slate-700 text-center sm:text-right">
-            Built for DevOps and FinOps teams who care about their cloud.
+            Built for security-conscious engineering teams who demand full cloud visibility.
           </p>
         </div>
       </div>

@@ -267,11 +267,8 @@ export default function SignupPage() {
                 <div className="w-full max-w-sm">
                     {/* Mobile Logo */}
                     <Link href="/">
-                        <div className="lg:hidden flex items-center justify-center gap-2 mb-8 cursor-pointer">
-                            <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                                <Cloud className="h-4 w-4 text-white" />
-                            </div>
-                            <span className="text-xl font-semibold">InfrAudit</span>
+                        <div className="lg:hidden flex items-center justify-center mb-8 cursor-pointer">
+                            <InfraAuditLogo height={28} variant="light" />
                         </div>
                     </Link>
 

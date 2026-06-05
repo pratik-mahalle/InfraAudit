@@ -890,19 +890,20 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-5">
             {[
               {
-                tier: "Community",
-                price: "Free",
-                sub: "Self-hosted · MIT License",
-                cta: "Deploy on GitHub",
-                ctaHref: "https://github.com/pratik-mahalle/InfraAudit",
-                external: true,
+                tier: "Starter",
+                price: "$49",
+                sub: "per month · billed monthly",
+                cta: "Start free trial",
+                ctaHref: "/auth",
+                external: false,
                 highlight: false,
-                features: ["Core security monitoring", "AWS, Azure, GCP support", "Drift detection", "Community support", "MIT License"],
+                badge: null,
+                features: ["Up to 50 resources", "Security drift detection", "Vulnerability scanning", "CIS Benchmarks", "7-day retention"],
               },
               {
                 tier: "Professional",
-                price: "$89",
-                sub: "per month · billed annually",
+                price: "$99",
+                sub: "per month · billed monthly",
                 cta: "Start free trial",
                 ctaHref: "/auth",
                 external: false,
@@ -920,7 +921,7 @@ export default function HomePage() {
                 highlight: false,
                 features: ["Unlimited resources", "Custom compliance policies", "SSO / SAML", "Multi-account support", "Dedicated success manager"],
               },
-            ].map(({ tier, price, sub, cta, ctaHref, external, highlight, badge, features }, i) => (
+            ].map(({ tier, price, sub, cta, ctaHref, highlight, badge, features }, i) => (
               <motion.div
                 key={tier}
                 initial="hidden"
@@ -962,24 +963,14 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                {external ? (
-                  <a href={ctaHref} target="_blank" rel="noopener noreferrer"
-                    className={cn(
-                      "block text-center py-2.5 rounded-xl text-sm font-semibold transition-colors",
-                      highlight ? "bg-slate-900 text-white hover:bg-slate-800" : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
-                    )}>
+                <Link href={ctaHref}>
+                  <span className={cn(
+                    "block text-center py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors",
+                    highlight ? "bg-slate-900 text-white hover:bg-slate-800" : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
+                  )}>
                     {cta}
-                  </a>
-                ) : (
-                  <Link href={ctaHref}>
-                    <span className={cn(
-                      "block text-center py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors",
-                      highlight ? "bg-slate-900 text-white hover:bg-slate-800" : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
-                    )}>
-                      {cta}
-                    </span>
-                  </Link>
-                )}
+                  </span>
+                </Link>
               </motion.div>
             ))}
           </div>

@@ -1,345 +1,323 @@
-import React from 'react';
-import { Helmet } from 'react-helmet';
-import { motion } from 'framer-motion';
+import React, { useRef } from "react";
+import { Helmet } from "react-helmet";
+import { motion, useInView } from "framer-motion";
 import {
-  Zap,
-  Award,
-  BarChart4,
   Shield,
-  Cloud,
+  ShieldAlert,
+  FileCheck,
+  Bug,
+  GitBranch,
+  ArrowRight,
   Check,
-  Users,
-  Globe,
-  Rocket,
   Target,
-  Heart,
-  ArrowRight
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Link } from 'wouter';
+  Zap,
+  Eye,
+  Lock,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
+import { cn } from "@/lib/utils";
+
+const DISPLAY = "'Plus Jakarta Sans', sans-serif";
+const BODY = "'IBM Plex Sans', sans-serif";
+const MONO = "'JetBrains Mono', monospace";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (d = 0) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.55, delay: d, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
 
 export default function AboutPage() {
-  const stats = [
-    { value: "35%", label: "Average cost savings", color: "text-emerald-500" },
-    { value: "50K+", label: "Resources monitored", color: "text-blue-500" },
-    { value: "99.9%", label: "Uptime SLA", color: "text-violet-500" },
-    { value: "24/7", label: "AI monitoring", color: "text-amber-500" },
-  ];
-
-  const values = [
-    {
-      icon: Target,
-      title: "Customer First",
-      description: "Every feature we build starts with understanding our customers' real challenges.",
-    },
-    {
-      icon: Zap,
-      title: "Move Fast",
-      description: "We ship quickly, iterate based on feedback, and continuously improve.",
-    },
-    {
-      icon: Shield,
-      title: "Security by Default",
-      description: "Security isn't an afterthought—it's built into everything we do.",
-    },
-    {
-      icon: Heart,
-      title: "Open & Transparent",
-      description: "We believe in open source and transparent pricing. No hidden fees, ever.",
-    },
-  ];
-
-  const solutions = [
-    {
-      icon: BarChart4,
-      title: "Cost Optimization",
-      description: "Automatically identify idle resources, right-size instances, and get actionable recommendations.",
-      color: "from-blue-500 to-cyan-500",
-    },
-    {
-      icon: Shield,
-      title: "Security Monitoring",
-      description: "Continuous scanning for misconfigurations, compliance violations, and vulnerabilities.",
-      color: "from-emerald-500 to-teal-500",
-    },
-    {
-      icon: Cloud,
-      title: "Multi-Cloud Management",
-      description: "Unified dashboard for AWS, Azure, GCP, and Kubernetes with complete visibility.",
-      color: "from-violet-500 to-purple-500",
-    },
-  ];
+  const statsRef = useRef<HTMLDivElement>(null);
+  const statsInView = useInView(statsRef, { once: true });
 
   return (
     <>
       <Helmet>
-        <title>About InfrAudit | Multi-Cloud Infrastructure Monitoring</title>
-        <meta name="description" content="Learn about InfrAudit, a comprehensive multi-cloud infrastructure monitoring platform leveraging AI for intelligent insights and proactive anomaly detection." />
+        <title>About InfrAudit | Cloud Security Intelligence Platform</title>
+        <meta name="description" content="InfraAudit is a cloud security intelligence platform for DevOps and SecOps teams — drift detection, vulnerability scanning, and compliance automation across AWS, Azure, GCP, and Kubernetes." />
       </Helmet>
 
-      <div className="min-h-screen bg-white dark:bg-slate-950">
-        {/* Hero Section */}
-        <section className="relative py-24 px-6 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-100/50 to-transparent dark:from-blue-900/10" />
+      <div className="bg-white" style={{ fontFamily: BODY }}>
 
-          <div className="max-w-6xl mx-auto relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center"
-            >
-              <span className="inline-block px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-medium mb-6">
-                About Us
-              </span>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-                Building the future of
-                <br />
-                <span className="text-blue-600">cloud intelligence</span>
-              </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8">
-                We're on a mission to give businesses complete visibility and control over their cloud environments—without the complexity.
+        {/* ── Hero ─────────────────────────────────────────────────────── */}
+        <section className="relative bg-[#0a0a0b] py-28 px-6 overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:48px_48px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-red-900/10 rounded-full blur-[100px]" />
+
+          <div className="max-w-4xl mx-auto relative text-center">
+            <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 mb-8">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                <span className="text-[11px] text-slate-400 tracking-widest uppercase" style={{ fontFamily: MONO }}>
+                  About InfrAudit
+                </span>
+              </div>
+            </motion.div>
+
+            <motion.h1 initial="hidden" animate="visible" variants={fadeUp} custom={0.1}
+              className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 tracking-tight"
+              style={{ fontFamily: DISPLAY }}>
+              Built to catch what
+              <br />
+              <span className="text-slate-500">your cloud hides.</span>
+            </motion.h1>
+
+            <motion.p initial="hidden" animate="visible" variants={fadeUp} custom={0.2}
+              className="text-slate-400 text-xl leading-relaxed max-w-2xl mx-auto"
+              style={{ fontFamily: BODY }}>
+              We're building the security intelligence layer every cloud team deserves — one that
+              sees misconfigurations, vulnerabilities, and compliance gaps before attackers do.
+            </motion.p>
+          </div>
+        </section>
+
+        {/* ── Stats ────────────────────────────────────────────────────── */}
+        <section ref={statsRef} className="py-16 px-6 border-b border-slate-100 bg-white">
+          <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { value: "50K+", label: "Resources monitored daily",  color: "#dc2626" },
+              { value: "4",    label: "Compliance frameworks",       color: "#2563eb" },
+              { value: "99.9%",label: "Platform uptime SLA",         color: "#16a34a" },
+              { value: "24/7", label: "Continuous security scanning", color: "#d97706" },
+            ].map(({ value, label, color }, i) => (
+              <motion.div key={i}
+                initial="hidden" animate={statsInView ? "visible" : "hidden"}
+                variants={fadeUp} custom={i * 0.08}
+                className="text-center">
+                <div className="text-4xl md:text-5xl font-black mb-2" style={{ color, fontFamily: DISPLAY }}>
+                  {value}
+                </div>
+                <div className="text-sm text-slate-500" style={{ fontFamily: BODY }}>{label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Mission ──────────────────────────────────────────────────── */}
+        <section className="py-24 px-6 bg-white">
+          <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
+              <div className="text-xs font-semibold text-red-600 uppercase tracking-widest mb-4"
+                style={{ fontFamily: MONO }}>
+                Our mission
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
+                style={{ fontFamily: DISPLAY }}>
+                Security shouldn't require
+                a dedicated team to understand.
+              </h2>
+              <p className="text-slate-500 text-lg leading-relaxed mb-6" style={{ fontFamily: BODY }}>
+                Cloud infrastructure is growing faster than the security tooling built to protect it.
+                Teams are left blind to misconfigurations, compliance gaps, and vulnerabilities —
+                not because they don't care, but because the tools are fragmented, noisy, and hard to act on.
               </p>
+              <p className="text-slate-500 text-lg leading-relaxed mb-8" style={{ fontFamily: BODY }}>
+                InfraAudit brings it all together: one platform that continuously scans your entire cloud,
+                surfaces what matters, and makes remediation a one-click action.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button asChild size="lg"
+                  className="h-11 px-7 bg-slate-900 text-white hover:bg-slate-800 font-semibold rounded-xl text-sm">
+                  <Link href="/auth">
+                    Start scanning free <ArrowRight className="ml-2 w-4 h-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg"
+                  className="h-11 px-7 rounded-xl text-sm border-slate-200 text-slate-700 hover:bg-slate-50">
+                  <Link href="/contact">Talk to us</Link>
+                </Button>
+              </div>
+            </motion.div>
+
+            {/* Highlight card */}
+            <motion.div
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="bg-[#0a0a0b] rounded-2xl p-8 text-white"
+            >
+              <ShieldAlert className="w-10 h-10 mb-6 text-red-400" />
+              <h3 className="text-2xl font-bold mb-4" style={{ fontFamily: DISPLAY }}>
+                The security gap is real.
+              </h3>
+              <p className="text-slate-400 mb-8 leading-relaxed" style={{ fontFamily: BODY }}>
+                83% of cloud security failures are caused by misconfiguration, not sophisticated attacks.
+                InfraAudit closes that gap automatically — across every cloud, every account, every day.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { stat: "83%", label: "Breaches from misconfiguration" },
+                  { stat: "60s", label: "Time to first scan results" },
+                  { stat: "1-click", label: "Auto-remediation" },
+                  { stat: "4", label: "Compliance frameworks" },
+                ].map(({ stat, label }) => (
+                  <div key={label} className="bg-white/5 rounded-xl p-4 border border-white/5">
+                    <div className="text-2xl font-black text-white mb-1" style={{ fontFamily: DISPLAY }}>{stat}</div>
+                    <div className="text-xs text-slate-500" style={{ fontFamily: BODY }}>{label}</div>
+                  </div>
+                ))}
+              </div>
             </motion.div>
           </div>
         </section>
 
-        {/* Stats Section */}
-        <section className="py-16 px-6 bg-slate-900">
+        {/* ── What we do ───────────────────────────────────────────────── */}
+        <section className="py-24 px-6 bg-slate-50 border-y border-slate-100">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="text-center"
-                >
-                  <div className={`text-4xl md:text-5xl font-bold mb-2 ${stat.color}`}>
-                    {stat.value}
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
+              className="text-center mb-14">
+              <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3"
+                style={{ fontFamily: MONO }}>
+                Platform
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900" style={{ fontFamily: DISPLAY }}>
+                What InfrAudit does
+              </h2>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                {
+                  icon: GitBranch,
+                  title: "Drift Detection",
+                  desc: "Continuously monitors your live infrastructure against Terraform and CloudFormation baselines. Any deviation triggers an alert — and optionally, a fix.",
+                  accent: "#dc2626",
+                  bg: "bg-red-50 border-red-100",
+                },
+                {
+                  icon: Bug,
+                  title: "Vulnerability Scanning",
+                  desc: "Powered by Trivy and the NVD, InfraAudit scans for known CVEs across container images, OS packages, and application dependencies.",
+                  accent: "#d97706",
+                  bg: "bg-amber-50 border-amber-100",
+                },
+                {
+                  icon: FileCheck,
+                  title: "Compliance Automation",
+                  desc: "Automated assessments against CIS, SOC 2, NIST 800-53, and PCI-DSS. Export audit-ready PDFs for your security team or external auditors.",
+                  accent: "#2563eb",
+                  bg: "bg-blue-50 border-blue-100",
+                },
+                {
+                  icon: Eye,
+                  title: "Multi-Cloud Visibility",
+                  desc: "One unified dashboard across AWS, Azure, GCP, and Kubernetes. No context switching, no blind spots.",
+                  accent: "#7c3aed",
+                  bg: "bg-violet-50 border-violet-100",
+                },
+                {
+                  icon: Zap,
+                  title: "Auto-Remediation",
+                  desc: "One-click remediation with a full approval workflow and audit trail. Fix issues immediately or route them through your existing change management process.",
+                  accent: "#16a34a",
+                  bg: "bg-green-50 border-green-100",
+                },
+                {
+                  icon: Lock,
+                  title: "Cost Intelligence",
+                  desc: "AI-powered cost anomaly detection and savings recommendations — so your team sees the full picture, not just security.",
+                  accent: "#0891b2",
+                  bg: "bg-cyan-50 border-cyan-100",
+                },
+              ].map(({ icon: Icon, title, desc, accent, bg }, i) => (
+                <motion.div key={title}
+                  initial="hidden" whileInView="visible" viewport={{ once: true }}
+                  variants={fadeUp} custom={i * 0.07}
+                  className={cn("rounded-2xl p-6 border-2", bg)}>
+                  <div className="w-10 h-10 bg-white rounded-xl border border-slate-200 flex items-center justify-center mb-4 shadow-sm">
+                    <Icon className="w-5 h-5" style={{ color: accent }} />
                   </div>
-                  <div className="text-slate-400 text-sm">{stat.label}</div>
+                  <h3 className="text-base font-bold text-slate-900 mb-2" style={{ fontFamily: DISPLAY }}>{title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed" style={{ fontFamily: BODY }}>{desc}</p>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Mission Section */}
-        <section className="py-24 px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-              >
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">Our Mission</h2>
-                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-                  Cloud bills are rising, and teams struggle to understand why. We started InfrAudit to fix this problem—to help every company take control of their cloud spend and grow efficiently.
-                </p>
-                <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-                  Our AI-powered platform makes cloud complexity manageable with automated monitoring, intelligent recommendations, and a unified view of your entire cloud ecosystem.
-                </p>
-                <div className="flex items-center gap-4">
-                  <Button asChild size="lg" className="rounded-full">
-                    <Link href="/auth">
-                      Get started free
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" size="lg" className="rounded-full">
-                    <Link href="/contact">
-                      Contact sales
-                    </Link>
-                  </Button>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-8 text-white"
-              >
-                <Award className="w-12 h-12 mb-6 opacity-80" />
-                <h3 className="text-2xl font-bold mb-4">
-                  Join us as we build the future of cloud cost intelligence.
-                </h3>
-                <p className="text-blue-100 mb-8">
-                  We're using modern technologies like TypeScript, Node.js, and AI to build a fast, scalable platform that helps engineering and finance teams stay in sync.
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-                    <div className="text-3xl font-bold">32%</div>
-                    <div className="text-blue-200 text-sm">Average savings</div>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur rounded-xl p-4">
-                    <div className="text-3xl font-bold">10K+</div>
-                    <div className="text-blue-200 text-sm">Resources tracked</div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </section>
-
-        {/* Solutions Section */}
-        <section className="py-24 px-6 bg-gray-50 dark:bg-slate-900/50">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Solutions</h2>
-              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Everything you need to optimize, secure, and manage your cloud infrastructure.
-              </p>
-            </motion.div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              {solutions.map((solution, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-white dark:bg-slate-800 rounded-2xl p-8 border border-gray-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300"
-                >
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${solution.color} flex items-center justify-center mb-6`}>
-                    <solution.icon className="w-7 h-7 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-3">{solution.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400">{solution.description}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Values Section */}
-        <section className="py-24 px-6">
-          <div className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Values</h2>
-              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                The principles that guide everything we build.
-              </p>
+        {/* ── Values ───────────────────────────────────────────────────── */}
+        <section className="py-24 px-6 bg-white">
+          <div className="max-w-5xl mx-auto">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
+              className="text-center mb-14">
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900" style={{ fontFamily: DISPLAY }}>
+                How we build
+              </h2>
             </motion.div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {values.map((value, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="text-center p-6"
-                >
-                  <div className="w-14 h-14 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                    <value.icon className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+              {[
+                {
+                  icon: Shield,
+                  title: "Security by default",
+                  desc: "Security is built into every feature we ship — not bolted on afterward.",
+                },
+                {
+                  icon: Target,
+                  title: "Signal over noise",
+                  desc: "We prioritize findings that matter. Every alert should be actionable.",
+                },
+                {
+                  icon: Eye,
+                  title: "Full visibility",
+                  desc: "No blind spots. Every account, every region, every resource — covered.",
+                },
+                {
+                  icon: Zap,
+                  title: "Fast time to value",
+                  desc: "Connect your cloud and see your first findings in under 60 seconds.",
+                },
+              ].map(({ icon: Icon, title, desc }, i) => (
+                <motion.div key={title}
+                  initial="hidden" whileInView="visible" viewport={{ once: true }}
+                  variants={fadeUp} custom={i * 0.1}
+                  className="p-6 rounded-2xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all">
+                  <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center mb-4">
+                    <Icon className="w-5 h-5 text-slate-700" />
                   </div>
-                  <h3 className="text-lg font-bold mb-2">{value.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">{value.description}</p>
+                  <h3 className="text-base font-bold text-slate-900 mb-2" style={{ fontFamily: DISPLAY }}>{title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed" style={{ fontFamily: BODY }}>{desc}</p>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="relative py-28 px-6 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-violet-900">
-          {/* Decorative background elements */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-1/4 -left-32 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-500/15 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-t from-violet-600/10 to-transparent" />
-          </div>
-
-          {/* Grid pattern overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
-
-          <div className="max-w-4xl mx-auto relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="text-center"
-            >
-              {/* Sparkle badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 mb-8"
-              >
-                <Zap className="w-4 h-4 text-yellow-400" />
-                <span className="text-sm text-white/90 font-medium">Start saving in minutes</span>
-              </motion.div>
-
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
-                Ready to optimize
+        {/* ── CTA ──────────────────────────────────────────────────────── */}
+        <section className="py-28 px-6 bg-[#0a0a0b] border-t border-white/5">
+          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px]" />
+          <div className="max-w-3xl mx-auto text-center relative">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
+              <h2 className="text-5xl md:text-6xl font-black text-white leading-tight mb-5"
+                style={{ fontFamily: DISPLAY }}>
+                Start securing your
                 <br />
-                <span className="bg-gradient-to-r from-violet-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                  your cloud?
-                </span>
+                <span className="text-slate-500">cloud today.</span>
               </h2>
-
-              <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Join thousands of companies saving up to 35% on their cloud costs.
-                Start your free 14-day trial today. No credit card required.
+              <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto" style={{ fontFamily: BODY }}>
+                14-day free trial. Full access. No credit card required.
               </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild size="lg" className="bg-white hover:bg-gray-100 text-slate-900 rounded-full px-8 font-semibold shadow-lg shadow-white/20 hover:shadow-white/30 transition-all duration-300">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button asChild size="lg"
+                  className="h-12 px-8 bg-white text-slate-950 hover:bg-slate-100 font-semibold rounded-xl text-sm">
                   <Link href="/auth">
-                    Get started free
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    Start free trial <ArrowRight className="ml-2 w-4 h-4" />
                   </Link>
                 </Button>
-                <Button asChild variant="outline" size="lg" className="border-white/30 bg-white/5 hover:bg-white/15 hover:border-white/50 text-white rounded-full px-8 backdrop-blur-sm transition-all duration-300">
-                  <Link href="/contact">
-                    Talk to sales
-                  </Link>
+                <Button asChild variant="ghost" size="lg"
+                  className="h-12 px-8 text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 rounded-xl text-sm">
+                  <Link href="/contact">Talk to sales</Link>
                 </Button>
               </div>
-
-              {/* Trust indicators */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 }}
-                className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-slate-400"
-              >
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>No credit card required</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>14-day free trial</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span>Cancel anytime</span>
-                </div>
-              </motion.div>
             </motion.div>
           </div>
         </section>
+
       </div>
     </>
   );
