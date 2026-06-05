@@ -261,7 +261,7 @@ export function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center flex-shrink-0">
-            <InfraAuditLogo height={28} variant={user ? "light" : "dark"} />
+            <InfraAuditLogo height={36} variant={user ? "light" : "dark"} />
           </Link>
 
           {/* Center nav — public only */}

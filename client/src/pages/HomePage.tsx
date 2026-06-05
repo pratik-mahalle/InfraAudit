@@ -437,7 +437,7 @@ export default function HomePage() {
                 className="text-slate-400 text-lg leading-relaxed mb-8 max-w-md"
                 style={{ fontFamily: BODY }}
               >
-                InfraAudit continuously scans AWS, Azure, GCP, and Kubernetes for
+                InfrAudit continuously scans AWS, Azure, GCP, and Kubernetes for
                 misconfigurations, vulnerabilities, and compliance violations —
                 and remediates them automatically.
               </motion.p>
@@ -553,7 +553,7 @@ export default function HomePage() {
                 icon: Bug,
                 label: "Vulnerability Scanning",
                 title: "CVE coverage across all your workloads",
-                desc: "Powered by Trivy and the NVD, InfraAudit scans container images, OS packages, and dependencies for known CVEs — with fix guidance.",
+                desc: "Powered by Trivy and the NVD, InfrAudit scans container images, OS packages, and dependencies for known CVEs — with fix guidance.",
                 items: ["Trivy + NVD powered scanning", "Container & OS vulnerability coverage", "Severity-based prioritization", "SBOM generation & management"],
                 accent: "#d97706",
                 bg: "bg-amber-50",
@@ -716,7 +716,7 @@ export default function HomePage() {
               <motion.p variants={fadeUp} custom={0.16}
                 className="text-slate-500 text-lg leading-relaxed mb-6"
                 style={{ fontFamily: BODY }}>
-                Stop scrambling before audits. InfraAudit runs continuous
+                Stop scrambling before audits. InfrAudit runs continuous
                 compliance scans against CIS, SOC 2, NIST 800-53, and PCI-DSS —
                 and exports PDF reports on demand.
               </motion.p>
@@ -989,50 +989,131 @@ export default function HomePage() {
       </section>
 
       {/* ── FINAL CTA ────────────────────────────────────────────────────── */}
-      <section className="py-32 px-6 bg-[#0a0a0b] border-t border-white/5">
-        {/* Grid */}
-        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px]" />
-        <div className="max-w-3xl mx-auto text-center relative">
+      <section className="relative bg-[#0a0a0b] border-t border-white/5 overflow-hidden">
+        {/* Grid bg */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:48px_48px]" />
+        {/* Red glow */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-red-900/15 rounded-full blur-[120px]" />
+
+        <div className="relative max-w-6xl mx-auto px-6 py-24">
+          {/* Big stat row */}
           <motion.div
-            initial="hidden"
-            whileInView="visible"
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            variants={fadeUp}
+            transition={{ duration: 0.5 }}
+            className="grid grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden mb-16 border border-white/5"
           >
-            <div className="text-xs font-semibold text-slate-600 uppercase tracking-widest mb-6" style={{ fontFamily: MONO }}>
-              Start today
-            </div>
-            <h2 className="text-5xl md:text-6xl font-black text-white leading-tight mb-5"
-              style={{ fontFamily: DISPLAY }}>
-              Your cloud has
-              <br />
-              <span className="relative">
-                vulnerabilities.
-                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-red-500/50 rounded" />
-              </span>
-              <br />
-              <span className="text-slate-500">Find them first.</span>
-            </h2>
-            <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto" style={{ fontFamily: BODY }}>
-              InfraAudit gives your security team complete visibility over every
-              misconfiguration, CVE, and compliance gap — from day one.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button asChild size="lg"
-                className="h-12 px-8 bg-white text-slate-950 hover:bg-slate-100 font-semibold rounded-xl shadow-lg text-sm">
-                <Link href={user ? "/dashboard" : "/auth"}>
-                  Start scanning free — 14 days <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="ghost" size="lg"
-                className="h-12 px-8 text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 rounded-xl text-sm">
-                <Link href="/contact">Get a demo</Link>
-              </Button>
-            </div>
-            <p className="text-slate-700 text-sm mt-6" style={{ fontFamily: BODY }}>
-              No credit card required · Setup in 5 minutes · Cancel anytime
-            </p>
+            {[
+              { stat: "83%", detail: "of cloud breaches caused by misconfiguration", accent: "#dc2626" },
+              { stat: "60s", detail: "to your first scan results after connecting", accent: "#d97706" },
+              { stat: "1-click", detail: "remediation with full audit trail", accent: "#16a34a" },
+            ].map(({ stat, detail, accent }) => (
+              <div key={stat} className="bg-[#0d0d0e] px-8 py-10 text-center">
+                <div className="text-5xl md:text-6xl font-black mb-3 tabular-nums"
+                  style={{ color: accent, fontFamily: DISPLAY }}>{stat}</div>
+                <div className="text-sm text-slate-500 leading-relaxed max-w-[180px] mx-auto"
+                  style={{ fontFamily: BODY }}>{detail}</div>
+              </div>
+            ))}
           </motion.div>
+
+          {/* Copy + CTAs */}
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+            >
+              <div className="text-xs font-semibold text-slate-600 uppercase tracking-widest mb-5"
+                style={{ fontFamily: MONO }}>
+                Get started today
+              </div>
+              <h2 className="text-5xl md:text-6xl font-black text-white leading-[1.05] mb-6"
+                style={{ fontFamily: DISPLAY }}>
+                Find your
+                <br />
+                <span className="relative inline-block">
+                  vulnerabilities
+                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-red-500/60 rounded" />
+                </span>
+                <br />
+                <span className="text-slate-500">before attackers do.</span>
+              </h2>
+              <p className="text-slate-400 text-lg leading-relaxed mb-8 max-w-md"
+                style={{ fontFamily: BODY }}>
+                InfrAudit gives your security team complete visibility over every
+                misconfiguration, CVE, and compliance gap — from day one.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button asChild size="lg"
+                  className="h-12 px-8 bg-white text-slate-950 hover:bg-slate-100 font-semibold rounded-xl shadow-lg text-sm">
+                  <Link href={user ? "/dashboard" : "/auth"}>
+                    Start 14-day free trial <ArrowRight className="ml-2 w-4 h-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="ghost" size="lg"
+                  className="h-12 px-8 text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 rounded-xl text-sm">
+                  <Link href="/contact">Request a demo</Link>
+                </Button>
+              </div>
+              <p className="text-slate-700 text-xs mt-5" style={{ fontFamily: MONO }}>
+                No credit card required · Setup in 5 min · Cancel anytime
+              </p>
+            </motion.div>
+
+            {/* Right: Mini security checklist card */}
+            <motion.div
+              initial={{ opacity: 0, x: 32 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="rounded-2xl border border-white/8 bg-[#0d0d0e] overflow-hidden"
+            >
+              <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-red-400" />
+                <span className="text-sm font-semibold text-white" style={{ fontFamily: BODY }}>
+                  What InfrAudit checks on day 1
+                </span>
+              </div>
+              <div className="p-5 space-y-3">
+                {[
+                  { text: "Public S3 buckets & storage misconfigs",   sev: "CRIT" as const },
+                  { text: "IAM roles with wildcard permissions",       sev: "CRIT" as const },
+                  { text: "Unencrypted databases & volumes",           sev: "HIGH" as const },
+                  { text: "Security group open to 0.0.0.0/0",         sev: "HIGH" as const },
+                  { text: "MFA not enforced on root/admin accounts",   sev: "HIGH" as const },
+                  { text: "CIS / SOC 2 / NIST compliance gaps",        sev: "MED"  as const },
+                  { text: "CVEs in container images & OS packages",    sev: "MED"  as const },
+                  { text: "Kubernetes RBAC and pod security policies",  sev: "MED"  as const },
+                ].map(({ text, sev }, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -8 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.05 * i, duration: 0.3 }}
+                    className="flex items-center gap-3"
+                  >
+                    <SevPill level={sev} />
+                    <span className="text-xs text-slate-400" style={{ fontFamily: BODY }}>{text}</span>
+                    <ChevronRight className="w-3 h-3 text-slate-700 ml-auto flex-shrink-0" />
+                  </motion.div>
+                ))}
+              </div>
+              <div className="px-5 py-3 border-t border-white/5 flex items-center justify-between">
+                <span className="text-[11px] text-slate-600" style={{ fontFamily: MONO }}>
+                  + 200 more checks
+                </span>
+                <Link href={user ? "/dashboard" : "/auth"}>
+                  <span className="text-[11px] font-semibold text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg cursor-pointer transition-colors border border-slate-700">
+                    Run a scan →
+                  </span>
+                </Link>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

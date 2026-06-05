@@ -38,7 +38,7 @@ export default function AboutPage() {
     <>
       <Helmet>
         <title>About InfrAudit | Cloud Security Intelligence Platform</title>
-        <meta name="description" content="InfraAudit is a cloud security intelligence platform for DevOps and SecOps teams — drift detection, vulnerability scanning, and compliance automation across AWS, Azure, GCP, and Kubernetes." />
+        <meta name="description" content="InfrAudit is a cloud security intelligence platform for DevOps and SecOps teams — drift detection, vulnerability scanning, and compliance automation across AWS, Azure, GCP, and Kubernetes." />
       </Helmet>
 
       <div className="bg-white" style={{ fontFamily: BODY }}>
@@ -116,7 +116,7 @@ export default function AboutPage() {
                 not because they don't care, but because the tools are fragmented, noisy, and hard to act on.
               </p>
               <p className="text-slate-500 text-lg leading-relaxed mb-8" style={{ fontFamily: BODY }}>
-                InfraAudit brings it all together: one platform that continuously scans your entire cloud,
+                InfrAudit brings it all together: one platform that continuously scans your entire cloud,
                 surfaces what matters, and makes remediation a one-click action.
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
@@ -147,7 +147,7 @@ export default function AboutPage() {
               </h3>
               <p className="text-slate-400 mb-8 leading-relaxed" style={{ fontFamily: BODY }}>
                 83% of cloud security failures are caused by misconfiguration, not sophisticated attacks.
-                InfraAudit closes that gap automatically — across every cloud, every account, every day.
+                InfrAudit closes that gap automatically — across every cloud, every account, every day.
               </p>
               <div className="grid grid-cols-2 gap-4">
                 {[
@@ -192,7 +192,7 @@ export default function AboutPage() {
                 {
                   icon: Bug,
                   title: "Vulnerability Scanning",
-                  desc: "Powered by Trivy and the NVD, InfraAudit scans for known CVEs across container images, OS packages, and application dependencies.",
+                  desc: "Powered by Trivy and the NVD, InfrAudit scans for known CVEs across container images, OS packages, and application dependencies.",
                   accent: "#d97706",
                   bg: "bg-amber-50 border-amber-100",
                 },
