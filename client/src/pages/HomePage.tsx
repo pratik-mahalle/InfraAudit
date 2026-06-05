@@ -1,35 +1,40 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "wouter";
-import { motion, useInView } from "framer-motion";
+import { Link } from "wouter";
+import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
-  Check,
-  ArrowRight,
   Shield,
-  DollarSign,
-  TrendingDown,
-  Cloud,
-  Zap,
-  Bell,
-  BarChart3,
-  Lock,
-  Globe,
   AlertTriangle,
   CheckCircle2,
   Activity,
-  Database,
+  Lock,
+  Globe,
+  ArrowRight,
+  Check,
+  Bell,
+  Zap,
+  Eye,
+  FileCheck,
+  Search,
+  BarChart3,
+  TrendingDown,
   Server,
-  ArrowUpRight,
+  GitBranch,
+  ShieldAlert,
+  ScanLine,
+  Bug,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
 
-// ─── Fonts ───────────────────────────────────────────────────────────────────
+// ─── Design tokens ───────────────────────────────────────────────────────────
 const DISPLAY = "'Plus Jakarta Sans', sans-serif";
-const BODY = "'DM Sans', sans-serif";
+const BODY = "'IBM Plex Sans', sans-serif";
+const MONO = "'JetBrains Mono', monospace";
 
-// ─── Animation helpers ───────────────────────────────────────────────────────
-
+// ─── Animation variants ──────────────────────────────────────────────────────
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   visible: (delay = 0) => ({
@@ -39,685 +44,776 @@ const fadeUp = {
   }),
 };
 
-// Word-by-word stagger for hero headline
-const wordContainer = {
+const staggerContainer = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
-};
-const wordItem = {
-  hidden: { opacity: 0, y: 32, filter: "blur(4px)" },
-  visible: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
 };
 
 // ─── Count-up hook ───────────────────────────────────────────────────────────
-
 function useCountUp(target: number, inView: boolean, duration = 1800) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     if (!inView) return;
     const start = Date.now();
-    const raf = () => {
+    const tick = () => {
       const elapsed = Date.now() - start;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setCount(Math.round(eased * target));
-      if (progress < 1) requestAnimationFrame(raf);
+      if (progress < 1) requestAnimationFrame(tick);
     };
-    requestAnimationFrame(raf);
+    requestAnimationFrame(tick);
   }, [inView, target, duration]);
   return count;
 }
 
-// ─── Metric item with count-up ───────────────────────────────────────────────
+// ─── Severity pill ───────────────────────────────────────────────────────────
+function SevPill({ level }: { level: "CRIT" | "HIGH" | "MED" | "LOW" | "OK" }) {
+  const map = {
+    CRIT: "bg-red-100 text-red-700 border-red-200",
+    HIGH: "bg-orange-100 text-orange-700 border-orange-200",
+    MED:  "bg-amber-100 text-amber-700 border-amber-200",
+    LOW:  "bg-blue-50 text-blue-600 border-blue-200",
+    OK:   "bg-green-50 text-green-700 border-green-200",
+  };
+  return (
+    <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border tracking-wide", map[level])}
+      style={{ fontFamily: MONO }}>
+      {level}
+    </span>
+  );
+}
 
-function MetricItem({ prefix = "", value, suffix = "", label, inView }: {
+// ─── Live Scan Feed (hero mockup) ────────────────────────────────────────────
+const SCAN_ITEMS = [
+  { sev: "CRIT" as const, msg: "S3 bucket public read enabled", resource: "prod-assets-s3", cloud: "AWS" },
+  { sev: "HIGH" as const, msg: "IAM role with wildcard permissions", resource: "lambda-exec-role", cloud: "AWS" },
+  { sev: "MED"  as const, msg: "Security group allows 0.0.0.0/0 on 22", resource: "bastion-sg", cloud: "GCP" },
+  { sev: "CRIT" as const, msg: "Unencrypted RDS instance detected", resource: "prod-db-01", cloud: "AWS" },
+  { sev: "HIGH" as const, msg: "Pod security policy not enforced", resource: "kube-default-ns", cloud: "K8s" },
+  { sev: "MED"  as const, msg: "Root account MFA not enabled", resource: "root@acme.io", cloud: "Azure" },
+  { sev: "LOW"  as const, msg: "Unused security group found", resource: "legacy-web-sg", cloud: "AWS" },
+  { sev: "HIGH" as const, msg: "Exposed Kubernetes API endpoint", resource: "cluster-us-east", cloud: "K8s" },
+];
+
+function LiveScanFeed() {
+  const [visible, setVisible] = useState<number[]>([]);
+  const [scanning, setScanning] = useState(true);
+
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < SCAN_ITEMS.length) {
+        setVisible((prev) => [...prev, i]);
+        i++;
+      } else {
+        clearInterval(interval);
+        setScanning(false);
+      }
+    }, 420);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0d1117]"
+      style={{ fontFamily: BODY }}>
+      {/* Chrome bar */}
+      <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/10 bg-[#161b22]">
+        <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+        <div className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
+        <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+        <div className="ml-3 flex items-center gap-2">
+          <span className="text-[11px] text-slate-500" style={{ fontFamily: MONO }}>infraaudit.io</span>
+          <span className="text-[10px] text-slate-600">/security</span>
+        </div>
+        <div className="ml-auto flex items-center gap-1.5">
+          {scanning ? (
+            <span className="flex items-center gap-1.5 text-[10px] text-amber-400" style={{ fontFamily: MONO }}>
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
+              </span>
+              SCANNING
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-[10px] text-red-400" style={{ fontFamily: MONO }}>
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-400" />
+              </span>
+              {visible.filter(i => SCAN_ITEMS[i].sev === "CRIT").length} CRITICAL
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Header row */}
+      <div className="px-4 py-3 border-b border-white/5 flex items-center gap-3">
+        <ShieldAlert className="w-4 h-4 text-red-400" />
+        <span className="text-sm font-semibold text-white">Live Security Scan</span>
+        <span className="ml-auto text-[11px] text-slate-600" style={{ fontFamily: MONO }}>
+          {visible.length}/{SCAN_ITEMS.length} resources checked
+        </span>
+      </div>
+
+      {/* Scan results */}
+      <div className="divide-y divide-white/5 min-h-[280px]">
+        <AnimatePresence>
+          {visible.map((idx) => {
+            const item = SCAN_ITEMS[idx];
+            return (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="flex items-center gap-3 px-4 py-2.5"
+              >
+                <SevPill level={item.sev} />
+                <span className="text-xs text-slate-300 flex-1 truncate">{item.msg}</span>
+                <span className="text-[10px] text-slate-600 shrink-0" style={{ fontFamily: MONO }}>{item.resource}</span>
+                <span className={cn(
+                  "text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0",
+                  item.cloud === "AWS" ? "bg-orange-950/50 text-orange-400" :
+                  item.cloud === "GCP" ? "bg-blue-950/50 text-blue-400" :
+                  item.cloud === "K8s" ? "bg-purple-950/50 text-purple-400" :
+                  "bg-cyan-950/50 text-cyan-400"
+                )} style={{ fontFamily: MONO }}>{item.cloud}</span>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+
+        {/* Scanning cursor row */}
+        {scanning && (
+          <div className="flex items-center gap-3 px-4 py-2.5">
+            <span className="text-[10px] text-slate-600" style={{ fontFamily: MONO }}>
+              <motion.span
+                animate={{ opacity: [1, 0, 1] }}
+                transition={{ duration: 0.8, repeat: Infinity }}
+              >▋</motion.span>
+            </span>
+            <span className="text-xs text-slate-600">Scanning next resource...</span>
+          </div>
+        )}
+      </div>
+
+      {/* Footer stats */}
+      <div className="px-4 py-3 border-t border-white/5 bg-[#161b22] flex items-center gap-5">
+        {[
+          { label: "Critical", val: visible.filter(i => SCAN_ITEMS[i].sev === "CRIT").length, color: "text-red-400" },
+          { label: "High",     val: visible.filter(i => SCAN_ITEMS[i].sev === "HIGH").length, color: "text-orange-400" },
+          { label: "Medium",   val: visible.filter(i => SCAN_ITEMS[i].sev === "MED").length,  color: "text-amber-400" },
+        ].map(({ label, val, color }) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <span className={cn("text-sm font-bold tabular-nums", color)} style={{ fontFamily: MONO }}>{val}</span>
+            <span className="text-[11px] text-slate-600">{label}</span>
+          </div>
+        ))}
+        <div className="ml-auto text-[10px] text-slate-600" style={{ fontFamily: MONO }}>
+          auto-remediation ready
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Compliance bars (large section mockup) ──────────────────────────────────
+const FRAMEWORKS = [
+  { name: "CIS AWS Foundations v3.0",  score: 91, controls: "156/171", color: "#16a34a" },
+  { name: "SOC 2 Type II (TSC)",        score: 84, controls: "58/69",   color: "#2563eb" },
+  { name: "NIST 800-53 (rev5)",         score: 79, controls: "142/180", color: "#d97706" },
+  { name: "PCI-DSS v4.0",              score: 67, controls: "41/61",   color: "#dc2626" },
+];
+
+function ComplianceMockup({ inView }: { inView: boolean }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+      <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3">
+        <FileCheck className="w-4 h-4 text-slate-700" />
+        <span className="text-sm font-semibold text-slate-900" style={{ fontFamily: BODY }}>
+          Compliance Posture
+        </span>
+        <span className="ml-auto text-xs text-slate-400">Last scan: 2 min ago</span>
+      </div>
+      <div className="p-5 space-y-5">
+        {FRAMEWORKS.map((fw, i) => (
+          <div key={fw.name}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-slate-700" style={{ fontFamily: BODY }}>{fw.name}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-400" style={{ fontFamily: MONO }}>{fw.controls} controls</span>
+                <span className="text-sm font-bold tabular-nums" style={{ color: fw.color, fontFamily: MONO }}>
+                  {fw.score}%
+                </span>
+              </div>
+            </div>
+            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ backgroundColor: fw.color }}
+                initial={{ width: 0 }}
+                animate={inView ? { width: `${fw.score}%` } : { width: 0 }}
+                transition={{ duration: 0.9, delay: 0.2 + i * 0.12, ease: [0.22, 1, 0.36, 1] }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Mini dashboard snapshot ─────────────────────────────────────────────────
+function DashboardSnapshot() {
+  return (
+    <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-xl shadow-slate-200/60">
+      {/* Browser bar */}
+      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-slate-100 bg-slate-50">
+        <div className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
+        <div className="w-2.5 h-2.5 rounded-full bg-amber-400/70" />
+        <div className="w-2.5 h-2.5 rounded-full bg-green-400/70" />
+        <div className="ml-3 flex items-center gap-1 px-3 py-1 rounded bg-white border border-slate-200">
+          <Lock className="w-2.5 h-2.5 text-slate-400" />
+          <span className="text-[10px] text-slate-500" style={{ fontFamily: MONO }}>app.infraaudit.io/dashboard</span>
+        </div>
+      </div>
+
+      {/* Dashboard layout */}
+      <div className="p-4 bg-[#f8fafc]">
+        {/* KPI row */}
+        <div className="grid grid-cols-4 gap-3 mb-4">
+          {[
+            { label: "Security Score", val: "87", unit: "/100", delta: "+3", up: true, color: "#16a34a" },
+            { label: "Active Drifts", val: "14", unit: "", delta: "+2", up: false, color: "#dc2626" },
+            { label: "Vulnerabilities", val: "23", unit: "", delta: "-5", up: true, color: "#d97706" },
+            { label: "Compliance", val: "84", unit: "%", delta: "+1%", up: true, color: "#2563eb" },
+          ].map((kpi) => (
+            <div key={kpi.label} className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+              <div className="text-[10px] text-slate-400 mb-1.5" style={{ fontFamily: BODY }}>{kpi.label}</div>
+              <div className="flex items-end gap-1">
+                <span className="text-xl font-bold tabular-nums text-slate-900" style={{ fontFamily: DISPLAY }}>
+                  {kpi.val}
+                </span>
+                <span className="text-xs text-slate-400 mb-0.5">{kpi.unit}</span>
+              </div>
+              <div className={cn(
+                "text-[10px] font-medium mt-1",
+                kpi.up ? "text-green-600" : "text-red-500"
+              )} style={{ fontFamily: MONO }}>
+                {kpi.delta} this week
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Two-col */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Drift feed mini */}
+          <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-400" />
+              </span>
+              <span className="text-[11px] font-semibold text-slate-700" style={{ fontFamily: BODY }}>Live Drifts</span>
+            </div>
+            <div className="space-y-2">
+              {[
+                { sev: "CRIT" as const, msg: "S3 bucket public access",  t: "1m ago" },
+                { sev: "HIGH" as const, msg: "IAM wildcard permission",   t: "4m ago" },
+                { sev: "MED"  as const, msg: "SG open port 22",           t: "9m ago" },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <SevPill level={item.sev} />
+                  <span className="text-[10px] text-slate-600 flex-1 truncate" style={{ fontFamily: BODY }}>{item.msg}</span>
+                  <span className="text-[10px] text-slate-400" style={{ fontFamily: MONO }}>{item.t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Compliance mini bars */}
+          <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
+            <div className="text-[11px] font-semibold text-slate-700 mb-3" style={{ fontFamily: BODY }}>Compliance</div>
+            <div className="space-y-2.5">
+              {[
+                { fw: "CIS AWS",   pct: 91, color: "#16a34a" },
+                { fw: "SOC 2",    pct: 84, color: "#2563eb" },
+                { fw: "NIST",     pct: 79, color: "#d97706" },
+              ].map((fw) => (
+                <div key={fw.fw}>
+                  <div className="flex justify-between mb-0.5">
+                    <span className="text-[10px] text-slate-500" style={{ fontFamily: BODY }}>{fw.fw}</span>
+                    <span className="text-[10px] font-bold" style={{ color: fw.color, fontFamily: MONO }}>{fw.pct}%</span>
+                  </div>
+                  <div className="h-1 bg-slate-100 rounded-full">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${fw.pct}%`, backgroundColor: fw.color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Metric stat ─────────────────────────────────────────────────────────────
+function Metric({ prefix = "", value, suffix = "", label, inView }: {
   prefix?: string; value: number; suffix?: string; label: string; inView: boolean;
 }) {
   const count = useCountUp(value, inView);
   return (
-    <div className="text-center md:px-8">
-      <div className="text-3xl font-black text-slate-900 mb-1 tabular-nums" style={{ fontFamily: DISPLAY }}>
+    <div className="text-center">
+      <div className="text-4xl font-black text-white mb-1 tabular-nums" style={{ fontFamily: DISPLAY }}>
         {prefix}{count}{suffix}
       </div>
-      <div className="text-sm text-slate-500 leading-snug">{label}</div>
+      <div className="text-sm text-slate-400" style={{ fontFamily: BODY }}>{label}</div>
     </div>
   );
 }
 
-// ─── Dashboard mockup ────────────────────────────────────────────────────────
-
-function DashboardMockup() {
-  return (
-    <div className="relative w-full max-w-5xl mx-auto mt-14" style={{ perspective: "1400px" }}>
-      <motion.div
-        initial={{ opacity: 0, y: 56, rotateX: 12 }}
-        animate={{ opacity: 1, y: 0, rotateX: 4 }}
-        transition={{ duration: 1, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        style={{ transformStyle: "preserve-3d" }}
-      >
-        {/* Subtle float on the whole mockup */}
-        <motion.div
-          animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-        >
-          {/* Browser chrome */}
-          <div className="bg-[#161d2e] rounded-t-2xl px-4 py-3 flex items-center gap-3 border border-slate-700/60">
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-500/60" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
-              <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
-            </div>
-            <div className="flex-1 mx-3 bg-slate-800/80 rounded-md h-6 flex items-center px-3">
-              <div className="w-3 h-3 rounded-full border border-slate-600 mr-2 flex-shrink-0" />
-              <span className="text-slate-500 text-xs font-mono">app.infraaudit.io/dashboard</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs text-slate-500 hidden sm:block">Live</span>
-            </div>
-          </div>
-
-          {/* App shell */}
-          <div className="bg-[#0d1220] border border-t-0 border-slate-700/60 rounded-b-2xl overflow-hidden">
-            {/* Top nav */}
-            <div className="flex items-center justify-between px-5 py-2.5 border-b border-slate-800">
-              <div className="flex items-center gap-5">
-                <span className="text-white text-sm font-semibold">InfraAudit</span>
-                {["Dashboard", "Costs", "Security", "Resources"].map((item, i) => (
-                  <span key={item} className={cn("text-xs font-medium hidden sm:block", i === 0 ? "text-blue-400" : "text-slate-500")}>
-                    {item}
-                  </span>
-                ))}
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 hidden md:block">All systems operational</span>
-                <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-[10px] font-bold">P</div>
-              </div>
-            </div>
-
-            {/* Stat cards */}
-            <div className="grid grid-cols-4 gap-px bg-slate-800/40">
-              {[
-                { label: "Total Spend (MTD)", value: "$47,284", change: "+12% vs last month", warn: true },
-                { label: "Cost Saved", value: "$16,340", change: "This month", pos: true },
-                { label: "Resources Monitored", value: "248", change: "Across 3 clouds", neutral: true },
-                { label: "Active Alerts", value: "7", change: "3 critical", crit: true },
-              ].map((s) => (
-                <div key={s.label} className="bg-[#0d1220] px-4 py-3">
-                  <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wide">{s.label}</div>
-                  <div className="text-lg font-bold text-white">{s.value}</div>
-                  <div className={cn("text-[11px] mt-0.5 font-medium",
-                    s.warn ? "text-amber-400" : s.pos ? "text-emerald-400" : s.crit ? "text-red-400" : "text-slate-500"
-                  )}>{s.change}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Content grid */}
-            <div className="grid grid-cols-3 gap-px bg-slate-800/40">
-              <div className="col-span-2 bg-[#0d1220] p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-medium text-slate-300">Cost Trend — Last 30 Days</span>
-                  <span className="text-[11px] text-red-400 font-medium flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> Anomaly detected Aug 14
-                  </span>
-                </div>
-                <svg viewBox="0 0 400 90" className="w-full h-20">
-                  <defs>
-                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  {[22, 45, 68].map((y) => (
-                    <line key={y} x1="0" y1={y} x2="400" y2={y} stroke="#1e293b" strokeWidth="1" />
-                  ))}
-                  <path d="M0,72 L40,68 L80,62 L120,57 L160,60 L200,52 L240,46 L280,18 L320,38 L360,34 L400,30 L400,90 L0,90 Z" fill="url(#chartGrad)" />
-                  <motion.path
-                    d="M0,72 L40,68 L80,62 L120,57 L160,60 L200,52 L240,46 L280,18 L320,38 L360,34 L400,30"
-                    fill="none"
-                    stroke="#3b82f6"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    initial={{ pathLength: 0, opacity: 0 }}
-                    animate={{ pathLength: 1, opacity: 1 }}
-                    transition={{ duration: 2, delay: 1.2, ease: "easeInOut" }}
-                  />
-                  <circle cx="280" cy="18" r="4" fill="#ef4444" />
-                  <line x1="280" y1="0" x2="280" y2="90" stroke="#ef4444" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
-                  <text x="284" y="14" fill="#ef4444" fontSize="8" fontFamily="monospace">+40%</text>
-                </svg>
-              </div>
-              <div className="bg-[#0d1220] p-4">
-                <span className="text-xs font-medium text-slate-300 block mb-2">Live Alerts</span>
-                <div className="space-y-2">
-                  {[
-                    { text: "S3 bucket public access", level: "critical" },
-                    { text: "Idle EC2 instances ×3", level: "warning" },
-                    { text: "Spend spike +40%", level: "critical" },
-                    { text: "IAM drift detected", level: "warning" },
-                    { text: "RDS backup overdue", level: "warning" },
-                  ].map((a, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <div className={cn("w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0",
-                        a.level === "critical" ? "bg-red-500" : "bg-amber-500"
-                      )} />
-                      <span className="text-[11px] text-slate-400 leading-snug">{a.text}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Resource table */}
-            <div className="bg-[#0d1220] border-t border-slate-800">
-              <div className="px-4 py-2 flex items-center justify-between border-b border-slate-800">
-                <span className="text-xs font-medium text-slate-300">Top Resources by Spend</span>
-                <span className="text-[11px] text-blue-400">View all →</span>
-              </div>
-              <table className="w-full">
-                <tbody>
-                  {[
-                    { name: "prod-api-cluster", provider: "AWS", cost: "$1,240/mo", status: "Healthy", saving: "$340 identified" },
-                    { name: "analytics-warehouse", provider: "GCP", cost: "$890/mo", status: "Warning", saving: "$180 identified" },
-                    { name: "cdn-global-edge", provider: "Azure", cost: "$340/mo", status: "Healthy", saving: "$62 identified" },
-                  ].map((row, i) => (
-                    <tr key={i} className="border-b border-slate-800/60 last:border-0">
-                      <td className="px-4 py-2 text-xs text-slate-300 font-medium font-mono">{row.name}</td>
-                      <td className="px-4 py-2 text-[11px] text-slate-500">{row.provider}</td>
-                      <td className="px-4 py-2 text-xs text-white font-medium">{row.cost}</td>
-                      <td className="px-4 py-2 text-[11px]">
-                        <span className={cn("font-medium", row.status === "Healthy" ? "text-emerald-400" : "text-amber-400")}>{row.status}</span>
-                      </td>
-                      <td className="px-4 py-2 text-[11px] text-blue-400">{row.saving}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Bottom fade */}
-          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#050810] via-[#050810]/70 to-transparent pointer-events-none rounded-b-2xl" />
-        </motion.div>
-      </motion.div>
-    </div>
-  );
-}
-
-// ─── FinOps visualization ─────────────────────────────────────────────────────
-
-function CostVisualization() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
-  const months = ["Mar", "Apr", "May", "Jun", "Jul", "Aug"];
-  const values = [62, 71, 68, 84, 79, 96];
-  const max = Math.max(...values);
-
-  return (
-    <div ref={ref} className="bg-white rounded-2xl border border-slate-200 shadow-lg shadow-slate-200/60 overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-0.5">Cloud Spend Overview</div>
-            <div className="text-2xl font-bold text-slate-900">$47,284 <span className="text-base font-normal text-slate-400">/ this month</span></div>
-          </div>
-          <div className="flex items-center gap-1.5 bg-red-50 text-red-600 px-2.5 py-1 rounded-full text-xs font-medium">
-            <ArrowUpRight className="w-3.5 h-3.5" />
-            +12% vs last month
-          </div>
-        </div>
-      </div>
-
-      <div className="px-5 py-4">
-        <div className="flex items-end gap-2 h-24">
-          {months.map((m, i) => (
-            <div key={m} className="flex-1 flex flex-col items-center gap-1">
-              <div className="w-full flex flex-col justify-end" style={{ height: "80px" }}>
-                <motion.div
-                  className={cn("w-full rounded-t-md", i === months.length - 1 ? "bg-blue-500" : "bg-slate-200")}
-                  initial={{ height: 0 }}
-                  animate={inView ? { height: `${(values[i] / max) * 80}px` } : { height: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 + i * 0.08, ease: [0.22, 1, 0.36, 1] }}
-                />
-              </div>
-              <span className="text-[10px] text-slate-400">{m}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="px-5 pb-5 space-y-2">
-        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Savings Identified by AI</div>
-        {[
-          { label: "Idle EC2 instances (×3)", saving: "$340/mo", icon: Server },
-          { label: "Oversized RDS db.r5.xlarge", saving: "$180/mo", icon: Database },
-          { label: "Unattached EBS volumes", saving: "$62/mo", icon: Cloud },
-        ].map(({ label, saving, icon: Icon }, i) => (
-          <motion.div
-            key={label}
-            initial={{ opacity: 0, x: 16 }}
-            animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ delay: 0.6 + i * 0.1, duration: 0.4, ease: "easeOut" }}
-            className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 bg-white rounded-md border border-slate-200 flex items-center justify-center">
-                <Icon className="w-3.5 h-3.5 text-slate-500" />
-              </div>
-              <span className="text-xs text-slate-600">{label}</span>
-            </div>
-            <span className="text-xs font-semibold text-emerald-600">{saving}</span>
-          </motion.div>
-        ))}
-        <div className="flex items-center justify-between pt-2 px-3">
-          <span className="text-sm font-semibold text-slate-700">Total potential savings</span>
-          <span className="text-sm font-bold text-emerald-600">$582/mo</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── DevOps drift feed ────────────────────────────────────────────────────────
-
-function SecurityDriftFeed() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true });
-
-  return (
-    <div ref={ref} className="bg-slate-950 rounded-2xl border border-slate-700/60 overflow-hidden shadow-2xl shadow-slate-950/60">
-      <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-            <Shield className="w-4 h-4 text-blue-400" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-white">Security Monitor</div>
-            <div className="text-[11px] text-slate-500">prod-cluster · us-east-1</div>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-lg font-bold text-white">87<span className="text-slate-500 text-sm font-normal">/100</span></div>
-          <div className="text-[11px] text-amber-400">Security Score</div>
-        </div>
-      </div>
-
-      {/* Compliance bars */}
-      <div className="grid grid-cols-3 gap-px bg-slate-800/40">
-        {[
-          { label: "CIS Benchmarks", pct: 91, color: "bg-emerald-500" },
-          { label: "SOC 2", pct: 84, color: "bg-blue-500" },
-          { label: "NIST 800-53", pct: 79, color: "bg-amber-500" },
-        ].map((f, i) => (
-          <div key={f.label} className="bg-slate-950 px-4 py-3">
-            <div className="text-[10px] text-slate-500 mb-1.5">{f.label}</div>
-            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-              <motion.div
-                className={cn("h-full rounded-full", f.color)}
-                initial={{ width: 0 }}
-                animate={inView ? { width: `${f.pct}%` } : { width: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 + i * 0.1, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </div>
-            <div className="text-xs font-semibold text-white mt-1">{f.pct}%</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Drift events */}
-      <div className="px-5 py-4">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Live Drift Feed</span>
-        </div>
-        <div className="space-y-0 font-mono text-[11px]">
-          {[
-            { level: "CRITICAL", msg: "sg-0x4f opened to 0.0.0.0/0", time: "2s ago", color: "text-red-400 bg-red-500/10" },
-            { level: "WARNING", msg: "S3 bucket public access enabled", time: "1m ago", color: "text-amber-400 bg-amber-500/10" },
-            { level: "RESOLVED", msg: "IAM policy over-permissive fixed", time: "5m ago", color: "text-emerald-400 bg-emerald-500/10" },
-            { level: "INFO", msg: "Drift: prod-vpc route table changed", time: "8m ago", color: "text-blue-400 bg-blue-500/10" },
-            { level: "WARNING", msg: "EKS node group missing PodSecurity", time: "12m ago", color: "text-amber-400 bg-amber-500/10" },
-          ].map((e, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -12 }}
-              animate={inView ? { opacity: 1, x: 0 } : {}}
-              transition={{ delay: 0.4 + i * 0.08, duration: 0.35, ease: "easeOut" }}
-              className="flex items-start gap-3 py-2 border-b border-slate-800/60 last:border-0"
-            >
-              <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold flex-shrink-0", e.color)}>
-                {e.level}
-              </span>
-              <span className="text-slate-300 flex-1 leading-relaxed">{e.msg}</span>
-              <span className="text-slate-600 flex-shrink-0">{e.time}</span>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-
-      <div className="px-5 pb-4 flex items-center gap-3">
-        <div className="flex-1 flex items-center gap-2 bg-blue-500/5 border border-blue-500/20 rounded-lg px-3 py-2">
-          <Zap className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-          <span className="text-[11px] text-blue-300">Auto-remediation available for 2 issues</span>
-        </div>
-        <button className="text-[11px] font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-lg transition-colors whitespace-nowrap">
-          Fix now
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
-
+// ─── Main component ──────────────────────────────────────────────────────────
 export default function HomePage() {
   const { user } = useAuth();
-  const [, setLocation] = useLocation();
-  const metricsRef = useRef(null);
-  const metricsInView = useInView(metricsRef, { once: true, margin: "-60px" });
 
-  useEffect(() => {
-    if (user) setLocation("/dashboard");
-  }, [user, setLocation]);
+  const metricsRef = useRef<HTMLDivElement>(null);
+  const metricsInView = useInView(metricsRef, { once: true, margin: "-80px" });
 
-  // Headline words split for stagger animation
-  const line1 = ["Cut", "your", "cloud", "bill"];
-  const line2 = ["by", "35%."];
-  const line3 = ["Without", "the", "guesswork."];
+  const complianceRef = useRef<HTMLDivElement>(null);
+  const complianceInView = useInView(complianceRef, { once: true, margin: "-80px" });
 
   return (
-    <div className="flex flex-col min-h-screen bg-white" style={{ fontFamily: BODY }}>
+    <div className="overflow-x-hidden" style={{ fontFamily: BODY }}>
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative bg-[#050810] overflow-hidden -mt-14 pt-28 pb-0">
-        <div
-          className="absolute inset-0 opacity-[0.035]"
-          style={{
-            backgroundImage: `linear-gradient(#3b82f6 1px, transparent 1px), linear-gradient(to right, #3b82f6 1px, transparent 1px)`,
-            backgroundSize: "64px 64px",
-          }}
-        />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[420px] bg-blue-600/6 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative bg-[#0a0a0b] min-h-[92vh] flex flex-col justify-center overflow-hidden">
+        {/* Grid background */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
-        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-          {/* Eyebrow badge */}
-          <motion.div
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium px-3.5 py-1.5 rounded-full mb-10"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            Now with AI cost forecasting — predict spend 90 days out
-          </motion.div>
+        {/* Radial glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-red-900/10 rounded-full blur-[100px]" />
 
-          {/* Animated headline */}
-          <div className="mb-6 overflow-hidden">
-            <motion.h1
-              variants={wordContainer}
+        <div className="relative max-w-6xl mx-auto px-6 py-24 w-full">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+
+            {/* Left — copy */}
+            <motion.div
               initial="hidden"
               animate="visible"
-              className="text-5xl md:text-6xl lg:text-[5.5rem] font-black text-white leading-[1.08] tracking-tight"
-              style={{ fontFamily: DISPLAY }}
+              variants={staggerContainer}
             >
-              {/* Line 1 */}
-              <span className="block">
-                {line1.map((word) => (
-                  <motion.span key={word} variants={wordItem} className="inline-block mr-[0.22em]">
-                    {word}
-                  </motion.span>
+              {/* Framework badge strip */}
+              <motion.div variants={fadeUp} custom={0}>
+                <div className="inline-flex items-center gap-2 mb-8 px-3 py-1.5 rounded-full border border-white/10 bg-white/5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                  <span className="text-[11px] text-slate-400 tracking-widest uppercase" style={{ fontFamily: MONO }}>
+                    CIS · SOC 2 · NIST 800-53 · PCI-DSS
+                  </span>
+                </div>
+              </motion.div>
+
+              {/* Headline */}
+              <motion.h1
+                variants={fadeUp}
+                custom={0.1}
+                className="text-5xl md:text-6xl lg:text-7xl font-black leading-[1.0] mb-6 text-white tracking-tight"
+                style={{ fontFamily: DISPLAY }}
+              >
+                Cloud security
+                <br />
+                <span className="relative inline-block">
+                  that catches
+                  <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-red-500/60 rounded" />
+                </span>
+                <br />
+                <span className="text-slate-400">everything.</span>
+              </motion.h1>
+
+              <motion.p
+                variants={fadeUp}
+                custom={0.2}
+                className="text-slate-400 text-lg leading-relaxed mb-8 max-w-md"
+                style={{ fontFamily: BODY }}
+              >
+                InfraAudit continuously scans AWS, Azure, GCP, and Kubernetes for
+                misconfigurations, vulnerabilities, and compliance violations —
+                and remediates them automatically.
+              </motion.p>
+
+              {/* CTAs */}
+              <motion.div variants={fadeUp} custom={0.3} className="flex flex-col sm:flex-row gap-3 mb-10">
+                <Button asChild size="lg"
+                  className="h-12 px-7 bg-white text-slate-950 hover:bg-slate-100 font-semibold rounded-xl text-sm shadow-lg">
+                  <Link href={user ? "/dashboard" : "/auth"}>
+                    Start scanning free <ArrowRight className="ml-2 w-4 h-4" />
+                  </Link>
+                </Button>
+                <Button asChild variant="ghost" size="lg"
+                  className="h-12 px-7 text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 rounded-xl text-sm">
+                  <Link href="/contact">Request a demo</Link>
+                </Button>
+              </motion.div>
+
+              {/* Social proof chips */}
+              <motion.div variants={fadeUp} custom={0.4}
+                className="flex flex-wrap items-center gap-3">
+                {[
+                  { icon: CheckCircle2, text: "14-day free trial" },
+                  { icon: Shield, text: "SOC 2 compliant" },
+                  { icon: Zap, text: "Setup in 5 min" },
+                ].map(({ icon: Icon, text }) => (
+                  <div key={text} className="flex items-center gap-1.5 text-[12px] text-slate-500">
+                    <Icon className="w-3.5 h-3.5 text-slate-600" />
+                    {text}
+                  </div>
                 ))}
-              </span>
-              {/* Line 2 */}
-              <span className="block">
-                {line2.map((word, i) => (
-                  <motion.span
-                    key={word}
-                    variants={wordItem}
-                    className={cn("inline-block mr-[0.22em]", i === 1 ? "text-blue-400" : "text-blue-400")}
-                  >
-                    {word}
-                  </motion.span>
-                ))}
-              </span>
-              {/* Line 3 */}
-              <span className="block text-slate-500">
-                {line3.map((word) => (
-                  <motion.span key={word} variants={wordItem} className="inline-block mr-[0.22em]">
-                    {word}
-                  </motion.span>
-                ))}
-              </span>
-            </motion.h1>
+              </motion.div>
+            </motion.div>
+
+            {/* Right — live scan feed */}
+            <motion.div
+              initial={{ opacity: 0, y: 32 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <LiveScanFeed />
+            </motion.div>
           </div>
+        </div>
 
-          {/* Subheadline */}
-          <motion.p
-            initial="hidden"
-            animate="visible"
-            custom={0.5}
-            variants={fadeUp}
-            className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed mb-10"
-          >
-            InfraAudit gives DevOps and FinOps teams a single platform to monitor costs,
-            detect security drift, and act on AI-powered recommendations — across AWS, Azure, GCP, and Kubernetes.
-          </motion.p>
+        {/* Scroll cue */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2 }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5"
+        >
+          <span className="text-[10px] text-slate-700 uppercase tracking-widest" style={{ fontFamily: MONO }}>scroll</span>
+          <motion.div
+            animate={{ y: [0, 5, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+            className="w-px h-6 bg-gradient-to-b from-slate-600 to-transparent"
+          />
+        </motion.div>
+      </section>
 
-          {/* CTAs */}
+      {/* ── CLOUD PROVIDERS STRIP ────────────────────────────────────────── */}
+      <section className="py-8 border-b border-slate-100 bg-white">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+            <span className="text-xs text-slate-400 uppercase tracking-widest" style={{ fontFamily: MONO }}>
+              Monitors
+            </span>
+            {["Amazon Web Services", "Microsoft Azure", "Google Cloud", "Kubernetes", "Terraform", "CloudFormation"].map((p) => (
+              <span key={p} className="text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors" style={{ fontFamily: BODY }}>
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECURITY PILLARS ─────────────────────────────────────────────── */}
+      <section className="py-24 px-6 bg-white">
+        <div className="max-w-6xl mx-auto">
           <motion.div
             initial="hidden"
-            animate="visible"
-            custom={0.65}
+            whileInView="visible"
+            viewport={{ once: true }}
             variants={fadeUp}
-            className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-5"
+            className="mb-14"
           >
-            <Button
-              asChild
-              size="lg"
-              className="h-12 px-7 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-full shadow-lg shadow-blue-900/40 transition-all"
-            >
-              <Link href="/auth">
-                Start free trial <ArrowRight className="ml-2 w-4 h-4" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="h-12 px-7 border-slate-700 bg-transparent text-white hover:bg-slate-800 hover:border-slate-600 rounded-full font-semibold transition-all"
-            >
-              <Link href="/contact">Get a demo</Link>
-            </Button>
+            <div className="text-xs font-semibold text-red-600 uppercase tracking-widest mb-3"
+              style={{ fontFamily: MONO }}>
+              Security-first platform
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight max-w-2xl"
+              style={{ fontFamily: DISPLAY }}>
+              Every attack surface.
+              <br />
+              <span className="text-slate-400">Covered.</span>
+            </h2>
           </motion.div>
 
-          <motion.p
-            initial="hidden"
-            animate="visible"
-            custom={0.75}
-            variants={fadeUp}
-            className="text-slate-600 text-sm"
-          >
-            14-day free trial · No credit card required · Cancel anytime
-          </motion.p>
-        </div>
-
-        <div className="relative z-10 max-w-5xl mx-auto px-6">
-          <DashboardMockup />
-        </div>
-      </section>
-
-      {/* ── METRICS STRIP ────────────────────────────────────────────────── */}
-      <section ref={metricsRef} className="bg-white border-b border-slate-100 py-14">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 md:divide-x divide-slate-100">
-            <MetricItem prefix="$" value={2} suffix="M+" label="Savings identified for customers" inView={metricsInView} />
-            <MetricItem value={50} suffix="K+" label="Cloud resources monitored daily" inView={metricsInView} />
-            <MetricItem value={35} suffix="%" label="Average cost reduction" inView={metricsInView} />
-            <MetricItem value={99} suffix=".9%" label="Platform uptime SLA" inView={metricsInView} />
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: GitBranch,
+                label: "Infrastructure Drift",
+                title: "Detect drift before it becomes an incident",
+                desc: "Continuously compares your live infrastructure against Terraform and CloudFormation baselines. Any deviation — intended or not — surfaces immediately.",
+                items: ["Real-time IaC baseline comparison", "Auto-remediation with audit trail", "Kubernetes config drift", "GitOps workflow integration"],
+                accent: "#dc2626",
+                bg: "bg-red-50",
+                border: "border-red-100",
+              },
+              {
+                icon: Bug,
+                label: "Vulnerability Scanning",
+                title: "CVE coverage across all your workloads",
+                desc: "Powered by Trivy and the NVD, InfraAudit scans container images, OS packages, and dependencies for known CVEs — with fix guidance.",
+                items: ["Trivy + NVD powered scanning", "Container & OS vulnerability coverage", "Severity-based prioritization", "SBOM generation & management"],
+                accent: "#d97706",
+                bg: "bg-amber-50",
+                border: "border-amber-100",
+              },
+              {
+                icon: FileCheck,
+                label: "Compliance & Governance",
+                title: "CIS, SOC 2, NIST, PCI-DSS out of the box",
+                desc: "Run automated assessments against the industry's most critical frameworks. Export audit-ready PDF reports for your security team or auditors.",
+                items: ["CIS Benchmarks v3.0", "SOC 2 Type II (TSC)", "NIST 800-53 rev5", "PCI-DSS v4.0 controls"],
+                accent: "#2563eb",
+                bg: "bg-blue-50",
+                border: "border-blue-100",
+              },
+            ].map(({ icon: Icon, label, title, desc, items, accent, bg, border }, i) => (
+              <motion.div
+                key={label}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-60px" }}
+                custom={i * 0.1}
+                variants={fadeUp}
+                className={cn("rounded-2xl p-7 border-2", border, bg, "hover:shadow-lg transition-all group")}
+              >
+                <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center mb-5 shadow-sm">
+                  <Icon className="w-5 h-5" style={{ color: accent }} />
+                </div>
+                <div className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: accent, fontFamily: MONO }}>
+                  {label}
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-3 leading-snug" style={{ fontFamily: DISPLAY }}>
+                  {title}
+                </h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-5" style={{ fontFamily: BODY }}>
+                  {desc}
+                </p>
+                <ul className="space-y-2">
+                  {items.map((item) => (
+                    <li key={item} className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 flex-shrink-0" style={{ color: accent }} />
+                      <span className="text-xs text-slate-600" style={{ fontFamily: BODY }}>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── FINOPS SECTION ───────────────────────────────────────────────── */}
-      <section className="py-28 px-6 bg-white">
+      {/* ── DASHBOARD SNAPSHOT ───────────────────────────────────────────── */}
+      <section className="py-24 px-6 bg-slate-50 border-y border-slate-100">
         <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={fadeUp}>
-              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-                <DollarSign className="w-3.5 h-3.5" />
-                For FinOps Teams
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-5" style={{ fontFamily: DISPLAY }}>
-                Know exactly where
-                <br />every dollar goes
-              </h2>
-              <p className="text-slate-500 text-lg leading-relaxed mb-8">
-                InfraAudit ingests billing data across all your cloud providers and surfaces
-                waste, anomalies, and forecasts — before your next invoice surprises you.
-              </p>
-              <ul className="space-y-3.5 mb-10">
-                {[
-                  "AI-detected cost anomalies with root-cause analysis",
-                  "30, 60, and 90-day spend forecasting",
-                  "Per-team and per-project cost allocation",
-                  "Reserved instance and spot pricing recommendations",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-600">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href="/auth" className="inline-flex items-center gap-2 text-blue-600 font-semibold text-sm hover:gap-3 transition-all">
-                See cost optimization in action <ArrowRight className="w-4 h-4" />
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 32 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <CostVisualization />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── DEVOPS SECTION ───────────────────────────────────────────────── */}
-      <section className="py-28 px-6 bg-slate-50 border-y border-slate-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -32 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="order-2 lg:order-1"
-            >
-              <SecurityDriftFeed />
-            </motion.div>
-
+          <div className="grid lg:grid-cols-2 gap-14 items-center">
+            {/* Copy */}
             <motion.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-80px" }}
-              variants={fadeUp}
-              className="order-1 lg:order-2"
+              variants={staggerContainer}
             >
-              <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-                <Shield className="w-3.5 h-3.5" />
-                For DevOps & Platform Teams
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-5" style={{ fontFamily: DISPLAY }}>
-                Catch drift before
-                <br />it becomes an incident
-              </h2>
-              <p className="text-slate-500 text-lg leading-relaxed mb-8">
-                InfraAudit continuously scans your infrastructure for misconfigurations,
-                security gaps, and drift from your IaC baselines — across AWS, Azure, GCP, and Kubernetes.
-              </p>
-              <ul className="space-y-3.5 mb-10">
+              <motion.div variants={fadeUp} custom={0}
+                className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-3"
+                style={{ fontFamily: MONO }}>
+                Unified dashboard
+              </motion.div>
+              <motion.h2 variants={fadeUp} custom={0.08}
+                className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-5"
+                style={{ fontFamily: DISPLAY }}>
+                Your entire cloud
+                <br />security, at a glance
+              </motion.h2>
+              <motion.p variants={fadeUp} custom={0.16}
+                className="text-slate-500 text-lg leading-relaxed mb-8"
+                style={{ fontFamily: BODY }}>
+                One dashboard. Every cloud. Real-time security score, live drift events,
+                compliance posture, and AI-generated savings — no context switching.
+              </motion.p>
+              <motion.ul variants={fadeUp} custom={0.24} className="space-y-3.5 mb-8">
                 {[
-                  "Real-time drift detection against Terraform and CloudFormation baselines",
-                  "CIS Benchmarks, SOC 2, and NIST 800-53 compliance scanning",
-                  "Slack and webhook alerts with one-click remediation",
-                  "Vulnerability scanning powered by Trivy and NVD",
+                  "Real-time security score with trend sparklines",
+                  "Live drift feed with auto-fix suggestions",
+                  "Compliance posture across 4 frameworks",
+                  "AI cost savings identified (avg $8,200/mo)",
+                  "One-click remediation with approval workflow",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-600">{item}</span>
+                    <CheckCircle2 className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-slate-600" style={{ fontFamily: BODY }}>{item}</span>
                   </li>
                 ))}
-              </ul>
-              <Link href="/auth" className="inline-flex items-center gap-2 text-blue-600 font-semibold text-sm hover:gap-3 transition-all">
-                See security monitoring <ArrowRight className="w-4 h-4" />
-              </Link>
+              </motion.ul>
+              <motion.div variants={fadeUp} custom={0.32}>
+                <Link href={user ? "/dashboard" : "/auth"}
+                  className="inline-flex items-center gap-2 text-blue-600 font-semibold text-sm hover:gap-3 transition-all">
+                  View live dashboard <ArrowRight className="w-4 h-4" />
+                </Link>
+              </motion.div>
+            </motion.div>
+
+            {/* Dashboard mockup */}
+            <motion.div
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <DashboardSnapshot />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── METRICS STRIP ────────────────────────────────────────────────── */}
+      <section ref={metricsRef} className="py-20 px-6 bg-[#0a0a0b] border-y border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+            <Metric prefix="" value={50000} suffix="+"  label="Cloud resources monitored daily"  inView={metricsInView} />
+            <Metric prefix="$" value={2}     suffix="M+" label="Savings identified for customers"  inView={metricsInView} />
+            <Metric prefix="" value={99}     suffix=".9%" label="Platform uptime SLA"              inView={metricsInView} />
+            <Metric prefix="" value={4}      suffix=""   label="Compliance frameworks supported"   inView={metricsInView} />
+          </div>
+        </div>
+      </section>
+
+      {/* ── COMPLIANCE FRAMEWORKS ────────────────────────────────────────── */}
+      <section className="py-24 px-6 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-14 items-center">
+            {/* Compliance mockup */}
+            <motion.div
+              ref={complianceRef}
+              initial={{ opacity: 0, x: -32 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <ComplianceMockup inView={complianceInView} />
+            </motion.div>
+
+            {/* Copy */}
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+              variants={staggerContainer}
+            >
+              <motion.div variants={fadeUp} custom={0}
+                className="text-xs font-semibold text-green-600 uppercase tracking-widest mb-3"
+                style={{ fontFamily: MONO }}>
+                Automated compliance
+              </motion.div>
+              <motion.h2 variants={fadeUp} custom={0.08}
+                className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-5"
+                style={{ fontFamily: DISPLAY }}>
+                Audit-ready.
+                <br />Always.
+              </motion.h2>
+              <motion.p variants={fadeUp} custom={0.16}
+                className="text-slate-500 text-lg leading-relaxed mb-6"
+                style={{ fontFamily: BODY }}>
+                Stop scrambling before audits. InfraAudit runs continuous
+                compliance scans against CIS, SOC 2, NIST 800-53, and PCI-DSS —
+                and exports PDF reports on demand.
+              </motion.p>
+
+              <motion.div variants={fadeUp} custom={0.24} className="grid grid-cols-2 gap-3 mb-8">
+                {[
+                  { fw: "CIS Benchmarks v3.0",    score: "91%", color: "#16a34a" },
+                  { fw: "SOC 2 Type II",           score: "84%", color: "#2563eb" },
+                  { fw: "NIST 800-53 rev5",        score: "79%", color: "#d97706" },
+                  { fw: "PCI-DSS v4.0",           score: "67%", color: "#dc2626" },
+                ].map(({ fw, score, color }) => (
+                  <div key={fw} className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-100 bg-slate-50">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                    <div>
+                      <div className="text-xs font-semibold text-slate-700" style={{ fontFamily: BODY }}>{fw}</div>
+                      <div className="text-xs font-bold" style={{ color, fontFamily: MONO }}>{score} passing</div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+
+              <motion.div variants={fadeUp} custom={0.32}>
+                <Link href={user ? "/compliance" : "/auth"}
+                  className="inline-flex items-center gap-2 text-green-700 font-semibold text-sm hover:gap-3 transition-all">
+                  Explore compliance module <ArrowRight className="w-4 h-4" />
+                </Link>
+              </motion.div>
             </motion.div>
           </div>
         </div>
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section className="py-28 px-6 bg-white">
+      <section className="py-24 px-6 bg-slate-50 border-y border-slate-100">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={fadeUp}
-            className="text-center mb-16"
+            className="text-center mb-14"
           >
-            <div className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-4">How it works</div>
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3" style={{ fontFamily: MONO }}>
+              How it works
+            </div>
             <h2 className="text-4xl md:text-5xl font-black text-slate-900" style={{ fontFamily: DISPLAY }}>
-              Up and running in minutes
+              Up and scanning in minutes
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-6">
             {[
               {
                 step: "01",
+                icon: Globe,
                 title: "Connect your cloud",
-                desc: "Link AWS, Azure, GCP, or Kubernetes with read-only OAuth. No agents to install. SOC 2 compliant.",
+                desc: "Link AWS, Azure, GCP, or Kubernetes with read-only OAuth. No agents to install. SOC 2 compliant data handling.",
                 tags: ["One-click OAuth", "Read-only access", "SOC 2 compliant"],
               },
               {
                 step: "02",
-                title: "AI analyzes everything",
-                desc: "Gemini-powered AI scans costs, security, drift, and compliance 24/7. Results in under 60 seconds.",
-                tags: ["Cost anomalies", "Security drift", "Compliance gaps"],
+                icon: ScanLine,
+                title: "AI scans everything",
+                desc: "Gemini-powered AI scans for security misconfigurations, CVEs, compliance violations, and cost anomalies — 24/7.",
+                tags: ["Security drift", "CVE scanning", "Compliance gaps"],
               },
               {
                 step: "03",
-                title: "Act on insights",
-                desc: "Get actionable recommendations with one-click fixes, Slack alerts, and weekly digests for your team.",
-                tags: ["Auto-remediation", "Slack alerts", "Weekly reports"],
+                icon: Zap,
+                title: "Remediate instantly",
+                desc: "Get actionable findings with one-click fixes, Slack alerts, and auto-remediation with full approval workflow.",
+                tags: ["Auto-remediation", "Slack alerts", "Audit trail"],
               },
-            ].map((item, i) => (
+            ].map(({ step, icon: Icon, title, desc, tags }, i) => (
               <motion.div
-                key={i}
+                key={step}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
                 custom={i * 0.12}
                 variants={fadeUp}
-                className="bg-white border border-slate-200 rounded-2xl p-7 hover:border-blue-200 hover:shadow-md hover:shadow-blue-50 transition-all"
+                className="bg-white border border-slate-200 rounded-2xl p-7 hover:border-slate-300 hover:shadow-md transition-all"
               >
-                <div
-                  className="w-12 h-12 rounded-xl bg-slate-950 flex items-center justify-center mb-5 text-white font-black text-sm"
-                  style={{ fontFamily: DISPLAY }}
-                >
-                  {item.step}
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center text-white font-black text-xs"
+                    style={{ fontFamily: MONO }}>
+                    {step}
+                  </div>
+                  <Icon className="w-5 h-5 text-slate-400" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed mb-5">{item.desc}</p>
+                <h3 className="text-lg font-bold text-slate-900 mb-2" style={{ fontFamily: DISPLAY }}>{title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed mb-5" style={{ fontFamily: BODY }}>{desc}</p>
                 <div className="flex flex-wrap gap-2">
-                  {item.tags.map((tag) => (
-                    <span key={tag} className="text-[11px] font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">
+                  {tags.map((tag) => (
+                    <span key={tag}
+                      className="text-[11px] font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full"
+                      style={{ fontFamily: BODY }}>
                       {tag}
                     </span>
                   ))}
@@ -729,31 +825,31 @@ export default function HomePage() {
       </section>
 
       {/* ── FEATURE GRID ─────────────────────────────────────────────────── */}
-      <section className="py-28 px-6 bg-slate-50 border-y border-slate-100">
+      <section className="py-24 px-6 bg-white">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={fadeUp}
-            className="text-center mb-14"
+            className="text-center mb-12"
           >
             <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4" style={{ fontFamily: DISPLAY }}>
-              Everything your cloud team needs
+              Everything your security team needs
             </h2>
-            <p className="text-slate-500 text-lg max-w-xl mx-auto">
-              One platform. All your clouds. No context switching.
+            <p className="text-slate-500 text-lg max-w-xl mx-auto" style={{ fontFamily: BODY }}>
+              One platform. All clouds. No blind spots.
             </p>
           </motion.div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: Globe, title: "Multi-Cloud Dashboard", desc: "Unified view across AWS, Azure, GCP, and Kubernetes. One login to see everything." },
-              { icon: BarChart3, title: "AI Cost Recommendations", desc: "Gemini-powered insights with quantified ROI estimates for every suggestion." },
-              { icon: Lock, title: "Compliance Automation", desc: "CIS Benchmarks, SOC 2, and NIST 800-53 scanning out of the box — with PDF export." },
-              { icon: TrendingDown, title: "Cost Forecasting", desc: "30, 60, and 90-day AI spend predictions with anomaly detection and alerts." },
-              { icon: Activity, title: "Drift Detection", desc: "IaC baseline comparison with auto-remediation and full audit trail." },
-              { icon: Bell, title: "Slack & Webhooks", desc: "Alerts delivered where your team already works. Customizable severity thresholds." },
+              { icon: ShieldAlert,  title: "Drift Detection",          desc: "Real-time comparison against Terraform and CloudFormation baselines with auto-remediation." },
+              { icon: Bug,          title: "Vulnerability Scanning",   desc: "Trivy + NVD powered CVE scanning across container images, OS packages, and dependencies." },
+              { icon: FileCheck,    title: "Compliance Automation",    desc: "CIS, SOC 2, NIST 800-53, and PCI-DSS scanning with audit-ready PDF report export." },
+              { icon: Globe,        title: "Multi-Cloud Coverage",     desc: "Unified security view across AWS, Azure, GCP, and Kubernetes from one login." },
+              { icon: Activity,     title: "Real-Time Alerts",         desc: "Slack, webhook, and email alerts with configurable severity thresholds and escalation." },
+              { icon: BarChart3,    title: "AI Cost Insights",         desc: "Identify wasted spend alongside security findings — avg $8,200/mo savings identified." },
             ].map(({ icon: Icon, title, desc }, i) => (
               <motion.div
                 key={title}
@@ -762,21 +858,21 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 custom={i * 0.07}
                 variants={fadeUp}
-                className="bg-white border border-slate-200 rounded-2xl p-6 hover:border-blue-200 hover:shadow-md hover:shadow-blue-50 transition-all group"
+                className="border border-slate-200 rounded-2xl p-6 hover:border-slate-300 hover:shadow-sm transition-all group bg-white"
               >
-                <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500 group-hover:border-blue-500 transition-colors">
-                  <Icon className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors" />
+                <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-slate-900 transition-colors">
+                  <Icon className="w-4 h-4 text-slate-600 group-hover:text-white transition-colors" />
                 </div>
-                <h3 className="text-base font-bold text-slate-900 mb-2">{title}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
+                <h3 className="text-base font-bold text-slate-900 mb-2" style={{ fontFamily: DISPLAY }}>{title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed" style={{ fontFamily: BODY }}>{desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── PRICING TEASER ───────────────────────────────────────────────── */}
-      <section className="py-28 px-6 bg-[#050810]">
+      {/* ── PRICING ──────────────────────────────────────────────────────── */}
+      <section className="py-24 px-6 bg-[#0a0a0b]">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial="hidden"
@@ -788,7 +884,7 @@ export default function HomePage() {
             <h2 className="text-4xl md:text-5xl font-black text-white mb-4" style={{ fontFamily: DISPLAY }}>
               Simple, transparent pricing
             </h2>
-            <p className="text-slate-400 text-lg">Start free. Scale as you grow. No hidden fees.</p>
+            <p className="text-slate-400 text-lg" style={{ fontFamily: BODY }}>Start free. Scale as you grow. No hidden fees.</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-5">
@@ -801,7 +897,7 @@ export default function HomePage() {
                 ctaHref: "https://github.com/pratik-mahalle/InfraAudit",
                 external: true,
                 highlight: false,
-                features: ["Core monitoring features", "AWS, Azure, GCP support", "Community support", "MIT License"],
+                features: ["Core security monitoring", "AWS, Azure, GCP support", "Drift detection", "Community support", "MIT License"],
               },
               {
                 tier: "Professional",
@@ -812,7 +908,7 @@ export default function HomePage() {
                 external: false,
                 highlight: true,
                 badge: "Most popular",
-                features: ["Up to 200 resources", "Cost forecasting (30/60/90-day)", "Slack integration", "30-day data retention", "Priority support"],
+                features: ["Up to 200 resources", "Vulnerability scanning", "4 compliance frameworks", "Slack integration", "30-day data retention", "Priority support"],
               },
               {
                 tier: "Enterprise",
@@ -834,47 +930,51 @@ export default function HomePage() {
                 variants={fadeUp}
                 className={cn(
                   "rounded-2xl p-7 border flex flex-col",
-                  highlight ? "bg-blue-600 border-blue-500 shadow-xl shadow-blue-900/40" : "bg-slate-900/60 border-slate-700/60"
+                  highlight
+                    ? "bg-white border-white shadow-xl shadow-white/5"
+                    : "bg-white/5 border-white/10"
                 )}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className={cn("text-sm font-semibold", highlight ? "text-blue-100" : "text-slate-300")}>{tier}</span>
+                  <span className={cn("text-sm font-semibold", highlight ? "text-slate-700" : "text-slate-300")}
+                    style={{ fontFamily: BODY }}>{tier}</span>
                   {badge && (
-                    <span className="text-[10px] font-bold bg-white/20 text-white px-2 py-0.5 rounded-full">{badge}</span>
+                    <span className="text-[10px] font-bold bg-slate-900 text-white px-2 py-0.5 rounded-full">
+                      {badge}
+                    </span>
                   )}
                 </div>
-                <div className="text-4xl font-black mt-3 mb-1 text-white" style={{ fontFamily: DISPLAY }}>
+                <div className={cn("text-4xl font-black mt-3 mb-1 tabular-nums", highlight ? "text-slate-900" : "text-white")}
+                  style={{ fontFamily: DISPLAY }}>
                   {price}
                   {price !== "Free" && price !== "Custom" && (
-                    <span className="text-base font-normal ml-1 opacity-60">/mo</span>
+                    <span className="text-base font-normal ml-1 opacity-50">/mo</span>
                   )}
                 </div>
-                <div className={cn("text-xs mb-6", highlight ? "text-blue-200" : "text-slate-500")}>{sub}</div>
+                <div className={cn("text-xs mb-6", highlight ? "text-slate-400" : "text-slate-500")}
+                  style={{ fontFamily: BODY }}>{sub}</div>
                 <ul className="space-y-3 flex-1 mb-7">
                   {features.map((f) => (
                     <li key={f} className="flex items-start gap-2.5">
-                      <Check className={cn("w-4 h-4 flex-shrink-0 mt-0.5", highlight ? "text-blue-100" : "text-slate-400")} />
-                      <span className={cn("text-sm", highlight ? "text-blue-50" : "text-slate-300")}>{f}</span>
+                      <Check className={cn("w-4 h-4 flex-shrink-0 mt-0.5", highlight ? "text-slate-700" : "text-slate-500")} />
+                      <span className={cn("text-sm", highlight ? "text-slate-600" : "text-slate-400")}
+                        style={{ fontFamily: BODY }}>{f}</span>
                     </li>
                   ))}
                 </ul>
                 {external ? (
-                  <a
-                    href={ctaHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <a href={ctaHref} target="_blank" rel="noopener noreferrer"
                     className={cn(
                       "block text-center py-2.5 rounded-xl text-sm font-semibold transition-colors",
-                      highlight ? "bg-white text-blue-700 hover:bg-blue-50" : "bg-slate-800 text-white hover:bg-slate-700 border border-slate-700"
-                    )}
-                  >
+                      highlight ? "bg-slate-900 text-white hover:bg-slate-800" : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
+                    )}>
                     {cta}
                   </a>
                 ) : (
                   <Link href={ctaHref}>
                     <span className={cn(
                       "block text-center py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors",
-                      highlight ? "bg-white text-blue-700 hover:bg-blue-50" : "bg-slate-800 text-white hover:bg-slate-700 border border-slate-700"
+                      highlight ? "bg-slate-900 text-white hover:bg-slate-800" : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
                     )}>
                       {cta}
                     </span>
@@ -889,7 +989,8 @@ export default function HomePage() {
             whileInView="visible"
             viewport={{ once: true }}
             variants={fadeUp}
-            className="text-center text-slate-500 text-sm mt-8"
+            className="text-center text-slate-600 text-sm mt-8"
+            style={{ fontFamily: BODY }}
           >
             All plans include a 14-day free trial · Annual billing saves ~20%
           </motion.p>
@@ -897,42 +998,47 @@ export default function HomePage() {
       </section>
 
       {/* ── FINAL CTA ────────────────────────────────────────────────────── */}
-      <section className="py-32 px-6 bg-slate-950 border-t border-slate-800">
-        <div className="max-w-3xl mx-auto text-center">
+      <section className="py-32 px-6 bg-[#0a0a0b] border-t border-white/5">
+        {/* Grid */}
+        <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px]" />
+        <div className="max-w-3xl mx-auto text-center relative">
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={fadeUp}
           >
-            <h2 className="text-5xl md:text-6xl font-black text-white leading-tight mb-5" style={{ fontFamily: DISPLAY }}>
-              Stop guessing.
+            <div className="text-xs font-semibold text-slate-600 uppercase tracking-widest mb-6" style={{ fontFamily: MONO }}>
+              Start today
+            </div>
+            <h2 className="text-5xl md:text-6xl font-black text-white leading-tight mb-5"
+              style={{ fontFamily: DISPLAY }}>
+              Your cloud has
               <br />
-              <span className="text-blue-400">Start knowing.</span>
+              <span className="relative">
+                vulnerabilities.
+                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-red-500/50 rounded" />
+              </span>
+              <br />
+              <span className="text-slate-500">Find them first.</span>
             </h2>
-            <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto">
-              InfraAudit gives your team complete visibility and control over your cloud — from day one.
+            <p className="text-slate-400 text-lg mb-10 max-w-xl mx-auto" style={{ fontFamily: BODY }}>
+              InfraAudit gives your security team complete visibility over every
+              misconfiguration, CVE, and compliance gap — from day one.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Button
-                asChild
-                size="lg"
-                className="h-12 px-8 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-full shadow-lg shadow-blue-900/40 text-base"
-              >
-                <Link href="/auth">
-                  Start free trial — 14 days free <ArrowRight className="ml-2 w-4 h-4" />
+              <Button asChild size="lg"
+                className="h-12 px-8 bg-white text-slate-950 hover:bg-slate-100 font-semibold rounded-xl shadow-lg text-sm">
+                <Link href={user ? "/dashboard" : "/auth"}>
+                  Start scanning free — 14 days <ArrowRight className="ml-2 w-4 h-4" />
                 </Link>
               </Button>
-              <Button
-                asChild
-                variant="ghost"
-                size="lg"
-                className="h-12 px-8 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full text-base"
-              >
+              <Button asChild variant="ghost" size="lg"
+                className="h-12 px-8 text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 rounded-xl text-sm">
                 <Link href="/contact">Get a demo</Link>
               </Button>
             </div>
-            <p className="text-slate-600 text-sm mt-6">
+            <p className="text-slate-700 text-sm mt-6" style={{ fontFamily: BODY }}>
               No credit card required · Setup in 5 minutes · Cancel anytime
             </p>
           </motion.div>
