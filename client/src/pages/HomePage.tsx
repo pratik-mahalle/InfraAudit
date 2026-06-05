@@ -123,7 +123,7 @@ function LiveScanFeed() {
         <div className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
         <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
         <div className="ml-3 flex items-center gap-2">
-          <span className="text-[11px] text-slate-500" style={{ fontFamily: MONO }}>infraaudit.io</span>
+          <span className="text-[11px] font-semibold text-slate-300">InfraAudit</span>
           <span className="text-[10px] text-slate-600">/security</span>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
@@ -172,13 +172,17 @@ function LiveScanFeed() {
                 <SevPill level={item.sev} />
                 <span className="text-xs text-slate-300 flex-1 truncate">{item.msg}</span>
                 <span className="text-[10px] text-slate-600 shrink-0" style={{ fontFamily: MONO }}>{item.resource}</span>
-                <span className={cn(
-                  "text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0",
-                  item.cloud === "AWS" ? "bg-orange-950/50 text-orange-400" :
-                  item.cloud === "GCP" ? "bg-blue-950/50 text-blue-400" :
-                  item.cloud === "K8s" ? "bg-purple-950/50 text-purple-400" :
-                  "bg-cyan-950/50 text-cyan-400"
-                )} style={{ fontFamily: MONO }}>{item.cloud}</span>
+                <img
+                  src={
+                    item.cloud === "AWS"   ? "https://cdn.simpleicons.org/amazonaws/FF9900" :
+                    item.cloud === "GCP"   ? "https://cdn.simpleicons.org/googlecloud/4285F4" :
+                    item.cloud === "K8s"   ? "https://cdn.simpleicons.org/kubernetes/326CE5" :
+                    "https://cdn.simpleicons.org/microsoftazure/0078D4"
+                  }
+                  alt={item.cloud}
+                  title={item.cloud}
+                  className="w-4 h-4 shrink-0"
+                />
               </motion.div>
             );
           })}
