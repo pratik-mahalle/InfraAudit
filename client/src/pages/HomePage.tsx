@@ -140,7 +140,7 @@ function LiveScanFeed() {
               <span className="relative flex h-1.5 w-1.5">
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-400" />
               </span>
-              {visible.filter(i => SCAN_ITEMS[i].sev === "CRIT").length} CRITICAL
+              {visible.filter(i => SCAN_ITEMS[i]?.sev === "CRIT").length} CRITICAL
             </span>
           )}
         </div>
@@ -160,6 +160,7 @@ function LiveScanFeed() {
         <AnimatePresence>
           {visible.map((idx) => {
             const item = SCAN_ITEMS[idx];
+            if (!item) return null;
             return (
               <motion.div
                 key={idx}
@@ -200,9 +201,9 @@ function LiveScanFeed() {
       {/* Footer stats */}
       <div className="px-4 py-3 border-t border-white/5 bg-[#161b22] flex items-center gap-5">
         {[
-          { label: "Critical", val: visible.filter(i => SCAN_ITEMS[i].sev === "CRIT").length, color: "text-red-400" },
-          { label: "High",     val: visible.filter(i => SCAN_ITEMS[i].sev === "HIGH").length, color: "text-orange-400" },
-          { label: "Medium",   val: visible.filter(i => SCAN_ITEMS[i].sev === "MED").length,  color: "text-amber-400" },
+          { label: "Critical", val: visible.filter(i => SCAN_ITEMS[i]?.sev === "CRIT").length, color: "text-red-400" },
+          { label: "High",     val: visible.filter(i => SCAN_ITEMS[i]?.sev === "HIGH").length, color: "text-orange-400" },
+          { label: "Medium",   val: visible.filter(i => SCAN_ITEMS[i]?.sev === "MED").length,  color: "text-amber-400" },
         ].map(({ label, val, color }) => (
           <div key={label} className="flex items-center gap-1.5">
             <span className={cn("text-sm font-bold tabular-nums", color)} style={{ fontFamily: MONO }}>{val}</span>
