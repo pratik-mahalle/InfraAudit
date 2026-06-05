@@ -54,18 +54,18 @@ interface DevItem {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 const PRODUCTS: ProductItem[] = [
-  { icon: Shield,       label: "Security Monitor",  desc: "Drift & misconfiguration detection",           href: "/auth", color: "text-red-400 bg-red-500/10" },
-  { icon: Activity,     label: "Drift Detection",   desc: "IaC baseline comparison & auto-remediation",   href: "/auth", color: "text-amber-400 bg-amber-500/10" },
-  { icon: BarChart3,    label: "Vulnerability Scan", desc: "CVE scanning via Trivy + NVD",                href: "/auth", color: "text-orange-400 bg-orange-500/10" },
-  { icon: Cloud,        label: "Compliance",        desc: "CIS, SOC 2, NIST 800-53, PCI-DSS",            href: "/auth", color: "text-blue-400 bg-blue-500/10" },
-  { icon: TrendingDown, label: "Cost Optimizer",    desc: "AI-powered savings recommendations",           href: "/auth", color: "text-emerald-400 bg-emerald-500/10" },
-  { icon: Bell,         label: "Alerts & Reports",  desc: "Slack, webhooks, and weekly digests",          href: "/auth", color: "text-violet-400 bg-violet-500/10" },
+  { icon: Shield,       label: "Security Monitor",   desc: "Drift & misconfiguration detection",          href: "/auth", color: "text-red-600 bg-red-50" },
+  { icon: Activity,     label: "Drift Detection",    desc: "IaC baseline comparison & auto-remediation",  href: "/auth", color: "text-amber-600 bg-amber-50" },
+  { icon: BarChart3,    label: "Vulnerability Scan", desc: "CVE scanning via Trivy + NVD",                href: "/auth", color: "text-orange-600 bg-orange-50" },
+  { icon: Cloud,        label: "Compliance",         desc: "CIS, SOC 2, NIST 800-53, PCI-DSS",           href: "/auth", color: "text-blue-600 bg-blue-50" },
+  { icon: TrendingDown, label: "Cost Optimizer",     desc: "AI-powered savings recommendations",          href: "/auth", color: "text-emerald-600 bg-emerald-50" },
+  { icon: Bell,         label: "Alerts & Reports",   desc: "Slack, webhooks, and weekly digests",         href: "/auth", color: "text-violet-600 bg-violet-50" },
 ];
 
 const DEVELOPERS: DevItem[] = [
-  { icon: BookOpen,  label: "Documentation",  href: "/documentation" },
-  { icon: Zap,       label: "API Reference",  href: "/api" },
-  { icon: Github,    label: "GitHub",         href: "https://github.com/pratik-mahalle/InfraAudit", external: true },
+  { icon: BookOpen, label: "Documentation", href: "/documentation" },
+  { icon: Zap,      label: "API Reference", href: "/api" },
+  { icon: Github,   label: "GitHub",        href: "https://github.com/pratik-mahalle/InfraAudit", external: true },
 ];
 
 // ─── Product dropdown ─────────────────────────────────────────────────────────
@@ -77,26 +77,26 @@ function ProductDropdown({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -6, scale: 0.97 }}
       transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[520px] bg-[#0a0f1e] border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden"
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[520px] bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/60 overflow-hidden"
     >
       {/* Header */}
-      <div className="px-5 pt-4 pb-3 border-b border-slate-800/60">
-        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">Platform</p>
+      <div className="px-5 pt-4 pb-3 border-b border-slate-100">
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Platform</p>
       </div>
 
       {/* Grid */}
       <div className="p-3 grid grid-cols-2 gap-1">
         {PRODUCTS.map(({ icon: Icon, label, desc, href, color }) => (
           <Link key={label} href={href} onClick={onClose}>
-            <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+            <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
               <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5", color)}>
                 <Icon className="w-4 h-4" />
               </div>
               <div>
-                <div className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors leading-snug">
+                <div className="text-sm font-medium text-slate-800 group-hover:text-slate-900 transition-colors leading-snug">
                   {label}
                 </div>
-                <div className="text-xs text-slate-500 mt-0.5 leading-snug">{desc}</div>
+                <div className="text-xs text-slate-400 mt-0.5 leading-snug">{desc}</div>
               </div>
             </div>
           </Link>
@@ -104,13 +104,13 @@ function ProductDropdown({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Footer CTA */}
-      <div className="mx-3 mb-3 p-3 rounded-xl bg-red-600/10 border border-red-500/20 flex items-center justify-between">
+      <div className="mx-3 mb-3 p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
         <div>
-          <div className="text-xs font-semibold text-red-300">Start your 14-day trial</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Full access · No credit card required</div>
+          <div className="text-xs font-semibold text-slate-700">Start your 14-day trial</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Full access · No credit card required</div>
         </div>
         <Link href="/auth" onClick={onClose}>
-          <span className="text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap">
+          <span className="text-xs font-semibold text-white bg-slate-900 hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap">
             Start trial →
           </span>
         </Link>
@@ -128,15 +128,15 @@ function DevelopersDropdown({ onClose }: { onClose: () => void }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -6, scale: 0.97 }}
       transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-52 bg-[#0a0f1e] border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden"
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/60 overflow-hidden"
     >
       <div className="p-2">
         {DEVELOPERS.map(({ icon: Icon, label, href, external }) => {
           const inner = (
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
-              <Icon className="w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-colors" />
-              <span className="text-sm text-slate-300 group-hover:text-white transition-colors flex-1">{label}</span>
-              {external && <ExternalLink className="w-3 h-3 text-slate-600" />}
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
+              <Icon className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+              <span className="text-sm text-slate-700 group-hover:text-slate-900 transition-colors flex-1">{label}</span>
+              {external && <ExternalLink className="w-3 h-3 text-slate-300" />}
             </div>
           );
           return external ? (
@@ -153,15 +153,9 @@ function DevelopersDropdown({ onClose }: { onClose: () => void }) {
 // ─── Nav link with dropdown ───────────────────────────────────────────────────
 
 function NavItem({
-  label,
-  isOpen,
-  onToggle,
-  children,
+  label, isOpen, onToggle, children,
 }: {
-  label: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
+  label: string; isOpen: boolean; onToggle: () => void; children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -180,13 +174,11 @@ function NavItem({
         onClick={onToggle}
         className={cn(
           "flex items-center gap-1 h-8 px-3 text-sm font-medium rounded-lg transition-colors",
-          isOpen ? "text-white" : "text-slate-400 hover:text-white"
+          isOpen ? "text-slate-900 bg-slate-100" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
         )}
       >
         {label}
-        <ChevronDown
-          className={cn("w-3.5 h-3.5 transition-transform duration-200 opacity-60", isOpen && "rotate-180")}
-        />
+        <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200 opacity-50", isOpen && "rotate-180")} />
       </button>
       <AnimatePresence>{isOpen && children}</AnimatePresence>
     </div>
@@ -200,12 +192,10 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   const active = location === href;
   return (
     <Link href={href}>
-      <span
-        className={cn(
-          "h-8 px-3 flex items-center text-sm font-medium rounded-lg transition-colors cursor-pointer",
-          active ? "text-white" : "text-slate-400 hover:text-white"
-        )}
-      >
+      <span className={cn(
+        "h-8 px-3 flex items-center text-sm font-medium rounded-lg transition-colors cursor-pointer",
+        active ? "text-slate-900 bg-slate-100" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+      )}>
         {children}
       </span>
     </Link>
@@ -216,24 +206,15 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 
 export function Navbar() {
   const { user, signOut } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [location] = useLocation();
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 16);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   useEffect(() => {
     setActiveDropdown(null);
     setMobileOpen(false);
   }, [location]);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -247,42 +228,24 @@ export function Navbar() {
 
   return (
     <>
-      <nav
-        className={cn(
-          "fixed top-0 inset-x-0 z-50 h-14 transition-all duration-300",
-          user
-            ? "bg-white border-b border-gray-200"
-            : scrolled
-            ? "bg-slate-950/90 backdrop-blur-xl border-b border-white/5 shadow-lg shadow-black/20"
-            : "bg-transparent"
-        )}
-      >
+      {/* Always white navbar */}
+      <nav className="fixed top-0 inset-x-0 z-50 h-14 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-full flex items-center justify-between gap-6">
 
-          {/* Logo */}
+          {/* Logo — always black */}
           <Link href="/" className="flex items-center flex-shrink-0">
-            <InfraAuditLogo height={36} variant={user ? "light" : "dark"} />
+            <InfraAuditLogo height={36} variant="light" />
           </Link>
 
           {/* Center nav — public only */}
           {!user && (
             <div className="hidden md:flex items-center gap-0.5">
-              <NavItem
-                label="Products"
-                isOpen={activeDropdown === "Products"}
-                onToggle={() => toggle("Products")}
-              >
+              <NavItem label="Products" isOpen={activeDropdown === "Products"} onToggle={() => toggle("Products")}>
                 <ProductDropdown onClose={() => setActiveDropdown(null)} />
               </NavItem>
-
-              <NavItem
-                label="Developers"
-                isOpen={activeDropdown === "Developers"}
-                onToggle={() => toggle("Developers")}
-              >
+              <NavItem label="Developers" isOpen={activeDropdown === "Developers"} onToggle={() => toggle("Developers")}>
                 <DevelopersDropdown onClose={() => setActiveDropdown(null)} />
               </NavItem>
-
               <NavLink href="/pricing">Pricing</NavLink>
               <NavLink href="/about">About</NavLink>
             </div>
@@ -290,15 +253,14 @@ export function Navbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
-            {/* Authenticated */}
             {user && <AskInfraAudit />}
 
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="rounded-full ring-2 ring-transparent hover:ring-blue-500/40 transition-all">
+                  <button className="rounded-full ring-2 ring-transparent hover:ring-slate-300 transition-all">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-blue-600 text-white text-xs font-semibold">
+                      <AvatarFallback className="bg-slate-900 text-white text-xs font-semibold">
                         {getInitials(user.fullName || user.username)}
                       </AvatarFallback>
                     </Avatar>
@@ -306,39 +268,39 @@ export function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-52 bg-[#0a0f1e] border border-slate-700/50 rounded-xl shadow-2xl shadow-black/40 text-slate-200"
+                  className="w-52 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/60 text-slate-700"
                 >
                   <DropdownMenuLabel className="font-normal px-3 py-2.5">
-                    <p className="text-sm font-semibold text-white leading-none">
+                    <p className="text-sm font-semibold text-slate-900 leading-none">
                       {user.fullName || user.username}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">{user.username}</p>
+                    <p className="text-xs text-slate-400 mt-1">{user.username}</p>
                     {user.orgName && (
-                      <p className="text-xs text-slate-500 truncate px-1">{user.orgName}</p>
+                      <p className="text-xs text-slate-400 truncate">{user.orgName}</p>
                     )}
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-slate-800" />
+                  <DropdownMenuSeparator className="bg-slate-100" />
                   <Link href="/settings">
-                    <DropdownMenuItem className="cursor-pointer hover:bg-white/5 text-slate-300 hover:text-white rounded-lg mx-1">
-                      <Settings className="mr-2 h-4 w-4 text-slate-500" />Settings
+                    <DropdownMenuItem className="cursor-pointer hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-lg mx-1">
+                      <Settings className="mr-2 h-4 w-4 text-slate-400" />Settings
                     </DropdownMenuItem>
                   </Link>
                   <RoleGate permission="manage_billing">
                     <Link href="/subscription">
-                      <DropdownMenuItem className="cursor-pointer hover:bg-white/5 text-slate-300 hover:text-white rounded-lg mx-1">
-                        <CreditCard className="mr-2 h-4 w-4 text-slate-500" />Subscription
+                      <DropdownMenuItem className="cursor-pointer hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-lg mx-1">
+                        <CreditCard className="mr-2 h-4 w-4 text-slate-400" />Subscription
                       </DropdownMenuItem>
                     </Link>
                   </RoleGate>
                   <Link href="/documentation">
-                    <DropdownMenuItem className="cursor-pointer hover:bg-white/5 text-slate-300 hover:text-white rounded-lg mx-1">
-                      <BookOpen className="mr-2 h-4 w-4 text-slate-500" />Documentation
+                    <DropdownMenuItem className="cursor-pointer hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-lg mx-1">
+                      <BookOpen className="mr-2 h-4 w-4 text-slate-400" />Documentation
                     </DropdownMenuItem>
                   </Link>
-                  <DropdownMenuSeparator className="bg-slate-800" />
+                  <DropdownMenuSeparator className="bg-slate-100" />
                   <DropdownMenuItem
                     onClick={() => signOut()}
-                    className="cursor-pointer text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg mx-1 mb-1"
+                    className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg mx-1 mb-1"
                   >
                     <LogOut className="mr-2 h-4 w-4" />Log out
                   </DropdownMenuItem>
@@ -349,12 +311,12 @@ export function Navbar() {
                 {/* Desktop CTAs */}
                 <div className="hidden md:flex items-center gap-1">
                   <Link href="/auth">
-                    <span className="h-8 px-3 flex items-center text-sm font-medium text-slate-400 hover:text-white transition-colors cursor-pointer rounded-lg">
+                    <span className="h-8 px-3 flex items-center text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors cursor-pointer rounded-lg">
                       Log in
                     </span>
                   </Link>
                   <Link href="/auth">
-                    <span className="h-8 px-4 flex items-center text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-full cursor-pointer transition-colors shadow-md shadow-blue-700/20">
+                    <span className="h-8 px-4 flex items-center text-sm font-semibold text-white bg-slate-900 hover:bg-slate-700 rounded-lg cursor-pointer transition-colors">
                       Get started
                     </span>
                   </Link>
@@ -362,7 +324,7 @@ export function Navbar() {
 
                 {/* Mobile toggle */}
                 <button
-                  className="md:hidden h-8 w-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                  className="md:hidden h-8 w-8 flex items-center justify-center rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                   onClick={() => setMobileOpen(true)}
                   aria-label="Open menu"
                 >
@@ -374,36 +336,34 @@ export function Navbar() {
         </div>
       </nav>
 
-      {/* ── Mobile menu overlay ─────────────────────────────────────────── */}
+      {/* ── Mobile menu ──────────────────────────────────────────────────── */}
       <AnimatePresence>
         {mobileOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
               onClick={() => setMobileOpen(false)}
             />
 
-            {/* Panel */}
             <motion.div
               initial={{ opacity: 0, y: -16 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed top-0 inset-x-0 z-50 bg-[#070c19] border-b border-slate-800/60 shadow-2xl shadow-black/50"
+              className="fixed top-0 inset-x-0 z-50 bg-white border-b border-slate-200 shadow-xl"
             >
               {/* Mobile header */}
-              <div className="flex items-center justify-between h-14 px-4 border-b border-slate-800/60">
+              <div className="flex items-center justify-between h-14 px-4 border-b border-slate-100">
                 <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center">
-                  <InfraAuditLogo height={26} variant="dark" />
+                  <InfraAuditLogo height={32} variant="light" />
                 </Link>
                 <button
                   onClick={() => setMobileOpen(false)}
-                  className="h-8 w-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                  className="h-8 w-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -411,62 +371,48 @@ export function Navbar() {
 
               {/* Mobile links */}
               <div className="p-4 space-y-1 max-h-[calc(100vh-120px)] overflow-y-auto">
-                {/* Products section */}
                 <div className="pb-3">
-                  <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-3 mb-2">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest px-3 mb-2">
                     Products
                   </p>
                   {PRODUCTS.map(({ icon: Icon, label, href, color }) => (
                     <Link key={label} href={href} onClick={() => setMobileOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                      <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
                         <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0", color)}>
                           <Icon className="w-3.5 h-3.5" />
                         </div>
-                        <span className="text-sm font-medium text-slate-300">{label}</span>
+                        <span className="text-sm font-medium text-slate-700">{label}</span>
                       </div>
                     </Link>
                   ))}
                 </div>
 
-                <div className="h-px bg-slate-800/60" />
+                <div className="h-px bg-slate-100" />
 
-                {/* Other links */}
                 <div className="py-3 space-y-1">
                   {[
-                    { label: "Pricing", href: "/pricing" },
+                    { label: "Pricing",       href: "/pricing" },
                     { label: "Documentation", href: "/documentation" },
-                    { label: "About", href: "/about" },
+                    { label: "About",         href: "/about" },
                   ].map(({ label, href }) => (
                     <Link key={label} href={href} onClick={() => setMobileOpen(false)}>
-                      <div className="px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer text-sm font-medium text-slate-300 hover:text-white">
+                      <div className="px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer text-sm font-medium text-slate-700 hover:text-slate-900">
                         {label}
                       </div>
                     </Link>
                   ))}
-                  <a
-                    href="https://github.com/pratik-mahalle/InfraAudit"
-                    target="_blank"
-                    rel="noopener"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-colors text-sm font-medium text-slate-300 hover:text-white"
-                  >
-                    <Github className="h-4 w-4 text-slate-500" />
-                    GitHub
-                    <ExternalLink className="h-3 w-3 text-slate-600 ml-auto" />
-                  </a>
                 </div>
 
-                <div className="h-px bg-slate-800/60" />
+                <div className="h-px bg-slate-100" />
 
-                {/* Mobile CTAs */}
                 <div className="pt-4 grid grid-cols-2 gap-2">
                   <Link href="/auth" onClick={() => setMobileOpen(false)}>
-                    <span className="flex items-center justify-center h-10 rounded-xl border border-slate-700 text-sm font-medium text-slate-300 hover:text-white hover:border-slate-600 transition-colors cursor-pointer">
+                    <span className="flex items-center justify-center h-10 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer">
                       Log in
                     </span>
                   </Link>
                   <Link href="/auth" onClick={() => setMobileOpen(false)}>
-                    <span className="flex items-center justify-center h-10 rounded-xl bg-blue-600 hover:bg-blue-500 text-sm font-semibold text-white cursor-pointer transition-colors">
+                    <span className="flex items-center justify-center h-10 rounded-xl bg-slate-900 hover:bg-slate-700 text-sm font-semibold text-white cursor-pointer transition-colors">
                       Get started
                     </span>
                   </Link>
