@@ -29,6 +29,20 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
 
+// ─── Cloud provider logos (devicons via jsDelivr CDN) ────────────────────────
+const CLOUD_LOGOS: Record<string, string> = {
+  AWS:              "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/amazonwebservices/amazonwebservices-original.svg",
+  GCP:              "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/googlecloud/googlecloud-original.svg",
+  K8s:              "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kubernetes/kubernetes-plain.svg",
+  Azure:            "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/azure/azure-original.svg",
+  "Amazon Web Services": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/amazonwebservices/amazonwebservices-original.svg",
+  "Microsoft Azure":     "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/azure/azure-original.svg",
+  "Google Cloud":        "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/googlecloud/googlecloud-original.svg",
+  "Kubernetes":          "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kubernetes/kubernetes-plain.svg",
+  "Terraform":           "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/terraform/terraform-original.svg",
+  "CloudFormation":      "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/amazonwebservices/amazonwebservices-original.svg",
+};
+
 // ─── Design tokens ───────────────────────────────────────────────────────────
 const DISPLAY = "'Plus Jakarta Sans', sans-serif";
 const BODY = "'IBM Plex Sans', sans-serif";
@@ -172,17 +186,14 @@ function LiveScanFeed() {
                 <SevPill level={item.sev} />
                 <span className="text-xs text-slate-300 flex-1 truncate">{item.msg}</span>
                 <span className="text-[10px] text-slate-600 shrink-0" style={{ fontFamily: MONO }}>{item.resource}</span>
-                <img
-                  src={
-                    item.cloud === "AWS"   ? "https://cdn.simpleicons.org/amazonaws/FF9900" :
-                    item.cloud === "GCP"   ? "https://cdn.simpleicons.org/googlecloud/4285F4" :
-                    item.cloud === "K8s"   ? "https://cdn.simpleicons.org/kubernetes/326CE5" :
-                    "https://cdn.simpleicons.org/microsoftazure/0078D4"
-                  }
-                  alt={item.cloud}
-                  title={item.cloud}
-                  className="w-4 h-4 shrink-0"
-                />
+                {CLOUD_LOGOS[item.cloud] && (
+                  <img
+                    src={CLOUD_LOGOS[item.cloud]}
+                    alt={item.cloud}
+                    title={item.cloud}
+                    className="w-4 h-4 shrink-0"
+                  />
+                )}
               </motion.div>
             );
           })}
@@ -512,7 +523,10 @@ export default function HomePage() {
               Monitors
             </span>
             {["Amazon Web Services", "Microsoft Azure", "Google Cloud", "Kubernetes", "Terraform", "CloudFormation"].map((p) => (
-              <span key={p} className="text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors" style={{ fontFamily: BODY }}>
+              <span key={p} className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors" style={{ fontFamily: BODY }}>
+                {CLOUD_LOGOS[p] && (
+                  <img src={CLOUD_LOGOS[p]} alt={p} className="w-4 h-4 shrink-0" />
+                )}
                 {p}
               </span>
             ))}
