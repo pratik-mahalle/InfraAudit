@@ -145,7 +145,7 @@ export function Footer() {
             </div>
             <span className="hidden sm:block text-slate-800 text-xs">·</span>
             <span className="hidden sm:block text-xs text-slate-600">
-              © {year} InfraAudit
+              © {year} InfrAudit
             </span>
           </div>
 

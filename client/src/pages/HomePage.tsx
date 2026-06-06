@@ -131,7 +131,7 @@ function LiveScanFeed() {
         <div className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
         <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
         <div className="ml-3 flex items-center gap-2">
-          <span className="text-[11px] font-semibold text-slate-300">InfraAudit</span>
+          <span className="text-[11px] font-semibold text-slate-300">InfrAudit</span>
           <span className="text-[10px] text-slate-600">/security</span>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
