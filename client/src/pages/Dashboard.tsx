@@ -711,9 +711,6 @@ export default function Dashboard() {
   const openAlerts = alertSummary?.open ?? alerts.filter(a => a.status === "open").length ?? (hasProviders ? 0 : 7);
   const totalResources = resources.length || (hasProviders ? 0 : 248);
 
-  const riskScore = Math.max(0, Math.min(100, 100 - criticalDrifts * 8 - (totalDrifts - criticalDrifts) * 3));
-  const riskTone = riskScore >= 80 ? "ok" : riskScore >= 60 ? "warn" : "crit";
-
   const kpis: KpiDef[] = [
     {
       id: "health", label: "Health Score", icon: Shield,
