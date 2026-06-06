@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
     useJobs,
     useCreateJob,
+    useUpdateJob,
     useDeleteJob,
     useTriggerJob,
     usePendingApprovals,
@@ -15,7 +16,9 @@ import {
 import { JobsList } from "@/components/automation/JobsList";
 import { RemediationQueue } from "@/components/automation/RemediationQueue";
 import { JobScheduler } from "@/components/automation/JobScheduler";
+import { JobEditor } from "@/components/automation/JobEditor";
 import { useToast } from "@/hooks/use-toast";
+import { ScheduledJob } from "@/types";
 
 export default function Automation() {
     const { toast } = useToast();
@@ -23,8 +26,11 @@ export default function Automation() {
     // Jobs Data
     const { data: jobs, isLoading: isLoadingJobs } = useJobs();
     const { mutate: createJob } = useCreateJob();
+    const { mutate: updateJob } = useUpdateJob();
     const { mutate: deleteJob } = useDeleteJob();
     const { mutate: triggerJob } = useTriggerJob();
+
+    const [editingJob, setEditingJob] = useState<ScheduledJob | null>(null);
 
     // Remediation Data
     const { data: pendingApprovals, isLoading: isLoadingApprovals } = usePendingApprovals();
@@ -50,6 +56,13 @@ export default function Automation() {
                 onSuccess: () => toast({ title: "Job Deleted", description: "Scheduled job removed." })
             });
         }
+    };
+
+    const handleUpdateJob = (id: string, jobUpdates: Partial<ScheduledJob>) => {
+        updateJob({ id, job: jobUpdates }, {
+            onSuccess: () => toast({ title: "Job Updated", description: "Scheduled job changes saved successfully." }),
+            onError: () => toast({ title: "Error", description: "Failed to update job.", variant: "destructive" })
+        });
     };
 
     const handleApprove = (id: string) => {
@@ -88,7 +101,7 @@ export default function Automation() {
                         jobs={jobs || []}
                         isLoading={isLoadingJobs}
                         onRun={handleRunJob}
-                        onEdit={() => { }} // TODO implement edit
+                        onEdit={(job) => setEditingJob(job)}
                         onDelete={handleDeleteJob}
                     />
                 </TabsContent>
@@ -110,6 +123,13 @@ export default function Automation() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            <JobEditor
+                job={editingJob}
+                open={!!editingJob}
+                onOpenChange={(open) => !open && setEditingJob(null)}
+                onSave={handleUpdateJob}
+            />
         </DashboardLayout>
     );
 }
