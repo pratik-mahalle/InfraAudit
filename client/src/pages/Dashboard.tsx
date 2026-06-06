@@ -707,6 +707,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
       queryClient.invalidateQueries({ queryKey: ["/api/drifts/summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/alerts/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/health-score"] });
     },
     onError: (e: any) => toast({ title: "Scan failed", description: e.message, variant: "destructive" }),
     onSettled: () => setIsScanning(false),
@@ -770,6 +771,14 @@ export default function Dashboard() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
           <Loader2 size={28} style={{ animation: "spin 1s linear infinite", color: "var(--ia-brand)" }} />
         </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!hasProviders) {
+    return (
+      <DashboardLayout>
+        <OnboardingScreen onNavigate={() => navigate("/cloud-providers")} />
       </DashboardLayout>
     );
   }
