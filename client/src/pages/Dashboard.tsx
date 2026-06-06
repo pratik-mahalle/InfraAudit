@@ -587,7 +587,7 @@ function OnboardingScreen({ onNavigate }: { onNavigate: () => void }) {
         <p style={{ color: "var(--ia-ink-3)", fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
           Connect your cloud provider to start monitoring infrastructure, detecting security drift, and optimizing costs.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 32 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
           {[
             { icon: CloudIcon, title: "Connect", desc: "Link AWS, GCP, or Azure" },
             { icon: Server,    title: "Discover", desc: "Scan and catalog resources" },
@@ -811,7 +811,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Cost trend + Live drift feed ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
           <CostTrendCard />
           <DriftFeedCard
             drifts={activeDrifts}
@@ -821,7 +821,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Compliance + Savings ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
           <ComplianceCard frameworks={[]} onJump={() => navigate("/compliance")} />
           <SavingsCard recommendations={recommendations} />
         </div>
