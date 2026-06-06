@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import { Shield, CheckCircle } from 'lucide-react';
 
 export default function PrivacyPolicyPage() {
-  const lastUpdated = 'May 15, 2025';
+  const lastUpdated = 'June 6, 2026';
 
   return (
     <>
@@ -197,11 +197,10 @@ export default function PrivacyPolicyPage() {
           <section id="international-data-transfers">
             <h2 className="text-2xl font-bold">8. International Data Transfers</h2>
             <p>
-              We are based in the United States. If you are accessing our platform from outside the United States, be aware that your 
-              information may be transferred to, stored, and processed by us in our facilities and by those third parties with whom we may 
-              share your personal information, in the United States and other countries. If you are a resident in the European Economic Area, 
-              then these countries may not have data protection laws or other similar laws as comprehensive as those in your country. 
-              We will take all necessary measures to protect your personal information in accordance with this privacy policy and applicable law.
+              InfraAudit is based in India. If you are accessing our platform from outside India, be aware that your information may be
+              transferred to, stored, and processed by us in our facilities and by those third parties with whom we may share your personal
+              information, in India and other countries. We comply with applicable data protection regulations and will take all necessary
+              measures to protect your personal information in accordance with this privacy policy and applicable law.
             </p>
           </section>
 
@@ -239,12 +238,11 @@ export default function PrivacyPolicyPage() {
               If you have questions or comments about this privacy policy, you may contact us at:
             </p>
             <div className="mt-4">
-              <p><strong>InfrAudit, Inc.</strong></p>
-              <p>350 California St</p>
-              <p>San Francisco, CA 94104</p>
-              <p>United States</p>
-              <p>Email: privacy@infraudit.com</p>
-              <p>Phone: +1 (800) 555-1234</p>
+              <p><strong>InfraAudit</strong></p>
+              <p>Pune, Maharashtra</p>
+              <p>India</p>
+              <p>Email: <a href="mailto:pratik@infraudit.com" className="text-blue-600 hover:underline">pratik@infraudit.com</a></p>
+              <p>Phone: <a href="tel:+919322338943" className="text-blue-600 hover:underline">+91 93223 38943</a></p>
             </div>
           </section>
         </div>

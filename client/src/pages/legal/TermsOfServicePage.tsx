@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import { FileText, AlertCircle } from 'lucide-react';
 
 export default function TermsOfServicePage() {
-  const lastUpdated = 'May 15, 2025';
+  const lastUpdated = 'June 6, 2026';
 
   return (
     <>
@@ -266,12 +266,11 @@ export default function TermsOfServicePage() {
           <section id="governing-law">
             <h2 className="text-2xl font-bold">11. Governing Law</h2>
             <p>
-              These Terms shall be governed and construed in accordance with the laws of the State of California, United States, 
-              without regard to its conflict of law provisions.
+              These Terms shall be governed and construed in accordance with the laws of India, without regard to its conflict of law provisions.
             </p>
             <p>
-              Any disputes arising under or in connection with these Terms shall be subject to the exclusive jurisdiction of the state 
-              and federal courts located in San Francisco County, California.
+              Any disputes arising under or in connection with these Terms shall be subject to the exclusive jurisdiction of the courts
+              located in Pune, Maharashtra, India.
             </p>
           </section>
 
@@ -281,11 +280,11 @@ export default function TermsOfServicePage() {
               If you have any questions about these Terms, please contact us at:
             </p>
             <div className="mt-4">
-              <p><strong>InfrAudit, Inc.</strong></p>
+              <p><strong>InfraAudit</strong></p>
               <p>Pune, Maharashtra</p>
               <p>India</p>
-              <p>Email: info@infraudit.dev</p>
-              <p>Phone: +91 9322338943</p>
+              <p>Email: <a href="mailto:pratik@infraudit.com" className="text-blue-600 hover:underline">pratik@infraudit.com</a></p>
+              <p>Phone: <a href="tel:+919322338943" className="text-blue-600 hover:underline">+91 93223 38943</a></p>
             </div>
           </section>
         </div>
