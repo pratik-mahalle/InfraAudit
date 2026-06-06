@@ -376,7 +376,14 @@ function FindingsTable({ drifts, selId, onPick }: {
                 <td><SevPill sev={d.severity} /></td>
                 <td>
                   <div className="ia-res-name">{(d as any).resource || `drift-${d.id}`}</div>
-                  <div className="ia-res-sub">{d.driftType || (d as any).title || ""}</div>
+                  <div className="ia-res-sub">
+                    {d.driftType || (d as any).title || ""}
+                    {d.driftType === "security_check" && (
+                      <span style={{ fontSize: 10, background: "var(--ia-brand)", color: "#fff", borderRadius: 4, padding: "1px 6px", marginLeft: 6, fontWeight: 600 }}>
+                        Security
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td><span className="ia-mono" style={{ fontSize: 11, color: "var(--ia-ink-3)" }}>
                   {typeof d.id === "string" ? d.id : `INF-${d.id}`}
