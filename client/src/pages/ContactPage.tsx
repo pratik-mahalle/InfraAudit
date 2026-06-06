@@ -42,8 +42,8 @@ export default function ContactPage() {
       icon: Mail,
       title: "Email us",
       description: "We'll respond within 24 hours",
-      value: "info@infraudit.dev",
-      href: "mailto:info@infraudit.dev",
+      value: "pratik@infraudit.com",
+      href: "mailto:pratik@infraudit.com",
       color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600",
     },
     {

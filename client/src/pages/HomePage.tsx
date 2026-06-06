@@ -462,7 +462,7 @@ export default function HomePage() {
                 </Button>
                 <Button asChild variant="ghost" size="lg"
                   className="h-12 px-7 text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 rounded-xl text-sm">
-                  <Link href="/contact">Request a demo</Link>
+                  <a href="https://calendly.com/pratik-infraudit/30min" target="_blank" rel="noopener noreferrer">Request a demo</a>
                 </Button>
               </motion.div>
 
@@ -911,12 +911,12 @@ export default function HomePage() {
                 price: "Custom",
                 sub: "Unlimited resources · Annual contract",
                 cta: "Talk to sales",
-                ctaHref: "/contact",
-                external: false,
+                ctaHref: "https://calendly.com/pratik-infraudit/30min",
+                external: true,
                 highlight: false,
                 features: ["Unlimited resources", "Custom compliance policies", "SSO / SAML", "Multi-account support", "Dedicated success manager"],
               },
-            ].map(({ tier, price, sub, cta, ctaHref, highlight, badge, features }, i) => (
+            ].map(({ tier, price, sub, cta, ctaHref, external, highlight, badge, features }, i) => (
               <motion.div
                 key={tier}
                 initial="hidden"
@@ -958,14 +958,24 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <Link href={ctaHref}>
-                  <span className={cn(
-                    "block text-center py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors",
-                    highlight ? "bg-slate-900 text-white hover:bg-slate-800" : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
-                  )}>
+                {external ? (
+                  <a href={ctaHref} target="_blank" rel="noopener noreferrer"
+                    className={cn(
+                      "block text-center py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors",
+                      highlight ? "bg-slate-900 text-white hover:bg-slate-800" : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
+                    )}>
                     {cta}
-                  </span>
-                </Link>
+                  </a>
+                ) : (
+                  <Link href={ctaHref}>
+                    <span className={cn(
+                      "block text-center py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors",
+                      highlight ? "bg-slate-900 text-white hover:bg-slate-800" : "bg-white/10 text-white hover:bg-white/15 border border-white/10"
+                    )}>
+                      {cta}
+                    </span>
+                  </Link>
+                )}
               </motion.div>
             ))}
           </div>
@@ -1050,7 +1060,7 @@ export default function HomePage() {
                 </Button>
                 <Button asChild variant="ghost" size="lg"
                   className="h-12 px-8 text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 rounded-xl text-sm">
-                  <Link href="/contact">Request a demo</Link>
+                  <a href="https://calendly.com/pratik-infraudit/30min" target="_blank" rel="noopener noreferrer">Request a demo</a>
                 </Button>
               </div>
               <p className="text-slate-700 text-xs mt-5" style={{ fontFamily: MONO }}>

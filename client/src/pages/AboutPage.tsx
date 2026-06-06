@@ -128,7 +128,7 @@ export default function AboutPage() {
                 </Button>
                 <Button asChild variant="outline" size="lg"
                   className="h-11 px-7 rounded-xl text-sm border-slate-200 text-slate-700 hover:bg-slate-50">
-                  <Link href="/contact">Talk to us</Link>
+                  <a href="https://calendly.com/pratik-infraudit/30min" target="_blank" rel="noopener noreferrer">Talk to us</a>
                 </Button>
               </div>
             </motion.div>
@@ -311,7 +311,7 @@ export default function AboutPage() {
                 </Button>
                 <Button asChild variant="ghost" size="lg"
                   className="h-12 px-8 text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 rounded-xl text-sm">
-                  <Link href="/contact">Talk to sales</Link>
+                  <a href="https://calendly.com/pratik-infraudit/30min" target="_blank" rel="noopener noreferrer">Talk to sales</a>
                 </Button>
               </div>
             </motion.div>

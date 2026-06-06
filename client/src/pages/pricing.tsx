@@ -66,7 +66,8 @@ const TIERS = [
     annual: null,
     desc: "For large-scale infrastructure with custom requirements.",
     cta: "Talk to sales",
-    href: "/contact",
+    href: "https://calendly.com/pratik-infraudit/30min",
+    external: true,
     highlight: false,
     badge: null,
     features: [
@@ -168,7 +169,7 @@ export default function PricingPage() {
       <section className="px-6 py-16 bg-slate-50 border-b border-slate-100">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-3 gap-6">
-            {TIERS.map(({ name, icon: Icon, monthly, annual: annualPrice, desc, cta, href, highlight, badge, features }, i) => (
+            {TIERS.map(({ name, icon: Icon, monthly, annual: annualPrice, desc, cta, href, highlight, badge, features, external }, i) => (
               <motion.div
                 key={name}
                 initial="hidden"
@@ -247,16 +248,28 @@ export default function PricingPage() {
                   ))}
                 </ul>
 
-                <Link href={href}>
-                  <span className={cn(
-                    "block text-center py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors",
-                    highlight
-                      ? "bg-white text-slate-900 hover:bg-slate-100"
-                      : "bg-slate-900 text-white hover:bg-slate-800"
-                  )}>
+                {external ? (
+                  <a href={href} target="_blank" rel="noopener noreferrer"
+                    className={cn(
+                      "block text-center py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors",
+                      highlight
+                        ? "bg-white text-slate-900 hover:bg-slate-100"
+                        : "bg-slate-900 text-white hover:bg-slate-800"
+                    )}>
                     {cta}
-                  </span>
-                </Link>
+                  </a>
+                ) : (
+                  <Link href={href}>
+                    <span className={cn(
+                      "block text-center py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-colors",
+                      highlight
+                        ? "bg-white text-slate-900 hover:bg-slate-100"
+                        : "bg-slate-900 text-white hover:bg-slate-800"
+                    )}>
+                      {cta}
+                    </span>
+                  </Link>
+                )}
               </motion.div>
             ))}
           </div>
@@ -390,9 +403,9 @@ export default function PricingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button asChild size="lg"
                 className="h-12 px-8 bg-white text-slate-950 hover:bg-slate-100 font-semibold rounded-xl text-sm">
-                <Link href="/contact">
-                  Talk to sales <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
+                <a href="https://calendly.com/pratik-infraudit/30min" target="_blank" rel="noopener noreferrer">
+                  Talk to sales <ArrowRight className="ml-2 w-4 h-4 inline" />
+                </a>
               </Button>
               <Button asChild variant="ghost" size="lg"
                 className="h-12 px-8 text-slate-400 hover:text-white hover:bg-white/5 border border-white/10 rounded-xl text-sm">
