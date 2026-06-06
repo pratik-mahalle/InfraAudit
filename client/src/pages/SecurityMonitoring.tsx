@@ -58,20 +58,23 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
   const [alertStatus, setAlertStatus] = useState<string>("all");
   const [activeAlertTab, setActiveAlertTab] = useState<string>("all");
 
+  // BUG-016 fix: Proper types for paginated API responses instead of 'any'
+  type PaginatedResponse<T> = T[] | { data: T[] };
+
   // Fetch security drifts (paginated — extract .data)
-  const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<any>({
+  const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<PaginatedResponse<SecurityDrift>>({
     queryKey: ["/api/drifts"],
   });
   const securityDrifts: SecurityDrift[] = Array.isArray(driftsResponse) ? driftsResponse : (driftsResponse?.data ?? []);
 
   // Fetch alerts (paginated — extract .data)
-  const { data: alertsResponse, isLoading: isLoadingAlerts } = useQuery<any>({
+  const { data: alertsResponse, isLoading: isLoadingAlerts } = useQuery<PaginatedResponse<Alert>>({
     queryKey: ["/api/alerts"],
   });
   const alerts: Alert[] = Array.isArray(alertsResponse) ? alertsResponse : (alertsResponse?.data ?? []);
 
   // Fetch resources to get names (paginated — extract .data)
-  const { data: resourcesResponse } = useQuery<any>({
+  const { data: resourcesResponse } = useQuery<PaginatedResponse<Resource>>({
     queryKey: ["/api/resources"],
   });
   const resources: Resource[] = Array.isArray(resourcesResponse) ? resourcesResponse : (resourcesResponse?.data ?? []);
