@@ -533,6 +533,7 @@ export function CloudProviderSetup() {
                   </AlertDescription>
                 </Alert>
               ) : (
+                <>
                 <div className="mb-4">
                   <a
                     href="/api/v1/providers/aws/iam-template"
@@ -634,6 +635,7 @@ export function CloudProviderSetup() {
                     </div>
                   </form>
                 </Form>
+                </>
               )}
             </TabsContent>
 
