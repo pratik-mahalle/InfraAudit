@@ -320,10 +320,10 @@ export default function ContactPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button asChild size="lg" className="rounded-full">
-                  <Link href="/documentation">
+                  <a href="https://docs.infraudit.com/" target="_blank" rel="noopener noreferrer">
                     View documentation
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Link>
+                    <ArrowRight className="w-4 h-4 ml-2 inline" />
+                  </a>
                 </Button>
                 <Button asChild variant="outline" size="lg" className="rounded-full">
                   <Link href="/pricing">

@@ -63,8 +63,8 @@ const PRODUCTS: ProductItem[] = [
 ];
 
 const DEVELOPERS: DevItem[] = [
-  { icon: BookOpen, label: "Documentation", href: "/documentation" },
-  { icon: Zap,      label: "API Reference", href: "/api" },
+  { icon: BookOpen, label: "Documentation", href: "https://docs.infraudit.com/",    external: true },
+  { icon: Zap,      label: "API Reference", href: "https://docs.infraudit.com/api", external: true },
   { icon: Github,   label: "GitHub",        href: "https://github.com/pratik-mahalle/InfraAudit", external: true },
 ];
 
@@ -292,11 +292,11 @@ export function Navbar() {
                       </DropdownMenuItem>
                     </Link>
                   </RoleGate>
-                  <Link href="/documentation">
+                  <a href="https://docs.infraudit.com/" target="_blank" rel="noopener noreferrer">
                     <DropdownMenuItem className="cursor-pointer hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-lg mx-1">
                       <BookOpen className="mr-2 h-4 w-4 text-slate-400" />Documentation
                     </DropdownMenuItem>
-                  </Link>
+                  </a>
                   <DropdownMenuSeparator className="bg-slate-100" />
                   <DropdownMenuItem
                     onClick={() => signOut()}
@@ -391,11 +391,13 @@ export function Navbar() {
 
                 <div className="py-3 space-y-1">
                   {[
-                    { label: "Pricing",       href: "/pricing" },
-                    { label: "Documentation", href: "/documentation" },
-                    { label: "About",         href: "/about" },
-                  ].map(({ label, href }) => (
-                    <Link key={label} href={href} onClick={() => setMobileOpen(false)}>
+                    { label: "Pricing",       href: "/pricing",                    external: false },
+                    { label: "Documentation", href: "https://docs.infraudit.com/", external: true },
+                    { label: "About",         href: "/about",                      external: false },
+                  ].map(({ label, href, external }) => (
+                    external
+                      ? <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="block px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors text-sm font-medium text-slate-700 hover:text-slate-900">{label}</a>
+                      : <Link key={label} href={href} onClick={() => setMobileOpen(false)}>
                       <div className="px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer text-sm font-medium text-slate-700 hover:text-slate-900">
                         {label}
                       </div>

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "wouter";
-import { Github, Twitter, Linkedin, Circle } from "lucide-react";
+import { Github, Linkedin, Circle } from "lucide-react";
 import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
 
 const FONT_DISPLAY = "'Plus Jakarta Sans', sans-serif";
@@ -20,9 +20,9 @@ const NAV_COLUMNS = [
   {
     heading: "Developers",
     links: [
-      { label: "Documentation",  href: "/documentation" },
-      { label: "API Reference",  href: "/api" },
-      { label: "Changelog",      href: "/documentation" },
+      { label: "Documentation",  href: "https://docs.infraudit.com/",          external: true },
+      { label: "API Reference",  href: "https://docs.infraudit.com/api",       external: true },
+      { label: "Changelog",      href: "https://docs.infraudit.com/changelog", external: true },
     ],
   },
   {
@@ -30,15 +30,15 @@ const NAV_COLUMNS = [
     links: [
       { label: "About",    href: "/about" },
       { label: "Contact",  href: "/contact" },
-      { label: "Blog",     href: "/documentation" },
+      { label: "Blog",     href: "https://docs.infraudit.com/blog", external: true },
       { label: "Careers",  href: "/about" },
     ],
   },
   {
     heading: "Legal",
     links: [
-      { label: "Privacy Policy",    href: "/privacy-policy" },
-      { label: "Terms of Service",  href: "/terms-of-service" },
+      { label: "Privacy Policy",    href: "/privacy" },
+      { label: "Terms of Service",  href: "/terms" },
     ],
   },
 ];
@@ -70,9 +70,8 @@ export function Footer() {
             {/* Social icons */}
             <div className="flex items-center gap-2">
               {[
-                { icon: Github,   href: "https://github.com/pratik-mahalle/InfraAudit", label: "GitHub" },
-                { icon: Twitter,  href: "https://twitter.com",                           label: "Twitter" },
-                { icon: Linkedin, href: "https://linkedin.com",                          label: "LinkedIn" },
+                { icon: Github,   href: "https://github.com/pratik-mahalle/InfraAudit",          label: "GitHub" },
+                { icon: Linkedin, href: "https://www.linkedin.com/company/infraauditio",          label: "LinkedIn" },
               ].map(({ icon: Icon, href, label }) => (
                 <a
                   key={label}
