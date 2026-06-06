@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { Session, AuthError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { User } from "@/types";
@@ -58,8 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [needsSignup, setNeedsSignup] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
 
+  // BUG-009 fix: Request counter to prevent stale responses from overwriting
+  // fresh data when getSession() and onAuthStateChange() race.
+  const profileRequestId = useRef(0);
+  const initializedRef = useRef(false);
+
   // Fetch profile from Go backend using Supabase JWT
   const loadProfile = useCallback(async (sess: Session | null) => {
+    const requestId = ++profileRequestId.current;
+
     if (!sess?.access_token) {
       setUser(null);
       setNeedsSignup(false);
@@ -67,6 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const result = await fetchProfile(sess.access_token);
+
+    // Discard stale response if a newer request was made while waiting
+    if (requestId !== profileRequestId.current) return;
+
     setUser(result.user);
     setNeedsSignup(result.needsSignup);
     setPendingApproval(result.pendingApproval);
@@ -76,13 +87,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       setSession(initialSession);
-      loadProfile(initialSession).finally(() => setIsLoading(false));
+      loadProfile(initialSession).finally(() => {
+        setIsLoading(false);
+        initializedRef.current = true;
+      });
     });
 
-    // Listen for auth state changes
+    // Listen for auth state changes — skip during initial load
+    // to avoid a duplicate profile fetch race
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      if (!initializedRef.current) return;
       setSession(newSession);
       loadProfile(newSession);
     });
