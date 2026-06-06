@@ -197,7 +197,7 @@ export default function PrivacyPolicyPage() {
           <section id="international-data-transfers">
             <h2 className="text-2xl font-bold">8. International Data Transfers</h2>
             <p>
-              InfraAudit is based in India. If you are accessing our platform from outside India, be aware that your information may be
+              InfrAudit is based in India. If you are accessing our platform from outside India, be aware that your information may be
               transferred to, stored, and processed by us in our facilities and by those third parties with whom we may share your personal
               information, in India and other countries. We comply with applicable data protection regulations and will take all necessary
               measures to protect your personal information in accordance with this privacy policy and applicable law.
@@ -238,7 +238,7 @@ export default function PrivacyPolicyPage() {
               If you have questions or comments about this privacy policy, you may contact us at:
             </p>
             <div className="mt-4">
-              <p><strong>InfraAudit</strong></p>
+              <p><strong>InfrAudit</strong></p>
               <p>Pune, Maharashtra</p>
               <p>India</p>
               <p>Email: <a href="mailto:pratik@infraudit.com" className="text-blue-600 hover:underline">pratik@infraudit.com</a></p>

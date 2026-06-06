@@ -280,7 +280,7 @@ export default function TermsOfServicePage() {
               If you have any questions about these Terms, please contact us at:
             </p>
             <div className="mt-4">
-              <p><strong>InfraAudit</strong></p>
+              <p><strong>InfrAudit</strong></p>
               <p>Pune, Maharashtra</p>
               <p>India</p>
               <p>Email: <a href="mailto:pratik@infraudit.com" className="text-blue-600 hover:underline">pratik@infraudit.com</a></p>
