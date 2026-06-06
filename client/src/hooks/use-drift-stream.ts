@@ -20,6 +20,10 @@ export function useDriftStream() {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // BUG-017 fix: Track retry attempts for exponential backoff with max limit
+  const MAX_RETRIES = 5;
+  const retryCountRef = useRef(0);
+
   const connect = useCallback(async () => {
     if (!user || eventSourceRef.current) return;
 
@@ -59,6 +63,8 @@ export function useDriftStream() {
             break;
 
           case 'connected':
+            // Reset retry counter on successful connection
+            retryCountRef.current = 0;
             break;
         }
       } catch {
@@ -70,10 +76,14 @@ export function useDriftStream() {
       eventSource.close();
       eventSourceRef.current = null;
 
-      // Reconnect after 30 seconds
-      reconnectTimerRef.current = setTimeout(() => {
-        connect();
-      }, 30000);
+      // Exponential backoff: 2s, 4s, 8s, 16s, 32s — then stop
+      if (retryCountRef.current < MAX_RETRIES) {
+        const delay = Math.min(2000 * Math.pow(2, retryCountRef.current), 32000);
+        retryCountRef.current++;
+        reconnectTimerRef.current = setTimeout(() => {
+          connect();
+        }, delay);
+      }
     };
   }, [user, queryClient, toast]);
 
