@@ -291,7 +291,7 @@ function DashboardSnapshot() {
       {/* Dashboard layout */}
       <div className="p-4 bg-[#f8fafc]">
         {/* KPI row */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
           {[
             { label: "Security Score", val: "87", unit: "/100", delta: "+3", up: true, color: "#16a34a" },
             { label: "Active Drifts", val: "14", unit: "", delta: "+2", up: false, color: "#dc2626" },
@@ -317,7 +317,7 @@ function DashboardSnapshot() {
         </div>
 
         {/* Two-col */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
           {/* Drift feed mini */}
           <div className="bg-white rounded-xl border border-slate-100 p-3 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
@@ -405,8 +405,8 @@ export default function HomePage() {
         {/* Radial glow */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-red-900/10 rounded-full blur-[100px]" />
 
-        <div className="relative max-w-6xl mx-auto px-6 py-24 w-full">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-24 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
 
             {/* Left — copy */}
             <motion.div
@@ -428,7 +428,7 @@ export default function HomePage() {
               <motion.h1
                 variants={fadeUp}
                 custom={0.1}
-                className="text-5xl md:text-6xl lg:text-7xl font-black leading-[1.0] mb-6 text-white tracking-tight"
+                className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.0] mb-6 text-white tracking-tight"
                 style={{ fontFamily: DISPLAY }}
               >
                 Cloud security
@@ -444,7 +444,7 @@ export default function HomePage() {
               <motion.p
                 variants={fadeUp}
                 custom={0.2}
-                className="text-slate-400 text-lg leading-relaxed mb-8 max-w-md"
+                className="text-slate-400 text-base sm:text-lg leading-relaxed mb-8 max-w-sm sm:max-w-md"
                 style={{ fontFamily: BODY }}
               >
                 InfrAudit continuously scans AWS, Azure, GCP, and Kubernetes for
@@ -511,7 +511,7 @@ export default function HomePage() {
 
 
       {/* ── SECURITY PILLARS ─────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-white">
+      <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial="hidden"
@@ -524,7 +524,7 @@ export default function HomePage() {
               style={{ fontFamily: MONO }}>
               Security-first platform
             </div>
-            <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight max-w-2xl"
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 leading-tight max-w-2xl"
               style={{ fontFamily: DISPLAY }}>
               Every attack surface.
               <br />
@@ -532,7 +532,7 @@ export default function HomePage() {
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             {[
               {
                 icon: GitBranch,
@@ -601,9 +601,9 @@ export default function HomePage() {
       </section>
 
       {/* ── DASHBOARD SNAPSHOT ───────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-slate-50 border-y border-slate-100">
+      <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 bg-slate-50 border-y border-slate-100">
         <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-14 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-14 items-center">
             {/* Copy */}
             <motion.div
               initial="hidden"
@@ -617,7 +617,7 @@ export default function HomePage() {
                 Unified dashboard
               </motion.div>
               <motion.h2 variants={fadeUp} custom={0.08}
-                className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-5"
+                className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-5"
                 style={{ fontFamily: DISPLAY }}>
                 Your entire cloud
                 <br />security, at a glance
@@ -666,7 +666,7 @@ export default function HomePage() {
       {/* ── METRICS STRIP ────────────────────────────────────────────────── */}
       <section ref={metricsRef} className="py-20 px-6 bg-[#0a0a0b] border-y border-white/5">
         <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-10">
             <Metric prefix="" value={50000} suffix="+"  label="Cloud resources monitored daily"  inView={metricsInView} />
             <Metric prefix="$" value={2}     suffix="M+" label="Savings identified for customers"  inView={metricsInView} />
             <Metric prefix="" value={99}     suffix=".9%" label="Platform uptime SLA"              inView={metricsInView} />
@@ -676,9 +676,9 @@ export default function HomePage() {
       </section>
 
       {/* ── COMPLIANCE FRAMEWORKS ────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-white">
+      <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white">
         <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-14 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-14 items-center">
             {/* Compliance mockup */}
             <motion.div
               ref={complianceRef}
@@ -703,7 +703,7 @@ export default function HomePage() {
                 Automated compliance
               </motion.div>
               <motion.h2 variants={fadeUp} custom={0.08}
-                className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-5"
+                className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-5"
                 style={{ fontFamily: DISPLAY }}>
                 Audit-ready.
                 <br />Always.
@@ -716,7 +716,7 @@ export default function HomePage() {
                 and exports PDF reports on demand.
               </motion.p>
 
-              <motion.div variants={fadeUp} custom={0.24} className="grid grid-cols-2 gap-3 mb-8">
+              <motion.div variants={fadeUp} custom={0.24} className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-8">
                 {[
                   { fw: "CIS Benchmarks v3.0",    score: "91%", color: "#16a34a" },
                   { fw: "SOC 2 Type II",           score: "84%", color: "#2563eb" },
@@ -745,7 +745,7 @@ export default function HomePage() {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-slate-50 border-y border-slate-100">
+      <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 bg-slate-50 border-y border-slate-100">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial="hidden"
@@ -757,12 +757,12 @@ export default function HomePage() {
             <div className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3" style={{ fontFamily: MONO }}>
               How it works
             </div>
-            <h2 className="text-4xl md:text-5xl font-black text-slate-900" style={{ fontFamily: DISPLAY }}>
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900" style={{ fontFamily: DISPLAY }}>
               Up and scanning in minutes
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             {[
               {
                 step: "01",
@@ -820,7 +820,7 @@ export default function HomePage() {
       </section>
 
       {/* ── FEATURE GRID ─────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-white">
+      <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial="hidden"
@@ -829,7 +829,7 @@ export default function HomePage() {
             variants={fadeUp}
             className="text-center mb-12"
           >
-            <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4" style={{ fontFamily: DISPLAY }}>
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 mb-4" style={{ fontFamily: DISPLAY }}>
               Everything your security team needs
             </h2>
             <p className="text-slate-500 text-lg max-w-xl mx-auto" style={{ fontFamily: BODY }}>
@@ -837,7 +837,7 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             {[
               { icon: ShieldAlert,  title: "Drift Detection",          desc: "Real-time comparison against Terraform and CloudFormation baselines with auto-remediation." },
               { icon: Bug,          title: "Vulnerability Scanning",   desc: "Trivy + NVD powered CVE scanning across container images, OS packages, and dependencies." },
@@ -867,7 +867,7 @@ export default function HomePage() {
       </section>
 
       {/* ── PRICING ──────────────────────────────────────────────────────── */}
-      <section className="py-24 px-6 bg-[#0a0a0b]">
+      <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 bg-[#0a0a0b]">
         <div className="max-w-5xl mx-auto">
           <motion.div
             initial="hidden"
@@ -876,13 +876,13 @@ export default function HomePage() {
             variants={fadeUp}
             className="text-center mb-14"
           >
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-4" style={{ fontFamily: DISPLAY }}>
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-white mb-4" style={{ fontFamily: DISPLAY }}>
               Simple, transparent pricing
             </h2>
             <p className="text-slate-400 text-lg" style={{ fontFamily: BODY }}>Start free. Scale as you grow. No hidden fees.</p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
             {[
               {
                 tier: "Starter",
@@ -990,14 +990,14 @@ export default function HomePage() {
         {/* Red glow */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-red-900/15 rounded-full blur-[120px]" />
 
-        <div className="relative max-w-6xl mx-auto px-6 py-24">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-24">
           {/* Big stat row */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="grid grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden mb-16 border border-white/5"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-white/5 rounded-2xl overflow-hidden mb-16 border border-white/5"
           >
             {[
               { stat: "83%", detail: "of cloud breaches caused by misconfiguration", accent: "#dc2626" },
@@ -1005,7 +1005,7 @@ export default function HomePage() {
               { stat: "1-click", detail: "remediation with full audit trail", accent: "#16a34a" },
             ].map(({ stat, detail, accent }) => (
               <div key={stat} className="bg-[#0d0d0e] px-8 py-10 text-center">
-                <div className="text-5xl md:text-6xl font-black mb-3 tabular-nums"
+                <div className="text-3xl sm:text-5xl md:text-6xl font-black mb-3 tabular-nums"
                   style={{ color: accent, fontFamily: DISPLAY }}>{stat}</div>
                 <div className="text-sm text-slate-500 leading-relaxed max-w-[180px] mx-auto"
                   style={{ fontFamily: BODY }}>{detail}</div>
@@ -1014,7 +1014,7 @@ export default function HomePage() {
           </motion.div>
 
           {/* Copy + CTAs */}
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center">
             <motion.div
               initial="hidden"
               whileInView="visible"
@@ -1025,7 +1025,7 @@ export default function HomePage() {
                 style={{ fontFamily: MONO }}>
                 Get started today
               </div>
-              <h2 className="text-5xl md:text-6xl font-black text-white leading-[1.05] mb-6"
+              <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white leading-[1.05] mb-6"
                 style={{ fontFamily: DISPLAY }}>
                 Find your
                 <br />

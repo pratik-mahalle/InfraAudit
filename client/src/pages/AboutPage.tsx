@@ -44,7 +44,7 @@ export default function AboutPage() {
       <div className="bg-white" style={{ fontFamily: BODY }}>
 
         {/* ── Hero ─────────────────────────────────────────────────────── */}
-        <section className="relative bg-[#0a0a0b] py-28 px-6 overflow-hidden">
+        <section className="relative bg-[#0a0a0b] py-12 sm:py-20 lg:py-28 px-4 sm:px-6 overflow-hidden">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:48px_48px]" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-red-900/10 rounded-full blur-[100px]" />
 
@@ -59,7 +59,7 @@ export default function AboutPage() {
             </motion.div>
 
             <motion.h1 initial="hidden" animate="visible" variants={fadeUp} custom={0.1}
-              className="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 tracking-tight"
+              className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight mb-6 tracking-tight"
               style={{ fontFamily: DISPLAY }}>
               Built to catch what
               <br />
@@ -67,7 +67,7 @@ export default function AboutPage() {
             </motion.h1>
 
             <motion.p initial="hidden" animate="visible" variants={fadeUp} custom={0.2}
-              className="text-slate-400 text-xl leading-relaxed max-w-2xl mx-auto"
+              className="text-slate-400 text-base sm:text-xl leading-relaxed max-w-2xl mx-auto"
               style={{ fontFamily: BODY }}>
               We're building the security intelligence layer every cloud team deserves — one that
               sees misconfigurations, vulnerabilities, and compliance gaps before attackers do.
@@ -76,8 +76,8 @@ export default function AboutPage() {
         </section>
 
         {/* ── Stats ────────────────────────────────────────────────────── */}
-        <section ref={statsRef} className="py-16 px-6 border-b border-slate-100 bg-white">
-          <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
+        <section ref={statsRef} className="py-16 px-4 sm:px-6 border-b border-slate-100 bg-white">
+          <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
             {[
               { value: "50K+", label: "Resources monitored daily",  color: "#dc2626" },
               { value: "4",    label: "Compliance frameworks",       color: "#2563eb" },
@@ -98,14 +98,14 @@ export default function AboutPage() {
         </section>
 
         {/* ── Mission ──────────────────────────────────────────────────── */}
-        <section className="py-24 px-6 bg-white">
-          <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+        <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-14 items-center">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
               <div className="text-xs font-semibold text-red-600 uppercase tracking-widest mb-4"
                 style={{ fontFamily: MONO }}>
                 Our mission
               </div>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900 leading-tight mb-6"
                 style={{ fontFamily: DISPLAY }}>
                 Security shouldn't require
                 a dedicated team to understand.
@@ -167,7 +167,7 @@ export default function AboutPage() {
         </section>
 
         {/* ── What we do ───────────────────────────────────────────────── */}
-        <section className="py-24 px-6 bg-slate-50 border-y border-slate-100">
+        <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 bg-slate-50 border-y border-slate-100">
           <div className="max-w-6xl mx-auto">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
               className="text-center mb-14">
@@ -175,12 +175,12 @@ export default function AboutPage() {
                 style={{ fontFamily: MONO }}>
                 Platform
               </div>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900" style={{ fontFamily: DISPLAY }}>
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900" style={{ fontFamily: DISPLAY }}>
                 What InfrAudit does
               </h2>
             </motion.div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {[
                 {
                   icon: GitBranch,
@@ -241,11 +241,11 @@ export default function AboutPage() {
         </section>
 
         {/* ── Values ───────────────────────────────────────────────────── */}
-        <section className="py-24 px-6 bg-white">
+        <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 bg-white">
           <div className="max-w-5xl mx-auto">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}
               className="text-center mb-14">
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900" style={{ fontFamily: DISPLAY }}>
+              <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-900" style={{ fontFamily: DISPLAY }}>
                 How we build
               </h2>
             </motion.div>
@@ -289,11 +289,11 @@ export default function AboutPage() {
         </section>
 
         {/* ── CTA ──────────────────────────────────────────────────────── */}
-        <section className="py-28 px-6 bg-[#0a0a0b] border-t border-white/5">
+        <section className="py-12 sm:py-20 lg:py-28 px-4 sm:px-6 bg-[#0a0a0b] border-t border-white/5">
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:48px_48px]" />
           <div className="max-w-3xl mx-auto text-center relative">
             <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp}>
-              <h2 className="text-5xl md:text-6xl font-black text-white leading-tight mb-5"
+              <h2 className="text-3xl sm:text-5xl md:text-6xl font-black text-white leading-tight mb-5"
                 style={{ fontFamily: DISPLAY }}>
                 Start securing your
                 <br />

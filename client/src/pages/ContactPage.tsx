@@ -81,7 +81,7 @@ export default function ContactPage() {
 
       <div className="min-h-screen bg-white dark:bg-slate-950">
         {/* Hero Section */}
-        <section className="relative py-24 px-6 overflow-hidden">
+        <section className="relative py-12 sm:py-20 lg:py-24 px-4 sm:px-6 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
           
           <div className="max-w-6xl mx-auto relative z-10">
@@ -93,7 +93,7 @@ export default function ContactPage() {
               <span className="inline-block px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-medium mb-6">
                 Contact Us
               </span>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+              <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
                 Let's talk about
                 <br />
                 <span className="text-blue-600">your cloud</span>
@@ -104,7 +104,7 @@ export default function ContactPage() {
             </motion.div>
 
             {/* Contact Methods */}
-            <div className="grid md:grid-cols-3 gap-6 mb-20">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-20">
               {contactMethods.map((method, i) => (
                 <motion.a
                   key={i}
@@ -129,9 +129,9 @@ export default function ContactPage() {
         </section>
 
         {/* Form Section */}
-        <section className="py-24 px-6 bg-gray-50 dark:bg-slate-900/50">
+        <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6 bg-gray-50 dark:bg-slate-900/50">
           <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-16 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
               {/* Left Column */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -305,7 +305,7 @@ export default function ContactPage() {
         </section>
 
         {/* FAQ Teaser */}
-        <section className="py-24 px-6">
+        <section className="py-12 sm:py-20 lg:py-24 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
