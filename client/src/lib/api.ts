@@ -243,6 +243,25 @@ export interface Vulnerability {
   detectedAt: string;
 }
 
+// Health Score
+export interface HealthIssue {
+  title: string;
+  description?: string;
+  severity: "critical" | "high" | "medium" | "low";
+  savings?: string;
+  resource_id?: string;
+}
+
+export interface HealthScore {
+  score: number;
+  cost_issues: HealthIssue[];
+  security_issues: HealthIssue[];
+  breakdown: {
+    cost_score: number;
+    security_score: number;
+  };
+}
+
 // Phase 2A: SBOM
 export interface SBOMReport {
   id: number;
@@ -802,6 +821,13 @@ export const api = {
     test: (id: string) => request(`/api/v1/webhooks/${id}/test`, { method: 'POST' }),
 
     getEvents: () => request<string[]>('/api/v1/webhooks/events'),
+  },
+
+  // ============================================
+  // Health Score
+  // ============================================
+  healthScore: {
+    get: () => request<HealthScore>("/api/v1/health-score"),
   },
 
   // ============================================

@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SecurityDrift, Alert, Recommendation } from "@/types";
+import { HealthScore } from "@/lib/api";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -669,6 +670,11 @@ export default function Dashboard() {
     staleTime: 0,
     refetchOnMount: "always",
   });
+  const { data: healthScore } = useQuery<HealthScore>({
+    queryKey: ["/api/v1/health-score"],
+    enabled: hasConnected,
+    staleTime: 30_000,
+  });
 
   const drifts: SecurityDrift[]    = Array.isArray(driftsResponse)          ? driftsResponse          : (driftsResponse?.data          || []);
   const alerts: Alert[]            = Array.isArray(alertsResponse)           ? alertsResponse           : (alertsResponse?.data           || []);
@@ -710,9 +716,15 @@ export default function Dashboard() {
 
   const kpis: KpiDef[] = [
     {
-      id: "risk", label: "Unified Risk", icon: Shield, kind: "gauge",
-      value: riskScore, max: 100, tone: riskTone,
-      meta: `${totalDrifts} open findings`, note: "score",
+      id: "health", label: "Health Score", icon: Shield,
+      value: healthScore ? `${healthScore.score}` : isScanning ? "..." : "—",
+      meta: healthScore
+        ? `${healthScore.breakdown.security_score}/50 security · ${healthScore.breakdown.cost_score}/50 cost`
+        : "Calculating...",
+      tone: !healthScore ? undefined
+        : healthScore.score >= 80 ? "ok"
+        : healthScore.score >= 60 ? "warn"
+        : "crit",
     },
     {
       id: "resources", label: "Resources", icon: Server,
