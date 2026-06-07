@@ -157,8 +157,7 @@ export function CloudProviderIntegration() {
   // Add cloud provider mutation — transform camelCase form fields to Go backend snake_case DTO
   const addProviderMutation = useMutation({
     mutationFn: async (credentials: AllCloudCredentials) => {
-      console.log("Adding cloud provider:", credentials);
-      
+
       let endpoint = '';
       let body: Record<string, any> = {};
 
@@ -233,8 +232,7 @@ export function CloudProviderIntegration() {
   // Sync cloud provider mutation
   const syncProviderMutation = useMutation({
     mutationFn: async (accountId: string) => {
-      console.log("Syncing cloud provider:", accountId);
-      
+
       const response = await apiRequest('POST', `/api/providers/${accountId}/sync`);
       if (!response.ok) {
         const error = await response.json();
@@ -263,8 +261,7 @@ export function CloudProviderIntegration() {
   // Disconnect cloud provider mutation
   const disconnectProviderMutation = useMutation({
     mutationFn: async (accountId: string) => {
-      console.log("Disconnecting cloud provider:", accountId);
-      
+
       const response = await apiRequest('DELETE', `/api/providers/${accountId}`);
       if (!response.ok) {
         const error = await response.json();
