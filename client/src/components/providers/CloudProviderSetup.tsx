@@ -17,13 +17,14 @@ import {
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  AlertTriangle, 
-  Check, 
-  Loader2, 
-  RefreshCw, 
-  Trash2, 
-  ServerCog, 
+import {
+  AlertTriangle,
+  Check,
+  Download,
+  Loader2,
+  RefreshCw,
+  Trash2,
+  ServerCog,
   CloudCog,
   Database,
   Cloud,
@@ -532,6 +533,20 @@ export function CloudProviderSetup() {
                   </AlertDescription>
                 </Alert>
               ) : (
+                <>
+                <div className="mb-4">
+                  <a
+                    href="/api/v1/providers/aws/iam-template"
+                    download="infraaudit-iam.json"
+                    className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                  >
+                    <Download size={16} />
+                    Download IAM Setup (CloudFormation)
+                  </a>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Deploy this in AWS CloudFormation, then copy the outputs below
+                  </p>
+                </div>
                 <Form {...awsForm}>
                   <form onSubmit={awsForm.handleSubmit(onSubmitAWS)} className="space-y-4">
                     <FormField
@@ -620,6 +635,7 @@ export function CloudProviderSetup() {
                     </div>
                   </form>
                 </Form>
+                </>
               )}
             </TabsContent>
 

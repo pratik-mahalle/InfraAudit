@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SecurityDrift, Alert, Recommendation } from "@/types";
+import { HealthScore } from "@/lib/api";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -375,7 +376,14 @@ function FindingsTable({ drifts, selId, onPick }: {
                 <td><SevPill sev={d.severity} /></td>
                 <td>
                   <div className="ia-res-name">{(d as any).resource || `drift-${d.id}`}</div>
-                  <div className="ia-res-sub">{d.driftType || (d as any).title || ""}</div>
+                  <div className="ia-res-sub">
+                    {d.driftType || (d as any).title || ""}
+                    {d.driftType === "security_check" && (
+                      <span style={{ fontSize: 10, background: "var(--ia-brand)", color: "#fff", borderRadius: 4, padding: "1px 6px", marginLeft: 6, fontWeight: 600 }}>
+                        Security
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td><span className="ia-mono" style={{ fontSize: 11, color: "var(--ia-ink-3)" }}>
                   {typeof d.id === "string" ? d.id : `INF-${d.id}`}
@@ -587,7 +595,7 @@ function OnboardingScreen({ onNavigate }: { onNavigate: () => void }) {
         <p style={{ color: "var(--ia-ink-3)", fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
           Connect your cloud provider to start monitoring infrastructure, detecting security drift, and optimizing costs.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 32 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
           {[
             { icon: CloudIcon, title: "Connect", desc: "Link AWS, GCP, or Azure" },
             { icon: Server,    title: "Discover", desc: "Scan and catalog resources" },
@@ -669,6 +677,11 @@ export default function Dashboard() {
     staleTime: 0,
     refetchOnMount: "always",
   });
+  const { data: healthScore } = useQuery<HealthScore>({
+    queryKey: ["/api/v1/health-score"],
+    enabled: hasConnected,
+    staleTime: 30_000,
+  });
 
   const drifts: SecurityDrift[]    = Array.isArray(driftsResponse)          ? driftsResponse          : (driftsResponse?.data          || []);
   const alerts: Alert[]            = Array.isArray(alertsResponse)           ? alertsResponse           : (alertsResponse?.data           || []);
@@ -694,6 +707,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
       queryClient.invalidateQueries({ queryKey: ["/api/drifts/summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/alerts/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/v1/health-score"] });
     },
     onError: (e: any) => toast({ title: "Scan failed", description: e.message, variant: "destructive" }),
     onSettled: () => setIsScanning(false),
@@ -705,14 +719,17 @@ export default function Dashboard() {
   const openAlerts = alertSummary?.open ?? alerts.filter(a => a.status === "open").length ?? (hasProviders ? 0 : 7);
   const totalResources = resources.length || (hasProviders ? 0 : 248);
 
-  const riskScore = Math.max(0, Math.min(100, 100 - criticalDrifts * 8 - (totalDrifts - criticalDrifts) * 3));
-  const riskTone = riskScore >= 80 ? "ok" : riskScore >= 60 ? "warn" : "crit";
-
   const kpis: KpiDef[] = [
     {
-      id: "risk", label: "Unified Risk", icon: Shield, kind: "gauge",
-      value: riskScore, max: 100, tone: riskTone,
-      meta: `${totalDrifts} open findings`, note: "score",
+      id: "health", label: "Health Score", icon: Shield,
+      value: healthScore ? `${healthScore.score}` : isScanning ? "..." : "—",
+      meta: healthScore
+        ? `${healthScore.breakdown.security_score}/50 security · ${healthScore.breakdown.cost_score}/50 cost`
+        : "Calculating...",
+      tone: !healthScore ? undefined
+        : healthScore.score >= 80 ? "ok"
+        : healthScore.score >= 60 ? "warn"
+        : "crit",
     },
     {
       id: "resources", label: "Resources", icon: Server,
@@ -754,6 +771,14 @@ export default function Dashboard() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
           <Loader2 size={28} style={{ animation: "spin 1s linear infinite", color: "var(--ia-brand)" }} />
         </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!hasProviders) {
+    return (
+      <DashboardLayout>
+        <OnboardingScreen onNavigate={() => navigate("/cloud-providers")} />
       </DashboardLayout>
     );
   }
@@ -811,7 +836,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Cost trend + Live drift feed ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
           <CostTrendCard />
           <DriftFeedCard
             drifts={activeDrifts}
@@ -821,7 +846,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Compliance + Savings ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
           <ComplianceCard frameworks={[]} onJump={() => navigate("/compliance")} />
           <SavingsCard recommendations={recommendations} />
         </div>
