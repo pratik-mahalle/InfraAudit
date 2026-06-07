@@ -10,8 +10,7 @@ import {
     useDeleteJob,
     useTriggerJob,
     usePendingApprovals,
-    useApproveRemediation,
-    useExecuteRemediation
+    useApproveRemediation
 } from "@/hooks/use-jobs";
 import { JobsList } from "@/components/automation/JobsList";
 import { RemediationQueue } from "@/components/automation/RemediationQueue";

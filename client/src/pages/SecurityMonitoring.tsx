@@ -42,6 +42,9 @@ import {
 } from "lucide-react";
 import { formatTimeAgo, getSeverityColor, getSeverityBgColor } from "@/lib/utils";
 
+// BUG-016 fix: Proper types for paginated API responses instead of 'any'
+type PaginatedResponse<T> = T[] | { data: T[] };
+
 export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultTab?: string }) {
   // Common state
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -57,9 +60,6 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
   const [alertSeverity, setAlertSeverity] = useState<string>("all");
   const [alertStatus, setAlertStatus] = useState<string>("all");
   const [activeAlertTab, setActiveAlertTab] = useState<string>("all");
-
-  // BUG-016 fix: Proper types for paginated API responses instead of 'any'
-  type PaginatedResponse<T> = T[] | { data: T[] };
 
   // Fetch security drifts (paginated — extract .data)
   const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<PaginatedResponse<SecurityDrift>>({
