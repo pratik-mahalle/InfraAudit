@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useState, useMemo } from "react";
 import { Search } from "lucide-react";
 import { useDriftStream } from "@/hooks/use-drift-stream";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -14,6 +14,12 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   useDriftStream();
+
+  // BUG-013 fix: Detect OS to show correct keyboard shortcut (⌘K on Mac, Ctrl+K on Windows/Linux)
+  const shortcutLabel = useMemo(() => {
+    const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+    return isMac ? '⌘K' : 'Ctrl+K';
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -41,7 +47,7 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
             <Search className="absolute left-3 h-4 w-4" />
             <span>Search pages, actions...</span>
             <kbd className="ml-auto hidden sm:inline-flex h-5 items-center gap-1 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-1.5 text-[10px] font-medium text-gray-500">
-              ⌘K
+              {shortcutLabel}
             </kbd>
           </button>
         </div>

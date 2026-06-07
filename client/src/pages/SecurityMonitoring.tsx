@@ -42,6 +42,9 @@ import {
 } from "lucide-react";
 import { formatTimeAgo, getSeverityColor, getSeverityBgColor } from "@/lib/utils";
 
+// BUG-016 fix: Proper types for paginated API responses instead of 'any'
+type PaginatedResponse<T> = T[] | { data: T[] };
+
 export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultTab?: string }) {
   // Common state
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -59,19 +62,19 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
   const [activeAlertTab, setActiveAlertTab] = useState<string>("all");
 
   // Fetch security drifts (paginated — extract .data)
-  const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<any>({
+  const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<PaginatedResponse<SecurityDrift>>({
     queryKey: ["/api/drifts"],
   });
   const securityDrifts: SecurityDrift[] = Array.isArray(driftsResponse) ? driftsResponse : (driftsResponse?.data ?? []);
 
   // Fetch alerts (paginated — extract .data)
-  const { data: alertsResponse, isLoading: isLoadingAlerts } = useQuery<any>({
+  const { data: alertsResponse, isLoading: isLoadingAlerts } = useQuery<PaginatedResponse<Alert>>({
     queryKey: ["/api/alerts"],
   });
   const alerts: Alert[] = Array.isArray(alertsResponse) ? alertsResponse : (alertsResponse?.data ?? []);
 
   // Fetch resources to get names (paginated — extract .data)
-  const { data: resourcesResponse } = useQuery<any>({
+  const { data: resourcesResponse } = useQuery<PaginatedResponse<Resource>>({
     queryKey: ["/api/resources"],
   });
   const resources: Resource[] = Array.isArray(resourcesResponse) ? resourcesResponse : (resourcesResponse?.data ?? []);
