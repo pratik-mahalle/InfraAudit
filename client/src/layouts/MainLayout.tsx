@@ -1,4 +1,5 @@
 import React from "react";
+import { useLocation } from "wouter";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 
@@ -8,6 +9,13 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children, showFooter = true }: MainLayoutProps) {
+  const [location] = useLocation();
+  const isLandingPage = location === "/";
+
+  if (isLandingPage) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
