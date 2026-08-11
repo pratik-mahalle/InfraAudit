@@ -12,6 +12,7 @@ import {
   Eye,
   FileCheck2,
   Layers3,
+  Linkedin,
   LockKeyhole,
   Menu,
   Server,
@@ -326,6 +327,10 @@ export function LandingFooter() {
           <div>
             <InfraAuditLogo height={32} variant="dark" />
             <p>Quietly watching the infrastructure<br />your business depends on.</p>
+            <a className="landing-footer__social" href="https://www.linkedin.com/company/infraauditio" target="_blank" rel="noopener noreferrer" aria-label="InfrAudit on LinkedIn">
+              <Linkedin size={15} />
+              <span>LinkedIn</span>
+            </a>
           </div>
           <div className="landing-footer__links">
             <div><span>Product</span><a href="/#platform">Platform</a><Link href="/pricing">Pricing</Link><Link href="/auth">Sign in</Link></div>
