@@ -27,11 +27,11 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="InfrAudit - Infrastructure Risk Intelligence" />
     <meta name="twitter:description" content="Find vulnerabilities, catch drift, and track remediation across cloud and Kubernetes environments." />
-    <!-- Force light mode before any CSS/JS runs -->
+    <!-- Apply saved theme before CSS/JS renders to avoid flicker. Defaults to light. -->
     <script>
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-      localStorage.setItem('theme', 'light');
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+      document.documentElement.classList.toggle('light', savedTheme !== 'dark');
     </script>
   </head>
   <body>

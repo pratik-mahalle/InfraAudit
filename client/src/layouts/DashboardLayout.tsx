@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { useDriftStream } from "@/hooks/use-drift-stream";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { CommandPalette } from "@/components/layout/CommandPalette";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -38,7 +39,7 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
         )}
       >
         {/* Search Trigger */}
-        <div className="px-4 md:px-6 lg:px-8 py-4 flex justify-center">
+        <div className="px-4 md:px-6 lg:px-8 py-4 flex items-center justify-center gap-3">
           <button
             type="button"
             onClick={() => setCommandOpen(true)}
@@ -50,6 +51,7 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
               {shortcutLabel}
             </kbd>
           </button>
+          <ThemeToggle />
         </div>
 
         {/* Page Content */}
