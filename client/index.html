@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="google-site-verification" content="K4GDpKjFI9AFTC0HYM-iESBnr9Rr6htsIsw7LNy2dpw" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>InfrAudit - Cloud Monitoring Made Effortless</title>
-    <meta name="description" content="InfrAudit is a multi-cloud infrastructure monitoring platform that leverages AI to provide intelligent insights, proactive anomaly detection, and simplified management." />
+    <title>InfrAudit - Infrastructure Risk Intelligence</title>
+    <meta name="description" content="InfrAudit helps teams find vulnerabilities, catch infrastructure drift, prioritize exposure, and track remediation across cloud and Kubernetes environments." />
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,20 +18,20 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     
     <!-- Open Graph / Social Media -->
-    <meta property="og:title" content="InfrAudit - Cloud Monitoring Made Effortless" />
-    <meta property="og:description" content="A comprehensive multi-cloud infrastructure monitoring platform leveraging AI to provide intelligent insights, proactive anomaly detection, and simplified management." />
+    <meta property="og:title" content="InfrAudit - Infrastructure Risk Intelligence" />
+    <meta property="og:description" content="Find vulnerabilities, catch drift, prioritize exposure, and track remediation across cloud and Kubernetes environments." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://infraaudit.io/" />
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="InfrAudit - Cloud Monitoring Made Effortless" />
-    <meta name="twitter:description" content="AI-powered cloud monitoring and cost optimization across AWS, Azure, GCP and Kubernetes." />
-    <!-- Force light mode before any CSS/JS runs -->
+    <meta name="twitter:title" content="InfrAudit - Infrastructure Risk Intelligence" />
+    <meta name="twitter:description" content="Find vulnerabilities, catch drift, and track remediation across cloud and Kubernetes environments." />
+    <!-- Apply saved theme before CSS/JS renders to avoid flicker. Defaults to light. -->
     <script>
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-      localStorage.setItem('theme', 'light');
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+      document.documentElement.classList.toggle('light', savedTheme !== 'dark');
     </script>
   </head>
   <body>
