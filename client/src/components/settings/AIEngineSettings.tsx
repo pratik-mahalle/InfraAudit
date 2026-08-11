@@ -59,12 +59,13 @@ export function AIEngineSettings() {
 
   useEffect(() => {
     if (!configQuery.data) return;
-    const configured = [...configQuery.data.orgDefaults].sort((a, b) => a.fallbackOrder - b.fallbackOrder);
-    const availableNames = new Set(configQuery.data.availableProviders);
+    const configured = [...(configQuery.data.orgDefaults ?? [])].sort((a, b) => a.fallbackOrder - b.fallbackOrder);
+    const availableProviders = configQuery.data.availableProviders ?? [];
+    const availableNames = new Set(availableProviders);
     const configuredNames = new Set(configured.map((entry) => entry.provider));
     const rows: ProviderRow[] = [
       ...configured.map((entry) => ({ provider: entry.provider, enabled: entry.enabled && availableNames.has(entry.provider), available: availableNames.has(entry.provider) })),
-      ...configQuery.data.availableProviders
+      ...availableProviders
         .filter((provider) => !configuredNames.has(provider))
         .map((provider) => ({ provider, enabled: configured.length === 0, available: true })),
     ];

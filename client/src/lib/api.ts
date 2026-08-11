@@ -308,18 +308,18 @@ export interface Vulnerability {
 export interface HealthIssue {
   title: string;
   description?: string;
-  severity: "critical" | "high" | "medium" | "low";
+  severity: "critical" | "high" | "medium" | "low" | "info";
   savings?: string;
-  resource_id?: string;
+  resourceId?: string;
 }
 
 export interface HealthScore {
   score: number;
-  cost_issues: HealthIssue[];
-  security_issues: HealthIssue[];
+  costIssues: HealthIssue[];
+  securityIssues: HealthIssue[];
   breakdown: {
-    cost_score: number;
-    security_score: number;
+    costScore: number;
+    securityScore: number;
   };
 }
 
