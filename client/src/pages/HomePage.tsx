@@ -28,33 +28,74 @@ const features = [
     icon: Eye,
     eyebrow: "Continuous visibility",
     title: "See every change, as it happens.",
-    copy: "Build a living inventory across AWS, Azure, GCP, and Kubernetes. InfrAudit watches configuration drift without slowing your team down.",
+    copy: "Build a living inventory across AWS, Azure, GCP, and Kubernetes. InfrAudit watches infrastructure drift without slowing your team down.",
     stat: "24 / 7",
     statLabel: "infrastructure observation",
   },
   {
     icon: ScanSearch,
-    eyebrow: "Risk intelligence",
-    title: "Find the exposure behind the noise.",
-    copy: "Connect vulnerabilities to the resources that matter. Prioritize findings with real cloud context, ownership, and business impact.",
+    eyebrow: "Vulnerability context",
+    title: "Find what is vulnerable and where it runs.",
+    copy: "Connect vulnerabilities to real infrastructure, owners, environments, and exposure paths so teams know what actually matters.",
     stat: "1 view",
     statLabel: "from finding to owner",
   },
   {
     icon: FileCheck2,
-    eyebrow: "Continuous compliance",
-    title: "Evidence that stays ready.",
-    copy: "Map controls, automate evidence collection, and track remediation from one measured workspace—before the audit begins.",
+    eyebrow: "Evidence-backed remediation",
+    title: "Move from finding to verified fix.",
+    copy: "Keep every vulnerability, drift, and exposure tied to evidence, status, owner, and remediation history.",
     stat: "5 min",
-    statLabel: "to your first assessment",
+    statLabel: "to useful signal",
   },
 ];
 
 const signalRows = [
-  { name: "Public storage policy", type: "Drift", scope: "prod-eu", state: "Review" },
-  { name: "Container base image", type: "Vulnerability", scope: "payments", state: "Assigned" },
-  { name: "Encryption at rest", type: "Compliance", scope: "data-platform", state: "Passing" },
+  { name: "Critical package CVE", type: "Vulnerability", scope: "payments", state: "Assigned" },
+  { name: "Terraform baseline changed", type: "Drift", scope: "prod-eu", state: "Review" },
+  { name: "Public storage policy", type: "Exposure", scope: "data-platform", state: "High" },
   { name: "Idle compute cluster", type: "Cost", scope: "staging", state: "Ready" },
+];
+
+const positioningCards = [
+  {
+    icon: ScanSearch,
+    label: "Vulnerabilities",
+    text: "Correlate vulnerable packages, images, and cloud resources with the infrastructure they affect.",
+  },
+  {
+    icon: Activity,
+    label: "Drift",
+    text: "Spot when live environments move away from expected baselines, policies, or IaC state.",
+  },
+  {
+    icon: ShieldCheck,
+    label: "Exposure",
+    text: "Identify public access, risky identity paths, weak encryption, and configuration gaps.",
+  },
+  {
+    icon: Layers3,
+    label: "Ownership",
+    text: "Route issues to the right team with environment, service, and resource context.",
+  },
+];
+
+const teamUseCases = [
+  {
+    icon: ShieldCheck,
+    title: "Security teams",
+    copy: "Prioritize vulnerabilities and cloud exposure with live infrastructure context instead of static scanner output.",
+  },
+  {
+    icon: Cloud,
+    title: "Platform teams",
+    copy: "Understand drift, ownership, and service impact before changes turn into operational incidents.",
+  },
+  {
+    icon: Code2,
+    title: "Engineering teams",
+    copy: "Get clear evidence and remediation context without jumping between cloud consoles, scanners, and spreadsheets.",
+  },
 ];
 
 const reveal = {
@@ -326,7 +367,7 @@ export function LandingFooter() {
         <div className="landing-footer__top">
           <div>
             <InfraAuditLogo height={32} variant="dark" />
-            <p>Quietly watching the infrastructure<br />your business depends on.</p>
+            <p>Finding vulnerabilities, drift, and exposure<br />across the infrastructure your teams run.</p>
             <a className="landing-footer__social" href="https://www.linkedin.com/company/infraauditio" target="_blank" rel="noopener noreferrer" aria-label="InfrAudit on LinkedIn">
               <Linkedin size={15} />
               <span>LinkedIn</span>
@@ -359,9 +400,9 @@ export default function HomePage() {
           <div className="landing-hero__atmosphere" />
           <div className="landing-hero__veil" />
           <motion.div className="landing-shell landing-hero__content" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-            <div className="landing-kicker"><span /> Cloud posture, made clear</div>
-            <h1>Know what changed.<br />Know what matters.</h1>
-            <p>Continuous security, compliance, and cost intelligence for every cloud your team operates.</p>
+            <div className="landing-kicker"><span /> Infrastructure risk, made clear</div>
+            <h1>Find vulnerabilities.<br />Catch drift.</h1>
+            <p>InfrAudit helps teams discover vulnerable infrastructure, detect configuration drift, prioritize exposure, and track remediation across cloud and Kubernetes environments.</p>
             <div className="landing-hero__actions">
               <Link href="/auth" className="landing-ghost">Explore the platform <ArrowRight size={16} /></Link>
               <span>No credit card · 14 days free</span>
@@ -383,10 +424,29 @@ export default function HomePage() {
           <motion.div className="landing-shell" {...reveal}>
             <div className="landing-section__eyebrow">One measured view</div>
             <div className="landing-intro__heading">
-              <h2>Your cloud tells a story.<br />InfrAudit reads every signal.</h2>
-              <p>Replace scattered scanners and point-in-time spreadsheets with continuous context. From one change to your entire posture, every finding remains connected.</p>
+              <h2>Your infrastructure is always changing.<br />InfrAudit shows what became risky.</h2>
+              <p>Replace disconnected vulnerability scanners, drift checks, and spreadsheets with continuous context. From one changed resource to the teams responsible for fixing it, every finding remains connected.</p>
             </div>
             <ProductSurface />
+          </motion.div>
+        </section>
+
+        <section className="landing-section landing-positioning">
+          <motion.div className="landing-shell" {...reveal}>
+            <div className="landing-section__eyebrow">What InfrAudit brings together</div>
+            <div className="landing-positioning__head">
+              <h2>One place to understand infrastructure risk.</h2>
+              <p>InfrAudit sits between cloud inventory, vulnerability signals, drift detection, and remediation workflows so teams can decide what to fix with confidence.</p>
+            </div>
+            <div className="landing-positioning__grid">
+              {positioningCards.map(({ icon: Icon, label, text }) => (
+                <article className="landing-positioning-card" key={label}>
+                  <Icon size={18} strokeWidth={1.5} />
+                  <h3>{label}</h3>
+                  <p>{text}</p>
+                </article>
+              ))}
+            </div>
           </motion.div>
         </section>
 
@@ -407,12 +467,33 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="landing-section landing-team-section">
+          <motion.div className="landing-shell" {...reveal}>
+            <div className="landing-team-section__head">
+              <div>
+                <div className="landing-section__eyebrow">Built for teams</div>
+                <h2>Same infrastructure truth, different operating needs.</h2>
+              </div>
+              <p>Security, platform, and engineering teams see the same finding with the context each team needs: severity, scope, owner, evidence, and remediation state.</p>
+            </div>
+            <div className="landing-team-grid">
+              {teamUseCases.map(({ icon: Icon, title, copy }) => (
+                <article className="landing-team-card" key={title}>
+                  <Icon size={20} strokeWidth={1.5} />
+                  <h3>{title}</h3>
+                  <p>{copy}</p>
+                </article>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
         <section className="landing-section landing-workflow" id="workflow">
           <motion.div className="landing-shell landing-workflow__grid" {...reveal}>
             <div className="landing-workflow__copy">
               <div className="landing-section__eyebrow">From signal to action</div>
-              <h2>Security that moves at infrastructure speed.</h2>
-              <p>Connect your environments once. InfrAudit builds context continuously, guides the right owner, and keeps a durable record of what changed.</p>
+              <h2>Risk work that moves at infrastructure speed.</h2>
+              <p>Connect your environments once. InfrAudit builds context continuously, guides the right owner, and keeps a durable record of what changed and how it was fixed.</p>
               <WorkflowSignalAsset />
               <Link href="/documentation" className="landing-text-link">Read the documentation <ArrowRight size={16} /></Link>
             </div>
@@ -433,12 +514,12 @@ export default function HomePage() {
           <motion.div className="landing-shell landing-proof__inner" {...reveal}>
             <div>
               <div className="landing-section__eyebrow">Engineered for trust</div>
-              <h2>Visibility without custody.</h2>
+              <h2>Findings your teams can defend.</h2>
             </div>
             <div className="landing-proof__items">
               <div><LockKeyhole size={21} /><h3>Read-only by design</h3><p>Your infrastructure stays yours. InfrAudit observes through least-privilege connections.</p></div>
-              <div><Code2 size={21} /><h3>Evidence you can inspect</h3><p>Every finding includes the resource, policy, timestamp, and reasoning behind it.</p></div>
-              <div><Activity size={21} /><h3>Always current</h3><p>Continuous monitoring replaces stale exports with a living view of your posture.</p></div>
+              <div><Code2 size={21} /><h3>Evidence you can inspect</h3><p>Every finding includes the resource, source, timestamp, and reasoning behind it.</p></div>
+              <div><Activity size={21} /><h3>Always current</h3><p>Continuous monitoring replaces stale exports with a living view of vulnerabilities, drift, and exposure.</p></div>
             </div>
           </motion.div>
         </section>
@@ -446,13 +527,13 @@ export default function HomePage() {
         <section className="landing-section landing-cta">
           <motion.div className="landing-shell landing-cta__inner" {...reveal}>
             <div className="landing-section__eyebrow">Start with clarity</div>
-            <h2>See your cloud as<br />one connected system.</h2>
-            <p>Connect your first environment in minutes. No agents, no credit card, no long setup.</p>
+            <h2>See what is vulnerable,<br />drifted, and exposed.</h2>
+            <p>Connect your first environment in minutes and give your team a shared view of infrastructure risk.</p>
             <div className="landing-cta__actions">
               <Link href="/signup" className="landing-ghost">Start your free trial <ArrowRight size={16} /></Link>
               <Link href="/contact" className="landing-text-link">Talk to us</Link>
             </div>
-            <div className="landing-cta__notes"><span><Check size={14} /> 14 days free</span><span><Check size={14} /> Read-only access</span><span><Check size={14} /> Cancel anytime</span></div>
+            <div className="landing-cta__notes"><span><Check size={14} /> Vulnerability context</span><span><Check size={14} /> Drift detection</span><span><Check size={14} /> Read-only access</span></div>
           </motion.div>
         </section>
       </main>
