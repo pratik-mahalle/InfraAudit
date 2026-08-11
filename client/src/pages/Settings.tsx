@@ -12,12 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermission } from "@/hooks/use-permission";
-import { Lock, Key, User, Bell, Shield, Cloud, Users, Webhook, Loader2, Copy, Check } from "lucide-react";
+import { Lock, Key, User, Bell, Shield, Cloud, Users, Webhook, Loader2, Copy, Check, BrainCircuit } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
 import { WebhookManager } from "@/components/settings/WebhookManager";
+import { AIEngineSettings } from "@/components/settings/AIEngineSettings";
 import { apiRequest, queryClient, unwrapResponse } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
 import api from "@/lib/api";
@@ -307,11 +308,12 @@ export default function Settings() {
       <PageHeader title="Settings" description="Configure and customize your InfraAudit experience" />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-7 w-full">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start">
           <TabsTrigger value="profile"><User className="h-4 w-4 mr-2" />Profile</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="notifications"><Bell className="h-4 w-4 mr-2" />Alerts</TabsTrigger>
           <TabsTrigger value="webhooks"><Webhook className="h-4 w-4 mr-2" />Webhooks</TabsTrigger>
+          <TabsTrigger value="intelligence"><BrainCircuit className="h-4 w-4 mr-2" />Intelligence</TabsTrigger>
           <TabsTrigger value="security"><Shield className="h-4 w-4 mr-2" />Security</TabsTrigger>
           <TabsTrigger value="cloud"><Cloud className="h-4 w-4 mr-2" />Cloud</TabsTrigger>
           {hasPermission('manage_team') && (
@@ -460,6 +462,11 @@ export default function Settings() {
               <WebhookManager />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ==================== Intelligence Engine Settings ==================== */}
+        <TabsContent value="intelligence" className="space-y-6">
+          <AIEngineSettings />
         </TabsContent>
 
         {/* ==================== Security Settings ==================== */}

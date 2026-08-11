@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -10,7 +10,7 @@ import "@/components/dashboard/dashboard.css";
 import {
   Shield, DollarSign, TrendingUp, Server, Bell, AlertTriangle,
   RefreshCw, FileText, Zap, CheckCircle2, CloudIcon, Plus,
-  Loader2, ArrowRight, ChevronDown, Filter, X, Check, GitBranch,
+  Loader2, ArrowRight, ChevronDown, Filter, X, Check,
   Network,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -284,13 +284,6 @@ function ComplianceCard({ frameworks, onJump }: { frameworks: Framework[]; onJum
 interface SavingsItem { icon: React.ElementType; name: string; sub: string; amt: string; }
 
 function SavingsCard({ recommendations }: { recommendations: Recommendation[] }) {
-  const defaultItems: SavingsItem[] = [
-    { icon: Server,     name: "Idle EC2 instances",            sub: "i-0a3f · i-0b21 · i-0c98",     amt: "$3,420/mo" },
-    { icon: DollarSign, name: "Oversized RDS db.r5.xlarge",    sub: "prod-orders-db",                amt: "$1,860/mo" },
-    { icon: CloudIcon,  name: "Unattached EBS volumes (×14)",  sub: "us-east-1 · eu-west-1",         amt: "$1,240/mo" },
-    { icon: Network,    name: "Idle NAT gateways (×2)",        sub: "staging-vpc",                   amt: "$1,120/mo" },
-  ];
-
   const items: SavingsItem[] = recommendations.length > 0
     ? recommendations.slice(0, 5).filter(r => (r as any).estimatedSavings).map(r => ({
         icon: DollarSign,
@@ -298,7 +291,7 @@ function SavingsCard({ recommendations }: { recommendations: Recommendation[] })
         sub: r.description?.slice(0, 40) || "",
         amt: `$${((r as any).estimatedSavings || 0).toLocaleString()}/mo`,
       }))
-    : defaultItems;
+    : [];
 
   const total = items.reduce((acc, i) => {
     const n = parseInt(i.amt.replace(/[^0-9]/g, ""));
@@ -308,11 +301,15 @@ function SavingsCard({ recommendations }: { recommendations: Recommendation[] })
   return (
     <div className="ia-card">
       <div className="ia-card-head">
-        <div className="ia-card-title"><Zap size={15} /> Savings identified by AI</div>
-        <span className="ia-ai-badge">Bedrock</span>
+        <div className="ia-card-title"><Zap size={15} /> Optimization opportunities</div>
+        {items.length > 0 && <span className="ia-ai-badge">Advisory</span>}
       </div>
       <div className="ia-card-pad" style={{ paddingTop: 4, paddingBottom: 4 }}>
-        {items.map((s, i) => (
+        {items.length === 0 ? (
+          <div style={{ padding: "28px 12px", textAlign: "center", color: "var(--ia-ink-faint)", fontSize: 13 }}>
+            No supported savings recommendations are available yet.
+          </div>
+        ) : items.map((s, i) => (
           <div className="ia-save-row" key={i}>
             <div className="ia-save-ic"><s.icon size={16} /></div>
             <div>
@@ -326,7 +323,7 @@ function SavingsCard({ recommendations }: { recommendations: Recommendation[] })
       <div className="ia-card-pad" style={{ borderTop: "1px solid var(--ia-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontWeight: 600, fontSize: 13, color: "var(--ia-ink)" }}>Total potential savings</span>
         <span className="ia-save-amt" style={{ fontSize: 16 }}>
-          {recommendations.length > 0 ? `$${total.toLocaleString()}/mo` : "$8,640/mo"}
+          {items.length > 0 ? `$${total.toLocaleString()}/mo` : "—"}
         </span>
       </div>
     </div>
@@ -414,42 +411,21 @@ function FindingsTable({ drifts, selId, onPick }: {
 
 // ─── Remediation Drawer ───────────────────────────────────────────────────────
 
-function RemediationDrawer({ finding, onClose, onApplied }: {
-  finding: SecurityDrift | null; onClose: () => void; onApplied: (f: SecurityDrift) => void;
+function RemediationDrawer({ finding, onClose, onOpenWorkflow }: {
+  finding: SecurityDrift | null; onClose: () => void; onOpenWorkflow: () => void;
 }) {
-  const [stage, setStage] = useState<"review" | "applying" | "done">("review");
-
-  useEffect(() => { setStage("review"); }, [finding?.id]);
-
   if (!finding) return null;
   const f = finding as any;
 
-  const apply = () => {
-    setStage("applying");
-    setTimeout(() => { setStage("done"); onApplied(finding); }, 1700);
-  };
-
-  const checks = f.checks || [
-    { state: "pass", txt: "Change is reversible", sub: "Prior state snapshot available" },
-    { state: "pass", txt: "Blast radius confined", sub: "Limited scope of change" },
-    { state: "warn", txt: "Manual verification recommended", sub: "Review before applying in production" },
-  ];
-
-  const diff = f.diff || {
-    file: f.baseline || "terraform/main.tf",
-    lines: [
-      ["hunk",  "@@ detected drift @@"],
-      ["del",   "  # current live state"],
-      ["add",   "  # baseline (desired state)"],
-    ],
-  };
+  const checks = Array.isArray(f.checks) ? f.checks : [];
+  const diff = f.diff?.file && Array.isArray(f.diff?.lines) ? f.diff : null;
 
   const passCount = checks.filter((c: any) => c.state === "pass").length;
 
   return (
     <>
       <div className={`ia-scrim ${finding ? "ia-open" : ""}`} onClick={onClose} />
-      <aside className="ia-drawer ia-open" role="dialog" aria-label="AI remediation">
+      <aside className="ia-drawer ia-open" role="dialog" aria-label="Remediation details">
         <div className="ia-drawer-head">
           <SevPill sev={finding.severity} />
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -466,12 +442,6 @@ function RemediationDrawer({ finding, onClose, onApplied }: {
         </div>
 
         <div className="ia-drawer-body">
-          {stage === "done" && (
-            <div className="ia-applied-banner">
-              <Check size={16} /> Remediation applied · live state reconciled to baseline · audit entry logged
-            </div>
-          )}
-
           <div className="ia-section-label"><AlertTriangle size={13} /> What happened</div>
           <p style={{ margin: "0 0 6px", fontSize: 13, lineHeight: 1.55, color: "var(--ia-ink-2)" }}>
             {f.impact || f.description || `Security drift detected: ${f.driftType || "configuration changed from baseline"}`}
@@ -497,39 +467,47 @@ function RemediationDrawer({ finding, onClose, onApplied }: {
           </dl>
 
           <div className="ia-section-label">
-            <Zap size={13} /> AI-generated remediation
-            <span className="ia-ai-badge" style={{ marginLeft: 4 }}>Bedrock · Terraform</span>
+            <Zap size={13} /> Remediation guidance
+            <span className="ia-ai-badge" style={{ marginLeft: 4 }}>Advisory</span>
           </div>
-          {f.summary && <p style={{ margin: "0 0 10px", fontSize: 12.5, lineHeight: 1.5, color: "var(--ia-ink-2)" }}>{f.summary}</p>}
-          <div className="ia-diff">
-            <div className="ia-diff-head">
-              <span className="ia-fname"><FileText size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} />{diff.file}</span>
-              <span>{diff.lines.filter((l: any) => l[0] === "add").length} additions · {diff.lines.filter((l: any) => l[0] === "del").length} deletions</span>
-            </div>
-            <pre>{diff.lines.map((l: any, i: number) => (
-              <span key={i} className={`ia-dl ia-${l[0]}`}>{l[1]}</span>
-            ))}</pre>
-          </div>
-
-          <div className="ia-section-label">
-            <Shield size={13} /> Pre-flight safety checks
-            <span className="ia-muted" style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500 }}>
-              · {passCount}/{checks.length} passed
-            </span>
-          </div>
-          <div>
-            {checks.map((c: any, i: number) => (
-              <div className="ia-check" key={i}>
-                <span className={`ia-check-ic ${c.state === "pass" ? "ia-pass" : "ia-warn"}`}>
-                  {c.state === "pass" ? <Check size={13} /> : <AlertTriangle size={12} />}
-                </span>
-                <div>
-                  <div className="ia-check-txt">{c.txt}</div>
-                  <div className="ia-check-sub">{c.sub}</div>
-                </div>
+          <p style={{ margin: "0 0 10px", fontSize: 12.5, lineHeight: 1.5, color: "var(--ia-ink-2)" }}>
+            {f.summary || "No generated remediation plan is available for this finding yet. Open the remediation workflow to review supported options."}
+          </p>
+          {diff && (
+            <div className="ia-diff">
+              <div className="ia-diff-head">
+                <span className="ia-fname"><FileText size={13} style={{ verticalAlign: "-2px", marginRight: 4 }} />{diff.file}</span>
+                <span>{diff.lines.filter((l: any) => l[0] === "add").length} additions · {diff.lines.filter((l: any) => l[0] === "del").length} deletions</span>
               </div>
-            ))}
-          </div>
+              <pre>{diff.lines.map((l: any, i: number) => (
+                <span key={i} className={`ia-dl ia-${l[0]}`}>{l[1]}</span>
+              ))}</pre>
+            </div>
+          )}
+
+          {checks.length > 0 && (
+            <>
+              <div className="ia-section-label">
+                <Shield size={13} /> Pre-flight safety checks
+                <span className="ia-muted" style={{ textTransform: "none", letterSpacing: 0, fontWeight: 500 }}>
+                  · {passCount}/{checks.length} passed
+                </span>
+              </div>
+              <div>
+                {checks.map((c: any, i: number) => (
+                  <div className="ia-check" key={i}>
+                    <span className={`ia-check-ic ${c.state === "pass" ? "ia-pass" : "ia-warn"}`}>
+                      {c.state === "pass" ? <Check size={13} /> : <AlertTriangle size={12} />}
+                    </span>
+                    <div>
+                      <div className="ia-check-txt">{c.txt}</div>
+                      <div className="ia-check-sub">{c.sub}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           {f.blast && (
             <>
@@ -549,31 +527,14 @@ function RemediationDrawer({ finding, onClose, onApplied }: {
               </div>
             </>
           )}
-
-          <div className="ia-ai-note">
-            <GitBranch size={14} /> Applies as PR <span className="ia-mono">infra/auto-remediation #{typeof finding.id === "string" ? (finding.id as string).split("-")[1] || finding.id : finding.id}</span> · requires 1 approval
-          </div>
         </div>
 
         <div className="ia-drawer-foot">
-          {stage !== "done" ? (
-            <>
-              <button className="ia-btn-primary" onClick={apply} disabled={stage === "applying"}>
-                {stage === "applying"
-                  ? <><RefreshCw size={15} style={{ animation: "spin 1s linear infinite" }} /> Applying…</>
-                  : <><Zap size={15} /> Approve &amp; apply</>}
-              </button>
-              <button className="ia-btn-sec"><FileText size={14} /> Dry run</button>
-              <div style={{ flex: 1 }} />
-              <button className="ia-btn-sec" onClick={onClose}>Dismiss</button>
-            </>
-          ) : (
-            <>
-              <button className="ia-btn-sec" onClick={onClose}><Check size={14} /> Done</button>
-              <div style={{ flex: 1 }} />
-              <button className="ia-btn-sec">Undo</button>
-            </>
-          )}
+          <button className="ia-btn-primary" onClick={onOpenWorkflow}>
+            <Shield size={15} /> Open automation & remediation
+          </button>
+          <div style={{ flex: 1 }} />
+          <button className="ia-btn-sec" onClick={onClose}>Dismiss</button>
         </div>
       </aside>
     </>
@@ -623,7 +584,6 @@ export default function Dashboard() {
   const [isScanning, setIsScanning] = useState(false);
   const [sel, setSel] = useState<SecurityDrift | null>(null);
   const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d">("24h");
-  const [remediatedIds, setRemediatedIds] = useState<Set<string | number>>(new Set());
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -691,7 +651,7 @@ export default function Dashboard() {
   const connectedProviders = providers?.filter((p: any) => p.isConnected) || [];
   const hasProviders = connectedProviders.length > 0 || k8sClusters.length > 0;
 
-  const activeDrifts = drifts.filter(d => !remediatedIds.has(d.id));
+  const activeDrifts = drifts;
 
   // ── Scan mutation ─────────────────────────────────────────────────────────
   const scanMutation = useMutation({
@@ -862,10 +822,9 @@ export default function Dashboard() {
         <RemediationDrawer
           finding={sel}
           onClose={() => setSel(null)}
-          onApplied={(f) => {
-            toast({ title: `✓ ${typeof f.id === "string" ? f.id : `INF-${f.id}`} remediated`, description: "Live state reconciled to baseline" });
-            setRemediatedIds(prev => { const s = new Set(prev); s.add(f.id); return s; });
+          onOpenWorkflow={() => {
             setSel(null);
+            navigate("/automation");
           }}
         />
       </div>

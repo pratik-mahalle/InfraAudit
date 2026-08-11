@@ -143,7 +143,7 @@ export function ForecastChart({
               Cost Forecast
             </CardTitle>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              AI-powered prediction based on usage patterns
+              Forecast based on observed usage patterns
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -302,4 +302,3 @@ export function ForecastChart({
     </Card>
   );
 }
-

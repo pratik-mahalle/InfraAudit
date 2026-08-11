@@ -31,7 +31,7 @@ const navItems = [
   { label: "Architecture", href: "/architecture-playground", icon: Blocks, group: "Infrastructure" },
   { label: "Jobs", href: "/automation", icon: Zap, group: "Automation" },
   { label: "Recommendations", href: "/recommendations", icon: Target, group: "Automation" },
-  { label: "AI Analysis", href: "/ai-demo", icon: Sparkles, group: "Automation" },
+  { label: "Resource Analysis", href: "/ai-demo", icon: Sparkles, group: "Automation" },
   { label: "Reports", href: "/reports", icon: FileText, group: "Reports" },
   { label: "Subscription", href: "/subscription", icon: CreditCard, group: "Account" },
   { label: "Profile", href: "/profile", icon: User, group: "Account" },

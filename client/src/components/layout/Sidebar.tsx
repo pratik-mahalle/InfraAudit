@@ -98,7 +98,7 @@ const navGroups: NavGroup[] = [
         items: [
             { label: "Jobs", href: "/automation", icon: Zap },
             { label: "Recommendations", href: "/recommendations", icon: Target },
-            { label: "AI Analysis", href: "/ai-demo", icon: Sparkles },
+            { label: "Resource Analysis", href: "/ai-demo", icon: Sparkles },
         ],
     },
     {
