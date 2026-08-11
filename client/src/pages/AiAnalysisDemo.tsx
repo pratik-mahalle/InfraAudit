@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Zap, AlertTriangle, Shield, BarChart3, Loader2, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAIProviders } from '@/hooks/use-ai';
 import api from '@/lib/api';
 
 export default function AiAnalysisDemo() {
@@ -16,6 +17,8 @@ export default function AiAnalysisDemo() {
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('cost');
+  const { data: aiProviders = [], isError: aiProvidersError } = useAIProviders();
+  const aiAvailable = aiProviders.length > 0;
 
   // Example AWS EC2 resource
   const exampleEc2 = {
@@ -222,8 +225,8 @@ export default function AiAnalysisDemo() {
   return (
     <DashboardLayout>
       <Helmet>
-        <title>AI Analysis | InfraAudit</title>
-        <meta name="description" content="AI-powered analysis for cloud resource cost optimization and security drift detection." />
+        <title>Resource Analysis | InfraAudit</title>
+        <meta name="description" content="Advisory analysis for cloud resource cost optimization and security drift detection." />
       </Helmet>
 
       <div className="space-y-8">
@@ -231,9 +234,9 @@ export default function AiAnalysisDemo() {
           <div className="inline-flex items-center justify-center p-2 bg-blue-100 dark:bg-blue-900/20 rounded-full mb-4">
             <Zap className="h-8 w-8 text-blue-600" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight mb-4">AI-Powered Resource Analysis</h1>
+          <h1 className="text-4xl font-bold tracking-tight mb-4">Resource Configuration Analysis</h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Detect cost anomalies and security drifts with AI analysis powered by Google Gemini. Optimize your cloud infrastructure with intelligent recommendations.
+            Review resource configuration for cost, security, and compliance opportunities. Configured AI providers may enhance the advisory explanation.
           </p>
         </div>
 
@@ -263,6 +266,9 @@ export default function AiAnalysisDemo() {
                   rows={20}
                   className="font-mono text-sm"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Use synthetic or non-sensitive configuration only. Do not paste credentials, tokens, or secrets.
+                </p>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
@@ -275,7 +281,7 @@ export default function AiAnalysisDemo() {
                 {analyzing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Analyzing with AI...
+                    Analyzing resource...
                   </>
                 ) : (
                   <>
@@ -290,14 +296,14 @@ export default function AiAnalysisDemo() {
           <Card>
             <CardHeader>
               <CardTitle>Analysis Results</CardTitle>
-              <CardDescription>AI-generated insights and recommendations</CardDescription>
+              <CardDescription>Advisory analysis and recommendations</CardDescription>
             </CardHeader>
             <CardContent>
               {analyzing ? (
                 <div className="flex flex-col items-center justify-center h-80 space-y-4">
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   <p className="text-muted-foreground">
-                    Analyzing resource configuration with AI...
+                    Analyzing resource configuration...
                   </p>
                 </div>
               ) : results ? (
@@ -434,7 +440,7 @@ export default function AiAnalysisDemo() {
                 <div className="flex flex-col items-center justify-center h-80 space-y-4">
                   <Zap className="h-12 w-12 text-muted-foreground" />
                   <p className="text-muted-foreground text-center">
-                    Enter resource details and click "Analyze Resource" to get AI-powered insights and recommendations.
+                    Enter resource details and click "Analyze Resource" to get advisory insights and recommendations.
                   </p>
                 </div>
               )}
@@ -451,7 +457,7 @@ export default function AiAnalysisDemo() {
               </div>
               <h3 className="font-medium">Data Analysis</h3>
               <p className="text-sm text-muted-foreground">
-                Our AI analyzes your cloud resource configuration and usage patterns to identify potential issues.
+                The analysis engine reviews your resource configuration and usage patterns to identify potential issues.
               </p>
             </div>
 
@@ -479,7 +485,11 @@ export default function AiAnalysisDemo() {
 
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            Powered by Google Gemini AI. Analysis is performed in real-time using your resource configuration data.
+            {aiProvidersError
+              ? "AI provider status could not be verified. Results remain advisory and may use the rule-based fallback."
+              : aiAvailable
+              ? "Analysis may use a configured AI provider. Results are advisory and should be verified before action."
+              : "No AI provider is configured, so this page uses the rule-based analysis fallback."}
           </p>
         </div>
       </div>

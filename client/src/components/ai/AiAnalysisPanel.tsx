@@ -44,7 +44,7 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
     },
   });
 
-  // Mutations for running AI analysis — uses drift detect + cost anomaly detect endpoints
+  // Mutations run deterministic drift and cost anomaly detection endpoints.
   const costAnalysisMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest('POST', '/api/v1/costs/anomalies/detect');
@@ -130,10 +130,10 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
       <CardHeader>
         <CardTitle className="flex items-center">
           <Zap className="h-5 w-5 mr-2 text-blue-500" />
-          AI-Powered Analysis
+          Infrastructure Analysis
         </CardTitle>
         <CardDescription>
-          Use advanced AI to detect cost anomalies and security configuration drifts
+          Run cost anomaly and security configuration drift detection
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -285,7 +285,7 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
       </CardContent>
       <CardFooter className="flex justify-between items-center border-t pt-4">
         <div className="text-sm text-muted-foreground">
-          AI-powered analysis for {resourceName} ({resourceType})
+          Analysis for {resourceName} ({resourceType})
         </div>
         <Button
           onClick={() => recommendationsMutation.mutate()}

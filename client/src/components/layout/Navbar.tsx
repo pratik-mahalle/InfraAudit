@@ -31,7 +31,6 @@ import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { AskInfraAudit } from "@/components/ai/AskInfraAudit";
 import { RoleGate } from "@/components/auth/RoleGate";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -253,8 +252,6 @@ export function Navbar() {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
-            {user && <AskInfraAudit />}
-
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

@@ -9,6 +9,7 @@ import {
   useAIForecast,
   useSyncCosts,
 } from "@/hooks/use-costs";
+import { useAIProviders } from "@/hooks/use-ai";
 import {
   BarChart3,
   TrendingUp,
@@ -107,6 +108,12 @@ export default function CostPrediction() {
   const { data: anomalies } = useCostAnomalies("open", 5, 0);
   const syncMutation = useSyncCosts();
   const aiMutation = useAIForecast();
+  const {
+    data: aiProviders = [],
+    isLoading: aiProvidersLoading,
+    isError: aiProvidersError,
+  } = useAIProviders();
+  const aiAvailable = aiProviders.length > 0;
 
   const handleSync = () => {
     syncMutation.mutate(undefined, {
@@ -117,10 +124,19 @@ export default function CostPrediction() {
 
   const handleToggleAI = () => {
     if (!aiEnabled) {
+      if (aiProvidersLoading) return;
+      if (aiProvidersError) {
+        toast.error("Unable to verify AI provider availability. Please try again.");
+        return;
+      }
+      if (!aiAvailable) {
+        toast.error("AI analysis is unavailable because no provider is configured.");
+        return;
+      }
       setAIEnabled(true);
       if (!aiMutation.data && !aiMutation.isPending) {
         aiMutation.mutate(undefined, {
-          onError: () => toast.error("AI analysis failed — check your Gemini API key"),
+          onError: (error) => toast.error(error instanceof Error ? error.message : "AI analysis failed"),
         });
       }
     } else {
@@ -530,16 +546,17 @@ export default function CostPrediction() {
           <TabsContent value="ai" className="space-y-6 mt-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Gemini AI Analysis</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">AI-powered cost forecast and recommendations</p>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">Intelligence Engine Analysis</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Advisory cost forecast and recommendations from configured AI providers</p>
               </div>
               <Button
                 variant={aiEnabled ? "default" : "outline"}
                 className="gap-2"
                 onClick={handleToggleAI}
+                disabled={!aiEnabled && (aiProvidersLoading || aiProvidersError || !aiAvailable)}
               >
                 <Sparkles className="h-4 w-4" />
-                {aiEnabled ? "AI Enabled" : "Enable AI Analysis"}
+                {aiEnabled ? "AI Enabled" : aiProvidersLoading ? "Checking AI…" : aiProvidersError ? "Status Unavailable" : aiAvailable ? "Enable AI Analysis" : "AI Unavailable"}
               </Button>
             </div>
 
@@ -547,13 +564,19 @@ export default function CostPrediction() {
               <Card className="border-dashed">
                 <CardContent className="py-12 text-center space-y-3">
                   <Brain className="h-10 w-10 mx-auto text-violet-400" />
-                  <p className="font-medium text-gray-900 dark:text-white">AI Analysis powered by Gemini</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-                    Enable to get a natural-language cost analysis including trend summary, key cost drivers, risk factors, and actionable recommendations.
+                  <p className="font-medium text-gray-900 dark:text-white">
+                    {aiProvidersError ? "AI provider status unavailable" : aiAvailable ? "Advisory AI analysis" : "AI provider not configured"}
                   </p>
-                  <Button variant="default" className="gap-2 mt-2" onClick={handleToggleAI}>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                    {aiProvidersError
+                      ? "InfraAudit could not verify provider availability. Refresh the page and try again."
+                      : aiAvailable
+                      ? "Enable a natural-language cost analysis including trend summary, key cost drivers, risk factors, and actionable recommendations."
+                      : "No AI provider is configured for this deployment."}
+                  </p>
+                  <Button variant="default" className="gap-2 mt-2" onClick={handleToggleAI} disabled={aiProvidersLoading || aiProvidersError || !aiAvailable}>
                     <Sparkles className="h-4 w-4" />
-                    Enable AI Analysis
+                    {aiProvidersError ? "Status Unavailable" : aiAvailable ? "Enable AI Analysis" : "AI Unavailable"}
                   </Button>
                 </CardContent>
               </Card>
@@ -563,7 +586,7 @@ export default function CostPrediction() {
               <Card>
                 <CardContent className="py-12 flex flex-col items-center gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
-                  <p className="text-sm text-gray-500">Analyzing your cost data with Gemini AI...</p>
+                  <p className="text-sm text-gray-500">Analyzing your cost data with the Intelligence Engine...</p>
                 </CardContent>
               </Card>
             )}
@@ -572,7 +595,9 @@ export default function CostPrediction() {
               <Card className="border-red-200 dark:border-red-800">
                 <CardContent className="py-8 text-center space-y-3">
                   <AlertTriangle className="h-8 w-8 mx-auto text-red-400" />
-                  <p className="text-sm text-red-600 dark:text-red-400">AI analysis failed. Check that GEMINI_API_KEY is configured on the server.</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    {aiMutation.error instanceof Error ? aiMutation.error.message : "AI analysis failed. Please try again."}
+                  </p>
                   <Button variant="outline" size="sm" onClick={() => aiMutation.mutate(undefined)}>Retry</Button>
                 </CardContent>
               </Card>

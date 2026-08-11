@@ -76,6 +76,67 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export type AIProviderName = 'claude' | 'gemini' | 'openai';
+
+export interface AIConfigEntry {
+  provider: AIProviderName;
+  model: string;
+  isDefault: boolean;
+  fallbackOrder: number;
+  enabled: boolean;
+  updatedAt: string;
+}
+
+export interface AIConfiguration {
+  userOverride: AIConfigEntry | null;
+  orgDefaults: AIConfigEntry[];
+  availableProviders: AIProviderName[];
+}
+
+export type AIRunStatus = 'queued' | 'running' | 'succeeded' | 'rejected' | 'failed' | 'cancelled';
+
+export interface AIRun {
+  id: string;
+  organizationId: number;
+  actorProfileId: number;
+  taskKind: string;
+  schemaVersion: string;
+  subject: { type: string; id: string };
+  provider?: AIProviderName;
+  model?: string;
+  promptRevision: string;
+  engineRevision: string;
+  parameterHash: string;
+  evidenceRefs: Array<{ type: string; id: string; checksum: string }>;
+  status: AIRunStatus;
+  attempt: number;
+  startedAt?: string;
+  finishedAt?: string;
+  errorClass?: string;
+  inputTokens: number;
+  outputTokens: number;
+  latencyMs: number;
+  providerRequestId?: string;
+  estimatedCostUsd: number;
+  redactionProfile: string;
+  validationResult: { status?: string };
+  warnings: string[];
+  outputHash?: string;
+  jobId?: string;
+  traceId?: string;
+  correlationId?: string;
+  causationId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AIRunPage {
+  items: AIRun[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export interface DriftParams {
   resourceId?: string;
   driftType?: string;
@@ -866,6 +927,31 @@ export const api = {
   },
 
   // ============================================
+  // Intelligence Engine
+  // ============================================
+  ai: {
+    listProviders: () => request<AIProviderName[]>('/api/v1/ai/providers'),
+    getConfig: () => request<AIConfiguration>('/api/v1/ai/config'),
+    updateOrgConfig: (providers: Array<{
+      provider: AIProviderName;
+      is_default: boolean;
+      fallback_order: number;
+    }>) => request<void>('/api/v1/ai/config/org', {
+      method: 'PUT',
+      body: { providers },
+    }),
+    listRuns: (params: { status?: AIRunStatus; taskKind?: string; limit?: number; offset?: number } = {}) => {
+      const searchParams = new URLSearchParams();
+      if (params.status) searchParams.set('status', params.status);
+      if (params.taskKind) searchParams.set('task_kind', params.taskKind);
+      if (params.limit !== undefined) searchParams.set('limit', params.limit.toString());
+      if (params.offset !== undefined) searchParams.set('offset', params.offset.toString());
+      const query = searchParams.toString();
+      return request<AIRunPage>(`/api/v1/ai/runs${query ? `?${query}` : ''}`);
+    },
+  },
+
+  // ============================================
   // Phase 2A: Policies (OPA/Rego)
   // ============================================
   policies: {
@@ -885,7 +971,7 @@ export const api = {
     listTemplates: () => request<PolicyTemplate[]>('/api/v1/policies/templates'),
 
     generate: (description: string) =>
-      request<{ rego_code: string }>('/api/v1/policies/generate', { method: 'POST', body: { description } }),
+      request<{ regoCode: string }>('/api/v1/policies/generate', { method: 'POST', body: { description } }),
 
     evaluate: () =>
       request<{ new_violations: number }>('/api/v1/policies/evaluate', { method: 'POST' }),

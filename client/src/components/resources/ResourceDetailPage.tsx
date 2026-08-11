@@ -253,7 +253,7 @@ export default function ResourceDetailPage() {
           </div>
 
           <div className="space-y-6">
-            {/* AI Analysis Panel */}
+            {/* Infrastructure Analysis Panel */}
             <AiAnalysisPanel 
               resourceId={resourceId} 
               resourceName={resource.name} 
@@ -297,7 +297,7 @@ export default function ResourceDetailPage() {
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">
-                      No recommendations yet. Click "Generate Recommendations" in the AI Analysis panel to get started.
+                      No recommendations yet. Run the Infrastructure Analysis panel to get started.
                     </p>
                   </div>
                 )}

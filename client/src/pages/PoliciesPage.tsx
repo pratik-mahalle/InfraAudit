@@ -4,6 +4,7 @@ import {
   usePolicies, usePolicyTemplates, useCreatePolicy, useUpdatePolicy, useDeletePolicy,
   useGeneratePolicy, useEvaluatePolicies, usePolicyViolations, useUpdateViolationStatus,
 } from "@/hooks/use-policies";
+import { useAIProviders } from "@/hooks/use-ai";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,12 @@ export default function PoliciesPage() {
   const { data: violations = [] } = usePolicyViolations(
     statusFilter !== "all" ? { status: statusFilter } : undefined
   );
+  const {
+    data: aiProviders = [],
+    isLoading: aiProvidersLoading,
+    isError: aiProvidersError,
+  } = useAIProviders();
+  const aiAvailable = aiProviders.length > 0;
 
   const createMutation = useCreatePolicy();
   const updateMutation = useUpdatePolicy();
@@ -82,9 +89,25 @@ export default function PoliciesPage() {
   };
 
   const handleAIGenerate = () => {
+    if (aiProvidersError) {
+      toast({
+        title: "AI status unavailable",
+        description: "InfraAudit could not verify AI provider availability. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!aiAvailable) {
+      toast({
+        title: "AI unavailable",
+        description: "No AI provider is configured for this deployment.",
+        variant: "destructive",
+      });
+      return;
+    }
     generateMutation.mutate(aiDescription, {
       onSuccess: (data) => {
-        setAiResult(data.rego_code);
+        setAiResult(data.regoCode);
         toast({ title: "Generated", description: "Rego policy generated. Review and save." });
       },
       onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
@@ -130,8 +153,18 @@ export default function PoliciesPage() {
                 <Button variant="outline"><Sparkles className="mr-2 h-4 w-4" /> AI Generate</Button>
               </DialogTrigger>
               <DialogContent>
-                <DialogHeader><DialogTitle>AI Policy Generator</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>Draft Policy with AI</DialogTitle></DialogHeader>
                 <div className="space-y-4">
+                  {!aiProvidersLoading && aiProvidersError && (
+                    <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+                      InfraAudit could not verify AI provider availability. Close this dialog and try again.
+                    </p>
+                  )}
+                  {!aiProvidersLoading && !aiProvidersError && !aiAvailable && (
+                    <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+                      No AI provider is configured for this deployment, so policy drafting is unavailable.
+                    </p>
+                  )}
                   <div>
                     <Label>Describe the policy</Label>
                     <Textarea placeholder="e.g. Deny S3 buckets without encryption" value={aiDescription} onChange={e => setAiDescription(e.target.value)} rows={3} />
@@ -147,7 +180,7 @@ export default function PoliciesPage() {
                   {aiResult ? (
                     <Button onClick={handleSaveAIPolicy}>Use This Policy</Button>
                   ) : (
-                    <Button onClick={handleAIGenerate} disabled={generateMutation.isPending || !aiDescription}>
+                    <Button onClick={handleAIGenerate} disabled={generateMutation.isPending || aiProvidersLoading || aiProvidersError || !aiAvailable || !aiDescription}>
                       {generateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Generate
                     </Button>
