@@ -12,16 +12,16 @@ export default function TermsOfServicePage() {
         <meta name="description" content="Review the Terms of Service for InfrAudit's multi-cloud infrastructure monitoring platform, including user responsibilities, acceptable use, and licensing terms." />
       </Helmet>
 
-      <div className="container max-w-4xl mx-auto py-12 px-4 md:px-6">
+      <div className="marketing-page legal-page">
         {/* Header */}
-        <div className="mb-10 text-center">
-          <FileText className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+        <div className="legal-page__header">
+          <FileText className="legal-page__icon" />
           <h1 className="text-4xl font-bold tracking-tight mb-2">Terms of Service</h1>
           <p className="text-muted-foreground">Last updated: {lastUpdated}</p>
         </div>
 
         {/* Introduction */}
-        <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
+        <div className="legal-prose legal-page__intro">
           <p>
             These Terms of Service ("Terms") govern your access to and use of InfrAudit's platform and services. 
             Please read these Terms carefully before using our services. By accessing or using our services, 
@@ -31,7 +31,7 @@ export default function TermsOfServicePage() {
         </div>
 
         {/* Table of Contents */}
-        <div className="bg-muted/50 rounded-lg p-6 mb-8">
+        <div className="legal-toc">
           <h2 className="text-xl font-bold mb-4">Contents</h2>
           <ul className="space-y-2">
             <li>
@@ -74,7 +74,7 @@ export default function TermsOfServicePage() {
         </div>
 
         {/* Main Content */}
-        <div className="prose prose-lg dark:prose-invert max-w-none space-y-10">
+        <div className="legal-prose legal-page__content">
           <section id="account-terms">
             <h2 className="text-2xl font-bold">1. Account Terms</h2>
             <p>

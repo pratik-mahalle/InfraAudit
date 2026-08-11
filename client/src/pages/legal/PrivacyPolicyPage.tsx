@@ -12,16 +12,16 @@ export default function PrivacyPolicyPage() {
         <meta name="description" content="Learn how InfrAudit collects, uses, and protects your personal information and data in compliance with global privacy regulations." />
       </Helmet>
 
-      <div className="container max-w-4xl mx-auto py-12 px-4 md:px-6">
+      <div className="marketing-page legal-page">
         {/* Header */}
-        <div className="mb-10 text-center">
-          <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+        <div className="legal-page__header">
+          <Shield className="legal-page__icon" />
           <h1 className="text-4xl font-bold tracking-tight mb-2">Privacy Policy</h1>
           <p className="text-muted-foreground">Last updated: {lastUpdated}</p>
         </div>
 
         {/* Introduction */}
-        <div className="prose prose-lg dark:prose-invert max-w-none mb-8">
+        <div className="legal-prose legal-page__intro">
           <p>
             At InfrAudit, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, 
             and safeguard your information when you use our multi-cloud infrastructure monitoring platform. 
@@ -31,7 +31,7 @@ export default function PrivacyPolicyPage() {
         </div>
 
         {/* Table of Contents */}
-        <div className="bg-muted/50 rounded-lg p-6 mb-8">
+        <div className="legal-toc">
           <h2 className="text-xl font-bold mb-4">Contents</h2>
           <ul className="space-y-2">
             <li>
@@ -71,7 +71,7 @@ export default function PrivacyPolicyPage() {
         </div>
 
         {/* Main Content */}
-        <div className="prose prose-lg dark:prose-invert max-w-none space-y-10">
+        <div className="legal-prose legal-page__content">
           <section id="information-collection">
             <h2 className="text-2xl font-bold">1. Information We Collect</h2>
             <h3 className="text-xl font-semibold mt-4">Personal Information</h3>

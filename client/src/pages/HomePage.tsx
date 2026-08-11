@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import {
   Activity,
@@ -63,9 +63,11 @@ const reveal = {
   transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] as const },
 };
 
-function LandingNav() {
+export function LandingNav() {
+  const [location] = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const landingPrefix = location === "/" ? "" : "/";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -82,8 +84,8 @@ function LandingNav() {
         </Link>
 
         <div className="landing-nav__links">
-          <a href="#platform">Platform</a>
-          <a href="#workflow">How it works</a>
+          <a href={`${landingPrefix}#platform`}>Platform</a>
+          <a href={`${landingPrefix}#workflow`}>How it works</a>
           <Link href="/pricing">Pricing</Link>
           <Link href="/about">About</Link>
         </div>
@@ -100,8 +102,8 @@ function LandingNav() {
 
       {open && (
         <div className="landing-mobile-nav">
-          <a href="#platform" onClick={() => setOpen(false)}>Platform</a>
-          <a href="#workflow" onClick={() => setOpen(false)}>How it works</a>
+          <a href={`${landingPrefix}#platform`} onClick={() => setOpen(false)}>Platform</a>
+          <a href={`${landingPrefix}#workflow`} onClick={() => setOpen(false)}>How it works</a>
           <Link href="/pricing">Pricing</Link>
           <Link href="/about">About</Link>
           <Link href="/auth">Log in</Link>
@@ -316,7 +318,7 @@ function WorkflowStepAsset({ index }: { index: number }) {
   );
 }
 
-function Footer() {
+export function LandingFooter() {
   return (
     <footer className="landing-footer">
       <div className="landing-shell">
@@ -326,7 +328,7 @@ function Footer() {
             <p>Quietly watching the infrastructure<br />your business depends on.</p>
           </div>
           <div className="landing-footer__links">
-            <div><span>Product</span><a href="#platform">Platform</a><Link href="/pricing">Pricing</Link><Link href="/auth">Sign in</Link></div>
+            <div><span>Product</span><a href="/#platform">Platform</a><Link href="/pricing">Pricing</Link><Link href="/auth">Sign in</Link></div>
             <div><span>Resources</span><a href="https://docs.infraudit.com/" target="_blank" rel="noreferrer">Documentation</a><Link href="/api">API</Link><Link href="/guide">Guides</Link></div>
             <div><span>Company</span><Link href="/about">About</Link><Link href="/contact">Contact</Link><a href="https://github.com/pratik-mahalle/InfraAudit" target="_blank" rel="noreferrer">GitHub</a></div>
           </div>
@@ -450,7 +452,7 @@ export default function HomePage() {
         </section>
       </main>
 
-      <Footer />
+      <LandingFooter />
     </div>
   );
 }

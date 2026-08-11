@@ -2,6 +2,7 @@ import React from "react";
 import { useLocation } from "wouter";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { LandingFooter, LandingNav } from "@/pages/HomePage";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,9 +12,20 @@ interface MainLayoutProps {
 export function MainLayout({ children, showFooter = true }: MainLayoutProps) {
   const [location] = useLocation();
   const isLandingPage = location === "/";
+  const isMarketingPage = ["/pricing", "/about", "/contact", "/privacy", "/terms"].includes(location);
 
   if (isLandingPage) {
     return <>{children}</>;
+  }
+
+  if (isMarketingPage) {
+    return (
+      <div className="landing-page marketing-shell">
+        <LandingNav />
+        <main className="marketing-main">{children}</main>
+        <LandingFooter />
+      </div>
+    );
   }
 
   return (
