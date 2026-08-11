@@ -10,6 +10,6 @@ export function usePermission() {
     hasPermission: (permission: Permission) => checkPermission(role, permission),
     isOwner: role === 'owner',
     isAdmin: role === 'admin',
-    isViewer: role === 'viewer',
+    isViewer: role === 'viewer' || role === 'user',
   };
 }

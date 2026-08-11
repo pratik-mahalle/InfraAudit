@@ -44,7 +44,7 @@ function PendingApprovalScreen() {
 }
 
 function ProtectedRouteContent({
-  permission,
+  permission = "view",
   component: Component,
   children,
 }: Omit<ProtectedRouteProps, "path">) {
@@ -52,7 +52,7 @@ function ProtectedRouteContent({
   const { hasPermission } = usePermission();
   const { toast } = useToast();
 
-  const isUnauthorized = !isLoading && user && permission && !hasPermission(permission);
+  const isUnauthorized = !isLoading && user && !hasPermission(permission);
 
   useEffect(() => {
     if (isUnauthorized) {
@@ -106,4 +106,3 @@ export function ProtectedRoute({ path, permission, component, children }: Protec
     />
   );
 }
-
