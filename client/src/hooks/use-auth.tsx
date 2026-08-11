@@ -38,10 +38,9 @@ async function fetchProfile(accessToken: string): Promise<ProfileResult> {
     if (!res.ok) return { user: null, needsSignup: false, pendingApproval: false };
     const json = await res.json();
     const data = unwrapResponse<any>(json);
-    // Only users without an existing profile need signup onboarding.
-    // `needsOrg` is returned for legacy profiles created before organizations
-    // were introduced; those users must still be allowed to sign in normally.
-    if (data?.needsSignup) {
+    // Product routes require an organization scope. New users and legacy
+    // profiles without an organization both complete the same onboarding flow.
+    if (data?.needsSignup || data?.needsOrg) {
       return { user: null, needsSignup: true, pendingApproval: false };
     }
     if (data?.pendingApproval) {
