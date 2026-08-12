@@ -645,13 +645,13 @@ export const api = {
   // Vulnerabilities
   // ============================================
   vulnerabilities: {
-    list: () => request<PaginatedResponse<Vulnerability>>('/api/vulnerabilities'),
+    list: () => request<PaginatedResponse<Vulnerability>>('/api/v1/vulnerabilities'),
 
-    get: (id: number) => request<Vulnerability>(`/api/vulnerabilities/${id}`),
+    get: (id: number) => request<Vulnerability>(`/api/v1/vulnerabilities/${id}`),
 
-    getSummary: () => request<Record<string, number>>('/api/vulnerabilities/summary'),
+    getSummary: () => request<Record<string, number>>('/api/v1/vulnerabilities/summary'),
 
-    getTop: () => request<Vulnerability[]>('/api/vulnerabilities/top'),
+    getTop: () => request<Vulnerability[]>('/api/v1/vulnerabilities/top'),
 
     scan: () => request<VulnerabilityScanResponse>('/api/v1/vulnerabilities/scan', { method: 'POST' }),
   },
