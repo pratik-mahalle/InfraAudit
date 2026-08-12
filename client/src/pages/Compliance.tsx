@@ -1,311 +1,304 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Download, FileCheck2, FileText, PlayCircle, Search, ShieldCheck, ShieldX } from "lucide-react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-    useComplianceOverview,
-    useFrameworks,
-    useRunAssessment,
-    useAssessments,
-    useToggleFramework,
-    useFailingControls,
-    useFrameworkControls
-} from "@/hooks/use-compliance";
-import { ComplianceScoreCard } from "@/components/compliance/ComplianceScoreCard";
-import { FrameworkSelector } from "@/components/compliance/FrameworkSelector";
-import { ControlsTable } from "@/components/compliance/ControlsTable";
 import { AssessmentHistory } from "@/components/compliance/AssessmentHistory";
+import { ControlsTable } from "@/components/compliance/ControlsTable";
 import { FailingControlsList } from "@/components/compliance/FailingControlsList";
+import { FrameworkSelector } from "@/components/compliance/FrameworkSelector";
 import { ResourceCompliancePanel } from "@/components/compliance/ResourceCompliancePanel";
-import { Badge } from "@/components/ui/badge";
-import { PlayCircle, Download, FileText, Search } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AssessmentFinding, ComplianceAssessment, ComplianceControl } from "@/types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  useAssessments,
+  useComplianceOverview,
+  useFailingControls,
+  useFrameworkControls,
+  useFrameworks,
+  useRunAssessment,
+  useToggleFramework,
+} from "@/hooks/use-compliance";
+import { useToast } from "@/hooks/use-toast";
+import type { AssessmentFinding, ComplianceAssessment, ComplianceControl } from "@/types";
+import { DetailRow, EmptyPanel, MetricTile, ToneBadge } from "@/components/security-ops/ops-ui";
 
 export default function Compliance() {
-    const { toast } = useToast();
-    const [activeTab, setActiveTab] = useState("overview");
-    const [selectedFrameworkId, setSelectedFrameworkId] = useState<string>("");
-    const [resourceIdInput, setResourceIdInput] = useState("");
-    const [lookupResourceId, setLookupResourceId] = useState("");
-    const [selectedAssessment, setSelectedAssessment] = useState<ComplianceAssessment | null>(null);
-    const [selectedControl, setSelectedControl] = useState<ComplianceControl | null>(null);
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("readiness");
+  const [selectedFrameworkId, setSelectedFrameworkId] = useState("");
+  const [resourceIdInput, setResourceIdInput] = useState("");
+  const [lookupResourceId, setLookupResourceId] = useState("");
+  const [selectedAssessment, setSelectedAssessment] = useState<ComplianceAssessment | null>(null);
+  const [selectedControl, setSelectedControl] = useState<ComplianceControl | null>(null);
 
-    // Data fetching
-    const { data: overview, isLoading: isLoadingOverview } = useComplianceOverview();
-    const { data: frameworks, isLoading: isLoadingFrameworks } = useFrameworks();
-    const { data: assessments, isLoading: isLoadingAssessments } = useAssessments(selectedFrameworkId);
-    const { data: failingControls, isLoading: isLoadingFailures } = useFailingControls(selectedFrameworkId);
-    const { data: controls, isLoading: isLoadingControls } = useFrameworkControls(selectedFrameworkId);
+  const { data: overview, isLoading: overviewLoading } = useComplianceOverview();
+  const { data: frameworks = [], isLoading: frameworksLoading } = useFrameworks();
+  const { data: controls = [], isLoading: controlsLoading } = useFrameworkControls(selectedFrameworkId);
+  const { data: failingControls = [], isLoading: failuresLoading } = useFailingControls(selectedFrameworkId);
+  const { data: assessments = [], isLoading: assessmentsLoading } = useAssessments(selectedFrameworkId);
+  const { mutate: runAssessment, isPending: assessmentRunning } = useRunAssessment();
+  const { mutate: toggleFramework } = useToggleFramework();
 
-    const { mutate: runAssessment, isPending: isRunningAssessment } = useRunAssessment();
-    const { mutate: toggleFramework } = useToggleFramework();
+  useEffect(() => {
+    if (!selectedFrameworkId && frameworks.length > 0) {
+      const defaultFramework = frameworks.find((framework) => framework.isEnabled) ?? frameworks[0];
+      setSelectedFrameworkId(defaultFramework.id);
+    }
+  }, [frameworks, selectedFrameworkId]);
 
-    // Set default selected framework
-    useEffect(() => {
-        if (frameworks && frameworks.length > 0 && !selectedFrameworkId) {
-            // Prefer enabled frameworks
-            const defaultFw = frameworks.find(f => f.isEnabled) || frameworks[0];
-            setSelectedFrameworkId(defaultFw.id);
+  const selectedFramework = frameworks.find((framework) => framework.id === selectedFrameworkId);
+  const enabledFrameworks = frameworks.filter((framework) => framework.isEnabled).length;
+  const compliancePercent = overview?.compliancePercent ?? 0;
+  const failingCount = overview?.failedControls ?? failingControls.length;
+  const passingCount = overview?.passedControls ?? 0;
+  const totalControls = overview?.totalControls ?? controls.length;
+
+  const handleRunAssessment = () => {
+    if (!selectedFrameworkId) {
+      toast({ title: "No framework selected", description: "Select a framework before running an assessment.", variant: "destructive" });
+      return;
+    }
+
+    runAssessment(selectedFrameworkId, {
+      onSuccess: () => toast({ title: "Assessment started", description: "Compliance assessment is running in the background." }),
+      onError: (error: Error) => toast({ title: "Assessment failed", description: error.message || "Could not start assessment.", variant: "destructive" }),
+    });
+  };
+
+  const downloadAssessment = (assessment?: ComplianceAssessment) => {
+    const rows = assessment
+      ? [
+          ["Framework", assessment.frameworkName],
+          ["Assessment date", assessment.assessmentDate],
+          ["Status", assessment.status],
+          ["Compliance percent", assessment.compliancePercent],
+          ["Passed controls", assessment.passedControls],
+          ["Failed controls", assessment.failedControls],
+          ["Total controls", assessment.totalControls],
+        ]
+      : [
+          ["Framework", selectedFramework?.name || "All frameworks"],
+          ["Compliance percent", compliancePercent],
+          ["Passed controls", passingCount],
+          ["Failed controls", failingCount],
+          ["Total controls", totalControls],
+        ];
+
+    const escapeCsv = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const csv = rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `infraudit-compliance-${assessment?.id || new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Report exported", description: "The compliance CSV has been downloaded." });
+  };
+
+  const reviewFinding = (finding: AssessmentFinding) => {
+    setActiveTab("controls");
+    toast({
+      title: `Reviewing ${finding.controlId}`,
+      description: finding.remediation || "Open the control details to review remediation guidance.",
+    });
+  };
+
+  return (
+    <DashboardLayout>
+      <PageHeader
+        title="Compliance Readiness"
+        description="Track enabled frameworks, failing controls, evidence lookup, and assessment exports."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => downloadAssessment()} disabled={overviewLoading || !overview}>
+              <Download className="h-4 w-4" />
+              Export Evidence
+            </Button>
+            <Button className="gap-2" onClick={handleRunAssessment} disabled={assessmentRunning || !selectedFrameworkId}>
+              <PlayCircle className={`h-4 w-4 ${assessmentRunning ? "animate-spin" : ""}`} />
+              {assessmentRunning ? "Running" : "Run Assessment"}
+            </Button>
+          </div>
         }
-    }, [frameworks, selectedFrameworkId]);
+      />
 
-    const handleRunAssessment = () => {
-        if (!selectedFrameworkId) {
-            toast({ title: "No Framework Selected", description: "Please select a framework first.", variant: "destructive" });
-            return;
-        }
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricTile icon={ShieldCheck} label="Readiness score" value={`${compliancePercent}%`} tone={compliancePercent >= 80 ? "emerald" : compliancePercent >= 60 ? "amber" : "red"} helper="Across enabled frameworks" />
+        <MetricTile icon={FileCheck2} label="Passing controls" value={passingCount} tone="emerald" helper={`${totalControls} total controls`} />
+        <MetricTile icon={ShieldX} label="Failing controls" value={failingCount} tone="red" helper="Needs remediation" />
+        <MetricTile icon={FileText} label="Frameworks" value={enabledFrameworks} tone="blue" helper={`${frameworks.length} configured`} />
+      </div>
 
-        runAssessment(selectedFrameworkId, {
-            onSuccess: () => {
-                toast({ title: "Assessment Started", description: "Compliance assessment is running in the background." });
-            },
-            onError: () => {
-                toast({ title: "Assessment Failed", description: "Could not start assessment.", variant: "destructive" });
-            }
-        });
-    };
-
-    const selectedFramework = frameworks?.find(f => f.id === selectedFrameworkId);
-
-    const downloadAssessment = (assessment?: ComplianceAssessment) => {
-        const rows = assessment
-            ? [
-                ["Framework", assessment.frameworkName],
-                ["Assessment date", assessment.assessmentDate],
-                ["Status", assessment.status],
-                ["Compliance percent", assessment.compliancePercent],
-                ["Passed controls", assessment.passedControls],
-                ["Failed controls", assessment.failedControls],
-                ["Total controls", assessment.totalControls],
-            ]
-            : [
-                ["Framework", selectedFramework?.name || "All frameworks"],
-                ["Compliance percent", overview?.compliancePercent ?? 0],
-                ["Passed controls", overview?.passedControls ?? 0],
-                ["Failed controls", overview?.failedControls ?? 0],
-                ["Total controls", overview?.totalControls ?? 0],
-            ];
-        const escapeCsv = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-        const csv = rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
-        const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `infraudit-compliance-${assessment?.id || new Date().toISOString().slice(0, 10)}.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast({ title: "Report exported", description: "The compliance CSV has been downloaded." });
-    };
-
-    const reviewFinding = (finding: AssessmentFinding) => {
-        setActiveTab("controls");
-        toast({
-            title: `Reviewing ${finding.controlId}`,
-            description: finding.remediation || "Open the control details to review remediation guidance.",
-        });
-    };
-
-    return (
-        <DashboardLayout>
-            <PageHeader
-                title="Compliance & Governance"
-                description="Manage compliance frameworks, run assessments, and track controls."
-                actions={
-                    <div className="flex space-x-2">
-                        <Button
-                            variant="default"
-                            className="flex items-center gap-2"
-                            onClick={handleRunAssessment}
-                            disabled={isRunningAssessment || !selectedFrameworkId}
-                        >
-                            <PlayCircle className={`h-4 w-4 ${isRunningAssessment ? "animate-spin" : ""}`} />
-                            {isRunningAssessment ? "Running..." : "Run Assessment"}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="flex items-center gap-2"
-                            onClick={() => downloadAssessment()}
-                            disabled={isLoadingOverview || !overview}
-                        >
-                            <Download className="h-4 w-4" />
-                            Export Report
-                        </Button>
+      <Card className="mt-6 rounded-lg">
+        <CardHeader>
+          <CardTitle>Audit Readiness</CardTitle>
+          <CardDescription>{selectedFramework?.name ? `${selectedFramework.name} is selected for assessment review` : "Select a framework to inspect controls"}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+            <div className="space-y-3">
+              <div className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span>Overall readiness</span>
+                  <span className="font-medium">{compliancePercent}%</span>
+                </div>
+                <Progress value={compliancePercent} />
+              </div>
+              <div className="rounded-lg border p-4">
+                <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">Selected Framework</p>
+                <Select value={selectedFrameworkId} onValueChange={setSelectedFrameworkId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={frameworksLoading ? "Loading frameworks" : "Select framework"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {frameworks.map((framework) => (
+                      <SelectItem key={framework.id} value={framework.id}>
+                        {framework.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedFramework && (
+                  <div className="mt-4 space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Status</span>
+                      <ToneBadge value={selectedFramework.isEnabled ? "enabled" : "disabled"} />
                     </div>
-                }
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Controls</span>
+                      <span>{controls.length}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <FailingControlsList
+              findings={failingControls}
+              isLoading={failuresLoading}
+              onReview={reviewFinding}
+              onViewAll={() => setActiveTab("controls")}
             />
+          </div>
+        </CardContent>
+      </Card>
 
-            {/* Global State Stats (if needed) or just tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+        <TabsList>
+          <TabsTrigger value="readiness">Frameworks</TabsTrigger>
+          <TabsTrigger value="controls">Controls</TabsTrigger>
+          <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsTrigger value="evidence">Evidence</TabsTrigger>
+        </TabsList>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList>
-                    <TabsTrigger value="overview">Dashboard</TabsTrigger>
-                    <TabsTrigger value="frameworks">Frameworks</TabsTrigger>
-                    <TabsTrigger value="controls">Controls</TabsTrigger>
-                    <TabsTrigger value="resources">Resources</TabsTrigger>
-                    <TabsTrigger value="reports">Reports & History</TabsTrigger>
-                </TabsList>
+        <TabsContent value="readiness" className="mt-4">
+          <FrameworkSelector
+            frameworks={frameworks}
+            selectedId={selectedFrameworkId}
+            onSelect={setSelectedFrameworkId}
+            onToggle={(id, enabled) => toggleFramework({ id, enabled })}
+          />
+        </TabsContent>
 
-                {/* Overview Tab */}
-                <TabsContent value="overview" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Score Card */}
-                        <div className="md:col-span-2">
-                            <ComplianceScoreCard
-                                score={overview?.compliancePercent || 0}
-                                passing={overview?.passedControls || 0}
-                                failing={overview?.failedControls || 0}
-                            />
-                        </div>
+        <TabsContent value="controls" className="mt-4 space-y-4">
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Control Matrix</CardTitle>
+              <CardDescription>Controls and remediation detail for the selected framework</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ControlsTable controls={controls} isLoading={controlsLoading} onView={setSelectedControl} />
+            </CardContent>
+          </Card>
+          {selectedControl && (
+            <Card className="rounded-lg">
+              <CardHeader>
+                <CardTitle>{selectedControl.controlId}: {selectedControl.title}</CardTitle>
+                <CardDescription>{selectedControl.category}</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2">
+                <DetailRow label="Severity">
+                  <ToneBadge value={selectedControl.severity} />
+                </DetailRow>
+                <DetailRow label="Remediation">{selectedControl.remediation || "No remediation guidance is available for this control."}</DetailRow>
+                <div className="md:col-span-2">
+                  <DetailRow label="Description">{selectedControl.description}</DetailRow>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-                        {/* Top Failing Controls - Contextual to Global or Selected? Global for Dashboard */}
-                        <div>
-                            {/* To show FailingControlsList we need data. We use the 'selected' framework for now or need a global endpoint */}
-                            <Card className="h-full">
-                                <CardHeader><CardTitle>Framework Status</CardTitle></CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        {frameworks?.map(fw => (
-                                            <div key={fw.id} className="flex justify-between items-center p-3 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedFrameworkId(fw.id)}>
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-2 h-2 rounded-full ${fw.isEnabled ? 'bg-green-500' : 'bg-gray-300'}`} />
-                                                    <span className="font-medium">{fw.name}</span>
-                                                </div>
-                                                {fw.id === selectedFrameworkId && <Badge>Selected</Badge>}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
+        <TabsContent value="resources" className="mt-4 space-y-4">
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Resource Evidence Lookup</CardTitle>
+              <CardDescription>Find compliance status and failing controls for a specific resource identifier</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form
+                className="flex flex-col gap-2 sm:flex-row"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setLookupResourceId(resourceIdInput.trim());
+                }}
+              >
+                <Input
+                  placeholder="Resource ID, ARN, instance ID, or cluster resource"
+                  value={resourceIdInput}
+                  onChange={(event) => setResourceIdInput(event.target.value)}
+                />
+                <Button type="submit" disabled={!resourceIdInput.trim()} className="gap-2">
+                  <Search className="h-4 w-4" />
+                  Lookup
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+          {lookupResourceId ? (
+            <ResourceCompliancePanel resourceId={lookupResourceId} />
+          ) : (
+            <EmptyPanel icon={Search} title="No resource selected" description="Enter a resource identifier to inspect compliance evidence." />
+          )}
+        </TabsContent>
 
-                    {selectedFrameworkId && (
-                        <div className="mt-8">
-                            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                                <FileText className="w-5 h-5" />
-                                Critical Issues: {selectedFramework?.name}
-                            </h3>
-                            <FailingControlsList
-                                findings={failingControls || []}
-                                isLoading={isLoadingFailures}
-                                onReview={reviewFinding}
-                                onViewAll={() => setActiveTab("controls")}
-                            />
-                        </div>
-                    )}
-                </TabsContent>
-
-                {/* Frameworks Tab */}
-                <TabsContent value="frameworks">
-                    <FrameworkSelector
-                        frameworks={frameworks || []}
-                        selectedId={selectedFrameworkId}
-                        onSelect={setSelectedFrameworkId}
-                        onToggle={(id, enabled) => toggleFramework({ id, enabled })}
-                    />
-                </TabsContent>
-
-                {/* Controls Tab */}
-                <TabsContent value="controls">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Viewing Framework:</span>
-                            <Select value={selectedFrameworkId} onValueChange={setSelectedFrameworkId}>
-                                <SelectTrigger className="w-[250px]">
-                                    <SelectValue placeholder="Select Framework" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {frameworks?.map(fw => (
-                                        <SelectItem key={fw.id} value={fw.id}>{fw.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                            {controls?.length || 0} Controls Total
-                        </div>
-                    </div>
-                    <ControlsTable
-                        controls={controls || []}
-                        isLoading={isLoadingControls}
-                        onView={setSelectedControl}
-                    />
-                    {selectedControl && (
-                        <Card className="mt-4">
-                            <CardHeader><CardTitle>{selectedControl.controlId}: {selectedControl.title}</CardTitle></CardHeader>
-                            <CardContent className="space-y-3">
-                                <p className="text-sm text-muted-foreground">{selectedControl.description}</p>
-                                <div><p className="text-xs font-medium uppercase text-muted-foreground">Remediation</p><p className="text-sm">{selectedControl.remediation || "No remediation guidance is available for this control."}</p></div>
-                            </CardContent>
-                        </Card>
-                    )}
-                </TabsContent>
-
-                {/* Resources Tab */}
-                <TabsContent value="resources" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Resource Compliance Lookup</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <form
-                                className="flex gap-2"
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    setLookupResourceId(resourceIdInput.trim());
-                                }}
-                            >
-                                <Input
-                                    placeholder="Enter resource ID (e.g. i-0abc123, arn:aws:...)"
-                                    value={resourceIdInput}
-                                    onChange={(e) => setResourceIdInput(e.target.value)}
-                                    className="flex-1"
-                                />
-                                <Button type="submit" disabled={!resourceIdInput.trim()}>
-                                    <Search className="h-4 w-4 mr-2" />
-                                    Lookup
-                                </Button>
-                            </form>
-                        </CardContent>
-                    </Card>
-                    {lookupResourceId && (
-                        <ResourceCompliancePanel resourceId={lookupResourceId} />
-                    )}
-                </TabsContent>
-
-                {/* Reports Tab */}
-                <TabsContent value="reports">
-                    <div className="mb-4">
-                        <h3 className="text-lg font-semibold">Assessment History</h3>
-                        <p className="text-sm text-muted-foreground">View past compliance assessment runs and their results.</p>
-                    </div>
-                    <AssessmentHistory
-                        assessments={assessments || []}
-                        isLoading={isLoadingAssessments}
-                        onView={setSelectedAssessment}
-                        onExport={downloadAssessment}
-                    />
-                    {selectedAssessment && (
-                        <Card className="mt-4">
-                            <CardHeader>
-                                <CardTitle>{selectedAssessment.frameworkName} assessment</CardTitle>
-                            </CardHeader>
-                            <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                <div><p className="text-xs text-muted-foreground">Status</p><p className="font-medium capitalize">{selectedAssessment.status}</p></div>
-                                <div><p className="text-xs text-muted-foreground">Score</p><p className="font-medium">{selectedAssessment.compliancePercent}%</p></div>
-                                <div><p className="text-xs text-muted-foreground">Passed</p><p className="font-medium text-green-600">{selectedAssessment.passedControls}</p></div>
-                                <div><p className="text-xs text-muted-foreground">Failed</p><p className="font-medium text-red-600">{selectedAssessment.failedControls}</p></div>
-                            </CardContent>
-                        </Card>
-                    )}
-                </TabsContent>
-
-            </Tabs>
-
-        </DashboardLayout>
-    );
+        <TabsContent value="evidence" className="mt-4 space-y-4">
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Assessment History</CardTitle>
+              <CardDescription>Past assessment runs and exportable evidence snapshots</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AssessmentHistory
+                assessments={assessments}
+                isLoading={assessmentsLoading}
+                onView={setSelectedAssessment}
+                onExport={downloadAssessment}
+              />
+            </CardContent>
+          </Card>
+          {selectedAssessment && (
+            <Card className="rounded-lg">
+              <CardHeader>
+                <CardTitle>{selectedAssessment.frameworkName} assessment</CardTitle>
+                <CardDescription>{selectedAssessment.assessmentDate}</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <DetailRow label="Status">
+                  <ToneBadge value={selectedAssessment.status} />
+                </DetailRow>
+                <DetailRow label="Score">{selectedAssessment.compliancePercent}%</DetailRow>
+                <DetailRow label="Passed">{selectedAssessment.passedControls}</DetailRow>
+                <DetailRow label="Failed">{selectedAssessment.failedControls}</DetailRow>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+    </DashboardLayout>
+  );
 }

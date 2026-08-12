@@ -1,916 +1,261 @@
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert } from "@/types";
-import { useResources } from "@/hooks/use-resources";
-import api, { type Drift as ApiDrift } from "@/lib/api";
-import { 
-  ShieldCheck, 
-  ShieldAlert, 
-  ShieldOff, 
-  Search, 
-  Filter, 
-  Bell, 
-  BellRing, 
-  BellOff, 
-  AlertTriangle,
-  CloudIcon,
-  Database 
-} from "lucide-react";
-import { formatTimeAgo, getSeverityColor, getSeverityBgColor } from "@/lib/utils";
+import { useMemo } from "react";
 import { useLocation } from "wouter";
+import {
+  AlertTriangle,
+  BellRing,
+  Bug,
+  CheckCircle2,
+  Cloud,
+  ExternalLink,
+  GitCompareArrows,
+  Shield,
+  ShieldAlert,
+} from "lucide-react";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAlerts } from "@/hooks/use-alerts";
+import { useDrifts } from "@/hooks/use-drifts";
+import { useResources } from "@/hooks/use-resources";
+import { useVulnerabilities } from "@/hooks/use-vulnerabilities";
+import { formatTimeAgo } from "@/lib/utils";
+import type { Alert, Drift, Vulnerability } from "@/lib/api";
+import { EmptyPanel, MetricTile, ToneBadge } from "@/components/security-ops/ops-ui";
 
-// BUG-016 fix: Proper types for paginated API responses instead of 'any'
-type PaginatedResponse<T> = T[] | { data: T[] };
-type SecurityDrift = Omit<ApiDrift, "status"> & {
-  status: ApiDrift["status"] | "open" | "remediated";
-};
+function riskWeight(severity: string) {
+  if (severity === "critical") return 10;
+  if (severity === "high") return 6;
+  if (severity === "medium") return 3;
+  if (severity === "low") return 1;
+  return 0;
+}
 
-export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultTab?: string }) {
+function resourceName(resources: Array<{ id?: number; name: string }>, id?: number) {
+  if (!id) return "No resource linked";
+  return resources.find((resource) => resource.id === id)?.name ?? `Resource ${id}`;
+}
+
+export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab?: string }) {
   const [, navigate] = useLocation();
-  // Common state
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [activeMainTab, setActiveMainTab] = useState<string>(defaultTab);
-  
-  // Drifts-specific state
-  const [severity, setSeverity] = useState<string>("all");
-  const [status, setStatus] = useState<string>("all");
-  const [activeDriftTab, setActiveDriftTab] = useState<string>("all");
-  
-  // Alerts-specific state
-  const [alertType, setAlertType] = useState<string>("all");
-  const [alertSeverity, setAlertSeverity] = useState<string>("all");
-  const [alertStatus, setAlertStatus] = useState<string>("all");
-  const [activeAlertTab, setActiveAlertTab] = useState<string>("all");
-
-  // Fetch security drifts (paginated — extract .data)
-  const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<PaginatedResponse<ApiDrift>>({
-    queryKey: ["drifts"],
-    queryFn: () => api.drifts.list(),
-  });
-  const securityDrifts: SecurityDrift[] = Array.isArray(driftsResponse) ? driftsResponse : (driftsResponse?.data ?? []);
-
-  // Fetch alerts (paginated — extract .data)
-  const { data: alertsResponse, isLoading: isLoadingAlerts } = useQuery<PaginatedResponse<Alert>>({
-    queryKey: ["/api/alerts"],
-  });
-  const alerts: Alert[] = Array.isArray(alertsResponse) ? alertsResponse : (alertsResponse?.data ?? []);
-
-  // Fetch resources to get names (paginated — extract .data)
+  const { data: alertsResponse, isLoading: alertsLoading } = useAlerts();
+  const { data: driftsResponse, isLoading: driftsLoading } = useDrifts();
+  const { data: vulnerabilitiesResponse, isLoading: vulnerabilitiesLoading } = useVulnerabilities();
   const { data: resourcesResponse } = useResources();
+
+  const alerts: Alert[] = alertsResponse?.data ?? [];
+  const drifts: Drift[] = Array.isArray(driftsResponse) ? driftsResponse : driftsResponse?.data ?? [];
+  const vulnerabilities: Vulnerability[] = Array.isArray(vulnerabilitiesResponse) ? vulnerabilitiesResponse : vulnerabilitiesResponse?.data ?? [];
   const resources = resourcesResponse?.data ?? [];
 
-  const getResourceName = (id: number | undefined) => {
-    if (id === undefined) return 'Unknown';
-    const resource = resources?.find((r) => r.id === id);
-    return resource ? resource.name : `Resource ID: ${id}`;
-  };
+  const openAlerts = alerts.filter((alert) => alert.status !== "resolved");
+  const openDrifts = drifts.filter((drift) => drift.status === "detected" || drift.status === "acknowledged");
+  const openVulnerabilities = vulnerabilities.filter((vulnerability) => vulnerability.status === "open");
 
-  // Filter drifts based on criteria
-  const filteredDrifts = securityDrifts
-    ? securityDrifts.filter((drift) => {
-        const matchesSeverity = severity === "all" || drift.severity === severity;
-        const matchesStatus = status === "all" || drift.status === status;
-        const resourceName = getResourceName(drift.resourceId).toLowerCase();
-        const matchesSearch =
-          searchQuery === "" ||
-          resourceName.includes(searchQuery.toLowerCase()) ||
-          drift.driftType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          drift.description?.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        return matchesSeverity && matchesStatus && matchesSearch;
-      })
-    : [];
+  const securityScore = useMemo(() => {
+    const totalRisk =
+      openAlerts.reduce((sum, alert) => sum + riskWeight(alert.severity), 0) +
+      openDrifts.reduce((sum, drift) => sum + riskWeight(drift.severity), 0) +
+      openVulnerabilities.reduce((sum, vulnerability) => sum + riskWeight(vulnerability.severity), 0);
+    return Math.max(0, 100 - Math.min(100, totalRisk));
+  }, [openAlerts, openDrifts, openVulnerabilities]);
 
-  // Filter by specific criteria - for drift tabs
-  const criticalDrifts = filteredDrifts.filter(d => d.severity === 'critical');
-  const highDrifts = filteredDrifts.filter(d => d.severity === 'high');
-  const remediatedDrifts = filteredDrifts.filter(d => d.status === 'remediated');
+  const priorityItems = [
+    ...openAlerts.map((alert) => ({
+      id: `alert-${alert.id}`,
+      title: alert.title,
+      description: alert.message,
+      severity: alert.severity,
+      type: "Alert",
+      route: "/alerts",
+      time: alert.createdAt,
+      resource: resourceName(resources, alert.resourceId),
+    })),
+    ...openDrifts.map((drift) => ({
+      id: `drift-${drift.id}`,
+      title: drift.driftType.replace(/_/g, " "),
+      description: drift.description,
+      severity: drift.severity,
+      type: "Drift",
+      route: "/drift-detection",
+      time: drift.detectedAt,
+      resource: drift.resourceIdStr || resourceName(resources, drift.resourceId),
+    })),
+    ...openVulnerabilities.map((vulnerability) => ({
+      id: `vuln-${vulnerability.id}`,
+      title: vulnerability.title,
+      description: vulnerability.description,
+      severity: vulnerability.severity,
+      type: "Vulnerability",
+      route: "/vulnerabilities",
+      time: vulnerability.detectedAt,
+      resource: resourceName(resources, vulnerability.resourceId),
+    })),
+  ].sort((a, b) => riskWeight(b.severity) - riskWeight(a.severity)).slice(0, 8);
 
-  // Filter alerts based on criteria
-  const filteredAlerts = alerts
-    ? alerts.filter((alert) => {
-        const matchesType = alertType === "all" || alert.type === alertType;
-        const matchesSeverity = alertSeverity === "all" || alert.severity === alertSeverity;
-        const matchesStatus = alertStatus === "all" || alert.status === alertStatus;
-        const resourceName = getResourceName(alert.resourceId).toLowerCase();
-        const matchesSearch =
-          searchQuery === "" ||
-          resourceName.includes(searchQuery.toLowerCase()) ||
-          alert.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          alert.message.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        return matchesType && matchesSeverity && matchesStatus && matchesSearch;
-      })
-    : [];
+  const criticalCount = priorityItems.filter((item) => item.severity === "critical").length;
+  const highCount = priorityItems.filter((item) => item.severity === "high").length;
+  const loading = alertsLoading || driftsLoading || vulnerabilitiesLoading;
 
-  // Summary counts
-  const criticalCount = securityDrifts?.filter(d => d.severity === 'critical').length || 0;
-  const highCount = securityDrifts?.filter(d => d.severity === 'high').length || 0;
-  const mediumCount = securityDrifts?.filter(d => d.severity === 'medium').length || 0;
-  const openCount = securityDrifts?.filter(d => d.status === 'open').length || 0;
-  const remediatedCount = securityDrifts?.filter(d => d.status === 'remediated').length || 0;
-  const totalDrifts = securityDrifts?.length || 0;
-  const compliancePercent = totalDrifts ? Math.round((remediatedCount / totalDrifts) * 100) : 100;
-  
-  // Alert summary counts
-  const alertsCount = alerts?.length || 0;
-  const criticalAlertsCount = alerts?.filter(a => a.severity === 'critical').length || 0;
-  const highAlertsCount = alerts?.filter(a => a.severity === 'high').length || 0;
-  const mediumAlertsCount = alerts?.filter(a => a.severity === 'medium').length || 0;
-  const openAlertsCount = alerts?.filter(a => a.status === 'open').length || 0;
-
-  // Non-compliant resources breakdown (based on open drifts by resource type)
-  const typeForResource = (id: number) => {
-    const r = resources?.find(r => r.id === id);
-    const t = (r as any)?.type as string | undefined;
-    return t ? t.toLowerCase() : "other";
-  };
-  const openDrifts = securityDrifts?.filter(d => d.status === 'open') || [];
-  const nodesCount = openDrifts.filter(d => typeForResource(d.resourceId).includes('node')).length;
-  const workloadsCount = openDrifts.filter(d => typeForResource(d.resourceId).includes('work')).length;
-  const otherCount = Math.max(0, openDrifts.length - nodesCount - workloadsCount);
-
-  // Vulnerable image repositories (derived from alerts by resource)
-  const repoRows = (alerts || [])
-    .filter(a => a.type === 'security')
-    .reduce<Record<string, { name: string; critical: number; high: number; medium: number; fixes: number }>>((acc, a) => {
-      const name = getResourceName(a.resourceId);
-      if (!acc[name]) acc[name] = { name, critical: 0, high: 0, medium: 0, fixes: 0 };
-      if (a.severity === 'critical') acc[name].critical += 1;
-      else if (a.severity === 'high') acc[name].high += 1;
-      else if (a.severity === 'medium') acc[name].medium += 1;
-      return acc;
-    }, {});
-  const repoList = Object.values(repoRows).slice(0, 3);
-
-  // Update search placeholder based on active tab
-  const searchPlaceholder = activeMainTab === "drifts" 
-    ? "Search resources or drift types..." 
-    : "Search alerts or resources...";
+  const driftCoverage = drifts.length ? Math.round((drifts.filter((drift) => drift.status === "resolved" || drift.status === "approved").length / drifts.length) * 100) : 100;
+  const vulnerabilityClosure = vulnerabilities.length ? Math.round((vulnerabilities.filter((vulnerability) => vulnerability.status === "fixed").length / vulnerabilities.length) * 100) : 100;
+  const alertClosure = alerts.length ? Math.round((alerts.filter((alert) => alert.status === "resolved").length / alerts.length) * 100) : 100;
 
   return (
     <DashboardLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold font-inter mb-1">Security Monitoring</h1>
-        <p className="text-gray-500">
-          Monitor and remediate security configuration drifts and alerts across your cloud infrastructure
-        </p>
-      </div>
-
-      {/* Compliance + Vulnerabilities (revamped header) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Compliance */}
-        <Card className="bg-white/70 dark:bg-slate-900/50 backdrop-blur border border-gray-200/60 dark:border-slate-800/60 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Compliance</CardTitle>
-            <CardDescription>Compliance with InfrAudit checks</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-center gap-6">
-                <div className="relative w-28 h-28">
-                  <div
-                    className="w-28 h-28 rounded-full"
-                    style={{
-                      background: `conic-gradient(var(--color-primary) ${compliancePercent * 3.6}deg, rgba(2,132,199,0.15) 0deg)`
-                    }}
-                  />
-                  <div className="absolute inset-2 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
-                    <div className="text-3xl font-bold">{compliancePercent}%</div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">{remediatedCount}/{totalDrifts || 1} checks passed</p>
-                  <p className="text-xs text-muted-foreground mt-1">{openCount} open issues</p>
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-muted-foreground mb-2">Non-compliant resources</div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-xs mb-1"><span>Nodes</span><span>{nodesCount}</span></div>
-                    <div className="h-2 rounded-full bg-gray-200 dark:bg-slate-800 overflow-hidden">
-                      <div className="h-full bg-rose-600" style={{ width: `${Math.min(100, (nodesCount / Math.max(1, openDrifts.length)) * 100)}%` }} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs mb-1"><span>Workloads</span><span>{workloadsCount}</span></div>
-                    <div className="h-2 rounded-full bg-gray-200 dark:bg-slate-800 overflow-hidden">
-                      <div className="h-full bg-amber-600" style={{ width: `${Math.min(100, (workloadsCount / Math.max(1, openDrifts.length)) * 100)}%` }} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs mb-1"><span>Other</span><span>{otherCount}</span></div>
-                    <div className="h-2 rounded-full bg-gray-200 dark:bg-slate-800 overflow-hidden">
-                      <div className="h-full bg-slate-500" style={{ width: `${Math.min(100, (otherCount / Math.max(1, openDrifts.length)) * 100)}%` }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Vulnerability management */}
-        <Card className="bg-white/70 dark:bg-slate-900/50 backdrop-blur border border-gray-200/60 dark:border-slate-800/60 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Vulnerability management</CardTitle>
-            <CardDescription>Vulnerabilities by severity</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="rounded-lg border border-rose-200/60 dark:border-rose-800/40 p-3">
-                <div className="text-xs text-muted-foreground mb-1">Critical</div>
-                <div className="text-2xl font-bold">{criticalAlertsCount}</div>
-                <div className="text-[11px] text-muted-foreground">alerts</div>
-              </div>
-              <div className="rounded-lg border border-amber-200/60 dark:border-amber-800/40 p-3">
-                <div className="text-xs text-muted-foreground mb-1">High</div>
-                <div className="text-2xl font-bold">{highAlertsCount}</div>
-                <div className="text-[11px] text-muted-foreground">alerts</div>
-              </div>
-              <div className="rounded-lg border border-yellow-200/60 dark:border-yellow-800/40 p-3">
-                <div className="text-xs text-muted-foreground mb-1">Medium</div>
-                <div className="text-2xl font-bold">{mediumAlertsCount}</div>
-                <div className="text-[11px] text-muted-foreground">alerts</div>
-              </div>
-            </div>
-
-            <div className="text-xs font-medium text-muted-foreground mb-2">Most vulnerable image repositories</div>
-            <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-slate-800">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-slate-800/60">
-                  <tr>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Repository</th>
-                    <th className="px-3 py-2 text-center">C</th>
-                    <th className="px-3 py-2 text-center">H</th>
-                    <th className="px-3 py-2 text-center">M</th>
-                    <th className="px-3 py-2 text-right">Fixes</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
-                  {repoList.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-3 py-4 text-center text-muted-foreground">No repositories detected</td>
-                    </tr>
-                  ) : (
-                    repoList.map((r) => (
-                      <tr key={r.name}>
-                        <td className="px-3 py-2 text-blue-600 dark:text-blue-400 truncate max-w-[260px]">{r.name}</td>
-                        <td className="px-3 py-2 text-center">{r.critical}</td>
-                        <td className="px-3 py-2 text-center">{r.high}</td>
-                        <td className="px-3 py-2 text-center">{r.medium}</td>
-                        <td className="px-3 py-2 text-right">{r.fixes}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-3 text-right text-sm text-blue-600 dark:text-blue-400 cursor-pointer">Report →</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Tabs - Configuration Drifts vs Alerts */}
-      <Tabs defaultValue={defaultTab} value={activeMainTab} className="mb-6" onValueChange={setActiveMainTab}>
-        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 mb-4">
-          <TabsList>
-            <TabsTrigger value="drifts">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4" />
-                <span>Configuration Drifts</span>
-              </div>
-            </TabsTrigger>
-            <TabsTrigger value="alerts">
-              <div className="flex items-center gap-2">
-                <BellRing className="h-4 w-4" />
-                <span>Alerts</span>
-              </div>
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder={searchPlaceholder}
-                className="pl-9 w-full md:w-[250px]"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {activeMainTab === "drifts" ? (
-              <div className="flex space-x-2">
-                <Select
-                  value={severity}
-                  onValueChange={setSeverity}
-                >
-                  <SelectTrigger className="w-[130px] h-10">
-                    <SelectValue placeholder="Severity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Severities</SelectItem>
-                    <SelectItem value="critical">Critical</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={status}
-                  onValueChange={setStatus}
-                >
-                  <SelectTrigger className="w-[130px] h-10">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="remediated">Remediated</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              <div className="flex space-x-2">
-                <Select
-                  value={alertType}
-                  onValueChange={setAlertType}
-                >
-                  <SelectTrigger className="w-[130px] h-10">
-                    <SelectValue placeholder="Alert Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="security">Security</SelectItem>
-                    <SelectItem value="performance">Performance</SelectItem>
-                    <SelectItem value="cost">Cost</SelectItem>
-                    <SelectItem value="compliance">Compliance</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={alertSeverity}
-                  onValueChange={setAlertSeverity}
-                >
-                  <SelectTrigger className="w-[130px] h-10">
-                    <SelectValue placeholder="Severity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Severities</SelectItem>
-                    <SelectItem value="critical">Critical</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+      <PageHeader
+        title="Security Dashboard"
+        description="One place to see active infrastructure risk, ownership context, and response progress."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => navigate("/alerts")}>
+              <BellRing className="h-4 w-4" />
+              Alert Inbox
+            </Button>
+            <Button className="gap-2" onClick={() => navigate("/vulnerabilities")}>
+              <Bug className="h-4 w-4" />
+              Vulnerabilities
+            </Button>
           </div>
-        </div>
+        }
+      />
 
-        {/* Drifts Tab Content */}
-        <TabsContent value="drifts">
-          <Tabs defaultValue="all" onValueChange={setActiveDriftTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">All Drifts</TabsTrigger>
-              <TabsTrigger value="critical">Critical</TabsTrigger>
-              <TabsTrigger value="high">High</TabsTrigger>
-              <TabsTrigger value="remediated">Remediated</TabsTrigger>
-            </TabsList>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <Card className="rounded-lg">
+          <CardHeader>
+            <CardTitle>Security Posture</CardTitle>
+            <CardDescription>Weighted from unresolved alerts, drifts, and vulnerabilities</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-6 md:flex-row md:items-center">
+              <div className="flex h-36 w-36 shrink-0 items-center justify-center rounded-full border bg-muted/30">
+                <div className="text-center">
+                  <div className="text-4xl font-semibold">{securityScore}</div>
+                  <div className="text-xs text-muted-foreground">score</div>
+                </div>
+              </div>
+              <div className="grid flex-1 gap-4 sm:grid-cols-3">
+                <MetricTile icon={ShieldAlert} label="Critical" value={criticalCount} tone="red" helper="Across queues" />
+                <MetricTile icon={AlertTriangle} label="High" value={highCount} tone="orange" helper="Needs planning" />
+                <MetricTile icon={Cloud} label="Resources" value={resources.length} tone="blue" helper="Observed assets" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <TabsContent value="all">
-              <Card>
-                <CardHeader className="pb-0">
-                  <CardTitle>Security Configuration Drifts</CardTitle>
-                  <CardDescription>
-                    {filteredDrifts.length} drift{filteredDrifts.length !== 1 ? 's' : ''} found across your infrastructure
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Resource</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Severity</TableHead>
-                        <TableHead>Details</TableHead>
-                        <TableHead>Detected</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoadingDrifts ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            Loading security drifts...
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredDrifts.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            No security drifts found matching the current filters.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredDrifts.map((drift) => (
-                          <TableRow key={drift.id}>
-                            <TableCell className="font-medium">
-                              {getResourceName(drift.resourceId)}
-                            </TableCell>
-                            <TableCell>{drift.driftType}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(drift.severity)} ${getSeverityColor(drift.severity)} rounded-full`}>
-                                {drift.severity.charAt(0).toUpperCase() + drift.severity.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {drift.details ? JSON.stringify(drift.details) : 'No details'}
-                            </TableCell>
-                            <TableCell>{formatTimeAgo(new Date(drift.detectedAt))}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                drift.status === 'open' 
-                                  ? 'bg-warning bg-opacity-10 text-warning' 
-                                  : drift.status === 'remediated'
-                                    ? 'bg-secondary bg-opacity-10 text-secondary'
-                                    : 'bg-primary bg-opacity-10 text-primary'
-                              }`}>
-                                {drift.status.charAt(0).toUpperCase() + drift.status.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 text-primary hover:text-primary/80"
-                                onClick={() => navigate('/drift-detection')}
-                              >
-                                {drift.status === 'open' ? 'Review' : 'View'}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
+        <Card className="rounded-lg">
+          <CardHeader>
+            <CardTitle>Response Coverage</CardTitle>
+            <CardDescription>Closure rate by security workflow</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {[
+              { label: "Alert closure", value: alertClosure },
+              { label: "Drift baseline", value: driftCoverage },
+              { label: "Vulnerability fixes", value: vulnerabilityClosure },
+            ].map((item) => (
+              <div key={item.label}>
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span>{item.label}</span>
+                  <span className="font-medium">{item.value}%</span>
+                </div>
+                <Progress value={item.value} />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
 
-            <TabsContent value="critical">
-              <Card>
-                <CardHeader className="pb-0">
-                  <CardTitle>Critical Security Issues</CardTitle>
-                  <CardDescription>
-                    {criticalDrifts.length} critical drift{criticalDrifts.length !== 1 ? 's' : ''} found that require immediate attention
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Resource</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Severity</TableHead>
-                        <TableHead>Details</TableHead>
-                        <TableHead>Detected</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoadingDrifts ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            Loading critical drifts...
-                          </TableCell>
-                        </TableRow>
-                      ) : criticalDrifts.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            No critical drifts found.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        criticalDrifts.map((drift) => (
-                          <TableRow key={drift.id}>
-                            <TableCell className="font-medium">
-                              {getResourceName(drift.resourceId)}
-                            </TableCell>
-                            <TableCell>{drift.driftType}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(drift.severity)} ${getSeverityColor(drift.severity)} rounded-full`}>
-                                {drift.severity.charAt(0).toUpperCase() + drift.severity.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {drift.details ? JSON.stringify(drift.details) : 'No details'}
-                            </TableCell>
-                            <TableCell>{formatTimeAgo(new Date(drift.detectedAt))}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                drift.status === 'open' 
-                                  ? 'bg-warning bg-opacity-10 text-warning' 
-                                  : drift.status === 'remediated'
-                                    ? 'bg-secondary bg-opacity-10 text-secondary'
-                                    : 'bg-primary bg-opacity-10 text-primary'
-                              }`}>
-                                {drift.status.charAt(0).toUpperCase() + drift.status.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 text-primary hover:text-primary/80"
-                                onClick={() => navigate('/drift-detection')}
-                              >
-                                {drift.status === 'open' ? 'Review' : 'View'}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <MetricTile icon={BellRing} label="Unresolved alerts" value={openAlerts.length} tone="red" helper={`${alerts.length} total`} />
+        <MetricTile icon={GitCompareArrows} label="Open drift" value={openDrifts.length} tone="amber" helper="Detected or acknowledged" />
+        <MetricTile icon={Bug} label="Open vulnerabilities" value={openVulnerabilities.length} tone="orange" helper="Awaiting fix" />
+      </div>
 
-            <TabsContent value="high">
-              <Card>
-                <CardHeader className="pb-0">
-                  <CardTitle>High Severity Issues</CardTitle>
-                  <CardDescription>
-                    {highDrifts.length} high severity drift{highDrifts.length !== 1 ? 's' : ''} found
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Resource</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Severity</TableHead>
-                        <TableHead>Details</TableHead>
-                        <TableHead>Detected</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoadingDrifts ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            Loading high severity drifts...
-                          </TableCell>
-                        </TableRow>
-                      ) : highDrifts.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            No high severity drifts found.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        highDrifts.map((drift) => (
-                          <TableRow key={drift.id}>
-                            {/* Same content as other tabs */}
-                            <TableCell className="font-medium">
-                              {getResourceName(drift.resourceId)}
-                            </TableCell>
-                            <TableCell>{drift.driftType}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(drift.severity)} ${getSeverityColor(drift.severity)} rounded-full`}>
-                                {drift.severity.charAt(0).toUpperCase() + drift.severity.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {drift.details ? JSON.stringify(drift.details) : 'No details'}
-                            </TableCell>
-                            <TableCell>{formatTimeAgo(new Date(drift.detectedAt))}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                drift.status === 'open' 
-                                  ? 'bg-warning bg-opacity-10 text-warning' 
-                                  : drift.status === 'remediated'
-                                    ? 'bg-secondary bg-opacity-10 text-secondary'
-                                    : 'bg-primary bg-opacity-10 text-primary'
-                              }`}>
-                                {drift.status.charAt(0).toUpperCase() + drift.status.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 text-primary hover:text-primary/80"
-                                onClick={() => navigate('/drift-detection')}
-                              >
-                                {drift.status === 'open' ? 'Review' : 'View'}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
+      <Tabs defaultValue={defaultTab === "alerts" || defaultTab === "drifts" ? defaultTab : "risk"} className="mt-6">
+        <TabsList>
+          <TabsTrigger value="risk">Priority Queue</TabsTrigger>
+          <TabsTrigger value="drifts">Drift</TabsTrigger>
+          <TabsTrigger value="alerts">Alerts</TabsTrigger>
+        </TabsList>
 
-            <TabsContent value="remediated">
-              <Card>
-                <CardHeader className="pb-0">
-                  <CardTitle>Remediated Issues</CardTitle>
-                  <CardDescription>
-                    {remediatedDrifts.length} remediated drift{remediatedDrifts.length !== 1 ? 's' : ''}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Resource</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Severity</TableHead>
-                        <TableHead>Details</TableHead>
-                        <TableHead>Detected</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoadingDrifts ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            Loading remediated drifts...
-                          </TableCell>
-                        </TableRow>
-                      ) : remediatedDrifts.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            No remediated drifts found.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        remediatedDrifts.map((drift) => (
-                          <TableRow key={drift.id}>
-                            {/* Same content as other tabs */}
-                            <TableCell className="font-medium">
-                              {getResourceName(drift.resourceId)}
-                            </TableCell>
-                            <TableCell>{drift.driftType}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(drift.severity)} ${getSeverityColor(drift.severity)} rounded-full`}>
-                                {drift.severity.charAt(0).toUpperCase() + drift.severity.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {drift.details ? JSON.stringify(drift.details) : 'No details'}
-                            </TableCell>
-                            <TableCell>{formatTimeAgo(new Date(drift.detectedAt))}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                drift.status === 'open' 
-                                  ? 'bg-warning bg-opacity-10 text-warning' 
-                                  : drift.status === 'remediated'
-                                    ? 'bg-secondary bg-opacity-10 text-secondary'
-                                    : 'bg-primary bg-opacity-10 text-primary'
-                              }`}>
-                                {drift.status.charAt(0).toUpperCase() + drift.status.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 text-primary hover:text-primary/80"
-                                onClick={() => navigate('/drift-detection')}
-                              >
-                                View
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+        <TabsContent value="risk" className="mt-4">
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Needs Attention</CardTitle>
+              <CardDescription>Highest risk active work across security workflows</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <EmptyPanel icon={Shield} title="Loading security state" description="Collecting alerts, drifts, and vulnerability findings." />
+              ) : priorityItems.length === 0 ? (
+                <EmptyPanel icon={CheckCircle2} title="No active security work" description="All tracked security findings are closed or currently filtered out." />
+              ) : (
+                <div className="divide-y rounded-lg border">
+                  {priorityItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => navigate(item.route)}
+                      className="w-full px-4 py-4 text-left transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div className="min-w-0">
+                          <div className="mb-2 flex flex-wrap gap-2">
+                            <ToneBadge value={item.severity} />
+                            <ToneBadge value={item.type} tone="blue" />
+                          </div>
+                          <h3 className="text-sm font-semibold capitalize">{item.title}</h3>
+                          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
+                          <p className="mt-2 text-xs text-muted-foreground">{item.resource}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                          <span>{formatTimeAgo(item.time)}</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* Alerts Tab Content */}
-        <TabsContent value="alerts">
-          <Tabs defaultValue="all" onValueChange={setActiveAlertTab}>
-            <TabsList className="mb-4">
-              <TabsTrigger value="all">All Alerts</TabsTrigger>
-              <TabsTrigger value="security">Security</TabsTrigger>
-              <TabsTrigger value="performance">Performance</TabsTrigger>
-              <TabsTrigger value="cost">Cost</TabsTrigger>
-            </TabsList>
+        <TabsContent value="drifts" className="mt-4">
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Drift Summary</CardTitle>
+              <CardDescription>Open baseline changes by severity</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-4">
+              {["critical", "high", "medium", "low"].map((severity) => (
+                <div key={severity} className="rounded-lg border p-4">
+                  <ToneBadge value={severity} />
+                  <div className="mt-3 text-2xl font-semibold">{openDrifts.filter((drift) => drift.severity === severity).length}</div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <TabsContent value="all">
-              <Card>
-                <CardHeader className="pb-0">
-                  <CardTitle>Infrastructure Alerts</CardTitle>
-                  <CardDescription>
-                    {filteredAlerts.length} alert{filteredAlerts.length !== 1 ? 's' : ''} across your infrastructure
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Severity</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Resource</TableHead>
-                        <TableHead>Message</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoadingAlerts ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            Loading alerts...
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredAlerts.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            No alerts found matching the current filters.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredAlerts.map((alert) => (
-                          <TableRow key={alert.id}>
-                            <TableCell>
-                              <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(alert.severity)} ${getSeverityColor(alert.severity)} rounded-full`}>
-                                {alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {alert.type === 'security' ? (
-                                  <ShieldAlert className="h-4 w-4 text-danger" />
-                                ) : alert.type === 'resource' ? (
-                                  <AlertTriangle className="h-4 w-4 text-warning" />
-                                ) : alert.type === 'cost' ? (
-                                  <Database className="h-4 w-4 text-primary" />
-                                ) : (
-                                  <CloudIcon className="h-4 w-4 text-muted-foreground" />
-                                )}
-                                <span className="capitalize">{alert.type}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {getResourceName(alert.resourceId)}
-                            </TableCell>
-                            <TableCell className="max-w-[250px] truncate">
-                              {alert.message}
-                            </TableCell>
-                            <TableCell>{formatTimeAgo(new Date(alert.createdAt))}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                alert.status === 'open' 
-                                  ? 'bg-warning bg-opacity-10 text-warning' 
-                                  : alert.status === 'acknowledged'
-                                    ? 'bg-primary bg-opacity-10 text-primary'
-                                    : 'bg-secondary bg-opacity-10 text-secondary'
-                              }`}>
-                                {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 text-primary hover:text-primary/80"
-                                onClick={() => navigate('/alerts')}
-                              >
-                                View Details
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            {/* Similar content for other alert tabs (security, performance, cost) */}
-            <TabsContent value="security">
-              <Card>
-                <CardHeader className="pb-0">
-                  <CardTitle>Security Alerts</CardTitle>
-                  <CardDescription>
-                    Security-related alerts across your cloud infrastructure
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Severity</TableHead>
-                        <TableHead>Resource</TableHead>
-                        <TableHead>Message</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoadingAlerts ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center">
-                            Loading security alerts...
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredAlerts
-                          .filter(alert => alert.type === 'security')
-                          .map((alert) => (
-                            <TableRow key={alert.id}>
-                              <TableCell>
-                                <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(alert.severity)} ${getSeverityColor(alert.severity)} rounded-full`}>
-                                  {alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
-                                </span>
-                              </TableCell>
-                              <TableCell className="font-medium">
-                                {getResourceName(alert.resourceId)}
-                              </TableCell>
-                              <TableCell className="max-w-[250px] truncate">
-                                {alert.message}
-                              </TableCell>
-                              <TableCell>{formatTimeAgo(new Date(alert.createdAt))}</TableCell>
-                              <TableCell>
-                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  alert.status === 'open' 
-                                    ? 'bg-warning bg-opacity-10 text-warning' 
-                                    : alert.status === 'acknowledged'
-                                      ? 'bg-primary bg-opacity-10 text-primary'
-                                      : 'bg-secondary bg-opacity-10 text-secondary'
-                                }`}>
-                                  {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 text-primary hover:text-primary/80"
-                                  onClick={() => navigate('/alerts')}
-                                >
-                                  View Details
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+        <TabsContent value="alerts" className="mt-4">
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Alert Summary</CardTitle>
+              <CardDescription>Unresolved alert distribution</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-4">
+              {["critical", "high", "medium", "low"].map((severity) => (
+                <div key={severity} className="rounded-lg border p-4">
+                  <ToneBadge value={severity} />
+                  <div className="mt-3 text-2xl font-semibold">{openAlerts.filter((alert) => alert.severity === severity).length}</div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </DashboardLayout>
