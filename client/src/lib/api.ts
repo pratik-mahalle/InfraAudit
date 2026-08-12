@@ -197,6 +197,15 @@ export interface DriftDetectionResponse {
   duplicate?: boolean;
 }
 
+export interface VulnerabilityScanResponse {
+  message: string;
+  scanId?: number;
+  jobId?: number;
+  jobKind?: string;
+  queue?: string;
+  duplicate?: boolean;
+}
+
 export type QueueJobState = 'available' | 'cancelled' | 'completed' | 'discarded' | 'pending' | 'retryable' | 'running' | 'scheduled';
 
 export interface QueueJobStatus {
@@ -644,7 +653,7 @@ export const api = {
 
     getTop: () => request<Vulnerability[]>('/api/vulnerabilities/top'),
 
-    scan: () => request<{ message: string }>('/api/vulnerabilities/scan', { method: 'POST' }),
+    scan: () => request<VulnerabilityScanResponse>('/api/vulnerabilities/scan', { method: 'POST' }),
   },
 
   // ============================================

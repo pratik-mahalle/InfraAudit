@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Boxes,
   Bug,
+  CheckCircle2,
   ExternalLink,
   FileWarning,
   Loader2,
@@ -22,6 +24,7 @@ import {
   useVulnerabilities,
   useVulnerabilitySummary,
 } from "@/hooks/use-vulnerabilities";
+import { isTerminalQueueState, useQueueJobStatus } from "@/hooks/use-queue-job";
 import { useToast } from "@/hooks/use-toast";
 import { cn, formatTimeAgo } from "@/lib/utils";
 import type { Vulnerability } from "@/lib/api";
@@ -49,18 +52,43 @@ const statusOptions = [
   { value: "ignored", label: "Ignored" },
 ];
 
+function scanJobDescription(status?: string, lastError?: string) {
+  switch (status) {
+    case "available":
+    case "pending":
+    case "scheduled":
+      return "The scan is queued and waiting for a worker.";
+    case "running":
+      return "The scanner is checking packages, images, and resources.";
+    case "retryable":
+      return lastError ? `The scan will retry after an error: ${lastError}` : "The scan will retry after an error.";
+    case "completed":
+      return "The scan completed. Vulnerability data is refreshing.";
+    case "discarded":
+      return lastError ? `The scan failed permanently: ${lastError}` : "The scan failed permanently.";
+    case "cancelled":
+      return "The scan was cancelled.";
+    default:
+      return "Waiting for the scan job to report status.";
+  }
+}
+
 export default function Vulnerabilities() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedVulnerabilityId, setSelectedVulnerabilityId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("open");
+  const [scanJobId, setScanJobId] = useState<number | null>(null);
+  const [notifiedScanJobStatus, setNotifiedScanJobStatus] = useState<string | null>(null);
 
   const { data: vulnsResponse, isLoading } = useVulnerabilities();
   const { data: summary } = useVulnerabilitySummary();
   const { data: topVulns = [] } = useTopVulnerabilities();
   const { data: resourcesResponse } = useResources();
   const scanMutation = useTriggerVulnerabilityScan();
+  const { data: scanJobStatus, error: scanJobStatusError, isFetching: isFetchingScanJob } = useQueueJobStatus(scanJobId);
 
   const vulnerabilities: Vulnerability[] = Array.isArray(vulnsResponse) ? vulnsResponse : vulnsResponse?.data ?? [];
   const resources = resourcesResponse?.data ?? [];
@@ -85,10 +113,44 @@ export default function Vulnerabilities() {
   const highCount = bySeverity.high ?? vulnerabilities.filter((item) => item.severity === "high").length;
   const openCount = vulnerabilities.filter((item) => item.status === "open").length;
   const fixableCount = vulnerabilities.filter((item) => item.remediation && item.status === "open").length;
+  const activeScanJobStatus = scanJobStatus?.status ?? (scanJobId ? "available" : undefined);
+  const scanJobIsActive = !!scanJobId && !scanJobStatusError && !isTerminalQueueState(activeScanJobStatus);
+
+  useEffect(() => {
+    if (!scanJobStatus || !isTerminalQueueState(scanJobStatus.status)) return;
+
+    const notificationKey = `${scanJobStatus.id}:${scanJobStatus.status}`;
+    if (notifiedScanJobStatus === notificationKey) return;
+    setNotifiedScanJobStatus(notificationKey);
+    queryClient.invalidateQueries({ queryKey: ["vulnerabilities"] });
+
+    if (scanJobStatus.status === "completed") {
+      toast({ title: "Vulnerability scan complete", description: "Findings and remediation queues are refreshing." });
+    } else {
+      toast({
+        title: "Vulnerability scan did not complete",
+        description: scanJobStatus.lastError || scanJobDescription(scanJobStatus.status),
+        variant: "destructive",
+      });
+    }
+  }, [notifiedScanJobStatus, queryClient, scanJobStatus, toast]);
 
   const runScan = () => {
     scanMutation.mutate(undefined, {
-      onSuccess: () => toast({ title: "Vulnerability scan started", description: "InfraAudit is checking packages, images, and resources." }),
+      onSuccess: (result) => {
+        if (result.jobId) {
+          setScanJobId(result.jobId);
+          setNotifiedScanJobStatus(null);
+          toast({
+            title: result.duplicate ? "Vulnerability scan already queued" : "Vulnerability scan queued",
+            description: `Job #${result.jobId} is running on the ${result.queue ?? "scan"} queue.`,
+          });
+          return;
+        }
+
+        setScanJobId(null);
+        toast({ title: "Vulnerability scan started", description: "InfraAudit is checking packages, images, and resources." });
+      },
       onError: (error: Error) => toast({ title: "Scan failed", description: error.message || "Could not start vulnerability scan.", variant: "destructive" }),
     });
   };
@@ -99,12 +161,42 @@ export default function Vulnerabilities() {
         title="Vulnerability Remediation"
         description="Prioritize CVEs by severity, affected resource, and available fix guidance."
         actions={
-          <Button onClick={runScan} disabled={scanMutation.isPending} className="gap-2">
-            {scanMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+          <Button onClick={runScan} disabled={scanMutation.isPending || scanJobIsActive} className="gap-2">
+            {scanMutation.isPending || scanJobIsActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
             Run Vulnerability Scan
           </Button>
         }
       />
+
+      {scanJobId && (
+        <Card className="mb-6 rounded-lg border-primary/20">
+          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              {scanJobIsActive || isFetchingScanJob ? (
+                <Loader2 className="mt-0.5 h-5 w-5 animate-spin text-primary" />
+              ) : scanJobStatus?.status === "completed" ? (
+                <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
+              )}
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium">Vulnerability scan job #{scanJobId}</p>
+                  <ToneBadge value={activeScanJobStatus ?? "queued"} tone={scanJobStatus?.status === "completed" ? "emerald" : scanJobStatus?.status === "discarded" ? "red" : "blue"} />
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {scanJobStatusError instanceof Error ? scanJobStatusError.message : scanJobDescription(activeScanJobStatus, scanJobStatus?.lastError)}
+                </p>
+              </div>
+            </div>
+            {scanJobStatus?.attempt !== undefined && (
+              <p className="text-xs text-muted-foreground">
+                Attempt {scanJobStatus.attempt}/{scanJobStatus.maxAttempts}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricTile icon={Bug} label="Open CVEs" value={openCount} tone="red" helper={`${vulnerabilities.length} total findings`} />
