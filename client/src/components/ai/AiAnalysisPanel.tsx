@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
 interface AiAnalysisPanelProps {
-  resourceId: number;
+  resourceId: string | number;
   resourceName: string;
   resourceType: string;
 }
@@ -23,7 +23,7 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
   const { data: costAnomalies, isLoading: isLoadingCost } = useQuery({
     queryKey: ['/api/v1/costs/anomalies', resourceId],
     queryFn: async () => {
-      const res = await apiRequest('GET', `/api/v1/costs/anomalies?resourceId=${resourceId}`);
+      const res = await apiRequest('GET', `/api/v1/costs/anomalies?resourceId=${encodeURIComponent(resourceId)}`);
       return await res.json();
     },
     select: (data: any) => {
@@ -35,7 +35,7 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
   const { data: securityDrifts, isLoading: isLoadingSecurity } = useQuery({
     queryKey: ['/api/drifts', resourceId],
     queryFn: async () => {
-      const res = await apiRequest('GET', `/api/drifts?resourceId=${resourceId}`);
+      const res = await apiRequest('GET', `/api/v1/drifts?resource_id=${encodeURIComponent(resourceId)}`);
       return await res.json();
     },
     select: (data: any) => {

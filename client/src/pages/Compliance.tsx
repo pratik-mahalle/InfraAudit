@@ -24,6 +24,7 @@ import { PlayCircle, Download, FileText, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AssessmentFinding, ComplianceAssessment, ComplianceControl } from "@/types";
 
 export default function Compliance() {
     const { toast } = useToast();
@@ -31,6 +32,8 @@ export default function Compliance() {
     const [selectedFrameworkId, setSelectedFrameworkId] = useState<string>("");
     const [resourceIdInput, setResourceIdInput] = useState("");
     const [lookupResourceId, setLookupResourceId] = useState("");
+    const [selectedAssessment, setSelectedAssessment] = useState<ComplianceAssessment | null>(null);
+    const [selectedControl, setSelectedControl] = useState<ComplianceControl | null>(null);
 
     // Data fetching
     const { data: overview, isLoading: isLoadingOverview } = useComplianceOverview();
@@ -69,6 +72,43 @@ export default function Compliance() {
 
     const selectedFramework = frameworks?.find(f => f.id === selectedFrameworkId);
 
+    const downloadAssessment = (assessment?: ComplianceAssessment) => {
+        const rows = assessment
+            ? [
+                ["Framework", assessment.frameworkName],
+                ["Assessment date", assessment.assessmentDate],
+                ["Status", assessment.status],
+                ["Compliance percent", assessment.compliancePercent],
+                ["Passed controls", assessment.passedControls],
+                ["Failed controls", assessment.failedControls],
+                ["Total controls", assessment.totalControls],
+            ]
+            : [
+                ["Framework", selectedFramework?.name || "All frameworks"],
+                ["Compliance percent", overview?.compliancePercent ?? 0],
+                ["Passed controls", overview?.passedControls ?? 0],
+                ["Failed controls", overview?.failedControls ?? 0],
+                ["Total controls", overview?.totalControls ?? 0],
+            ];
+        const escapeCsv = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+        const csv = rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
+        const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `infraudit-compliance-${assessment?.id || new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        toast({ title: "Report exported", description: "The compliance CSV has been downloaded." });
+    };
+
+    const reviewFinding = (finding: AssessmentFinding) => {
+        setActiveTab("controls");
+        toast({
+            title: `Reviewing ${finding.controlId}`,
+            description: finding.remediation || "Open the control details to review remediation guidance.",
+        });
+    };
+
     return (
         <DashboardLayout>
             <PageHeader
@@ -85,7 +125,12 @@ export default function Compliance() {
                             <PlayCircle className={`h-4 w-4 ${isRunningAssessment ? "animate-spin" : ""}`} />
                             {isRunningAssessment ? "Running..." : "Run Assessment"}
                         </Button>
-                        <Button variant="outline" className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            className="flex items-center gap-2"
+                            onClick={() => downloadAssessment()}
+                            disabled={isLoadingOverview || !overview}
+                        >
                             <Download className="h-4 w-4" />
                             Export Report
                         </Button>
@@ -147,6 +192,8 @@ export default function Compliance() {
                             <FailingControlsList
                                 findings={failingControls || []}
                                 isLoading={isLoadingFailures}
+                                onReview={reviewFinding}
+                                onViewAll={() => setActiveTab("controls")}
                             />
                         </div>
                     )}
@@ -185,7 +232,17 @@ export default function Compliance() {
                     <ControlsTable
                         controls={controls || []}
                         isLoading={isLoadingControls}
+                        onView={setSelectedControl}
                     />
+                    {selectedControl && (
+                        <Card className="mt-4">
+                            <CardHeader><CardTitle>{selectedControl.controlId}: {selectedControl.title}</CardTitle></CardHeader>
+                            <CardContent className="space-y-3">
+                                <p className="text-sm text-muted-foreground">{selectedControl.description}</p>
+                                <div><p className="text-xs font-medium uppercase text-muted-foreground">Remediation</p><p className="text-sm">{selectedControl.remediation || "No remediation guidance is available for this control."}</p></div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </TabsContent>
 
                 {/* Resources Tab */}
@@ -229,7 +286,22 @@ export default function Compliance() {
                     <AssessmentHistory
                         assessments={assessments || []}
                         isLoading={isLoadingAssessments}
+                        onView={setSelectedAssessment}
+                        onExport={downloadAssessment}
                     />
+                    {selectedAssessment && (
+                        <Card className="mt-4">
+                            <CardHeader>
+                                <CardTitle>{selectedAssessment.frameworkName} assessment</CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <div><p className="text-xs text-muted-foreground">Status</p><p className="font-medium capitalize">{selectedAssessment.status}</p></div>
+                                <div><p className="text-xs text-muted-foreground">Score</p><p className="font-medium">{selectedAssessment.compliancePercent}%</p></div>
+                                <div><p className="text-xs text-muted-foreground">Passed</p><p className="font-medium text-green-600">{selectedAssessment.passedControls}</p></div>
+                                <div><p className="text-xs text-muted-foreground">Failed</p><p className="font-medium text-red-600">{selectedAssessment.failedControls}</p></div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </TabsContent>
 
             </Tabs>

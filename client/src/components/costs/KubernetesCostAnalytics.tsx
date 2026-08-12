@@ -4,6 +4,7 @@ import { Loader2, Server, TrendingUp, TrendingDown, Zap, Cpu, HardDrive, Wifi } 
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useLocation } from 'wouter';
 
 // Define types for the real-time data
 interface KubernetesCostData {
@@ -96,6 +97,7 @@ const defaultCostData: KubernetesCostData = {
 };
 
 export default function KubernetesCostAnalytics() {
+  const [, navigate] = useLocation();
   // Fetch real-time Kubernetes cost data
   const { data, isLoading, error } = useQuery({
     queryKey: ['/api/kubernetes/costs'],
@@ -346,8 +348,13 @@ export default function KubernetesCostAnalytics() {
                     <span className="text-xs text-gray-500">/month</span>
                   </div>
                 </div>
-                <Button variant="link" size="sm" className="p-0 h-auto text-sm mt-2 text-blue-600 dark:text-blue-400">
-                  Apply recommendation →
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="p-0 h-auto text-sm mt-2 text-blue-600 dark:text-blue-400"
+                  onClick={() => navigate('/recommendations')}
+                >
+                  Review recommendation →
                 </Button>
               </motion.div>
             ))
@@ -370,7 +377,7 @@ export default function KubernetesCostAnalytics() {
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
             Connect your Kubernetes cluster to see real-time cost analytics
           </p>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => navigate('/kubernetes')}>
             <Server className="h-4 w-4 mr-2" />
             Connect Kubernetes Cluster
           </Button>

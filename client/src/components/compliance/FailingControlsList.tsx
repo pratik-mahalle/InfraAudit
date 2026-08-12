@@ -8,9 +8,11 @@ import { AlertCircle, ArrowRight } from "lucide-react";
 interface FailingControlsListProps {
     findings: AssessmentFinding[];
     isLoading: boolean;
+    onReview: (finding: AssessmentFinding) => void;
+    onViewAll: () => void;
 }
 
-export function FailingControlsList({ findings, isLoading }: FailingControlsListProps) {
+export function FailingControlsList({ findings, isLoading, onReview, onViewAll }: FailingControlsListProps) {
     if (isLoading) {
         return <div className="text-center p-4">Loading failing controls...</div>;
     }
@@ -46,13 +48,18 @@ export function FailingControlsList({ findings, isLoading }: FailingControlsList
                                         Affected: {f.affectedCount} resources
                                     </p>
                                 </div>
-                                <Button variant="ghost" size="sm" className="h-6 text-red-600 hover:text-red-700 hover:bg-red-50">
-                                    Fix <ArrowRight className="w-3 h-3 ml-1" />
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => onReview(f)}
+                                >
+                                    Review <ArrowRight className="w-3 h-3 ml-1" />
                                 </Button>
                             </div>
                         ))}
                         {findings.length > 5 && (
-                            <Button variant="link" className="w-full text-sm text-muted-foreground">
+                            <Button variant="link" className="w-full text-sm text-muted-foreground" onClick={onViewAll}>
                                 View all {findings.length} failures
                             </Button>
                         )}

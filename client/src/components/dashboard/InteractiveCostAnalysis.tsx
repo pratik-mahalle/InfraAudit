@@ -388,6 +388,25 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
       description: "Your cost data has been downloaded as a CSV file.",
     });
   };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: "InfraAudit cost analysis",
+      text: `Cloud cost analysis for the last ${timeRange}`,
+      url: window.location.href,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({ title: "Link copied", description: "The cost analysis link is ready to share." });
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast({ title: "Unable to share", description: "Copy the page URL from your browser instead.", variant: "destructive" });
+    }
+  };
   
   return (
     <Card className="mb-6">
@@ -438,7 +457,7 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
               <span className="hidden md:inline">Export</span>
             </Button>
             
-            <Button variant="outline" size="sm" className="h-8">
+            <Button variant="outline" size="sm" className="h-8" onClick={handleShare}>
               <Share2 className="h-4 w-4 mr-1" />
               <span className="hidden md:inline">Share</span>
             </Button>
@@ -796,7 +815,7 @@ export function InteractiveCostAnalysis({ hasCloudCredentials }: InteractiveCost
                               'Implement lifecycle policies to move infrequently accessed data to cheaper storage tiers.' : 
                               'Review usage patterns and consider optimizing resource allocation.'}
                         </p>
-                        <Button variant="outline" size="sm" className="mt-3">
+                        <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate('/recommendations')}>
                           View Optimization Plan
                         </Button>
                       </div>

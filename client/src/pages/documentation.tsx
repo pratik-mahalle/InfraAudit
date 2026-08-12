@@ -10,8 +10,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useLocation } from 'wouter';
 
 const Documentation = () => {
+  const [, navigate] = useLocation();
   return (
       <div className="container mx-auto py-8 px-4 max-w-7xl">
         <div className="flex flex-col md:flex-row items-start justify-between gap-4 mb-8">
@@ -197,7 +199,7 @@ const Documentation = () => {
                     <p className="text-sm text-muted-foreground mb-3">
                       Connect using IAM credentials or cross-account IAM role
                     </p>
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/cloud-providers')}>
                       View AWS Connection Guide
                     </Button>
                   </div>
@@ -210,7 +212,7 @@ const Documentation = () => {
                     <p className="text-sm text-muted-foreground mb-3">
                       Connect using Service Account key or OAuth 2.0
                     </p>
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/cloud-providers')}>
                       View GCP Connection Guide
                     </Button>
                   </div>
@@ -223,7 +225,7 @@ const Documentation = () => {
                     <p className="text-sm text-muted-foreground mb-3">
                       Connect using Service Principal or Managed Identity
                     </p>
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/cloud-providers')}>
                       View Azure Connection Guide
                     </Button>
                   </div>

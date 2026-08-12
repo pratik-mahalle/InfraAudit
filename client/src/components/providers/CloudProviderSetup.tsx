@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { CloudProvider } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -95,7 +96,8 @@ export function CloudProviderSetup() {
     isLoading: isLoadingProviders, 
     error: providersError 
   } = useQuery<CloudProviderItem[]>({
-    queryKey: ['/api/providers'],
+    queryKey: ['providers'],
+    queryFn: () => api.providers.list(),
   });
 
   // Form handlers for each provider
@@ -138,7 +140,7 @@ export function CloudProviderSetup() {
         aws_secret_access_key: data.secretAccessKey,
         aws_region: data.region || 'us-east-1',
       };
-      const res = await apiRequest('POST', '/api/providers/aws/connect', body);
+      const res = await apiRequest('POST', '/api/v1/providers/aws/connect', body);
       return await res.json();
     },
     onSuccess: () => {
@@ -148,7 +150,7 @@ export function CloudProviderSetup() {
         variant: "default",
       });
       awsForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/providers'] });
+      queryClient.invalidateQueries({ queryKey: ['providers'] });
     },
     onError: (error: any) => {
       toast({
@@ -168,7 +170,7 @@ export function CloudProviderSetup() {
         gcp_service_account_json: data.serviceAccountKey,
         gcp_region: undefined,
       };
-      const res = await apiRequest('POST', '/api/providers/gcp/connect', body);
+      const res = await apiRequest('POST', '/api/v1/providers/gcp/connect', body);
       return await res.json();
     },
     onSuccess: () => {
@@ -178,7 +180,7 @@ export function CloudProviderSetup() {
         variant: "default",
       });
       gcpForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/providers'] });
+      queryClient.invalidateQueries({ queryKey: ['providers'] });
     },
     onError: (error: any) => {
       toast({
@@ -199,7 +201,7 @@ export function CloudProviderSetup() {
         azure_client_secret: data.clientSecret,
         azure_subscription_id: data.subscriptionId,
       };
-      const res = await apiRequest('POST', '/api/providers/azure/connect', body);
+      const res = await apiRequest('POST', '/api/v1/providers/azure/connect', body);
       return await res.json();
     },
     onSuccess: () => {
@@ -209,7 +211,7 @@ export function CloudProviderSetup() {
         variant: "default",
       });
       azureForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['/api/providers'] });
+      queryClient.invalidateQueries({ queryKey: ['providers'] });
     },
     onError: (error: any) => {
       toast({
@@ -223,7 +225,7 @@ export function CloudProviderSetup() {
   // Remove provider mutation — backend expects lowercase provider name in URL
   const removeProviderMutation = useMutation({
     mutationFn: async (provider: CloudProvider) => {
-      const res = await apiRequest('DELETE', `/api/providers/${provider.toLowerCase()}`);
+      const res = await apiRequest('DELETE', `/api/v1/providers/${provider.toLowerCase()}`);
       return await res.json();
     },
     onSuccess: () => {
@@ -232,7 +234,9 @@ export function CloudProviderSetup() {
         description: "Cloud provider has been disconnected successfully.",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/providers'] });
+      queryClient.invalidateQueries({ queryKey: ['providers'] });
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
     },
     onError: (error: any) => {
       toast({
@@ -241,6 +245,26 @@ export function CloudProviderSetup() {
         variant: "destructive",
       });
     }
+  });
+
+  const syncProviderMutation = useMutation({
+    mutationFn: (provider: string) => api.providers.sync(provider.toLowerCase()),
+    onSuccess: () => {
+      toast({
+        title: 'Provider sync complete',
+        description: 'The latest cloud inventory is now available for drift scanning.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['providers'] });
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Provider sync failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 
   // Fetch Kubernetes clusters
@@ -465,10 +489,15 @@ export function CloudProviderSetup() {
                   variant="secondary" 
                   size="sm"
                   className="flex items-center"
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/providers'] })}
+                  onClick={() => syncProviderMutation.mutate(prov.provider)}
+                  disabled={syncProviderMutation.isPending}
                 >
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Refresh
+                  {syncProviderMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                  )}
+                  Sync now
                 </Button>
               </CardFooter>
             </Card>
@@ -489,7 +518,7 @@ export function CloudProviderSetup() {
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800">Security Notice</AlertTitle>
             <AlertDescription className="text-amber-700">
-              Your credentials are securely encrypted before storage. For maximum security, we recommend using dedicated IAM users with read-only permissions for CloudGuard.
+              Your credentials are securely encrypted before storage. For maximum security, we recommend using dedicated IAM users with read-only permissions for InfraAudit.
             </AlertDescription>
           </Alert>
         </div>
@@ -575,7 +604,7 @@ export function CloudProviderSetup() {
                             <Input type="password" placeholder="AWS Secret Access Key" {...field} />
                           </FormControl>
                           <FormDescription>
-                            Enter your AWS IAM Secret Access Key. We recommend creating a dedicated IAM user with read-only access for CloudGuard.
+                            Enter your AWS IAM Secret Access Key. We recommend creating a dedicated IAM user with read-only access for InfraAudit.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

@@ -27,20 +27,20 @@ interface ResourceDetail {
 
 export default function ResourceDetailPage() {
   const { id } = useParams();
-  const resourceId = parseInt(id ?? '0');
+  const resourceId = id ? decodeURIComponent(id) : '';
 
   // Fetch resource details
   const { data: resource, isLoading, error } = useQuery<ResourceDetail>({
-    queryKey: [`/api/resources/${resourceId}`],
+    queryKey: [`/api/v1/resources/${encodeURIComponent(resourceId)}`],
     queryFn: getQueryFn({ on401: 'throw' }),
-    enabled: !isNaN(resourceId),
+    enabled: resourceId.length > 0,
   });
 
   // Fetch recommendations for this resource
   const { data: recommendations } = useQuery<any[]>({
-    queryKey: [`/api/recommendations?resourceId=${resourceId}`],
+    queryKey: [`/api/recommendations?resourceId=${encodeURIComponent(resourceId)}`],
     queryFn: getQueryFn({ on401: 'throw' }),
-    enabled: !isNaN(resourceId),
+    enabled: resourceId.length > 0,
   });
 
   if (isLoading) {

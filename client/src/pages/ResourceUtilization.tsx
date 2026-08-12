@@ -29,10 +29,11 @@ import { UtilizationCharts } from "@/components/dashboard/UtilizationCharts";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { formatCurrency } from "@/lib/utils";
 import { UtilizationMetric } from "@/types";
-import { useResources } from "@/hooks/use-resources";
+import { useRefreshResourceMetrics, useResources } from "@/hooks/use-resources";
 import api from "@/lib/api";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import {
   RefreshCw,
   Search,
@@ -42,11 +43,12 @@ export default function ResourceUtilizationPage() {
   const [resourceType, setResourceType] = useState("all");
   const [provider, setProvider] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const queryClient = useQueryClient();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const refreshMetrics = useRefreshResourceMetrics();
 
   // Fetch resources from Go backend (paginated response)
-  const { data: resourcesResponse, isLoading: isLoadingResources } = useResources();
+  const { data: resourcesResponse, isLoading: isLoadingResources, isError: isResourcesError, error: resourcesError } = useResources();
   const resources = resourcesResponse?.data ?? [];
 
   // Fetch recommendations for the optimization section
@@ -135,12 +137,23 @@ export default function ResourceUtilizationPage() {
         title="Resource Utilization"
         description="Monitor and optimize resource usage across cloud providers"
         actions={
-          <Button className="flex items-center gap-2" onClick={() => {
-            queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/recommendations"] });
-          }}>
-            <RefreshCw className="h-4 w-4" />
-            Refresh Metrics
+          <Button
+            className="flex items-center gap-2"
+            disabled={refreshMetrics.isPending}
+            onClick={() => refreshMetrics.mutate(undefined, {
+              onSuccess: (providerCount) => toast({
+                title: "Metrics refreshed",
+                description: `Synced ${providerCount} connected cloud provider${providerCount === 1 ? "" : "s"}.`,
+              }),
+              onError: (error: Error) => toast({
+                title: "Refresh failed",
+                description: error.message,
+                variant: "destructive",
+              }),
+            })}
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshMetrics.isPending ? "animate-spin" : ""}`} />
+            {refreshMetrics.isPending ? "Refreshing..." : "Refresh Metrics"}
           </Button>
         }
       />
@@ -234,6 +247,12 @@ export default function ResourceUtilizationPage() {
                       Loading resources...
                     </TableCell>
                   </TableRow>
+                ) : isResourcesError ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center text-destructive">
+                      {resourcesError instanceof Error ? resourcesError.message : "Failed to load resources."}
+                    </TableCell>
+                  </TableRow>
                 ) : filteredResources.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
@@ -244,7 +263,7 @@ export default function ResourceUtilizationPage() {
                   filteredResources.map((resource) => {
                     const util = getResourceUtilization(resource);
                     return (
-                      <TableRow key={resource.id}>
+                      <TableRow key={resource.resourceId ?? resource.id}>
                         <TableCell className="font-medium">{resource.name}</TableCell>
                         <TableCell>{resource.type}</TableCell>
                         <TableCell>{resource.provider}</TableCell>
@@ -270,7 +289,7 @@ export default function ResourceUtilizationPage() {
                             variant="ghost"
                             size="sm"
                             className="h-8 text-primary hover:text-primary/80"
-                            onClick={() => navigate(`/resources/${resource.id}`)}
+                            onClick={() => navigate(`/resources/${encodeURIComponent(resource.resourceId ?? String(resource.id))}`)}
                           >
                             Details
                           </Button>
@@ -310,7 +329,10 @@ export default function ResourceUtilizationPage() {
                       <div className="text-xs text-gray-500">Potential savings</div>
                     </div>
                   </div>
-                  <Button className="px-4 py-2 bg-primary text-white text-sm font-medium">
+                  <Button
+                    className="px-4 py-2 bg-primary text-white text-sm font-medium"
+                    onClick={() => navigate("/recommendations")}
+                  >
                     View Details
                   </Button>
                 </div>

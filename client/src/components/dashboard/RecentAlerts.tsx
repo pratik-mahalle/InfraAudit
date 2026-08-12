@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTimeAgo } from "@/lib/utils";
 import { Alert } from "@/types";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 interface RecentAlertsProps {
   alerts: Alert[];
@@ -17,6 +17,8 @@ interface RecentAlertsProps {
 }
 
 export function RecentAlerts({ alerts, isLoading = false }: RecentAlertsProps) {
+  const [, navigate] = useLocation();
+  const openAlert = (alert: Alert) => navigate(alert.resourceId ? `/resources/${alert.resourceId}` : "/alerts");
   const getSeverityBorderColor = (severity: string) => {
     switch (severity.toLowerCase()) {
       case "critical":
@@ -77,21 +79,22 @@ export function RecentAlerts({ alerts, isLoading = false }: RecentAlertsProps) {
                 <p className="text-xs text-gray-500 mb-2">{alert.message}</p>
                 <div className="flex space-x-2">
                   {alert.type === "cost" && (
-                    <Button size="sm" variant="default" className="text-xs h-8">
+                    <Button size="sm" variant="default" className="text-xs h-8" onClick={() => navigate('/cost')}>
                       Investigate
                     </Button>
                   )}
                   {alert.type === "security" && (
-                    <Button size="sm" variant="default" className="text-xs h-8">
-                      {alert.message.includes("policy") ? "Review" : "Fix Now"}
+                    <Button size="sm" variant="default" className="text-xs h-8" onClick={() => openAlert(alert)}>
+                      Review
                     </Button>
                   )}
                   <Button
                     size="sm"
                     variant="outline"
                     className="text-xs h-8 bg-gray-100 text-gray-500"
+                    onClick={() => navigate('/alerts')}
                   >
-                    {alert.type === "cost" ? "Snooze" : alert.message.includes("policy") ? "Dismiss" : "Approve"}
+                    View Alert
                   </Button>
                 </div>
               </div>

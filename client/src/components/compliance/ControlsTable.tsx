@@ -16,9 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface ControlsTableProps {
     controls: ComplianceControl[];
     isLoading: boolean;
+    onView: (control: ComplianceControl) => void;
 }
 
-export function ControlsTable({ controls, isLoading }: ControlsTableProps) {
+export function ControlsTable({ controls, isLoading, onView }: ControlsTableProps) {
     if (isLoading) {
         return (
             <div className="space-y-2">
@@ -67,7 +68,7 @@ export function ControlsTable({ controls, isLoading }: ControlsTableProps) {
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon">
+                                    <Button variant="ghost" size="icon" title="View control" onClick={() => onView(control)}>
                                         <ExternalLink className="w-4 h-4" />
                                     </Button>
                                 </TableCell>
