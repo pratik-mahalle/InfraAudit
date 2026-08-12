@@ -189,6 +189,34 @@ export interface DriftSummary {
   byType?: Record<string, number>;
 }
 
+export interface DriftDetectionResponse {
+  message: string;
+  jobId?: number;
+  jobKind?: string;
+  queue?: string;
+  duplicate?: boolean;
+}
+
+export type QueueJobState = 'available' | 'cancelled' | 'completed' | 'discarded' | 'pending' | 'retryable' | 'running' | 'scheduled';
+
+export interface QueueJobStatus {
+  id: number;
+  kind: string;
+  queue: string;
+  state: QueueJobState;
+  status: QueueJobState;
+  attempt: number;
+  maxAttempts: number;
+  priority: number;
+  createdAt: string;
+  scheduledAt: string;
+  attemptedAt?: string;
+  finalizedAt?: string;
+  lastError?: string;
+  organizationId: number;
+  actorProfileId: number;
+}
+
 export interface Alert {
   id: number;
   type: string;
@@ -429,12 +457,16 @@ export const api = {
 
     getSummary: () => request<DriftSummary>('/api/v1/drifts/summary'),
 
-    detect: () => request<{ message: string }>('/api/v1/drifts/detect', { method: 'POST' }),
+    detect: () => request<DriftDetectionResponse>('/api/v1/drifts/detect', { method: 'POST' }),
 
     update: (id: number, data: Partial<Drift>) =>
       request(`/api/v1/drifts/${id}`, { method: 'PUT', body: data }),
 
     delete: (id: number) => request(`/api/v1/drifts/${id}`, { method: 'DELETE' }),
+  },
+
+  queue: {
+    getJobStatus: (id: number) => request<QueueJobStatus>(`/api/v1/queue/jobs/${id}`),
   },
 
   // ============================================

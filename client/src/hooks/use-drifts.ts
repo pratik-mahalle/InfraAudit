@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type Drift, type DriftParams, type DriftSummary, type PaginatedResponse } from '@/lib/api';
+import { api, type Drift, type DriftParams, type DriftSummary, type PaginatedResponse, type QueueJobStatus } from '@/lib/api';
+
+const terminalQueueStates = new Set(['cancelled', 'completed', 'discarded']);
 
 export function useDrifts(params?: DriftParams) {
   return useQuery<PaginatedResponse<Drift>>({
@@ -31,6 +33,18 @@ export function useTriggerDriftDetection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drifts'] });
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
+    },
+  });
+}
+
+export function useQueueJobStatus(jobId: number | null | undefined) {
+  return useQuery<QueueJobStatus>({
+    queryKey: ['queue', 'jobs', jobId],
+    queryFn: () => api.queue.getJobStatus(jobId!),
+    enabled: !!jobId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status && terminalQueueStates.has(status) ? false : 3000;
     },
   });
 }

@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -21,6 +22,7 @@ import {
   useApproveDriftAsBaseline,
   useDriftSummary,
   useDrifts,
+  useQueueJobStatus,
   useResolveDrift,
   useTriggerDriftDetection,
 } from "@/hooks/use-drifts";
@@ -85,9 +87,38 @@ function formatConfig(value?: string) {
   }
 }
 
+const terminalQueueStates = new Set(["cancelled", "completed", "discarded"]);
+
+function isTerminalQueueState(status?: string) {
+  return !!status && terminalQueueStates.has(status);
+}
+
+function scanJobDescription(status?: string, lastError?: string) {
+  switch (status) {
+    case "available":
+    case "scheduled":
+      return "The scan is queued and waiting for a worker.";
+    case "running":
+      return "The worker is refreshing inventory and checking drift.";
+    case "retryable":
+      return lastError ? `The scan will retry after an error: ${lastError}` : "The scan will retry after an error.";
+    case "completed":
+      return "The scan completed. Drift and alert data are refreshing.";
+    case "discarded":
+      return lastError ? `The scan failed permanently: ${lastError}` : "The scan failed permanently.";
+    case "cancelled":
+      return "The scan was cancelled.";
+    default:
+      return "Waiting for the scan job to report status.";
+  }
+}
+
 export default function DriftDetection() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedDriftId, setSelectedDriftId] = useState<number | null>(null);
+  const [scanJobId, setScanJobId] = useState<number | null>(null);
+  const [notifiedScanJobStatus, setNotifiedScanJobStatus] = useState("");
   const [search, setSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("detected");
@@ -95,6 +126,7 @@ export default function DriftDetection() {
   const { data: driftsResponse, isLoading } = useDrifts();
   const { data: summary } = useDriftSummary();
   const detectMutation = useTriggerDriftDetection();
+  const { data: scanJobStatus, error: scanJobStatusError, isFetching: isFetchingScanJob } = useQueueJobStatus(scanJobId);
   const resolveMutation = useResolveDrift();
   const acknowledgeMutation = useAcknowledgeDrift();
   const approveMutation = useApproveDriftAsBaseline();
@@ -120,10 +152,46 @@ export default function DriftDetection() {
     acc[drift.driftType] = (acc[drift.driftType] ?? 0) + 1;
     return acc;
   }, {});
+  const activeScanJobStatus = scanJobStatus?.status ?? (scanJobId ? "available" : undefined);
+  const scanJobIsActive = !!scanJobId && !scanJobStatusError && !isTerminalQueueState(activeScanJobStatus);
+
+  useEffect(() => {
+    if (!scanJobStatus || !isTerminalQueueState(scanJobStatus.status)) return;
+
+    const notificationKey = `${scanJobStatus.id}:${scanJobStatus.status}`;
+    if (notifiedScanJobStatus === notificationKey) return;
+
+    setNotifiedScanJobStatus(notificationKey);
+    queryClient.invalidateQueries({ queryKey: ["drifts"] });
+    queryClient.invalidateQueries({ queryKey: ["drifts", "summary"] });
+    queryClient.invalidateQueries({ queryKey: ["alerts"] });
+
+    if (scanJobStatus.status === "completed") {
+      toast({ title: "Drift scan complete", description: "Cloud inventory was refreshed and compared with known baselines." });
+    } else {
+      toast({
+        title: "Drift scan did not complete",
+        description: scanJobStatus.lastError || scanJobDescription(scanJobStatus.status),
+        variant: "destructive",
+      });
+    }
+  }, [notifiedScanJobStatus, queryClient, scanJobStatus, toast]);
 
   const runScan = () => {
     detectMutation.mutate(undefined, {
-      onSuccess: () => toast({ title: "Drift scan complete", description: "Cloud inventory was refreshed and compared with known baselines." }),
+      onSuccess: (result) => {
+        if (result.jobId) {
+          setScanJobId(result.jobId);
+          setNotifiedScanJobStatus("");
+          toast({
+            title: result.duplicate ? "Drift scan already queued" : "Drift scan queued",
+            description: `Job #${result.jobId} is running on the ${result.queue ?? "scan"} queue.`,
+          });
+          return;
+        }
+
+        toast({ title: "Drift scan complete", description: "Cloud inventory was refreshed and compared with known baselines." });
+      },
       onError: (error: Error) => toast({ title: "Scan failed", description: error.message, variant: "destructive" }),
     });
   };
@@ -152,12 +220,42 @@ export default function DriftDetection() {
         title="Drift Detection"
         description="Compare live infrastructure against approved baselines and close configuration drift deliberately."
         actions={
-          <Button onClick={runScan} disabled={detectMutation.isPending} className="gap-2">
-            {detectMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+          <Button onClick={runScan} disabled={detectMutation.isPending || scanJobIsActive} className="gap-2">
+            {detectMutation.isPending || scanJobIsActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
             Run Drift Scan
           </Button>
         }
       />
+
+      {scanJobId && (
+        <Card className="mb-6 rounded-lg border-blue-200 bg-blue-50/60 dark:border-blue-900/50 dark:bg-blue-950/20">
+          <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 gap-3">
+              {scanJobIsActive || isFetchingScanJob ? (
+                <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin text-blue-600" />
+              ) : scanJobStatus?.status === "completed" ? (
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+              )}
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium">Drift scan job #{scanJobId}</p>
+                  <ToneBadge value={activeScanJobStatus ?? "queued"} tone={scanJobStatus?.status === "completed" ? "emerald" : scanJobStatus?.status === "discarded" ? "red" : "blue"} />
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {scanJobStatusError instanceof Error ? scanJobStatusError.message : scanJobDescription(activeScanJobStatus, scanJobStatus?.lastError)}
+                </p>
+              </div>
+            </div>
+            {scanJobStatus?.attempt !== undefined && (
+              <div className="shrink-0 text-xs text-muted-foreground">
+                Attempt {scanJobStatus.attempt}/{scanJobStatus.maxAttempts}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricTile icon={GitCompareArrows} label="Total drifts" value={summary?.total ?? drifts.length} tone="blue" helper="All detected changes" />
