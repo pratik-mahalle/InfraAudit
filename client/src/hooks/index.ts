@@ -5,6 +5,7 @@ export * from './use-alerts';
 export * from './use-resources';
 export * from './use-providers';
 export * from './use-vulnerabilities';
+export * from './use-findings';
 export * from './use-queue-job';
 export * from './use-toast';
 export * from './use-mobile';

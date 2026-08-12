@@ -33,9 +33,9 @@ function riskWeight(severity: string) {
   return 0;
 }
 
-function resourceName(resources: Array<{ id?: number; name: string }>, id?: number) {
+function resourceName(resources: Array<{ id?: number; resourceId?: string; name: string }>, id?: number | string) {
   if (!id) return "No resource linked";
-  return resources.find((resource) => resource.id === id)?.name ?? `Resource ${id}`;
+  return resources.find((resource) => resource.id === id || resource.resourceId === String(id))?.name ?? `Resource ${id}`;
 }
 
 export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab?: string }) {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, FileCheck2, FileText, PlayCircle, Search, ShieldCheck, ShieldX } from "lucide-react";
+import { Download, FileCheck2, Fingerprint, FileText, PlayCircle, Search, ShieldCheck, ShieldX } from "lucide-react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { AssessmentHistory } from "@/components/compliance/AssessmentHistory";
@@ -22,8 +22,11 @@ import {
   useRunAssessment,
   useToggleFramework,
 } from "@/hooks/use-compliance";
+import { useFindings, useUpdateFindingStatus } from "@/hooks/use-findings";
 import { useToast } from "@/hooks/use-toast";
+import type { FindingStatus } from "@/lib/api";
 import type { AssessmentFinding, ComplianceAssessment, ComplianceControl } from "@/types";
+import { FindingDetailPanel, FindingRow, formatFindingLabel } from "@/components/findings/finding-ui";
 import { DetailRow, EmptyPanel, MetricTile, ToneBadge } from "@/components/security-ops/ops-ui";
 
 export default function Compliance() {
@@ -34,14 +37,22 @@ export default function Compliance() {
   const [lookupResourceId, setLookupResourceId] = useState("");
   const [selectedAssessment, setSelectedAssessment] = useState<ComplianceAssessment | null>(null);
   const [selectedControl, setSelectedControl] = useState<ComplianceControl | null>(null);
+  const [selectedFindingId, setSelectedFindingId] = useState<number | null>(null);
 
   const { data: overview, isLoading: overviewLoading } = useComplianceOverview();
   const { data: frameworks = [], isLoading: frameworksLoading } = useFrameworks();
   const { data: controls = [], isLoading: controlsLoading } = useFrameworkControls(selectedFrameworkId);
   const { data: failingControls = [], isLoading: failuresLoading } = useFailingControls(selectedFrameworkId);
   const { data: assessments = [], isLoading: assessmentsLoading } = useAssessments(selectedFrameworkId);
+  const { data: complianceFindingsResponse, isLoading: complianceFindingsLoading } = useFindings({
+    findingType: "compliance_violation",
+    status: "open",
+    page: 1,
+    pageSize: 100,
+  });
   const { mutate: runAssessment, isPending: assessmentRunning } = useRunAssessment();
   const { mutate: toggleFramework } = useToggleFramework();
+  const updateFindingStatus = useUpdateFindingStatus();
 
   useEffect(() => {
     if (!selectedFrameworkId && frameworks.length > 0) {
@@ -56,6 +67,19 @@ export default function Compliance() {
   const failingCount = overview?.failedControls ?? failingControls.length;
   const passingCount = overview?.passedControls ?? 0;
   const totalControls = overview?.totalControls ?? controls.length;
+  const complianceFindings = complianceFindingsResponse?.data ?? [];
+  const selectedFinding = complianceFindings.find((finding) => finding.id === selectedFindingId) ?? complianceFindings[0] ?? null;
+
+  const updateSelectedFindingStatus = (status: FindingStatus) => {
+    if (!selectedFinding) return;
+    updateFindingStatus.mutate(
+      { id: selectedFinding.id, status },
+      {
+        onSuccess: () => toast({ title: "Finding updated", description: `Status changed to ${formatFindingLabel(status)}.` }),
+        onError: (error: Error) => toast({ title: "Could not update finding", description: error.message, variant: "destructive" }),
+      },
+    );
+  };
 
   const handleRunAssessment = () => {
     if (!selectedFrameworkId) {
@@ -100,10 +124,21 @@ export default function Compliance() {
   };
 
   const reviewFinding = (finding: AssessmentFinding) => {
-    setActiveTab("controls");
+    const normalizedFinding = complianceFindings.find((item) => {
+      const target = `${item.ruleId ?? ""} ${item.externalId ?? ""} ${item.title}`.toLowerCase();
+      return target.includes(finding.controlId.toLowerCase());
+    });
+
+    if (normalizedFinding) {
+      setSelectedFindingId(normalizedFinding.id);
+      setActiveTab("findings");
+    } else {
+      setActiveTab("controls");
+    }
+
     toast({
       title: `Reviewing ${finding.controlId}`,
-      description: finding.remediation || "Open the control details to review remediation guidance.",
+      description: normalizedFinding ? "Opening normalized audit evidence for this control." : finding.remediation || "Open the control details to review remediation guidance.",
     });
   };
 
@@ -130,7 +165,7 @@ export default function Compliance() {
         <MetricTile icon={ShieldCheck} label="Readiness score" value={`${compliancePercent}%`} tone={compliancePercent >= 80 ? "emerald" : compliancePercent >= 60 ? "amber" : "red"} helper="Across enabled frameworks" />
         <MetricTile icon={FileCheck2} label="Passing controls" value={passingCount} tone="emerald" helper={`${totalControls} total controls`} />
         <MetricTile icon={ShieldX} label="Failing controls" value={failingCount} tone="red" helper="Needs remediation" />
-        <MetricTile icon={FileText} label="Frameworks" value={enabledFrameworks} tone="blue" helper={`${frameworks.length} configured`} />
+        <MetricTile icon={Fingerprint} label="Open violations" value={complianceFindings.length} tone="orange" helper={`${enabledFrameworks}/${frameworks.length} frameworks enabled`} />
       </div>
 
       <Card className="mt-6 rounded-lg">
@@ -139,7 +174,7 @@ export default function Compliance() {
           <CardDescription>{selectedFramework?.name ? `${selectedFramework.name} is selected for assessment review` : "Select a framework to inspect controls"}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
             <div className="space-y-3">
               <div className="rounded-lg border p-4">
                 <div className="mb-2 flex items-center justify-between text-sm">
@@ -181,8 +216,40 @@ export default function Compliance() {
               findings={failingControls}
               isLoading={failuresLoading}
               onReview={reviewFinding}
-              onViewAll={() => setActiveTab("controls")}
+              onViewAll={() => setActiveTab("findings")}
             />
+
+            <div className="rounded-lg border p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">Audit Evidence Queue</p>
+                  <p className="text-xs text-muted-foreground">Open normalized compliance violations</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setActiveTab("findings")}>
+                  View All
+                </Button>
+              </div>
+              {complianceFindingsLoading ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">Loading evidence...</p>
+              ) : complianceFindings.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">No open compliance findings.</p>
+              ) : (
+                <div className="divide-y rounded-lg border">
+                  {complianceFindings.slice(0, 4).map((finding) => (
+                    <FindingRow
+                      key={finding.id}
+                      finding={finding}
+                      compact
+                      selected={selectedFinding?.id === finding.id}
+                      onSelect={() => {
+                        setSelectedFindingId(finding.id);
+                        setActiveTab("findings");
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -191,6 +258,7 @@ export default function Compliance() {
         <TabsList>
           <TabsTrigger value="readiness">Frameworks</TabsTrigger>
           <TabsTrigger value="controls">Controls</TabsTrigger>
+          <TabsTrigger value="findings">Findings</TabsTrigger>
           <TabsTrigger value="resources">Resources</TabsTrigger>
           <TabsTrigger value="evidence">Evidence</TabsTrigger>
         </TabsList>
@@ -231,6 +299,49 @@ export default function Compliance() {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="findings" className="mt-4">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
+            <Card className="rounded-lg">
+              <CardHeader>
+                <CardTitle>Compliance Findings</CardTitle>
+                <CardDescription>Policy-backed violations with stored resource evidence and lifecycle state</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {complianceFindingsLoading ? (
+                  <EmptyPanel icon={FileText} title="Loading compliance findings" description="Fetching normalized audit evidence records." />
+                ) : complianceFindings.length === 0 ? (
+                  <EmptyPanel icon={ShieldCheck} title="No open compliance findings" description="Run an assessment or adjust filters in Security Findings to review closed records." />
+                ) : (
+                  <div className="divide-y rounded-lg border">
+                    {complianceFindings.map((finding) => (
+                      <FindingRow
+                        key={finding.id}
+                        finding={finding}
+                        selected={selectedFinding?.id === finding.id}
+                        onSelect={() => setSelectedFindingId(finding.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-lg">
+              <CardHeader>
+                <CardTitle>Audit Evidence Detail</CardTitle>
+                <CardDescription>Control mapping, policy source, resource evidence, and remediation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FindingDetailPanel
+                  finding={selectedFinding}
+                  onStatusChange={updateSelectedFindingStatus}
+                  isStatusPending={updateFindingStatus.isPending}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="resources" className="mt-4 space-y-4">

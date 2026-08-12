@@ -40,6 +40,8 @@ import Automation from "@/pages/Automation";
 import Recommendations from "@/pages/Recommendations";
 import DriftDetectionPage from "@/pages/DriftDetection";
 import VulnerabilitiesPage from "@/pages/Vulnerabilities";
+import FindingsPage from "@/pages/Findings";
+import FindingDetail from "@/pages/FindingDetail";
 import BillingImport from "@/pages/BillingImport";
 import IaCManagement from "@/pages/IaCManagement";
 import Alerts from "@/pages/Alerts";
@@ -57,6 +59,7 @@ const PROTECTED_ROUTES = [
   "/security",
   "/drift-detection",
   "/vulnerabilities",
+  "/findings",
   "/cost",
   "/cost-prediction",
   "/resources",
@@ -121,6 +124,12 @@ function Router() {
             </ProtectedRoute>
             <ProtectedRoute path="/vulnerabilities">
               <WithTrialCheck><VulnerabilitiesPage /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/findings/:id">
+              <WithTrialCheck><FindingDetail /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/findings">
+              <WithTrialCheck><FindingsPage /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/recommendations">
               <WithTrialCheck><Recommendations /></WithTrialCheck>

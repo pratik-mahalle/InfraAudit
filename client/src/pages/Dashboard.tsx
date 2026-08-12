@@ -11,10 +11,10 @@ import {
   RefreshCw, FileText, Zap, CheckCircle2, CloudIcon, Plus,
   Loader2, ArrowRight, ChevronDown, Filter, X, Check,
   Network,
-  MapPin, Layers3,
+  MapPin, Layers3, Fingerprint,
 } from "lucide-react";
 import { SecurityDrift, Alert, Recommendation, CostTrend, ComplianceOverview } from "@/types";
-import api, { HealthScore, Provider, Resource as ApiResource } from "@/lib/api";
+import api, { Finding, FindingSummary, HealthScore, Provider, Resource as ApiResource } from "@/lib/api";
 import { formatResourceType } from "@/lib/resource-display";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -328,6 +328,61 @@ function ComplianceCard({ frameworks, onJump }: { frameworks: Framework[]; onJum
             <div className="ia-fw-sub ia-tnum">{f.passed}/{f.total} controls passing</div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function FindingsRiskCard({
+  summary,
+  findings,
+  onJump,
+}: {
+  summary?: FindingSummary;
+  findings: Finding[];
+  onJump: () => void;
+}) {
+  const open = summary?.byStatus?.open ?? findings.filter((finding) => finding.status === "open").length;
+  const criticalHigh = (summary?.bySeverity?.critical ?? 0) + (summary?.bySeverity?.high ?? 0);
+  const top = findings.slice(0, 5);
+
+  return (
+    <div className="ia-card">
+      <div className="ia-card-head">
+        <div className="ia-card-title"><Fingerprint size={15} /> Unified Findings</div>
+        <button className="ia-link-more" onClick={onJump}>Triage <ArrowRight size={12} /></button>
+      </div>
+      <div className="ia-card-pad" style={{ paddingTop: 10 }}>
+        <div className="grid grid-cols-3 gap-2" style={{ marginBottom: 12 }}>
+          <div className="rounded-md border p-3">
+            <div className="text-[11px] text-muted-foreground">Open</div>
+            <div className="text-xl font-semibold">{open}</div>
+          </div>
+          <div className="rounded-md border p-3">
+            <div className="text-[11px] text-muted-foreground">Critical/High</div>
+            <div className="text-xl font-semibold">{criticalHigh}</div>
+          </div>
+          <div className="rounded-md border p-3">
+            <div className="text-[11px] text-muted-foreground">Total</div>
+            <div className="text-xl font-semibold">{summary?.total ?? findings.length}</div>
+          </div>
+        </div>
+        {top.length === 0 ? (
+          <div className="ia-empty">No normalized findings are open right now.</div>
+        ) : (
+          <div>
+            {top.map((finding) => (
+              <button key={finding.id} type="button" className="ia-feed-item" onClick={onJump}>
+                <SevPill sev={finding.severity} />
+                <div style={{ minWidth: 0 }}>
+                  <div className="ia-feed-title">{finding.title}</div>
+                  <div className="ia-feed-meta">{finding.provider?.toUpperCase() || "provider"} · {finding.scannerType || finding.sourceType}</div>
+                </div>
+                <div className="ia-feed-time">{finding.lastSeenAt ? new Date(finding.lastSeenAt).toLocaleDateString() : "recent"}</div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -746,11 +801,24 @@ export default function Dashboard() {
     enabled: hasConnected,
     staleTime: 30_000,
   });
+  const { data: findingSummary } = useQuery<FindingSummary>({
+    queryKey: ["findings", "summary"],
+    queryFn: () => api.findings.getSummary(),
+    enabled: hasConnected,
+    staleTime: 30_000,
+  });
+  const { data: findingsResponse } = useQuery({
+    queryKey: ["findings", "dashboard", { status: "open", page: 1, pageSize: 6 }],
+    queryFn: () => api.findings.list({ status: "open", page: 1, pageSize: 6 }),
+    enabled: hasConnected,
+    staleTime: 30_000,
+  });
 
   const drifts: SecurityDrift[]    = Array.isArray(driftsResponse)          ? driftsResponse          : (driftsResponse?.data          || []);
   const alerts: Alert[]            = Array.isArray(alertsResponse)           ? alertsResponse           : (alertsResponse?.data           || []);
   const recommendations: Recommendation[] = Array.isArray(recommendationsResponse) ? recommendationsResponse : (recommendationsResponse?.data || []);
   const resources = resourcesResponse?.data ?? [];
+  const dashboardFindings = findingsResponse?.data ?? [];
 
   const hasProviders = connectedProviders.length > 0 || k8sClusters.length > 0;
 
@@ -948,9 +1016,10 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* ── Compliance + Savings ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
+        {/* ── Compliance + Findings + Savings ── */}
+        <div className="grid grid-cols-1 xl:grid-cols-3" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
           <ComplianceCard frameworks={complianceFrameworks} onJump={() => navigate("/compliance")} />
+          <FindingsRiskCard summary={findingSummary} findings={dashboardFindings} onJump={() => navigate("/findings")} />
           <SavingsCard recommendations={recommendations} />
         </div>
 
