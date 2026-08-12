@@ -7,7 +7,8 @@ import { AiAnalysisPanel } from '@/components/ai/AiAnalysisPanel';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Server, Database, HardDrive, Cloud, CloudOff } from 'lucide-react';
+import { Loader2, Server, Database, HardDrive, Cloud, CloudOff, Network, Shield, UserRound, KeyRound } from 'lucide-react';
+import { formatResourceType, parseResourceConfiguration } from '@/lib/resource-display';
 
 interface ResourceDetail {
   id: number;
@@ -20,6 +21,7 @@ interface ResourceDetail {
   costPerMonth?: number;
   utilization?: number;
   resourceId?: string;
+  configuration?: string;
   tags?: Record<string, string>;
   metadata?: Record<string, any>;
   createdAt: string;
@@ -66,20 +68,38 @@ export default function ResourceDetailPage() {
   // Get the appropriate icon based on resource type
   const getResourceIcon = (type: string) => {
     switch (type.toLowerCase()) {
+      case 'ec2-instance':
       case 'ec2':
       case 'vm':
       case 'compute':
         return <Server className="h-5 w-5" />;
+      case 'rds-instance':
       case 'rds':
       case 'database':
         return <Database className="h-5 w-5" />;
+      case 's3-bucket':
+      case 'ebs-volume':
       case 's3':
       case 'storage':
         return <HardDrive className="h-5 w-5" />;
+      case 'vpc':
+        return <Network className="h-5 w-5" />;
+      case 'security-group':
+        return <Shield className="h-5 w-5" />;
+      case 'iam-user':
+        return <UserRound className="h-5 w-5" />;
+      case 'iam-role':
+        return <KeyRound className="h-5 w-5" />;
       default:
         return <Cloud className="h-5 w-5" />;
     }
   };
+
+  const configuration = parseResourceConfiguration(resource.configuration);
+  const configurationTags = configuration.tags && typeof configuration.tags === 'object' && !Array.isArray(configuration.tags)
+    ? configuration.tags as Record<string, string>
+    : undefined;
+  const tags = resource.tags ?? configurationTags;
 
   // Format cost values
   const formatCost = (cost: number) => {
@@ -102,7 +122,7 @@ export default function ResourceDetailPage() {
               {getResourceIcon(resource.type)}
               <h1 className="text-3xl font-bold">{resource.name}</h1>
               <Badge variant="outline" className="text-xs">
-                {resource.type}
+                {formatResourceType(resource.type)}
               </Badge>
             </div>
             <p className="text-muted-foreground mt-1">
@@ -111,7 +131,7 @@ export default function ResourceDetailPage() {
           </div>
           <div className="flex flex-col items-end">
             <div className="text-sm text-muted-foreground">Monthly Cost</div>
-            <div className="text-2xl font-bold">{formatCost(resource.cost || 0)}</div>
+            <div className="text-2xl font-bold">{resource.cost == null ? '—' : formatCost(resource.cost)}</div>
           </div>
         </div>
 
@@ -137,7 +157,7 @@ export default function ResourceDetailPage() {
                         <div className="space-y-2">
                           <div className="flex justify-between">
                             <span className="text-sm">Type:</span>
-                            <span className="text-sm font-medium">{resource.type}</span>
+                            <span className="text-sm font-medium">{formatResourceType(resource.type)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-sm">Provider:</span>
@@ -165,7 +185,7 @@ export default function ResourceDetailPage() {
                         <div className="space-y-2">
                           <div className="flex justify-between">
                             <span className="text-sm">Current Cost:</span>
-                            <span className="text-sm font-medium">{formatCost(resource.cost || 0)}/month</span>
+                            <span className="text-sm font-medium">{resource.cost == null ? 'Not imported' : `${formatCost(resource.cost)}/month`}</span>
                           </div>
                           {resource.costPerMonth && (
                             <div className="flex justify-between">
@@ -192,9 +212,9 @@ export default function ResourceDetailPage() {
                     <CardDescription>Additional resource information</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {resource.tags && Object.keys(resource.tags).length > 0 ? (
+                    {tags && Object.keys(tags).length > 0 ? (
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {Object.entries(resource.tags).map(([key, value]) => (
+                        {Object.entries(tags).map(([key, value]) => (
                           <Badge key={key} variant="secondary" className="text-xs">
                             {key}: {value}
                           </Badge>
@@ -204,12 +224,12 @@ export default function ResourceDetailPage() {
                       <p className="text-sm text-muted-foreground">No tags associated with this resource.</p>
                     )}
 
-                    {resource.metadata && Object.keys(resource.metadata).length > 0 && (
+                    {Object.keys(configuration).length > 0 && (
                       <div className="mt-4">
                         <h3 className="text-sm font-medium mb-2">Metadata</h3>
                         <div className="bg-muted/50 rounded-md p-4">
                           <pre className="text-xs overflow-auto">
-                            {JSON.stringify(resource.metadata, null, 2)}
+                            {JSON.stringify(configuration, null, 2)}
                           </pre>
                         </div>
                       </div>

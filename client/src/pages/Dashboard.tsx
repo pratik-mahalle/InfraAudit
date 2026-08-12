@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import "@/components/dashboard/dashboard.css";
 
@@ -13,10 +12,8 @@ import {
   Loader2, ArrowRight, ChevronDown, Filter, X, Check,
   Network,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { SecurityDrift, Alert, Recommendation } from "@/types";
-import { HealthScore } from "@/lib/api";
+import { SecurityDrift, Alert, Recommendation, CostTrend, ComplianceOverview } from "@/types";
+import api, { HealthScore, Provider } from "@/lib/api";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -148,16 +145,27 @@ function KpiCard({ k }: { k: KpiDef }) {
 
 // ─── Cost Trend Chart ─────────────────────────────────────────────────────────
 
-function CostTrendCard({ costData }: { costData?: any }) {
-  const data = costData?.trend || [28,29,28.5,30,31,30.5,32,31,33,34,33.5,35,36,35,37,38,37.5,39,41,40,44,47,45,46,48,47,49,48,50,47.3];
-  const anomalyIdx = costData?.anomalyIdx ?? 20;
-  const anomalyLabel = costData?.anomalyLabel ?? "+40% spike";
-  const anomalyNote = costData?.anomalyNote ?? "NAT gateway egress";
-  const mtd = costData?.mtd ?? "$47,284";
-  const forecast = costData?.forecast ?? "$51.2K";
+function CostTrendCard({ costData }: { costData?: CostTrend }) {
+  const data = costData?.dataPoints.map((point) => point.cost) ?? [];
+
+  if (data.length < 2) {
+    return (
+      <div className="ia-card" style={{ display: "flex", flexDirection: "column" }}>
+        <div className="ia-card-head">
+          <div className="ia-card-title"><TrendingUp size={15} /> Cost Trend <span className="ia-eyebrow">last 30 days</span></div>
+        </div>
+        <div style={{ padding: "48px 18px", textAlign: "center", color: "var(--ia-ink-faint)", fontSize: 13 }}>
+          No cloud cost history has been imported yet.
+        </div>
+      </div>
+    );
+  }
+
+  const mtd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
+    .format(costData?.currentCost ?? 0);
 
   const W = 640, H = 200, padL = 8, padR = 8, padT = 14, padB = 22;
-  const min = Math.min(...data) * 0.94, max = Math.max(...data) * 1.04, rng = max - min;
+  const min = Math.min(...data) * 0.94, max = Math.max(...data) * 1.04, rng = max - min || 1;
   const x = (i: number) => padL + (i / (data.length - 1)) * (W - padL - padR);
   const y = (v: number) => padT + (1 - (v - min) / rng) * (H - padT - padB);
   const line = data.map((d: number, i: number) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(d).toFixed(1)).join(" ");
@@ -170,13 +178,13 @@ function CostTrendCard({ costData }: { costData?: any }) {
         <div className="ia-card-title">
           <TrendingUp size={15} /> Cost Trend <span className="ia-eyebrow">last 30 days</span>
         </div>
-        <span className="ia-anomaly-flag"><AlertTriangle size={14} /> Anomaly · {anomalyNote}</span>
       </div>
       <div className="ia-card-pad" style={{ flex: 1 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6 }}>
           <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums", color: "var(--ia-ink)" }}>{mtd}</div>
-          <span className="ia-delta ia-delta-up">↑+12% MTD</span>
-          <span className="ia-muted" style={{ fontSize: 12 }}>forecast {forecast} by EOM</span>
+          <span className={`ia-delta ${(costData?.changePercent ?? 0) > 0 ? "ia-delta-up" : "ia-delta-down"}`}>
+            {(costData?.changePercent ?? 0) > 0 ? "↑" : "↓"}{Math.abs(costData?.changePercent ?? 0).toFixed(1)}% vs previous period
+          </span>
         </div>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" preserveAspectRatio="none" style={{ display: "block" }}>
           <defs>
@@ -192,12 +200,6 @@ function CostTrendCard({ costData }: { costData?: any }) {
           ))}
           <path d={area} fill="url(#ia-ctg)" />
           <path d={line} fill="none" stroke="var(--ia-brand)" strokeWidth="2.2" strokeLinejoin="round" />
-          <line x1={x(anomalyIdx)} x2={x(anomalyIdx)} y1={y(data[anomalyIdx])} y2={H-padB}
-            stroke="var(--ia-sev-crit)" strokeDasharray="3 3" strokeWidth="1.2" />
-          <circle cx={x(anomalyIdx)} cy={y(data[anomalyIdx])} r="4.5"
-            fill="var(--ia-sev-crit)" stroke="var(--ia-surface)" strokeWidth="2" />
-          <text x={x(anomalyIdx)} y={y(data[anomalyIdx])-9} fontSize="11" fontWeight="700"
-            fill="var(--ia-sev-crit)" textAnchor="middle" fontFamily="var(--ia-font-mono)">{anomalyLabel}</text>
         </svg>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--ia-ink-faint)", marginTop: 2 }}>
           {labels.map(l => <span key={l}>{l}</span>)}
@@ -249,14 +251,6 @@ function DriftFeedCard({ drifts, onPick, onViewAll }: {
 interface Framework { name: string; tag: string; pct: number; tone: string; passed: number; total: number; }
 
 function ComplianceCard({ frameworks, onJump }: { frameworks: Framework[]; onJump: () => void }) {
-  const defaultFrameworks: Framework[] = [
-    { name: "CIS AWS Foundations", tag: "v3.0", pct: 91, tone: "ok",   passed: 156, total: 171 },
-    { name: "SOC 2 Type II",       tag: "TSC",  pct: 84, tone: "warn", passed: 58,  total: 69  },
-    { name: "NIST 800-53",         tag: "rev5", pct: 79, tone: "warn", passed: 142, total: 180 },
-    { name: "PCI-DSS",             tag: "v4.0", pct: 67, tone: "crit", passed: 41,  total: 61  },
-  ];
-  const items = frameworks.length > 0 ? frameworks : defaultFrameworks;
-
   return (
     <div className="ia-card">
       <div className="ia-card-head">
@@ -264,7 +258,11 @@ function ComplianceCard({ frameworks, onJump }: { frameworks: Framework[]; onJum
         <button className="ia-link-more" onClick={onJump}>Frameworks <ArrowRight size={12} /></button>
       </div>
       <div className="ia-card-pad" style={{ paddingTop: 6, paddingBottom: 6 }}>
-        {items.map(f => (
+        {frameworks.length === 0 ? (
+          <div style={{ padding: "32px 12px", textAlign: "center", color: "var(--ia-ink-faint)", fontSize: 13 }}>
+            No compliance assessment results are available yet.
+          </div>
+        ) : frameworks.map(f => (
           <div className="ia-fw-row" key={f.name}>
             <div className="ia-fw-name">{f.name} <span className="ia-fw-tag">{f.tag}</span></div>
             <div className="ia-fw-pct" style={{ color: toneColor(f.tone) }}>{f.pct}%</div>
@@ -613,11 +611,17 @@ export default function Dashboard() {
   const [sel, setSel] = useState<SecurityDrift | null>(null);
   const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d">("24h");
   const { toast } = useToast();
-  const { user } = useAuth();
 
   // ── Queries ─────────────────────────────────────────────────────────────────
-  const { data: providers, isLoading: isLoadingProviders } = useQuery<any[]>({
-    queryKey: ["/api/providers"],
+  const {
+    data: providers = [],
+    isLoading: isLoadingProviders,
+    isError: isProvidersError,
+    error: providersError,
+    refetch: refetchProviders,
+  } = useQuery<Provider[]>({
+    queryKey: ["providers"],
+    queryFn: () => api.providers.list(),
     staleTime: 0,
     refetchOnMount: "always",
   });
@@ -627,15 +631,16 @@ export default function Dashboard() {
     refetchOnMount: "always",
   });
 
-  const hasConnected = true; // always fetch — fallback to mock data when empty
+  const connectedProviders = providers.filter((provider) => provider.isConnected);
+  const hasConnected = connectedProviders.length > 0 || k8sClusters.length > 0;
 
-  const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<any>({
+  const { data: driftsResponse, error: driftsError } = useQuery<any>({
     queryKey: ["/api/drifts"],
     enabled: hasConnected,
     staleTime: 0,
     refetchOnMount: "always",
   });
-  const { data: alertsResponse } = useQuery<any>({
+  const { data: alertsResponse, error: alertsError } = useQuery<any>({
     queryKey: ["/api/alerts"],
     enabled: hasConnected,
     staleTime: 0,
@@ -647,8 +652,9 @@ export default function Dashboard() {
     staleTime: 0,
     refetchOnMount: "always",
   });
-  const { data: resourcesResponse } = useQuery<any>({
-    queryKey: ["/api/resources"],
+  const { data: resourcesResponse, isError: isResourcesError, error: resourcesError } = useQuery({
+    queryKey: ["resources", { page: 1, pageSize: 100 }],
+    queryFn: () => api.resources.list({ page: 1, pageSize: 100 }),
     enabled: hasConnected,
     staleTime: 0,
     refetchOnMount: "always",
@@ -665,8 +671,20 @@ export default function Dashboard() {
     staleTime: 0,
     refetchOnMount: "always",
   });
-  const { data: healthScore } = useQuery<HealthScore>({
+  const { data: healthScore, error: healthScoreError } = useQuery<HealthScore>({
     queryKey: ["/api/v1/health-score"],
+    enabled: hasConnected,
+    staleTime: 30_000,
+  });
+  const { data: costTrend } = useQuery<CostTrend>({
+    queryKey: ["/api/v1/costs/trends", "", "monthly"],
+    queryFn: () => api.costs.getTrends(undefined, "monthly"),
+    enabled: hasConnected,
+    staleTime: 30_000,
+  });
+  const { data: complianceOverview, error: complianceError } = useQuery<ComplianceOverview>({
+    queryKey: ["/api/v1/compliance/overview"],
+    queryFn: () => api.compliance.getOverview(),
     enabled: hasConnected,
     staleTime: 30_000,
   });
@@ -674,9 +692,8 @@ export default function Dashboard() {
   const drifts: SecurityDrift[]    = Array.isArray(driftsResponse)          ? driftsResponse          : (driftsResponse?.data          || []);
   const alerts: Alert[]            = Array.isArray(alertsResponse)           ? alertsResponse           : (alertsResponse?.data           || []);
   const recommendations: Recommendation[] = Array.isArray(recommendationsResponse) ? recommendationsResponse : (recommendationsResponse?.data || []);
-  const resources: any[]           = Array.isArray(resourcesResponse)        ? resourcesResponse        : (resourcesResponse?.data        || []);
+  const resources = resourcesResponse?.data ?? [];
 
-  const connectedProviders = providers?.filter((p: any) => p.isConnected) || [];
   const hasProviders = connectedProviders.length > 0 || k8sClusters.length > 0;
 
   const activeDrifts = drifts;
@@ -684,7 +701,7 @@ export default function Dashboard() {
   // ── Scan mutation ─────────────────────────────────────────────────────────
   const scanMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/drifts/detect");
+      const res = await apiRequest("POST", "/api/v1/drifts/detect");
       return await res.json();
     },
     onMutate: () => { setIsScanning(true); toast({ title: "Scan started", description: "Detecting infrastructure drifts…" }); },
@@ -693,6 +710,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/drifts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
       queryClient.invalidateQueries({ queryKey: ["/api/drifts/summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/alerts/summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/v1/health-score"] });
@@ -702,10 +720,18 @@ export default function Dashboard() {
   });
 
   // ── Computed KPIs ─────────────────────────────────────────────────────────
-  const totalDrifts = driftSummary?.total ?? activeDrifts.length ?? (hasProviders ? 0 : 12);
-  const criticalDrifts = driftSummary?.critical ?? activeDrifts.filter(d => d.severity === "critical").length ?? (hasProviders ? 0 : 2);
-  const openAlerts = alertSummary?.open ?? alerts.filter(a => a.status === "open").length ?? (hasProviders ? 0 : 7);
-  const totalResources = resources.length || (hasProviders ? 0 : 248);
+  const totalDrifts = driftSummary?.total ?? activeDrifts.length;
+  const criticalDrifts = driftSummary?.critical ?? activeDrifts.filter(d => d.severity === "critical").length;
+  const openAlerts = alertSummary?.open ?? alerts.filter(a => a.status === "open").length;
+  const totalResources = resourcesResponse?.totalItems ?? resources.length;
+  const complianceFrameworks: Framework[] = (complianceOverview?.byFramework ?? []).map((framework) => ({
+    name: framework.frameworkName,
+    tag: framework.frameworkId,
+    pct: framework.compliancePercent,
+    tone: framework.compliancePercent >= 90 ? "ok" : framework.compliancePercent >= 70 ? "warn" : "crit",
+    passed: framework.passedControls,
+    total: framework.totalControls,
+  }));
 
   const kpis: KpiDef[] = [
     {
@@ -724,7 +750,6 @@ export default function Dashboard() {
       value: totalResources,
       delta: connectedProviders.length > 0 ? `${connectedProviders.length} provider${connectedProviders.length > 1 ? "s" : ""}` : undefined,
       meta: "monitored",
-      spark: [totalResources * 0.9, totalResources * 0.92, totalResources * 0.94, totalResources * 0.96, totalResources * 0.97, totalResources * 0.98, totalResources * 0.99, totalResources],
     },
     {
       id: "drifts", label: "Security Drifts", icon: AlertTriangle,
@@ -733,7 +758,6 @@ export default function Dashboard() {
       deltaDir: criticalDrifts > 0 ? "up" : undefined,
       meta: "open findings",
       tone: criticalDrifts > 0 ? "crit" : totalDrifts > 0 ? "warn" : undefined,
-      spark: [0, 1, 1, 2, 2, 3, 3, totalDrifts],
     },
     {
       id: "alerts", label: "Active Alerts", icon: Bell,
@@ -745,10 +769,9 @@ export default function Dashboard() {
     },
     {
       id: "compliance", label: "Compliance", icon: CheckCircle2,
-      value: 84, unit: "%",
-      delta: "+3pt", deltaDir: "down",
-      meta: "3 frameworks",
-      tone: "ok",
+      value: complianceOverview ? Math.round(complianceOverview.compliancePercent) : "—", unit: complianceOverview ? "%" : undefined,
+      meta: `${complianceOverview?.byFramework.length ?? 0} assessed frameworks`,
+      tone: !complianceOverview ? undefined : complianceOverview.compliancePercent >= 90 ? "ok" : complianceOverview.compliancePercent >= 70 ? "warn" : "crit",
     },
   ];
 
@@ -763,6 +786,25 @@ export default function Dashboard() {
     );
   }
 
+  if (isProvidersError) {
+    return (
+      <DashboardLayout>
+        <div className="infra-dash" style={{ minHeight: "60vh", display: "grid", placeItems: "center" }}>
+          <div className="ia-card ia-card-pad" style={{ maxWidth: 520, textAlign: "center" }}>
+            <AlertTriangle size={28} style={{ margin: "0 auto 12px", color: "var(--ia-sev-crit)" }} />
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Cloud connection status could not be loaded</h2>
+            <p style={{ color: "var(--ia-ink-3)", fontSize: 13, marginBottom: 16 }}>
+              {providersError instanceof Error ? providersError.message : "The backend did not return provider status."}
+            </p>
+            <button className="ia-btn-primary" onClick={() => void refetchProviders()}>
+              <RefreshCw size={14} /> Retry
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   if (!hasProviders) {
     return (
       <DashboardLayout>
@@ -771,24 +813,21 @@ export default function Dashboard() {
     );
   }
 
+  const dashboardError = isResourcesError
+      ? resourcesError
+      : driftsError ?? alertsError ?? healthScoreError ?? complianceError ?? null;
+
   return (
     <DashboardLayout>
       <div className="infra-dash">
-        {/* ── No-provider banner ── */}
-        {!hasProviders && (
+        {dashboardError && (
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "10px 16px", marginBottom: "var(--ia-gap)",
             background: "var(--ia-brand-soft)", border: "1px solid var(--ia-brand)",
             borderRadius: "var(--ia-r-md)", fontSize: 13, color: "var(--ia-brand-ink)"
           }}>
-            <span>
-              <strong>No cloud providers connected.</strong> Data below is illustrative — connect a provider to see live infrastructure.
-            </span>
-            <button className="ia-btn-ghost" style={{ borderColor: "var(--ia-brand)", color: "var(--ia-brand)" }}
-              onClick={() => navigate("/cloud-providers")}>
-              <Plus size={13} /> Connect provider
-            </button>
+            <span><strong>Live dashboard data could not be loaded.</strong> {dashboardError instanceof Error ? dashboardError.message : "Please retry after the backend is available."}</span>
           </div>
         )}
         {/* ── Page header ── */}
@@ -797,7 +836,7 @@ export default function Dashboard() {
             <h1 className="ia-page-title">Cloud Governance Overview</h1>
             <div className="ia-page-sub">
               Security drift, compliance &amp; cost across {connectedProviders.length + (k8sClusters.length > 0 ? 1 : 0)} clouds
-              · last scan 2m ago · {totalResources} resources monitored
+              · {totalResources} resources monitored
             </div>
           </div>
           <div className="ia-head-controls">
@@ -825,7 +864,7 @@ export default function Dashboard() {
 
         {/* ── Cost trend + Live drift feed ── */}
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
-          <CostTrendCard />
+          <CostTrendCard costData={costTrend} />
           <DriftFeedCard
             drifts={activeDrifts}
             onPick={setSel}
@@ -835,7 +874,7 @@ export default function Dashboard() {
 
         {/* ── Compliance + Savings ── */}
         <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
-          <ComplianceCard frameworks={[]} onJump={() => navigate("/compliance")} />
+          <ComplianceCard frameworks={complianceFrameworks} onJump={() => navigate("/compliance")} />
           <SavingsCard recommendations={recommendations} />
         </div>
 

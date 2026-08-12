@@ -28,6 +28,7 @@ import { ResourceUtilization } from "@/components/dashboard/ResourceUtilization"
 import { UtilizationCharts } from "@/components/dashboard/UtilizationCharts";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { formatCurrency } from "@/lib/utils";
+import { formatResourceType } from "@/lib/resource-display";
 import { UtilizationMetric } from "@/types";
 import { useRefreshResourceMetrics, useResources } from "@/hooks/use-resources";
 import api from "@/lib/api";
@@ -48,7 +49,7 @@ export default function ResourceUtilizationPage() {
   const refreshMetrics = useRefreshResourceMetrics();
 
   // Fetch resources from Go backend (paginated response)
-  const { data: resourcesResponse, isLoading: isLoadingResources, isError: isResourcesError, error: resourcesError } = useResources();
+  const { data: resourcesResponse, isLoading: isLoadingResources, isError: isResourcesError, error: resourcesError } = useResources({ page: 1, pageSize: 100 });
   const resources = resourcesResponse?.data ?? [];
 
   // Fetch recommendations for the optimization section
@@ -203,7 +204,7 @@ export default function ResourceUtilizationPage() {
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
                     {resourceTypes.map((type) => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                      <SelectItem key={type} value={type}>{formatResourceType(type)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -265,7 +266,7 @@ export default function ResourceUtilizationPage() {
                     return (
                       <TableRow key={resource.resourceId ?? resource.id}>
                         <TableCell className="font-medium">{resource.name}</TableCell>
-                        <TableCell>{resource.type}</TableCell>
+                        <TableCell>{formatResourceType(resource.type)}</TableCell>
                         <TableCell>{resource.provider}</TableCell>
                         <TableCell>{resource.region}</TableCell>
                         <TableCell>
@@ -283,7 +284,7 @@ export default function ResourceUtilizationPage() {
                             <span className="text-xs">{util.label}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{formatCurrency(resource.cost)}</TableCell>
+                        <TableCell>{resource.cost == null ? "—" : formatCurrency(resource.cost)}</TableCell>
                         <TableCell>
                           <Button
                             variant="ghost"
