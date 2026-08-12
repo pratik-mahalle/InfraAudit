@@ -22,10 +22,10 @@ import {
   useApproveDriftAsBaseline,
   useDriftSummary,
   useDrifts,
-  useQueueJobStatus,
   useResolveDrift,
   useTriggerDriftDetection,
 } from "@/hooks/use-drifts";
+import { useQueueJobStatus } from "@/hooks/use-queue-job";
 import { useToast } from "@/hooks/use-toast";
 import { cn, formatTimeAgo } from "@/lib/utils";
 import type { Drift } from "@/lib/api";
