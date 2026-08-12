@@ -41,11 +41,13 @@ import {
   Database 
 } from "lucide-react";
 import { formatTimeAgo, getSeverityColor, getSeverityBgColor } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 // BUG-016 fix: Proper types for paginated API responses instead of 'any'
 type PaginatedResponse<T> = T[] | { data: T[] };
 
 export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultTab?: string }) {
+  const [, navigate] = useLocation();
   // Common state
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeMainTab, setActiveMainTab] = useState<string>(defaultTab);
@@ -469,9 +471,9 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
                                 variant="ghost" 
                                 size="sm" 
                                 className="h-8 text-primary hover:text-primary/80"
-                                disabled={drift.status !== 'open'}
+                                onClick={() => navigate('/drift-detection')}
                               >
-                                {drift.status === 'open' ? 'Remediate' : 'View'}
+                                {drift.status === 'open' ? 'Review' : 'View'}
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -549,9 +551,9 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
                                 variant="ghost" 
                                 size="sm" 
                                 className="h-8 text-primary hover:text-primary/80"
-                                disabled={drift.status !== 'open'}
+                                onClick={() => navigate('/drift-detection')}
                               >
-                                {drift.status === 'open' ? 'Remediate' : 'View'}
+                                {drift.status === 'open' ? 'Review' : 'View'}
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -630,9 +632,9 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
                                 variant="ghost" 
                                 size="sm" 
                                 className="h-8 text-primary hover:text-primary/80"
-                                disabled={drift.status !== 'open'}
+                                onClick={() => navigate('/drift-detection')}
                               >
-                                {drift.status === 'open' ? 'Remediate' : 'View'}
+                                {drift.status === 'open' ? 'Review' : 'View'}
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -711,6 +713,7 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
                                 variant="ghost" 
                                 size="sm" 
                                 className="h-8 text-primary hover:text-primary/80"
+                                onClick={() => navigate('/drift-detection')}
                               >
                                 View
                               </Button>
@@ -815,6 +818,7 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
                                 variant="ghost" 
                                 size="sm" 
                                 className="h-8 text-primary hover:text-primary/80"
+                                onClick={() => navigate('/alerts')}
                               >
                                 View Details
                               </Button>
@@ -889,6 +893,7 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
                                   variant="ghost" 
                                   size="sm" 
                                   className="h-8 text-primary hover:text-primary/80"
+                                  onClick={() => navigate('/alerts')}
                                 >
                                   View Details
                                 </Button>

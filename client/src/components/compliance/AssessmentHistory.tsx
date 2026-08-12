@@ -15,9 +15,11 @@ import { Download, Eye } from "lucide-react";
 interface AssessmentHistoryProps {
     assessments: ComplianceAssessment[];
     isLoading: boolean;
+    onView: (assessment: ComplianceAssessment) => void;
+    onExport: (assessment: ComplianceAssessment) => void;
 }
 
-export function AssessmentHistory({ assessments, isLoading }: AssessmentHistoryProps) {
+export function AssessmentHistory({ assessments, isLoading, onView, onExport }: AssessmentHistoryProps) {
     if (isLoading) {
         return <div className="text-center p-4">Loading history...</div>;
     }
@@ -64,10 +66,10 @@ export function AssessmentHistory({ assessments, isLoading }: AssessmentHistoryP
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-1">
-                                        <Button variant="ghost" size="icon" title="View Details">
+                                        <Button variant="ghost" size="icon" title="View Details" onClick={() => onView(a)}>
                                             <Eye className="w-4 h-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" title="Export Report">
+                                        <Button variant="ghost" size="icon" title="Export Report" onClick={() => onExport(a)}>
                                             <Download className="w-4 h-4" />
                                         </Button>
                                     </div>

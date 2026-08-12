@@ -247,11 +247,15 @@ export interface CreateBaselineRequest {
 }
 
 export interface Provider {
-  id: number;
   provider: string;
-  name: string;
+  isConnected: boolean;
+  lastSynced?: string;
+}
+
+export interface ProviderSyncStatus extends Provider {
+  resourceCount: number;
   status: 'connected' | 'disconnected' | 'error';
-  lastSyncAt?: string;
+  message?: string;
 }
 
 export interface ProviderCredentials {
@@ -265,6 +269,24 @@ export interface ProviderCredentials {
   clientSecret?: string;
   subscriptionId?: string;
 }
+
+type ProviderWire = {
+  provider: string;
+  is_connected?: boolean;
+  isConnected?: boolean;
+  last_synced?: string;
+  lastSynced?: string;
+  resource_count?: number;
+  resourceCount?: number;
+  status?: ProviderSyncStatus['status'];
+  message?: string;
+};
+
+const normalizeProvider = (provider: ProviderWire): Provider => ({
+  provider: provider.provider,
+  isConnected: provider.is_connected ?? provider.isConnected ?? false,
+  lastSynced: provider.last_synced ?? provider.lastSynced,
+});
 
 export interface Recommendation {
   id: number;
@@ -399,19 +421,19 @@ export const api = {
       if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString());
 
       const query = searchParams.toString();
-      return request<PaginatedResponse<Drift>>(`/api/drifts${query ? `?${query}` : ''}`);
+      return request<PaginatedResponse<Drift>>(`/api/v1/drifts${query ? `?${query}` : ''}`);
     },
 
-    get: (id: number) => request<Drift>(`/api/drifts/${id}`),
+    get: (id: number) => request<Drift>(`/api/v1/drifts/${id}`),
 
-    getSummary: () => request<DriftSummary>('/api/drifts/summary'),
+    getSummary: () => request<DriftSummary>('/api/v1/drifts/summary'),
 
-    detect: () => request<{ message: string }>('/api/drifts/detect', { method: 'POST' }),
+    detect: () => request<{ message: string }>('/api/v1/drifts/detect', { method: 'POST' }),
 
     update: (id: number, data: Partial<Drift>) =>
-      request(`/api/drifts/${id}`, { method: 'PUT', body: data }),
+      request(`/api/v1/drifts/${id}`, { method: 'PUT', body: data }),
 
-    delete: (id: number) => request(`/api/drifts/${id}`, { method: 'DELETE' }),
+    delete: (id: number) => request(`/api/v1/drifts/${id}`, { method: 'DELETE' }),
   },
 
   // ============================================
@@ -472,18 +494,18 @@ export const api = {
       if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString());
 
       const query = searchParams.toString();
-      return request<PaginatedResponse<Resource>>(`/api/resources${query ? `?${query}` : ''}`);
+      return request<PaginatedResponse<Resource>>(`/api/v1/resources${query ? `?${query}` : ''}`);
     },
 
-    get: (id: number) => request<Resource>(`/api/resources/${id}`),
+    get: (id: string | number) => request<Resource>(`/api/v1/resources/${encodeURIComponent(id)}`),
 
     create: (data: Partial<Resource>) =>
-      request<{ id: number }>('/api/resources', { method: 'POST', body: data }),
+      request<{ id: number }>('/api/v1/resources', { method: 'POST', body: data }),
 
-    update: (id: number, data: Partial<Resource>) =>
-      request(`/api/resources/${id}`, { method: 'PUT', body: data }),
+    update: (id: string | number, data: Partial<Resource>) =>
+      request(`/api/v1/resources/${encodeURIComponent(id)}`, { method: 'PUT', body: data }),
 
-    delete: (id: number) => request(`/api/resources/${id}`, { method: 'DELETE' }),
+    delete: (id: string | number) => request(`/api/v1/resources/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
     analyze: (resourceData: Record<string, unknown>) =>
       request<{
@@ -509,18 +531,42 @@ export const api = {
   // Providers
   // ============================================
   providers: {
-    list: () => request<Provider[]>('/api/providers'),
+    list: async () => {
+      const providers = await request<ProviderWire[]>('/api/v1/providers');
+      return providers.map(normalizeProvider);
+    },
 
-    getStatus: () => request<Record<string, Provider>>('/api/providers/status'),
+    getStatus: async () => {
+      const providers = await request<ProviderWire[]>('/api/v1/providers/status');
+      return providers.map((provider) => ({
+        ...normalizeProvider(provider),
+        resourceCount: provider.resource_count ?? provider.resourceCount ?? 0,
+        status: provider.status ?? 'disconnected',
+        message: provider.message,
+      }));
+    },
 
     connect: (provider: string, credentials: ProviderCredentials) =>
-      request(`/api/providers/${provider}/connect`, { method: 'POST', body: credentials }),
+      request(`/api/v1/providers/${provider}/connect`, {
+        method: 'POST',
+        body: {
+          aws_access_key_id: credentials.accessKeyId,
+          aws_secret_access_key: credentials.secretAccessKey,
+          aws_region: credentials.region,
+          gcp_project_id: credentials.projectId,
+          gcp_service_account_json: credentials.credentials,
+          azure_tenant_id: credentials.tenantId,
+          azure_client_id: credentials.clientId,
+          azure_client_secret: credentials.clientSecret,
+          azure_subscription_id: credentials.subscriptionId,
+        },
+      }),
 
     sync: (provider: string) =>
-      request(`/api/providers/${provider}/sync`, { method: 'POST' }),
+      request(`/api/v1/providers/${provider}/sync`, { method: 'POST' }),
 
     disconnect: (provider: string) =>
-      request(`/api/providers/${provider}`, { method: 'DELETE' }),
+      request(`/api/v1/providers/${provider}`, { method: 'DELETE' }),
   },
 
   // ============================================

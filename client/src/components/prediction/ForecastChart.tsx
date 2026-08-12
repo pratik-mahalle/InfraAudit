@@ -132,6 +132,19 @@ export function ForecastChart({
   const avgActual = actualData.reduce((sum, d) => sum + (d.actual || 0), 0) / actualData.length;
   const lastForecast = forecastData[forecastData.length - 1]?.forecast || 0;
   const projectedTotal = forecastData.reduce((sum, d) => sum + (d.forecast || 0), 0);
+  const exportForecast = () => {
+    const escapeCsv = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const csv = [
+      ["Date", "Actual", "Forecast", "Budget", "Lower bound", "Upper bound"],
+      ...chartData.map((point) => [point.date, point.actual, point.forecast, point.budget, point.lowerBound, point.upperBound]),
+    ].map((row) => row.map(escapeCsv).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `infraudit-cost-forecast-${timeRange}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
   
   return (
     <Card className="bg-white/70 dark:bg-slate-900/50 backdrop-blur border border-gray-200/60 dark:border-slate-800/60 shadow-sm">
@@ -154,7 +167,7 @@ export function ForecastChart({
                 <TabsTrigger value="90d" className="text-xs px-2 h-6">90D</TabsTrigger>
               </TabsList>
             </Tabs>
-            <Button variant="outline" size="sm" className="h-8 gap-1">
+            <Button variant="outline" size="sm" className="h-8 gap-1" onClick={exportForecast}>
               <Download className="h-3.5 w-3.5" />
               Export
             </Button>

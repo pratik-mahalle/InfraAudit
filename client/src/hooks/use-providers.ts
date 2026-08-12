@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type Provider, type ProviderCredentials } from '@/lib/api';
+import { api, type Provider, type ProviderCredentials, type ProviderSyncStatus } from '@/lib/api';
 
 export function useProviders() {
   return useQuery<Provider[]>({
@@ -9,7 +9,7 @@ export function useProviders() {
 }
 
 export function useProviderStatus() {
-  return useQuery<Record<string, Provider>>({
+  return useQuery<ProviderSyncStatus[]>({
     queryKey: ['providers', 'status'],
     queryFn: () => api.providers.getStatus(),
   });
@@ -35,6 +35,7 @@ export function useSyncProvider() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] });
       queryClient.invalidateQueries({ queryKey: ['resources'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
     },
   });
 }
@@ -46,6 +47,8 @@ export function useDisconnectProvider() {
     mutationFn: (provider: string) => api.providers.disconnect(provider),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] });
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
     },
   });
 }

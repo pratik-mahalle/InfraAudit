@@ -14,7 +14,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MoreVertical } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { formatTimeAgo, getSeverityColor, getSeverityBgColor } from "@/lib/utils";
@@ -50,9 +49,6 @@ export function SecurityDriftsTable({
         <CardTitle className="text-lg font-semibold font-inter">Security Configuration Drifts</CardTitle>
         <div className="flex items-center">
           <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">Last 24 hours</span>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
         </div>
       </CardHeader>
       <CardContent>

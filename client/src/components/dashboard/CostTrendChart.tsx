@@ -13,7 +13,7 @@ import {
 import { Line } from "react-chartjs-2";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MoreVertical, ArrowUpRight, ArrowDownRight, CheckCircle, AlertTriangle } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { ChartTimeframe } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -178,9 +178,6 @@ export function CostTrendChart({
               <SelectItem value="90d">Last 90 days</SelectItem>
             </SelectContent>
           </Select>
-          <button className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-            <MoreVertical className="h-5 w-5" />
-          </button>
         </div>
       </CardHeader>
       <CardContent>

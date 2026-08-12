@@ -337,10 +337,31 @@ function FindingsTable({ drifts, selId, onPick }: {
 }) {
   const [sort, setSort] = useState<"sev" | "id">("sev");
   const order: Record<string, number> = { critical: 0, crit: 0, high: 1, warn: 1, medium: 2, low: 3, ok: 3, info: 4 };
-  const sorted = [...drifts].sort((a, b) =>
-    sort === "sev" ? (order[a.severity] ?? 5) - (order[b.severity] ?? 5) : 0
+  const sorted = [...drifts].sort((a, b) => sort === "sev"
+    ? (order[a.severity] ?? 5) - (order[b.severity] ?? 5)
+    : String(b.id).localeCompare(String(a.id), undefined, { numeric: true })
   );
   const autoCount = drifts.filter(d => (d as any).auto).length;
+  const exportFindings = () => {
+    const escapeCsv = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const rows = drifts.map((drift) => [
+      drift.id,
+      drift.severity,
+      (drift as any).resource || "",
+      drift.driftType,
+      (drift as any).cloud || "aws",
+      drift.status,
+    ]);
+    const csv = [["ID", "Severity", "Resource", "Finding", "Cloud", "Status"], ...rows]
+      .map((row) => row.map(escapeCsv).join(","))
+      .join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `infraudit-findings-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="ia-card">
@@ -350,8 +371,12 @@ function FindingsTable({ drifts, selId, onPick }: {
           <span className="ia-eyebrow">{drifts.length} total{autoCount > 0 ? ` · ${autoCount} auto-remediable` : ""}</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="ia-btn-ghost"><Filter size={13} /> Filter</button>
-          <button className="ia-btn-ghost"><FileText size={13} /> Export</button>
+          <button className="ia-btn-ghost" onClick={() => setSort(sort === "sev" ? "id" : "sev")}>
+            <Filter size={13} /> Sort: {sort === "sev" ? "Severity" : "Newest"}
+          </button>
+          <button className="ia-btn-ghost" onClick={exportFindings} disabled={drifts.length === 0}>
+            <FileText size={13} /> Export
+          </button>
         </div>
       </div>
       <div style={{ overflowX: "auto" }}>
@@ -388,10 +413,13 @@ function FindingsTable({ drifts, selId, onPick }: {
                 <td><CloudChip cloud={(d as any).cloud || "aws"} /></td>
                 <td><span style={{ fontSize: 11.5, color: "var(--ia-ink-2)" }}>{(d as any).cat || d.status}</span></td>
                 <td><span className="ia-mono ia-muted" style={{ fontSize: 12 }}>{(d as any).age || "recent"}</span></td>
-                <td style={{ textAlign: "right" }} onClick={e => { e.stopPropagation(); onPick(d); }}>
-                  {(d as any).auto
-                    ? <button className="ia-fix-btn"><Zap size={12} /> Auto-fix</button>
-                    : <button className="ia-fix-btn ia-ghost">Review</button>}
+                <td style={{ textAlign: "right" }}>
+                  <button
+                    className={`ia-fix-btn ${(d as any).auto ? "" : "ia-ghost"}`}
+                    onClick={e => { e.stopPropagation(); onPick(d); }}
+                  >
+                    {(d as any).auto && <Zap size={12} />} Review
+                  </button>
                 </td>
               </tr>
             ))}

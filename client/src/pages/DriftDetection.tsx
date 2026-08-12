@@ -78,8 +78,8 @@ export default function DriftDetection() {
           </div>
           <Button
             onClick={() => detectMutation.mutate(undefined, {
-              onSuccess: () => toast({ title: "Scan Started", description: "Detecting configuration drifts..." }),
-              onError: () => toast({ title: "Scan Failed", description: "Could not start drift detection.", variant: "destructive" }),
+              onSuccess: () => toast({ title: "Scan Complete", description: "Cloud inventory was refreshed and checked against its baselines." }),
+              onError: (error: Error) => toast({ title: "Scan Failed", description: error.message, variant: "destructive" }),
             })}
             disabled={detectMutation.isPending}
             className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
@@ -217,7 +217,7 @@ export default function DriftDetection() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-gray-500">
-                        Resource #{drift.resourceId}
+                        {drift.resourceIdStr || drift.resourceId || "Unknown resource"}
                       </TableCell>
                       <TableCell className="text-xs text-gray-500">
                         {drift.detectedAt ? new Date(drift.detectedAt).toLocaleDateString() : "—"}

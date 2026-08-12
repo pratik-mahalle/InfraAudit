@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 import { 
   Cloud, 
   ArrowUpRight,
@@ -252,6 +253,7 @@ function ServiceCard({ service, index }: { service: CloudService; index: number 
 }
 
 export function ServiceOverview({ services = defaultServices, isLoading = false }: ServiceOverviewProps) {
+  const [, navigate] = useLocation();
   const totalResources = services.reduce((sum, s) => sum + s.resourceCount, 0);
   const totalHealthy = services.reduce((sum, s) => sum + s.healthyCount, 0);
   const totalCost = services.reduce((sum, s) => sum + s.cost, 0);
@@ -282,7 +284,7 @@ export function ServiceOverview({ services = defaultServices, isLoading = false 
             >
               {overallHealth}% Overall Health
             </Badge>
-            <Button size="sm" variant="outline" className="gap-1">
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => navigate('/resources')}>
               View All <ArrowUpRight className="h-3.5 w-3.5" />
             </Button>
           </div>

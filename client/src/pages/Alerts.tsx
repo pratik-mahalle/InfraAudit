@@ -109,6 +109,19 @@ export default function Alerts() {
     return `Resource ID: ${id}`;
   };
 
+  const openAlertContext = (alert: Alert) => {
+    if (alert.resourceId) {
+      const resource = resources.find((item) => item.id === alert.resourceId);
+      const resourceIdentifier = resource?.resourceId ?? resource?.id;
+      if (resourceIdentifier) {
+        navigate(`/resources/${encodeURIComponent(String(resourceIdentifier))}`);
+        return;
+      }
+    }
+
+    navigate(alert.type === "cost" ? "/cost" : "/drift-detection");
+  };
+
   // Filter alerts based on criteria
   const filteredAlerts = alerts.filter((alert) => {
     const matchesType = alertType === "all" || alert.type === alertType;
@@ -190,12 +203,12 @@ export default function Alerts() {
                   {alert.status === "open" && (
                     <>
                       {alert.type === "security" && (
-                        <Button size="sm" variant="default" className="h-8">
-                          Remediate
+                        <Button size="sm" variant="default" className="h-8" onClick={() => openAlertContext(alert)}>
+                          Review
                         </Button>
                       )}
                       {alert.type === "cost" && (
-                        <Button size="sm" variant="default" className="h-8">
+                        <Button size="sm" variant="default" className="h-8" onClick={() => openAlertContext(alert)}>
                           Investigate
                         </Button>
                       )}
@@ -222,7 +235,7 @@ export default function Alerts() {
                     </Button>
                   )}
                   {alert.status === "resolved" && (
-                    <Button size="sm" variant="ghost" className="h-8">
+                    <Button size="sm" variant="ghost" className="h-8" onClick={() => openAlertContext(alert)}>
                       Details
                     </Button>
                   )}
@@ -246,7 +259,7 @@ export default function Alerts() {
         title="Alerts"
         description="Monitor and respond to infrastructure alerts"
         actions={
-          <Button className="flex items-center gap-2">
+          <Button className="flex items-center gap-2" onClick={() => navigate("/settings?tab=notifications")}>
             <Settings className="h-4 w-4" />
             Configure Alerts
           </Button>
