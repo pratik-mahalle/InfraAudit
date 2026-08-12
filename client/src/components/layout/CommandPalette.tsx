@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Server, AlertTriangle, Eye, BarChart3, TrendingUp,
   DollarSign, Calculator, Shield, FileCheck, Lock, Cloud, Cpu, FileCode,
   Blocks, Zap, Target, Sparkles, FileText, CreditCard, User, Settings,
-  Search, HelpCircle,
+  Search, HelpCircle, Fingerprint,
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -24,6 +24,7 @@ const navItems = [
   { label: "ROI Calculator", href: "/roi-calculator", icon: Calculator, group: "Cost" },
   { label: "Security Dashboard", href: "/security", icon: Shield, group: "Security" },
   { label: "Compliance", href: "/compliance", icon: FileCheck, group: "Security" },
+  { label: "Findings", href: "/findings", icon: Fingerprint, group: "Security" },
   { label: "Vulnerabilities", href: "/vulnerabilities", icon: Lock, group: "Security" },
   { label: "Cloud Providers", href: "/cloud-providers", icon: Cloud, group: "Infrastructure" },
   { label: "Kubernetes", href: "/kubernetes", icon: Cpu, group: "Infrastructure" },

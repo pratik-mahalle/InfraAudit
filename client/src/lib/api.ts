@@ -206,6 +206,58 @@ export interface VulnerabilityScanResponse {
   duplicate?: boolean;
 }
 
+export type FindingSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+export type FindingStatus = 'open' | 'resolved' | 'ignored' | 'false_positive' | 'accepted';
+export type FindingType = 'cve' | 'vulnerability' | 'misconfiguration' | 'compliance_violation' | 'exposure' | 'secret' | 'malware';
+
+export interface FindingParams {
+  findingType?: string;
+  sourceType?: string;
+  severity?: string;
+  status?: string;
+  provider?: string;
+  resourceId?: string;
+  resourceType?: string;
+  scannerType?: string;
+  ruleId?: string;
+  externalId?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface Finding {
+  id: number;
+  findingType: FindingType | string;
+  sourceType: string;
+  sourceId?: number;
+  fingerprint: string;
+  resourceId?: string;
+  provider?: string;
+  resourceType?: string;
+  scannerType?: string;
+  ruleId?: string;
+  externalId?: string;
+  title: string;
+  description?: string;
+  severity: FindingSeverity | string;
+  status: FindingStatus | string;
+  confidence?: string;
+  evidence?: string;
+  remediation?: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FindingSummary {
+  byType: Record<string, number>;
+  bySeverity: Record<string, number>;
+  byStatus: Record<string, number>;
+  total: number;
+}
+
 export type QueueJobState = 'available' | 'cancelled' | 'completed' | 'discarded' | 'pending' | 'retryable' | 'running' | 'scheduled';
 
 export interface QueueJobStatus {
@@ -354,14 +406,25 @@ export interface Anomaly {
 
 export interface Vulnerability {
   id: number;
-  resourceId: number;
+  resourceId: string | number;
   cveId?: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  vulnerabilityId?: string;
+  provider?: string;
+  resourceType?: string;
+  packageName?: string;
+  packageVersion?: string;
+  fixedVersion?: string;
+  scannerType?: string;
+  cvssScore?: number;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
   title: string;
   description: string;
   remediation?: string;
-  status: 'open' | 'fixed' | 'ignored';
+  status: 'open' | 'patched' | 'ignored' | 'false_positive' | 'accepted' | 'fixed';
   detectedAt: string;
+  firstSeenAt?: string;
+  lastSeenAt?: string;
+  resolvedAt?: string;
 }
 
 // Health Score
@@ -654,6 +717,40 @@ export const api = {
     getTop: () => request<Vulnerability[]>('/api/v1/vulnerabilities/top'),
 
     scan: () => request<VulnerabilityScanResponse>('/api/v1/vulnerabilities/scan', { method: 'POST' }),
+  },
+
+  // ============================================
+  // Normalized Findings
+  // ============================================
+  findings: {
+    list: (params?: FindingParams) => {
+      const searchParams = new URLSearchParams();
+      if (params?.findingType) searchParams.set('finding_type', params.findingType);
+      if (params?.sourceType) searchParams.set('source_type', params.sourceType);
+      if (params?.severity) searchParams.set('severity', params.severity);
+      if (params?.status) searchParams.set('status', params.status);
+      if (params?.provider) searchParams.set('provider', params.provider);
+      if (params?.resourceId) searchParams.set('resource_id', params.resourceId);
+      if (params?.resourceType) searchParams.set('resource_type', params.resourceType);
+      if (params?.scannerType) searchParams.set('scanner_type', params.scannerType);
+      if (params?.ruleId) searchParams.set('rule_id', params.ruleId);
+      if (params?.externalId) searchParams.set('external_id', params.externalId);
+      if (params?.page) searchParams.set('page', params.page.toString());
+      if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString());
+
+      const query = searchParams.toString();
+      return request<PaginatedResponse<Finding>>(`/api/v1/findings${query ? `?${query}` : ''}`);
+    },
+
+    get: (id: number) => request<Finding>(`/api/v1/findings/${id}`),
+
+    getSummary: () => request<FindingSummary>('/api/v1/findings/summary'),
+
+    updateStatus: (id: number, status: FindingStatus) =>
+      request<{ message: string }>(`/api/v1/findings/${id}/status`, {
+        method: 'PUT',
+        body: { status },
+      }),
   },
 
   // ============================================
