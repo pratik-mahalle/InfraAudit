@@ -23,6 +23,7 @@ import { apiRequest, queryClient, unwrapResponse } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
 import api from "@/lib/api";
 import { useLocation, useSearch } from "wouter";
+import { useTheme } from "next-themes";
 
 type ApiKey = { id: number; name: string; keyPrefix: string; rawKey?: string; created: string; lastUsed: string | null; expiresAt?: string };
 type TeamMember = { id: number; name: string; email: string; role: string; status: string; createdAt: string };
@@ -31,6 +32,7 @@ export default function Settings() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { hasPermission, isOwner } = usePermission();
+  const { theme: appTheme, setTheme } = useTheme();
   const [, navigate] = useLocation();
   const searchString = useSearch();
   const tabFromUrl = new URLSearchParams(searchString).get("tab") || "notifications";
@@ -67,31 +69,7 @@ export default function Settings() {
   // Account preferences (stored in localStorage)
   const [timezone, setTimezone] = useState(() => localStorage.getItem("ia_timezone") || "UTC");
   const [language, setLanguage] = useState(() => localStorage.getItem("ia_language") || "en");
-  const [theme, setThemeState] = useState<"light" | "dark" | "auto">(() =>
-    (localStorage.getItem("ia_theme") as "light" | "dark" | "auto") || "auto"
-  );
-
-  // Apply theme to document immediately on change
-  const setTheme = (newTheme: "light" | "dark" | "auto") => {
-    setThemeState(newTheme);
-    localStorage.setItem("ia_theme", newTheme);
-    const root = document.documentElement;
-    if (newTheme === "dark") {
-      root.classList.add("dark");
-    } else if (newTheme === "light") {
-      root.classList.remove("dark");
-    } else {
-      // Auto: follow system preference
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.toggle("dark", prefersDark);
-    }
-  };
-
-  // Apply saved theme on mount
-  useEffect(() => {
-    setTheme(theme);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const theme = appTheme === "system" ? "auto" : appTheme === "dark" ? "dark" : "light";
 
   // Security — 2FA
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
@@ -283,7 +261,6 @@ export default function Settings() {
   const saveAccountPreferences = () => {
     localStorage.setItem("ia_timezone", timezone);
     localStorage.setItem("ia_language", language);
-    localStorage.setItem("ia_theme", theme);
     toast({ title: "Account settings saved", description: "Your changes have been applied." });
   };
 
@@ -397,7 +374,7 @@ export default function Settings() {
                 </div>
                 <div className="space-y-2">
                   <Label>Theme Mode</Label>
-                  <RadioGroup value={theme} onValueChange={(v) => setTheme(v as any)} className="flex items-center gap-6">
+                  <RadioGroup value={theme} onValueChange={(value) => setTheme(value === "auto" ? "system" : value)} className="flex items-center gap-6">
                     <div className="flex items-center gap-2"><RadioGroupItem value="light" id="t-light" /><Label htmlFor="t-light">Light</Label></div>
                     <div className="flex items-center gap-2"><RadioGroupItem value="dark" id="t-dark" /><Label htmlFor="t-dark">Dark</Label></div>
                     <div className="flex items-center gap-2"><RadioGroupItem value="auto" id="t-auto" /><Label htmlFor="t-auto">Auto</Label></div>

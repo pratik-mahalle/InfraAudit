@@ -684,7 +684,7 @@ export default function Dashboard() {
       id: "health", label: "Health Score", icon: Shield,
       value: healthScore ? `${healthScore.score}` : isScanning ? "..." : "—",
       meta: healthScore
-        ? `${healthScore.breakdown.security_score}/50 security · ${healthScore.breakdown.cost_score}/50 cost`
+        ? `${healthScore.breakdown.securityScore}/50 security · ${healthScore.breakdown.costScore}/50 cost`
         : "Calculating...",
       tone: !healthScore ? undefined
         : healthScore.score >= 80 ? "ok"
