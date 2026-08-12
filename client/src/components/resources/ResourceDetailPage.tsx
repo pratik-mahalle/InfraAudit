@@ -1,331 +1,221 @@
-import React from 'react';
-import { useParams } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
-import { getQueryFn } from '@/lib/queryClient';
-import { Helmet } from 'react-helmet';
-import { AiAnalysisPanel } from '@/components/ai/AiAnalysisPanel';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Server, Database, HardDrive, Cloud, CloudOff, Network, Shield, UserRound, KeyRound } from 'lucide-react';
-import { formatResourceType, parseResourceConfiguration } from '@/lib/resource-display';
+import React from "react";
+import { Helmet } from "react-helmet";
+import { useLocation, useParams } from "wouter";
+import {
+  ArrowLeft,
+  CalendarClock,
+  Cloud,
+  CloudOff,
+  Database,
+  ExternalLink,
+  HardDrive,
+  KeyRound,
+  Loader2,
+  MapPin,
+  Network,
+  Server,
+  Shield,
+  UserRound,
+} from "lucide-react";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { AiAnalysisPanel } from "@/components/ai/AiAnalysisPanel";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useResource } from "@/hooks/use-resources";
+import { formatResourceType, parseResourceConfiguration } from "@/lib/resource-display";
 
-interface ResourceDetail {
-  id: number;
-  name: string;
-  type: string;
-  provider: string;
-  region: string;
-  status: string;
-  cost?: number;
-  costPerMonth?: number;
-  utilization?: number;
-  resourceId?: string;
-  configuration?: string;
-  tags?: Record<string, string>;
-  metadata?: Record<string, any>;
-  createdAt: string;
+function resourceIcon(type: string) {
+  switch (type.toLowerCase()) {
+    case "ec2-instance": return Server;
+    case "rds-instance": return Database;
+    case "s3-bucket":
+    case "ebs-volume": return HardDrive;
+    case "vpc": return Network;
+    case "security-group": return Shield;
+    case "iam-user": return UserRound;
+    case "iam-role": return KeyRound;
+    default: return Cloud;
+  }
+}
+
+function titleCase(value: string) {
+  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function displayValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "Not available";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  return String(value);
+}
+
+function DetailField({ label, value, mono = false }: { label: string; value: unknown; mono?: boolean }) {
+  return (
+    <div className="rounded-lg border bg-muted/20 p-3">
+      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`mt-1 whitespace-pre-wrap break-words text-sm font-medium ${mono ? "font-mono" : ""}`}>
+        {displayValue(value)}
+      </div>
+    </div>
+  );
 }
 
 export default function ResourceDetailPage() {
   const { id } = useParams();
-  const resourceId = id ? decodeURIComponent(id) : '';
-
-  // Fetch resource details
-  const { data: resource, isLoading, error } = useQuery<ResourceDetail>({
-    queryKey: [`/api/v1/resources/${encodeURIComponent(resourceId)}`],
-    queryFn: getQueryFn({ on401: 'throw' }),
-    enabled: resourceId.length > 0,
-  });
-
-  // Fetch recommendations for this resource
-  const { data: recommendations } = useQuery<any[]>({
-    queryKey: [`/api/recommendations?resourceId=${encodeURIComponent(resourceId)}`],
-    queryFn: getQueryFn({ on401: 'throw' }),
-    enabled: resourceId.length > 0,
-  });
+  const [, navigate] = useLocation();
+  const resourceId = id ? decodeURIComponent(id) : "";
+  const { data: resource, isLoading, error } = useResource(resourceId);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <DashboardLayout>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   if (error || !resource) {
     return (
-      <div className="flex flex-col items-center justify-center h-96">
-        <CloudOff className="h-16 w-16 text-muted-foreground mb-4" />
-        <h2 className="text-2xl font-bold">Resource Not Found</h2>
-        <p className="text-muted-foreground mt-2">
-          We couldn't find the resource you're looking for.
-        </p>
-      </div>
+      <DashboardLayout>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
+          <CloudOff className="mb-4 h-14 w-14 text-muted-foreground" />
+          <h2 className="text-2xl font-bold">Resource details unavailable</h2>
+          <p className="mt-2 max-w-lg text-muted-foreground">
+            {error instanceof Error ? error.message : "This resource could not be found in the current organization inventory."}
+          </p>
+          <Button variant="outline" className="mt-5" onClick={() => navigate("/resources")}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to resources
+          </Button>
+        </div>
+      </DashboardLayout>
     );
   }
 
-  // Get the appropriate icon based on resource type
-  const getResourceIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'ec2-instance':
-      case 'ec2':
-      case 'vm':
-      case 'compute':
-        return <Server className="h-5 w-5" />;
-      case 'rds-instance':
-      case 'rds':
-      case 'database':
-        return <Database className="h-5 w-5" />;
-      case 's3-bucket':
-      case 'ebs-volume':
-      case 's3':
-      case 'storage':
-        return <HardDrive className="h-5 w-5" />;
-      case 'vpc':
-        return <Network className="h-5 w-5" />;
-      case 'security-group':
-        return <Shield className="h-5 w-5" />;
-      case 'iam-user':
-        return <UserRound className="h-5 w-5" />;
-      case 'iam-role':
-        return <KeyRound className="h-5 w-5" />;
-      default:
-        return <Cloud className="h-5 w-5" />;
-    }
-  };
-
+  const Icon = resourceIcon(resource.type);
   const configuration = parseResourceConfiguration(resource.configuration);
-  const configurationTags = configuration.tags && typeof configuration.tags === 'object' && !Array.isArray(configuration.tags)
+  const configTags = configuration.tags && typeof configuration.tags === "object" && !Array.isArray(configuration.tags)
     ? configuration.tags as Record<string, string>
-    : undefined;
-  const tags = resource.tags ?? configurationTags;
-
-  // Format cost values
-  const formatCost = (cost: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(cost);
-  };
+    : {};
+  const tags = resource.tags ?? configTags;
+  const configurationEntries = Object.entries(configuration).filter(([key]) => key !== "tags");
+  const isActive = ["active", "running", "available"].includes(resource.status.toLowerCase());
 
   return (
-    <>
-      <Helmet>
-        <title>{resource.name} | InfrAudit</title>
-      </Helmet>
+    <DashboardLayout>
+      <Helmet><title>{resource.name} | InfraAudit</title></Helmet>
+      <div className="space-y-6">
+        <Button variant="ghost" size="sm" className="-ml-2" onClick={() => navigate("/resources")}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to resources
+        </Button>
 
-      <div className="container max-w-7xl mx-auto py-8 px-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              {getResourceIcon(resource.type)}
-              <h1 className="text-3xl font-bold">{resource.name}</h1>
-              <Badge variant="outline" className="text-xs">
-                {formatResourceType(resource.type)}
-              </Badge>
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="rounded-xl border bg-primary/5 p-3 text-primary"><Icon className="h-6 w-6" /></div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="break-words text-2xl font-bold tracking-tight md:text-3xl">{resource.name}</h1>
+                <Badge variant="secondary">{formatResourceType(resource.type)}</Badge>
+                <Badge variant={isActive ? "outline" : "destructive"}>{titleCase(resource.status)}</Badge>
+              </div>
+              <p className="mt-2 break-all font-mono text-sm text-muted-foreground">{resource.resourceId}</p>
             </div>
-            <p className="text-muted-foreground mt-1">
-              {resource.provider} • {resource.region} • ID: {resource.resourceId}
-            </p>
           </div>
-          <div className="flex flex-col items-end">
-            <div className="text-sm text-muted-foreground">Monthly Cost</div>
-            <div className="text-2xl font-bold">{resource.cost == null ? '—' : formatCost(resource.cost)}</div>
-          </div>
+          <Button variant="outline" onClick={() => navigate("/drift-detection")}>
+            <Shield className="mr-2 h-4 w-4" /> View security findings <ExternalLink className="ml-2 h-3.5 w-3.5" />
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="overview">
-              <TabsList className="mb-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="metrics">Metrics</TabsTrigger>
-              </TabsList>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <DetailField label="Provider" value={resource.provider.toUpperCase()} />
+          <DetailField label="Region" value={resource.region || "Global"} />
+          <DetailField label="Inventory status" value={titleCase(resource.status)} />
+          <DetailField label="Monthly cost" value={resource.cost == null ? "Not imported" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(resource.cost)} />
+        </div>
 
-              <TabsContent value="overview" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Resource Overview</CardTitle>
-                    <CardDescription>Key information about this resource</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Resource Details</h3>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-sm">Type:</span>
-                            <span className="text-sm font-medium">{formatResourceType(resource.type)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">Provider:</span>
-                            <span className="text-sm font-medium">{resource.provider}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">Region:</span>
-                            <span className="text-sm font-medium">{resource.region}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">Status:</span>
-                            <span className="text-sm font-medium">{resource.status}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm">Created:</span>
-                            <span className="text-sm font-medium">
-                              {new Date(resource.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+          <Tabs defaultValue="overview">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="configuration">Configuration</TabsTrigger>
+              <TabsTrigger value="raw">Raw JSON</TabsTrigger>
+            </TabsList>
 
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Cost Information</h3>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-sm">Current Cost:</span>
-                            <span className="text-sm font-medium">{resource.cost == null ? 'Not imported' : `${formatCost(resource.cost)}/month`}</span>
-                          </div>
-                          {resource.costPerMonth && (
-                            <div className="flex justify-between">
-                              <span className="text-sm">Projected:</span>
-                              <span className="text-sm font-medium">{formatCost(resource.costPerMonth)}/month</span>
-                            </div>
-                          )}
-                          {resource.utilization !== undefined && (
-                            <div className="flex justify-between">
-                              <span className="text-sm">Utilization:</span>
-                              <span className="text-sm font-medium">{resource.utilization}%</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+            <TabsContent value="overview" className="mt-4 space-y-5">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Resource identity</CardTitle>
+                  <CardDescription>Canonical inventory information collected from AWS.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 sm:grid-cols-2">
+                  <DetailField label="Resource name" value={resource.name} />
+                  <DetailField label="Resource type" value={formatResourceType(resource.type)} />
+                  <DetailField label="Cloud identifier" value={resource.resourceId} mono />
+                  <DetailField label="Location" value={resource.region || "Global"} />
+                  <DetailField label="Discovered" value={resource.createdAt ? new Date(resource.createdAt).toLocaleString() : undefined} />
+                  <DetailField label="Last updated" value={resource.updatedAt ? new Date(resource.updatedAt).toLocaleString() : undefined} />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tags</CardTitle>
+                  <CardDescription>Cloud tags captured during the latest inventory sync.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {Object.keys(tags).length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(tags).map(([key, value]) => <Badge key={key} variant="secondary">{key}: {value}</Badge>)}
                     </div>
-                  </CardContent>
-                </Card>
+                  ) : <p className="text-sm text-muted-foreground">No tags were returned for this resource.</p>}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-                {/* Tags and Metadata Card */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Tags & Metadata</CardTitle>
-                    <CardDescription>Additional resource information</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {tags && Object.keys(tags).length > 0 ? (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {Object.entries(tags).map(([key, value]) => (
-                          <Badge key={key} variant="secondary" className="text-xs">
-                            {key}: {value}
-                          </Badge>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No tags associated with this resource.</p>
-                    )}
-
-                    {Object.keys(configuration).length > 0 && (
-                      <div className="mt-4">
-                        <h3 className="text-sm font-medium mb-2">Metadata</h3>
-                        <div className="bg-muted/50 rounded-md p-4">
-                          <pre className="text-xs overflow-auto">
-                            {JSON.stringify(configuration, null, 2)}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="details">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Resource Details</CardTitle>
-                    <CardDescription>Detailed configuration information</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-muted/50 rounded-md p-4">
-                      <pre className="text-xs overflow-auto">
-                        {JSON.stringify(resource, null, 2)}
-                      </pre>
+            <TabsContent value="configuration" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Cloud configuration</CardTitle>
+                  <CardDescription>Provider-native attributes captured during the latest synchronization.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {configurationEntries.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {configurationEntries.map(([key, value]) => (
+                        <DetailField key={key} label={titleCase(key)} value={value} mono={typeof value === "object"} />
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                  ) : <p className="text-sm text-muted-foreground">No configuration payload is available yet. Run Sync &amp; scan to refresh it.</p>}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              <TabsContent value="metrics">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Resource Metrics</CardTitle>
-                    <CardDescription>Performance and utilization metrics</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <p className="text-muted-foreground">
-                        Resource metrics visualization coming soon!
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
+            <TabsContent value="raw" className="mt-4">
+              <Card>
+                <CardHeader><CardTitle>Raw inventory record</CardTitle></CardHeader>
+                <CardContent>
+                  <pre className="max-h-[560px] overflow-auto rounded-lg bg-muted p-4 text-xs">{JSON.stringify({ ...resource, configuration }, null, 2)}</pre>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
 
-          <div className="space-y-6">
-            {/* Infrastructure Analysis Panel */}
-            <AiAnalysisPanel 
-              resourceId={resourceId} 
-              resourceName={resource.name} 
-              resourceType={resource.type} 
-            />
-
-            {/* Recommendations Card */}
+          <div className="space-y-5">
             <Card>
-              <CardHeader>
-                <CardTitle>Optimization Recommendations</CardTitle>
-                <CardDescription>
-                  Suggestions to improve cost, security, and performance
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {recommendations && recommendations.length > 0 ? (
-                  <div className="space-y-4">
-                    {recommendations.map((rec: any) => (
-                      <div key={rec.id} className="border-b pb-4 last:border-b-0 last:pb-0">
-                        <div className="flex items-start gap-2">
-                          <div>
-                            <div className="flex items-center">
-                              <h4 className="font-medium">{rec.title}</h4>
-                              <Badge className="ml-2" variant={rec.type === 'cost' ? 'default' : rec.type === 'security' ? 'destructive' : 'outline'}>
-                                {rec.type}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {rec.description}
-                            </p>
-                            {rec.estimatedSavings > 0 && (
-                              <p className="text-sm font-medium text-green-600 mt-2">
-                                Estimated savings: {formatCost(rec.estimatedSavings)}/month
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      No recommendations yet. Run the Infrastructure Analysis panel to get started.
-                    </p>
-                  </div>
-                )}
+              <CardHeader><CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> Operational context</CardTitle></CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" /><div><div className="font-medium">Coverage</div><div className="text-muted-foreground">Monitored in {resource.region || "the global AWS scope"}.</div></div></div>
+                <div className="flex items-start gap-3"><CalendarClock className="mt-0.5 h-4 w-4 text-muted-foreground" /><div><div className="font-medium">Inventory freshness</div><div className="text-muted-foreground">{resource.updatedAt ? `Updated ${new Date(resource.updatedAt).toLocaleString()}.` : "Refresh time is not available."}</div></div></div>
+                <div className="flex items-start gap-3"><Shield className="mt-0.5 h-4 w-4 text-muted-foreground" /><div><div className="font-medium">Security evaluation</div><div className="text-muted-foreground">Drift and policy findings are tracked separately and linked to this cloud identifier.</div></div></div>
               </CardContent>
             </Card>
+            <AiAnalysisPanel resourceId={resourceId} resourceName={resource.name} resourceType={resource.type} />
           </div>
         </div>
       </div>
-    </>
+    </DashboardLayout>
   );
 }

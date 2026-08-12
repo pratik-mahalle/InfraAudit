@@ -223,6 +223,7 @@ export interface Resource {
   cost?: number;
   configuration?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Baseline {

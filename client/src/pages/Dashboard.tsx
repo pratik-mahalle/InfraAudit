@@ -11,9 +11,11 @@ import {
   RefreshCw, FileText, Zap, CheckCircle2, CloudIcon, Plus,
   Loader2, ArrowRight, ChevronDown, Filter, X, Check,
   Network,
+  MapPin, Layers3,
 } from "lucide-react";
 import { SecurityDrift, Alert, Recommendation, CostTrend, ComplianceOverview } from "@/types";
-import api, { HealthScore, Provider } from "@/lib/api";
+import api, { HealthScore, Provider, Resource as ApiResource } from "@/lib/api";
+import { formatResourceType } from "@/lib/resource-display";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -203,6 +205,60 @@ function CostTrendCard({ costData }: { costData?: CostTrend }) {
         </svg>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--ia-ink-faint)", marginTop: 2 }}>
           {labels.map(l => <span key={l}>{l}</span>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Live inventory overview ─────────────────────────────────────────────────
+
+function InventoryOverview({ resources, onOpenResources }: { resources: ApiResource[]; onOpenResources: () => void }) {
+  const byType = Object.entries(resources.reduce<Record<string, number>>((counts, resource) => {
+    counts[resource.type] = (counts[resource.type] ?? 0) + 1;
+    return counts;
+  }, {})).sort((a, b) => b[1] - a[1]);
+  const regions = new Set(resources.map((resource) => resource.region).filter(Boolean));
+  const active = resources.filter((resource) => ["active", "running", "available"].includes(resource.status.toLowerCase())).length;
+  const maxTypeCount = byType[0]?.[1] ?? 1;
+
+  return (
+    <div className="ia-card" style={{ marginBottom: "var(--ia-gap)" }}>
+      <div className="ia-card-head">
+        <div className="ia-card-title"><Layers3 size={15} /> Live resource inventory</div>
+        <button className="ia-link" onClick={onOpenResources}>Explore all <ArrowRight size={13} /></button>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
+        <div className="ia-card-pad border-b lg:border-b-0 lg:border-r">
+          {byType.length > 0 ? (
+            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+              {byType.slice(0, 8).map(([type, count]) => (
+                <div key={type}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 12, marginBottom: 6 }}>
+                    <span style={{ color: "var(--ia-ink-2)", fontWeight: 600 }}>{formatResourceType(type)}</span>
+                    <span style={{ color: "var(--ia-ink-3)" }}>{count}</span>
+                  </div>
+                  <div style={{ height: 6, borderRadius: 999, background: "var(--ia-surface-3)", overflow: "hidden" }}>
+                    <div style={{ width: `${Math.max(8, (count / maxTypeCount) * 100)}%`, height: "100%", borderRadius: 999, background: "var(--ia-brand)" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : <div className="ia-empty">Run Sync &amp; scan to build the cloud inventory.</div>}
+        </div>
+        <div className="ia-card-pad" style={{ display: "grid", gap: 14, alignContent: "start" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Server size={17} style={{ color: "var(--ia-brand)" }} />
+            <div><div style={{ fontSize: 18, fontWeight: 750 }}>{resources.length}</div><div style={{ fontSize: 11, color: "var(--ia-ink-3)" }}>discovered assets</div></div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <CheckCircle2 size={17} style={{ color: "var(--ia-sev-ok)" }} />
+            <div><div style={{ fontSize: 18, fontWeight: 750 }}>{active}</div><div style={{ fontSize: 11, color: "var(--ia-ink-3)" }}>active or available</div></div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <MapPin size={17} style={{ color: "var(--ia-ink-2)" }} />
+            <div><div style={{ fontSize: 18, fontWeight: 750 }}>{regions.size}</div><div style={{ fontSize: 11, color: "var(--ia-ink-3)" }}>regions and global scope</div></div>
+          </div>
         </div>
       </div>
     </div>
@@ -878,6 +934,8 @@ export default function Dashboard() {
             {kpis.map(k => <KpiCard key={k.id} k={k} />)}
           </div>
         </div>
+
+        <InventoryOverview resources={resources} onOpenResources={() => navigate("/resources")} />
 
         {/* ── Cost trend + Live drift feed ── */}
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
