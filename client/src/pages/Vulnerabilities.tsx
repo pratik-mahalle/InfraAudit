@@ -91,7 +91,10 @@ function VulnerabilityFindingRow({
     <button
       type="button"
       onClick={onSelect}
-      className={cn("w-full px-4 py-4 text-left transition-colors hover:bg-muted/50", selected && "bg-muted")}
+      className={cn(
+        "w-full rounded-lg border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40",
+        selected && "border-primary/50 bg-primary/5",
+      )}
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
@@ -105,7 +108,7 @@ function VulnerabilityFindingRow({
         </div>
         <span className="shrink-0 text-xs text-muted-foreground">{formatTimeAgo(finding.lastSeenAt)}</span>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      <div className="mt-3 grid gap-1 text-xs text-muted-foreground">
         <span>{finding.provider?.toUpperCase() || "Provider unknown"}</span>
         <span>{finding.scannerType || finding.sourceType}</span>
         {packageName && (
@@ -115,10 +118,17 @@ function VulnerabilityFindingRow({
             {fixedVersion ? ` -> ${fixedVersion}` : ""}
           </span>
         )}
-        {finding.resourceId && <span className="font-mono">{finding.resourceId}</span>}
+        {finding.resourceId && <span className="truncate font-mono">{finding.resourceId}</span>}
       </div>
     </button>
   );
+}
+
+function vulnerabilityLane(finding: Finding) {
+  if (finding.severity === "critical") return "Emergency Patch";
+  if (finding.severity === "high") return "Next Patch Window";
+  if (finding.remediation) return "Fix Available";
+  return "Monitor";
 }
 
 export default function Vulnerabilities() {
@@ -178,6 +188,10 @@ export default function Vulnerabilities() {
   const highCount = findings.filter((item) => item.severity === "high").length;
   const openCount = findings.filter((item) => item.status === "open").length;
   const fixableCount = findings.filter((item) => item.remediation && item.status === "open").length;
+  const patchLanes = ["Emergency Patch", "Next Patch Window", "Fix Available", "Monitor"].map((lane) => ({
+    lane,
+    items: filtered.filter((finding) => vulnerabilityLane(finding) === lane),
+  })).filter((group) => group.items.length > 0);
   const activeScanJobStatus = scanJobStatus?.status ?? (scanJobId ? "available" : undefined);
   const scanJobIsActive = !!scanJobId && !scanJobStatusError && !isTerminalQueueState(activeScanJobStatus);
 
@@ -339,8 +353,8 @@ export default function Vulnerabilities() {
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_440px]">
         <Card className="rounded-lg">
           <CardHeader>
-            <CardTitle>Remediation Queue</CardTitle>
-            <CardDescription>{filtered.length} CVE and package findings match the current view</CardDescription>
+            <CardTitle>Patch Workbench</CardTitle>
+            <CardDescription>{filtered.length} CVE and package findings grouped by remediation urgency</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -348,14 +362,27 @@ export default function Vulnerabilities() {
             ) : filtered.length === 0 ? (
               <EmptyPanel icon={PackageCheck} title="No vulnerabilities in this view" description="Change filters or run a scan to refresh vulnerability coverage." />
             ) : (
-              <div className="divide-y rounded-lg border">
-                {filtered.map((finding: Finding) => (
-                  <VulnerabilityFindingRow
-                    key={finding.id}
-                    finding={finding}
-                    selected={selectedFinding?.id === finding.id}
-                    onSelect={() => setSelectedFindingId(finding.id)}
-                  />
+              <div className="grid gap-3 lg:grid-cols-2">
+                {patchLanes.map((group) => (
+                  <section key={group.lane} className="rounded-lg border bg-muted/20 p-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">{group.lane}</h3>
+                      <ToneBadge value={group.items.length} tone={group.lane === "Emergency Patch" ? "red" : group.lane === "Next Patch Window" ? "orange" : "slate"} />
+                    </div>
+                    <div className="space-y-2">
+                      {group.items.slice(0, 10).map((finding: Finding) => (
+                        <VulnerabilityFindingRow
+                          key={finding.id}
+                          finding={finding}
+                          selected={selectedFinding?.id === finding.id}
+                          onSelect={() => setSelectedFindingId(finding.id)}
+                        />
+                      ))}
+                    </div>
+                    {group.items.length > 10 && (
+                      <p className="mt-3 text-xs text-muted-foreground">+{group.items.length - 10} more. Filter by package, CVE, or scanner to narrow.</p>
+                    )}
+                  </section>
                 ))}
               </div>
             )}
