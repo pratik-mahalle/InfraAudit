@@ -653,7 +653,7 @@ export const api = {
 
     getTop: () => request<Vulnerability[]>('/api/vulnerabilities/top'),
 
-    scan: () => request<VulnerabilityScanResponse>('/api/vulnerabilities/scan', { method: 'POST' }),
+    scan: () => request<VulnerabilityScanResponse>('/api/v1/vulnerabilities/scan', { method: 'POST' }),
   },
 
   // ============================================
