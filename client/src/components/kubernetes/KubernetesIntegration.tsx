@@ -446,6 +446,8 @@ export function KubernetesIntegration() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/kubernetes/clusters'] });
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
       toast({ title: 'Cluster added', description: 'Your Kubernetes cluster has been added successfully.' });
       setIsAddingCluster(false);
     },
@@ -460,11 +462,31 @@ export function KubernetesIntegration() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/kubernetes/clusters'] });
+      queryClient.invalidateQueries({ queryKey: ['resources'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
       setSelectedCluster(null);
       toast({ title: 'Cluster removed', description: 'The Kubernetes cluster has been removed.' });
     },
     onError: (error: Error) => {
       toast({ title: 'Failed to remove cluster', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const syncClusterMutation = useMutation({
+    mutationFn: async (clusterId: number) => {
+      await apiRequest('POST', `/api/kubernetes/clusters/${clusterId}/sync`);
+    },
+    onSuccess: async (_data, clusterId) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/kubernetes/clusters'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/kubernetes/clusters', clusterId, 'resources'] }),
+        queryClient.invalidateQueries({ queryKey: ['resources'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/resources'] }),
+      ]);
+      toast({ title: 'Cluster synced', description: 'Kubernetes resources were refreshed in the inventory.' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Sync failed', description: error.message, variant: 'destructive' });
     },
   });
 
@@ -574,12 +596,11 @@ export function KubernetesIntegration() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => queryClient.invalidateQueries({
-                    queryKey: ['/api/kubernetes/clusters', selectedCluster, 'resources']
-                  })}
+                  disabled={syncClusterMutation.isPending}
+                  onClick={() => syncClusterMutation.mutate(selectedCluster)}
                 >
-                  <RefreshCcw className="h-4 w-4 mr-2" />
-                  Refresh
+                  <RefreshCcw className={`h-4 w-4 mr-2 ${syncClusterMutation.isPending ? "animate-spin" : ""}`} />
+                  {syncClusterMutation.isPending ? 'Syncing...' : 'Refresh'}
                 </Button>
               )}
             </CardHeader>
