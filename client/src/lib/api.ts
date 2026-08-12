@@ -206,6 +206,14 @@ export interface VulnerabilityScanResponse {
   duplicate?: boolean;
 }
 
+export interface ComplianceAssessmentRunResponse {
+  message?: string;
+  jobId?: number;
+  jobKind?: string;
+  queue?: string;
+  duplicate?: boolean;
+}
+
 export type FindingSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type FindingStatus = 'open' | 'resolved' | 'ignored' | 'false_positive' | 'accepted';
 export type FindingType = 'cve' | 'vulnerability' | 'misconfiguration' | 'compliance_violation' | 'exposure' | 'secret' | 'malware';
@@ -933,7 +941,7 @@ export const api = {
     },
 
     runAssessment: (frameworkId: string) =>
-      request<ComplianceAssessment>('/api/v1/compliance/assess', {
+      request<ComplianceAssessment | ComplianceAssessmentRunResponse>('/api/v1/compliance/assess', {
         method: 'POST', body: { framework_id: frameworkId }
       }),
 

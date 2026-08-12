@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Download, FileCheck2, Fingerprint, FileText, PlayCircle, Search, ShieldCheck, ShieldX } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, FileCheck2, Fingerprint, FileText, Loader2, PlayCircle, Search, ShieldCheck, ShieldX } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { AssessmentHistory } from "@/components/compliance/AssessmentHistory";
@@ -23,6 +24,7 @@ import {
   useToggleFramework,
 } from "@/hooks/use-compliance";
 import { useFindings, useUpdateFindingStatus } from "@/hooks/use-findings";
+import { isTerminalQueueState, useQueueJobStatus } from "@/hooks/use-queue-job";
 import { useToast } from "@/hooks/use-toast";
 import type { FindingStatus } from "@/lib/api";
 import type { AssessmentFinding, ComplianceAssessment, ComplianceControl } from "@/types";
@@ -31,6 +33,7 @@ import { DetailRow, EmptyPanel, MetricTile, ToneBadge } from "@/components/secur
 
 export default function Compliance() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("readiness");
   const [selectedFrameworkId, setSelectedFrameworkId] = useState("");
   const [resourceIdInput, setResourceIdInput] = useState("");
@@ -38,6 +41,8 @@ export default function Compliance() {
   const [selectedAssessment, setSelectedAssessment] = useState<ComplianceAssessment | null>(null);
   const [selectedControl, setSelectedControl] = useState<ComplianceControl | null>(null);
   const [selectedFindingId, setSelectedFindingId] = useState<number | null>(null);
+  const [assessmentJobId, setAssessmentJobId] = useState<number | null>(null);
+  const [notifiedAssessmentJobStatus, setNotifiedAssessmentJobStatus] = useState<string | null>(null);
 
   const { data: overview, isLoading: overviewLoading } = useComplianceOverview();
   const { data: frameworks = [], isLoading: frameworksLoading } = useFrameworks();
@@ -53,6 +58,7 @@ export default function Compliance() {
   const { mutate: runAssessment, isPending: assessmentRunning } = useRunAssessment();
   const { mutate: toggleFramework } = useToggleFramework();
   const updateFindingStatus = useUpdateFindingStatus();
+  const { data: assessmentJobStatus, error: assessmentJobStatusError, isFetching: isFetchingAssessmentJob } = useQueueJobStatus(assessmentJobId);
 
   useEffect(() => {
     if (!selectedFrameworkId && frameworks.length > 0) {
@@ -60,6 +66,10 @@ export default function Compliance() {
       setSelectedFrameworkId(defaultFramework.id);
     }
   }, [frameworks, selectedFrameworkId]);
+
+  useEffect(() => {
+    setSelectedControl(null);
+  }, [selectedFrameworkId]);
 
   const selectedFramework = frameworks.find((framework) => framework.id === selectedFrameworkId);
   const enabledFrameworks = frameworks.filter((framework) => framework.isEnabled).length;
@@ -69,6 +79,29 @@ export default function Compliance() {
   const totalControls = overview?.totalControls ?? controls.length;
   const complianceFindings = complianceFindingsResponse?.data ?? [];
   const selectedFinding = complianceFindings.find((finding) => finding.id === selectedFindingId) ?? complianceFindings[0] ?? null;
+  const activeAssessmentJobStatus = assessmentJobStatus?.status ?? (assessmentJobId ? "available" : undefined);
+  const assessmentJobIsActive = !!assessmentJobId && !assessmentJobStatusError && !isTerminalQueueState(activeAssessmentJobStatus);
+
+  const assessmentJobDescription = (status?: string, lastError?: string) => {
+    switch (status) {
+      case "available":
+      case "pending":
+      case "scheduled":
+        return "The assessment is queued and waiting for a worker.";
+      case "running":
+        return "The policy engine is evaluating controls against resource evidence.";
+      case "retryable":
+        return lastError ? `The assessment will retry after an error: ${lastError}` : "The assessment will retry after an error.";
+      case "completed":
+        return "The assessment completed. Compliance data is refreshing.";
+      case "discarded":
+        return lastError ? `The assessment failed permanently: ${lastError}` : "The assessment failed permanently.";
+      case "cancelled":
+        return "The assessment was cancelled.";
+      default:
+        return "Waiting for the assessment job to report status.";
+    }
+  };
 
   const updateSelectedFindingStatus = (status: FindingStatus) => {
     if (!selectedFinding) return;
@@ -88,10 +121,48 @@ export default function Compliance() {
     }
 
     runAssessment(selectedFrameworkId, {
-      onSuccess: () => toast({ title: "Assessment started", description: "Compliance assessment is running in the background." }),
+      onSuccess: (result) => {
+        if ("jobId" in result && result.jobId) {
+          setAssessmentJobId(result.jobId);
+          setNotifiedAssessmentJobStatus(null);
+          toast({
+            title: result.duplicate ? "Assessment already queued" : "Assessment queued",
+            description: `Job #${result.jobId} is running on the ${result.queue ?? "scan"} queue.`,
+          });
+          return;
+        }
+
+        setAssessmentJobId(null);
+        toast({ title: "Assessment started", description: "Compliance assessment is running in the background." });
+      },
       onError: (error: Error) => toast({ title: "Assessment failed", description: error.message || "Could not start assessment.", variant: "destructive" }),
     });
   };
+
+  useEffect(() => {
+    if (!assessmentJobStatus || !isTerminalQueueState(assessmentJobStatus.status)) return;
+
+    const notificationKey = `${assessmentJobStatus.id}:${assessmentJobStatus.status}`;
+    if (notifiedAssessmentJobStatus === notificationKey) return;
+    setNotifiedAssessmentJobStatus(notificationKey);
+    queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === "string" && key.startsWith("/api/v1/compliance");
+      },
+    });
+    queryClient.invalidateQueries({ queryKey: ["findings"] });
+
+    if (assessmentJobStatus.status === "completed") {
+      toast({ title: "Assessment complete", description: "Compliance readiness and findings are refreshing." });
+    } else {
+      toast({
+        title: "Assessment did not complete",
+        description: assessmentJobStatus.lastError || assessmentJobDescription(assessmentJobStatus.status),
+        variant: "destructive",
+      });
+    }
+  }, [assessmentJobStatus, notifiedAssessmentJobStatus, queryClient, toast]);
 
   const downloadAssessment = (assessment?: ComplianceAssessment) => {
     const rows = assessment
@@ -153,13 +224,43 @@ export default function Compliance() {
               <Download className="h-4 w-4" />
               Export Evidence
             </Button>
-            <Button className="gap-2" onClick={handleRunAssessment} disabled={assessmentRunning || !selectedFrameworkId}>
-              <PlayCircle className={`h-4 w-4 ${assessmentRunning ? "animate-spin" : ""}`} />
-              {assessmentRunning ? "Running" : "Run Assessment"}
+            <Button className="gap-2" onClick={handleRunAssessment} disabled={assessmentRunning || assessmentJobIsActive || !selectedFrameworkId}>
+              {assessmentRunning || assessmentJobIsActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlayCircle className="h-4 w-4" />}
+              {assessmentRunning || assessmentJobIsActive ? "Running" : "Run Assessment"}
             </Button>
           </div>
         }
       />
+
+      {assessmentJobId && (
+        <Card className="mb-6 rounded-lg border-primary/20">
+          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              {assessmentJobIsActive || isFetchingAssessmentJob ? (
+                <Loader2 className="mt-0.5 h-5 w-5 animate-spin text-primary" />
+              ) : assessmentJobStatus?.status === "completed" ? (
+                <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
+              ) : (
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
+              )}
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium">Compliance assessment job #{assessmentJobId}</p>
+                  <ToneBadge value={activeAssessmentJobStatus ?? "queued"} tone={assessmentJobStatus?.status === "completed" ? "emerald" : assessmentJobStatus?.status === "discarded" ? "red" : "blue"} />
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {assessmentJobStatusError instanceof Error ? assessmentJobStatusError.message : assessmentJobDescription(activeAssessmentJobStatus, assessmentJobStatus?.lastError)}
+                </p>
+              </div>
+            </div>
+            {assessmentJobStatus?.attempt !== undefined && (
+              <p className="text-xs text-muted-foreground">
+                Attempt {assessmentJobStatus.attempt}/{assessmentJobStatus.maxAttempts}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricTile icon={ShieldCheck} label="Readiness score" value={`${compliancePercent}%`} tone={compliancePercent >= 80 ? "emerald" : compliancePercent >= 60 ? "amber" : "red"} helper="Across enabled frameworks" />
@@ -272,33 +373,56 @@ export default function Compliance() {
           />
         </TabsContent>
 
-        <TabsContent value="controls" className="mt-4 space-y-4">
+        <TabsContent value="controls" className="mt-4">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <Card className="rounded-lg">
             <CardHeader>
               <CardTitle>Control Matrix</CardTitle>
               <CardDescription>Controls and remediation detail for the selected framework</CardDescription>
             </CardHeader>
             <CardContent>
-              <ControlsTable controls={controls} isLoading={controlsLoading} onView={setSelectedControl} />
+              <ControlsTable
+                controls={controls}
+                isLoading={controlsLoading}
+                selectedId={selectedControl?.id ?? null}
+                onView={setSelectedControl}
+              />
             </CardContent>
           </Card>
-          {selectedControl && (
             <Card className="rounded-lg">
-              <CardHeader>
-                <CardTitle>{selectedControl.controlId}: {selectedControl.title}</CardTitle>
-                <CardDescription>{selectedControl.category}</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <DetailRow label="Severity">
-                  <ToneBadge value={selectedControl.severity} />
-                </DetailRow>
-                <DetailRow label="Remediation">{selectedControl.remediation || "No remediation guidance is available for this control."}</DetailRow>
-                <div className="md:col-span-2">
-                  <DetailRow label="Description">{selectedControl.description}</DetailRow>
-                </div>
-              </CardContent>
+              {selectedControl ? (
+                <>
+                  <CardHeader>
+                    <div className="flex flex-wrap gap-2">
+                      <ToneBadge value={selectedControl.severity} />
+                      <ToneBadge value={selectedControl.category} tone="blue" />
+                    </div>
+                    <CardTitle className="mt-2">{selectedControl.controlId}: {selectedControl.title}</CardTitle>
+                    <CardDescription>{selectedFramework?.name || selectedControl.frameworkId}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <DetailRow label="Description">{selectedControl.description || "No description is available for this control."}</DetailRow>
+                    <div className="rounded-lg border p-4">
+                      <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Remediation</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedControl.remediation || "No remediation guidance is available for this control."}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-4">
+                      <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Evidence Path</p>
+                      <p className="text-sm text-muted-foreground">
+                        Run an assessment to map this control to resource evidence and normalized compliance findings.
+                      </p>
+                    </div>
+                  </CardContent>
+                </>
+              ) : (
+                <CardContent className="pt-6">
+                  <EmptyPanel icon={FileText} title="No control selected" description="Use Review on a control row to inspect description, remediation, and evidence context." />
+                </CardContent>
+              )}
             </Card>
-          )}
+          </div>
         </TabsContent>
 
         <TabsContent value="findings" className="mt-4">

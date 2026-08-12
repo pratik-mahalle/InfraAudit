@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, FileSearch, Fingerprint, ListFilter, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileSearch, Fingerprint, ListFilter, ShieldCheck } from "lucide-react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useFindings, useFindingSummary, useUpdateFindingStatus } from "@/hooks/use-findings";
 import type { Finding, FindingParams, FindingStatus } from "@/lib/api";
-import { FindingDetailPanel, FindingRow } from "@/components/findings/finding-ui";
-import { EmptyPanel, FilterToolbar, MetricTile } from "@/components/security-ops/ops-ui";
+import { FindingDetailPanel, formatFindingLabel } from "@/components/findings/finding-ui";
+import { EmptyPanel, FilterToolbar, MetricTile, ToneBadge } from "@/components/security-ops/ops-ui";
+import { cn, formatTimeAgo } from "@/lib/utils";
 
 const severityOptions = [
   { value: "all", label: "All severity" },
@@ -45,6 +46,55 @@ const sourceOptions = [
   { value: "cloud_native", label: "Cloud native" },
   { value: "policy", label: "Policy" },
 ];
+
+function findingLane(finding: Finding) {
+  if (finding.status === "resolved") return "Cleared";
+  if (finding.severity === "critical" || finding.severity === "high") return "Priority";
+  if (finding.findingType === "compliance_violation") return "Audit";
+  if (finding.findingType === "exposure" || finding.findingType === "misconfiguration") return "Exposure";
+  return "Watch";
+}
+
+function FindingSignalCard({
+  finding,
+  selected,
+  onSelect,
+}: {
+  finding: Finding;
+  selected?: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        "w-full rounded-lg border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40",
+        selected && "border-primary/50 bg-primary/5",
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap gap-1.5">
+            <ToneBadge value={finding.severity} />
+            <ToneBadge value={formatFindingLabel(finding.findingType)} tone="blue" />
+          </div>
+          <h3 className="mt-2 line-clamp-2 text-sm font-semibold">{finding.title}</h3>
+        </div>
+        {finding.status === "resolved" ? (
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+        ) : (
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
+        )}
+      </div>
+      <div className="mt-3 grid gap-1 text-xs text-muted-foreground">
+        <span className="truncate font-mono">{finding.resourceId || "Not resource scoped"}</span>
+        <span>{finding.provider?.toUpperCase() || "Provider unknown"} · {formatFindingLabel(finding.scannerType || finding.sourceType)}</span>
+        <span>{formatTimeAgo(finding.lastSeenAt)}</span>
+      </div>
+    </button>
+  );
+}
 
 export default function Findings() {
   const { toast } = useToast();
@@ -90,6 +140,19 @@ export default function Findings() {
   const selectedFinding: Finding | null = filtered.find((finding) => finding.id === selectedFindingId) ?? filtered[0] ?? null;
   const bySeverity = summary?.bySeverity ?? {};
   const byStatus = summary?.byStatus ?? {};
+  const lanes = ["Priority", "Audit", "Exposure", "Watch", "Cleared"];
+  const groupedFindings = lanes.map((lane) => ({
+    lane,
+    items: filtered.filter((finding) => findingLane(finding) === lane),
+  }));
+  const visibleGroupedFindings = groupedFindings.filter((group) => group.items.length > 0);
+  const typeMix = typeOptions
+    .filter((option) => option.value !== "all")
+    .map((option) => ({
+      ...option,
+      count: findings.filter((finding) => finding.findingType === option.value).length,
+    }))
+    .filter((item) => item.count > 0);
 
   const handleStatusChange = (nextStatus: FindingStatus) => {
     if (!selectedFinding) return;
@@ -139,23 +202,46 @@ export default function Findings() {
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
         <Card className="rounded-lg">
           <CardHeader>
-            <CardTitle>Finding Queue</CardTitle>
-            <CardDescription>{filtered.length} findings match the current view</CardDescription>
+            <CardTitle>Triage Board</CardTitle>
+            <CardDescription>{filtered.length} findings grouped by analyst workflow</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {typeMix.length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {typeMix.slice(0, 8).map((item) => (
+                  <div key={item.value} className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className="mt-1 text-lg font-semibold">{item.count}</p>
+                  </div>
+                ))}
+              </div>
+            )}
             {isLoading ? (
               <EmptyPanel icon={FileSearch} title="Loading findings" description="Fetching normalized finding evidence from all scanners and compliance sources." />
             ) : filtered.length === 0 ? (
               <EmptyPanel icon={ShieldCheck} title="No findings in this view" description="Change filters, run scans, or sync providers to refresh the queue." />
             ) : (
-              <div className="divide-y rounded-lg border">
-                {filtered.map((finding) => (
-                  <FindingRow
-                    key={finding.id}
-                    finding={finding}
-                    selected={selectedFinding?.id === finding.id}
-                    onSelect={() => setSelectedFindingId(finding.id)}
-                  />
+              <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+                {visibleGroupedFindings.map((group) => (
+                  <section key={group.lane} className="rounded-lg border bg-muted/20 p-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">{group.lane}</h3>
+                      <ToneBadge value={group.items.length} tone={group.lane === "Priority" ? "red" : group.lane === "Cleared" ? "emerald" : "slate"} />
+                    </div>
+                    <div className="space-y-2">
+                      {group.items.slice(0, 8).map((finding) => (
+                        <FindingSignalCard
+                          key={finding.id}
+                          finding={finding}
+                          selected={selectedFinding?.id === finding.id}
+                          onSelect={() => setSelectedFindingId(finding.id)}
+                        />
+                      ))}
+                    </div>
+                    {group.items.length > 8 && (
+                      <p className="mt-3 text-xs text-muted-foreground">+{group.items.length - 8} more in this lane. Use search or filters to narrow.</p>
+                    )}
+                  </section>
                 ))}
               </div>
             )}
@@ -164,7 +250,7 @@ export default function Findings() {
 
         <Card className="rounded-lg">
           <CardHeader>
-            <CardTitle>Finding Detail</CardTitle>
+            <CardTitle>Investigation Record</CardTitle>
             <CardDescription>Evidence, ownership, remediation, and lifecycle controls</CardDescription>
           </CardHeader>
           <CardContent>

@@ -85,7 +85,12 @@ export function useRunAssessment() {
     return useMutation({
         mutationFn: (frameworkId: string) => api.compliance.runAssessment(frameworkId),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['/api/v1/compliance'] });
+            queryClient.invalidateQueries({
+                predicate: (query) => {
+                    const key = query.queryKey[0];
+                    return typeof key === 'string' && key.startsWith('/api/v1/compliance');
+                },
+            });
         },
     });
 }
