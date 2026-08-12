@@ -565,15 +565,16 @@ export function CloudProviderSetup() {
                 <>
                 <div className="mb-4">
                   <a
-                    href="/api/v1/providers/aws/iam-template"
-                    download="infraaudit-iam.json"
+                    href="https://github.com/pratik-mahalle/infra-backend/blob/main/docs/aws-inventory-permissions.md"
+                    target="_blank"
+                    rel="noreferrer"
                     className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     <Download size={16} />
-                    Download IAM Setup (CloudFormation)
+                    View AWS IAM Policy
                   </a>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Deploy this in AWS CloudFormation, then copy the outputs below
+                    Apply the documented read-only policy to the dedicated InfraAudit IAM identity.
                   </p>
                 </div>
                 <Form {...awsForm}>
@@ -1113,11 +1114,12 @@ export function CloudProviderSetup() {
               </h3>
               <ul className="text-sm space-y-1 list-disc pl-5">
                 <li>EC2:DescribeInstances</li>
+                <li>EC2:DescribeVpcs / FlowLogs / SecurityGroups</li>
                 <li>EC2:DescribeVolumes</li>
-                <li>S3:ListBuckets</li>
+                <li>S3:ListAllMyBuckets</li>
                 <li>S3:GetBucketTagging</li>
                 <li>RDS:DescribeDBInstances</li>
-                <li>IAM:ListAccessKeys</li>
+                <li>IAM:ListUsers / ListMFADevices / ListRoles</li>
                 <li>CostExplorer:GetCostAndUsage</li>
                 <li><em>Read-only policy recommended</em></li>
               </ul>

@@ -212,7 +212,7 @@ export interface AlertSummary {
 }
 
 export interface Resource {
-  id: number;
+  id?: number;
   resourceId?: string;
   provider: string;
   name: string;
@@ -220,7 +220,7 @@ export interface Resource {
   region: string;
   status: string;
   tags?: Record<string, string>;
-  cost: number;
+  cost?: number;
   configuration?: string;
   createdAt: string;
 }
