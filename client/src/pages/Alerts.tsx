@@ -1,467 +1,275 @@
-import React, { useState } from "react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { AlertFilterBar } from "@/components/dashboard/AlertFilterBar";
-import { PageHeader } from "@/components/dashboard/PageHeader";
-import { Alert, Resource } from "@/types";
-import { 
-  Bell, 
-  BellRing, 
-  BellOff, 
-  Settings, 
-  CloudIcon, 
-  AlertTriangle, 
-  Shield, 
-  Database 
+  AlertCircle,
+  Bell,
+  BellRing,
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
+  MessageSquare,
+  Settings,
 } from "lucide-react";
-import { formatTimeAgo, getSeverityColor, getSeverityBgColor } from "@/lib/utils";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useAlerts, useAlertSummary, useAcknowledgeAlert, useResolveAlert } from "@/hooks/use-alerts";
 import { useResources } from "@/hooks/use-resources";
 import { useNotificationPreferences } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { formatTimeAgo } from "@/lib/utils";
+import type { Alert } from "@/lib/api";
+import {
+  ActionButton,
+  DetailRow,
+  EmptyPanel,
+  FilterToolbar,
+  MetricTile,
+  ToneBadge,
+} from "@/components/security-ops/ops-ui";
+
+const typeOptions = [
+  { value: "all", label: "All types" },
+  { value: "security", label: "Security" },
+  { value: "cost", label: "Cost" },
+  { value: "resource", label: "Resource" },
+  { value: "performance", label: "Performance" },
+  { value: "compliance", label: "Compliance" },
+];
+
+const severityOptions = [
+  { value: "all", label: "All severity" },
+  { value: "critical", label: "Critical" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+];
+
+const statusOptions = [
+  { value: "all", label: "All status" },
+  { value: "open", label: "Open" },
+  { value: "acknowledged", label: "Acknowledged" },
+  { value: "resolved", label: "Resolved" },
+];
 
 export default function Alerts() {
-  const [alertType, setAlertType] = useState<string>("all");
-  const [alertSeverity, setAlertSeverity] = useState<string>("all");
-  const [alertStatus, setAlertStatus] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  const [selectedAlertId, setSelectedAlertId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [severityFilter, setSeverityFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("open");
 
-  // Fetch notification channel preferences from real API
-  const { data: notifPrefsResponse } = useNotificationPreferences();
-  const notifPrefs = Array.isArray(notifPrefsResponse) ? notifPrefsResponse : (notifPrefsResponse as any)?.data ?? [];
-
-  // Fetch paginated alerts from the real backend
-  const { data: alertsResponse, isLoading: isLoadingAlerts } = useAlerts();
-  const alerts = alertsResponse?.data ?? [];
-
-  // Fetch alert summary for the summary cards
+  const { data: alertsResponse, isLoading } = useAlerts();
   const { data: alertSummary } = useAlertSummary();
-
-  // Fetch resources for name lookup (paginated — extract .data)
   const { data: resourcesResponse } = useResources();
-  const resources = resourcesResponse?.data ?? [];
-
-  // Mutations for acknowledge and resolve
+  const { data: notifPrefsResponse } = useNotificationPreferences();
   const acknowledgeAlert = useAcknowledgeAlert();
   const resolveAlert = useResolveAlert();
 
-  const handleAcknowledge = (id: number) => {
-    acknowledgeAlert.mutate(id, {
-      onSuccess: () => {
-        toast({
-          title: "Alert Acknowledged",
-          description: "The alert has been marked as acknowledged.",
-        });
-      },
-      onError: (error: Error) => {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to acknowledge alert.",
-          variant: "destructive",
-        });
-      },
-    });
+  const alerts = alertsResponse?.data ?? [];
+  const resources = resourcesResponse?.data ?? [];
+  const notificationPrefs = Array.isArray(notifPrefsResponse)
+    ? notifPrefsResponse
+    : (notifPrefsResponse as any)?.data ?? [];
+
+  const resourceName = (resourceId?: number) => {
+    if (!resourceId) return "No resource linked";
+    return resources.find((resource) => resource.id === resourceId)?.name ?? `Resource ${resourceId}`;
   };
 
-  const handleResolve = (id: number) => {
-    resolveAlert.mutate(id, {
-      onSuccess: () => {
-        toast({
-          title: "Alert Resolved",
-          description: "The alert has been marked as resolved.",
-        });
-      },
-      onError: (error: Error) => {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to resolve alert.",
-          variant: "destructive",
-        });
-      },
-    });
-  };
+  const filteredAlerts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
 
-  const getResourceName = (id?: number) => {
-    if (!id) return "N/A";
-    const resource = resources.find((r) => r.id === id);
-    if (resource) return resource.name;
-    return `Resource ID: ${id}`;
-  };
+    return alerts.filter((alert) => {
+      const matchesType = typeFilter === "all" || alert.type === typeFilter;
+      const matchesSeverity = severityFilter === "all" || alert.severity === severityFilter;
+      const matchesStatus = statusFilter === "all" || alert.status === statusFilter;
+      const haystack = `${alert.title} ${alert.message} ${resourceName(alert.resourceId)}`.toLowerCase();
+      return matchesType && matchesSeverity && matchesStatus && (!query || haystack.includes(query));
+    });
+  }, [alerts, resources, searchQuery, severityFilter, statusFilter, typeFilter]);
+
+  const selectedAlert = filteredAlerts.find((alert) => alert.id === selectedAlertId) ?? filteredAlerts[0] ?? null;
+  const openAlerts = alerts.filter((alert) => alert.status === "open");
+  const acknowledgedAlerts = alerts.filter((alert) => alert.status === "acknowledged");
+  const criticalOpen = openAlerts.filter((alert) => alert.severity === "critical").length;
 
   const openAlertContext = (alert: Alert) => {
-    if (alert.resourceId) {
-      const resource = resources.find((item) => item.id === alert.resourceId);
-      const resourceIdentifier = resource?.resourceId ?? resource?.id;
-      if (resourceIdentifier) {
-        navigate(`/resources/${encodeURIComponent(String(resourceIdentifier))}`);
-        return;
-      }
+    const resource = resources.find((item) => item.id === alert.resourceId);
+    const identifier = resource?.resourceId ?? resource?.id;
+    if (identifier) {
+      navigate(`/resources/${encodeURIComponent(String(identifier))}`);
+      return;
     }
-
     navigate(alert.type === "cost" ? "/cost" : "/drift-detection");
   };
 
-  // Filter alerts based on criteria
-  const filteredAlerts = alerts.filter((alert) => {
-    const matchesType = alertType === "all" || alert.type === alertType;
-    const matchesSeverity = alertSeverity === "all" || alert.severity === alertSeverity;
-    const matchesStatus = alertStatus === "all" || alert.status === alertStatus;
-    const matchesSearch = searchQuery === "" ||
-      (alert.title && alert.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (alert.message && alert.message.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-    return matchesType && matchesSeverity && matchesStatus && matchesSearch;
-  });
+  const acknowledge = (alert: Alert) => {
+    acknowledgeAlert.mutate(alert.id, {
+      onSuccess: () => toast({ title: "Alert acknowledged", description: "The alert moved out of the open queue." }),
+      onError: (error: Error) => toast({ title: "Could not acknowledge alert", description: error.message, variant: "destructive" }),
+    });
+  };
 
-  // Summary counts from the real /api/alerts/summary endpoint
-  const criticalCount = alertSummary?.critical ?? 0;
-  const highCount = alertSummary?.high ?? 0;
-  const mediumCount = alertSummary?.medium ?? 0;
-  const lowCount = alertSummary?.low ?? 0;
-
-  // Helper to render the alerts table for any given list
-  const renderAlertsTable = (alertList: Alert[]) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Title</TableHead>
-          <TableHead>Type</TableHead>
-          <TableHead>Severity</TableHead>
-          <TableHead>Resource</TableHead>
-          <TableHead>Created</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {isLoadingAlerts ? (
-          <TableRow>
-            <TableCell colSpan={7} className="h-24 text-center">
-              Loading alerts...
-            </TableCell>
-          </TableRow>
-        ) : alertList.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={7} className="h-24 text-center">
-              No alerts found matching the current filters.
-            </TableCell>
-          </TableRow>
-        ) : (
-          alertList.map((alert) => (
-            <TableRow key={alert.id}>
-              <TableCell className="font-medium max-w-[300px] truncate">
-                {alert.title}
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline" className="capitalize">
-                  {alert.type}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(alert.severity)} ${getSeverityColor(alert.severity)} rounded-full`}>
-                  {alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
-                </span>
-              </TableCell>
-              <TableCell>
-                {alert.resourceId ? getResourceName(alert.resourceId) : "N/A"}
-              </TableCell>
-              <TableCell>{formatTimeAgo(alert.createdAt)}</TableCell>
-              <TableCell>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  alert.status === "open"
-                    ? "bg-warning bg-opacity-10 text-warning"
-                    : alert.status === "acknowledged"
-                    ? "bg-primary bg-opacity-10 text-primary"
-                    : "bg-secondary bg-opacity-10 text-secondary"
-                }`}>
-                  {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
-                </span>
-              </TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  {alert.status === "open" && (
-                    <>
-                      {alert.type === "security" && (
-                        <Button size="sm" variant="default" className="h-8" onClick={() => openAlertContext(alert)}>
-                          Review
-                        </Button>
-                      )}
-                      {alert.type === "cost" && (
-                        <Button size="sm" variant="default" className="h-8" onClick={() => openAlertContext(alert)}>
-                          Investigate
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8"
-                        disabled={acknowledgeAlert.isPending}
-                        onClick={() => handleAcknowledge(alert.id)}
-                      >
-                        Acknowledge
-                      </Button>
-                    </>
-                  )}
-                  {alert.status === "acknowledged" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8"
-                      disabled={resolveAlert.isPending}
-                      onClick={() => handleResolve(alert.id)}
-                    >
-                      Resolve
-                    </Button>
-                  )}
-                  {alert.status === "resolved" && (
-                    <Button size="sm" variant="ghost" className="h-8" onClick={() => openAlertContext(alert)}>
-                      Details
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  );
-
-  // Filtered lists for the typed tabs
-  const securityAlerts = filteredAlerts.filter((a) => a.type === "security");
-  const costAlerts = filteredAlerts.filter((a) => a.type === "cost");
-  const resourceAlerts = filteredAlerts.filter((a) => a.type === "resource");
+  const resolve = (alert: Alert) => {
+    resolveAlert.mutate(alert.id, {
+      onSuccess: () => toast({ title: "Alert resolved", description: "The alert has been closed." }),
+      onError: (error: Error) => toast({ title: "Could not resolve alert", description: error.message, variant: "destructive" }),
+    });
+  };
 
   return (
     <DashboardLayout>
       <PageHeader
-        title="Alerts"
-        description="Monitor and respond to infrastructure alerts"
+        title="Alert Inbox"
+        description="Triage infrastructure alerts, route owners to context, and keep notification channels healthy."
         actions={
-          <Button className="flex items-center gap-2" onClick={() => navigate("/settings?tab=notifications")}>
+          <Button variant="outline" className="gap-2" onClick={() => navigate("/settings?tab=notifications")}>
             <Settings className="h-4 w-4" />
-            Configure Alerts
+            Notification Rules
           </Button>
         }
       />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-danger bg-opacity-10 p-3 rounded-full">
-                <BellRing className="h-6 w-6 text-danger" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Critical</p>
-                <p className="text-2xl font-bold">{criticalCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-warning bg-opacity-10 p-3 rounded-full">
-                <Bell className="h-6 w-6 text-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">High</p>
-                <p className="text-2xl font-bold">{highCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-amber-500 bg-opacity-10 p-3 rounded-full">
-                <Bell className="h-6 w-6 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Medium</p>
-                <p className="text-2xl font-bold">{mediumCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-secondary bg-opacity-10 p-3 rounded-full">
-                <BellOff className="h-6 w-6 text-secondary" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Low</p>
-                <p className="text-2xl font-bold">{lowCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricTile icon={BellRing} label="Open alerts" value={alertSummary?.open ?? openAlerts.length} tone="red" helper={`${criticalOpen} critical open`} />
+        <MetricTile icon={Clock3} label="Acknowledged" value={alertSummary?.acknowledged ?? acknowledgedAlerts.length} tone="amber" helper="Waiting for closure" />
+        <MetricTile icon={CheckCircle2} label="Resolved" value={alertSummary?.resolved ?? 0} tone="emerald" helper="Closed alerts" />
+        <MetricTile icon={MessageSquare} label="Channels" value={notificationPrefs.filter((pref: any) => pref.isEnabled ?? pref.is_enabled ?? pref.enabled).length} tone="blue" helper="Enabled destinations" />
       </div>
 
-      {/* Alert Filtering */}
-      <AlertFilterBar
-        alertType={alertType}
-        setAlertType={setAlertType}
-        alertSeverity={alertSeverity}
-        setAlertSeverity={setAlertSeverity}
-        alertStatus={alertStatus}
-        setAlertStatus={setAlertStatus}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-      />
+      <div className="mt-6">
+        <FilterToolbar
+          search={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search title, message, or resource..."
+          filters={[
+            { value: typeFilter, onChange: setTypeFilter, placeholder: "Type", options: typeOptions },
+            { value: severityFilter, onChange: setSeverityFilter, placeholder: "Severity", options: severityOptions },
+            { value: statusFilter, onChange: setStatusFilter, placeholder: "Status", options: statusOptions },
+          ]}
+        />
+      </div>
 
-      {/* Alerts List */}
-      <Tabs defaultValue="all" className="mb-6">
-        <TabsList>
-          <TabsTrigger value="all">All Alerts</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="cost">Cost</TabsTrigger>
-          <TabsTrigger value="resource">Resource</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all" className="mt-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle>All Alerts</CardTitle>
-              <CardDescription>
-                All active alerts across your infrastructure
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderAlertsTable(filteredAlerts)}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="security" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Alerts</CardTitle>
-              <CardDescription>
-                Security-related alerts including configuration drifts and policy changes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderAlertsTable(securityAlerts)}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="cost" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cost Alerts</CardTitle>
-              <CardDescription>
-                Cost anomalies and budget threshold alerts
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderAlertsTable(costAlerts)}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="resource" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resource Alerts</CardTitle>
-              <CardDescription>
-                Resource utilization and status alerts
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {renderAlertsTable(resourceAlerts)}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Notification Settings — driven by real API data */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Notification Channels</CardTitle>
-          <CardDescription>
-            Configure where alerts are sent
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {(["slack", "email", "webhook"] as const).map((channel) => {
-              const pref = notifPrefs.find((p: any) => p.channel === channel);
-              const isEnabled = pref?.is_enabled ?? pref?.isEnabled ?? pref?.enabled ?? false;
-              const channelConfig: Record<string, { label: string; desc: string; bgColor: string; icon: React.ReactNode }> = {
-                slack: {
-                  label: "Slack",
-                  desc: pref?.config?.webhook_url ? "Webhook configured" : "Slack notifications",
-                  bgColor: "bg-[#4A154B]",
-                  icon: <Bell className="h-5 w-5 text-white" />,
-                },
-                email: {
-                  label: "Email",
-                  desc: pref?.config?.to ? `Sending to ${Array.isArray(pref.config.to) ? pref.config.to.join(', ') : pref.config.to}` : "Email notifications",
-                  bgColor: "bg-blue-600",
-                  icon: <BellRing className="h-5 w-5 text-white" />,
-                },
-                webhook: {
-                  label: "Webhook",
-                  desc: "Webhook notifications",
-                  bgColor: "bg-gray-800",
-                  icon: <Settings className="h-5 w-5 text-white" />,
-                },
-              };
-              const cfg = channelConfig[channel];
-              return (
-                <div key={channel} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className={`${cfg.bgColor} p-2 rounded`}>{cfg.icon}</div>
-                    <div>
-                      <h3 className="font-medium">{cfg.label}</h3>
-                      <p className="text-sm text-gray-500">{cfg.desc}</p>
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <Card className="rounded-lg">
+          <CardHeader>
+            <CardTitle>Alert Queue</CardTitle>
+            <CardDescription>{filteredAlerts.length} alerts match the current view</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <EmptyPanel icon={Bell} title="Loading alerts" description="Fetching current alert state from InfraAudit." />
+            ) : filteredAlerts.length === 0 ? (
+              <EmptyPanel icon={CheckCircle2} title="No alerts in this view" description="Change filters or run a scan to surface new alert activity." />
+            ) : (
+              <div className="divide-y rounded-lg border">
+                {filteredAlerts.map((alert) => (
+                  <button
+                    key={alert.id}
+                    type="button"
+                    onClick={() => setSelectedAlertId(alert.id)}
+                    className={`w-full px-4 py-4 text-left transition-colors hover:bg-muted/50 ${selectedAlert?.id === alert.id ? "bg-muted" : ""}`}
+                  >
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <ToneBadge value={alert.severity} />
+                          <ToneBadge value={alert.status} />
+                          <span className="text-xs capitalize text-muted-foreground">{alert.type}</span>
+                        </div>
+                        <h3 className="mt-2 truncate text-sm font-semibold">{alert.title}</h3>
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{alert.message}</p>
+                      </div>
+                      <div className="shrink-0 text-xs text-muted-foreground">{formatTimeAgo(alert.createdAt)}</div>
                     </div>
+                    <div className="mt-3 text-xs text-muted-foreground">{resourceName(alert.resourceId)}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Alert Context</CardTitle>
+              <CardDescription>Selected item details and response actions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!selectedAlert ? (
+                <EmptyPanel icon={AlertCircle} title="No alert selected" description="Select an alert from the queue to inspect the incident context." />
+              ) : (
+                <div className="space-y-5">
+                  <div>
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <ToneBadge value={selectedAlert.severity} />
+                      <ToneBadge value={selectedAlert.status} />
+                      <ToneBadge value={selectedAlert.type} tone="blue" />
+                    </div>
+                    <h2 className="text-lg font-semibold">{selectedAlert.title}</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">{selectedAlert.message}</p>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    {isEnabled ? (
-                      <Badge variant="success">Enabled</Badge>
-                    ) : (
-                      <Badge variant="outline">Disabled</Badge>
+                  <Separator />
+                  <dl className="grid gap-4">
+                    <DetailRow label="Resource">{resourceName(selectedAlert.resourceId)}</DetailRow>
+                    <DetailRow label="Created">{formatTimeAgo(selectedAlert.createdAt)}</DetailRow>
+                    <DetailRow label="Routing">{selectedAlert.type === "cost" ? "FinOps review" : selectedAlert.type === "security" ? "Security review" : "Platform review"}</DetailRow>
+                  </dl>
+                  <div className="flex flex-wrap gap-2">
+                    <ActionButton onClick={() => openAlertContext(selectedAlert)}>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Open Context
+                    </ActionButton>
+                    {selectedAlert.status === "open" && (
+                      <ActionButton variant="outline" onClick={() => acknowledge(selectedAlert)} disabled={acknowledgeAlert.isPending}>
+                        Acknowledge
+                      </ActionButton>
                     )}
-                    <Button variant="outline" size="sm" onClick={() => navigate("/settings?tab=notifications")}>
-                      Configure
-                    </Button>
+                    {selectedAlert.status !== "resolved" && (
+                      <ActionButton variant="outline" onClick={() => resolve(selectedAlert)} disabled={resolveAlert.isPending}>
+                        Resolve
+                      </ActionButton>
+                    )}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Notification Channels</CardTitle>
+              <CardDescription>Delivery status for alert routing</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(["slack", "email", "webhook"] as const).map((channel) => {
+                const pref = notificationPrefs.find((item: any) => item.channel === channel);
+                const enabled = pref?.isEnabled ?? pref?.is_enabled ?? pref?.enabled ?? false;
+                return (
+                  <div key={channel} className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-md border bg-muted/50 p-2">
+                        {channel === "slack" ? <MessageSquare className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium capitalize">{channel}</p>
+                        <p className="text-xs text-muted-foreground">{enabled ? "Receiving alert notifications" : "Delivery disabled"}</p>
+                      </div>
+                    </div>
+                    <ToneBadge value={enabled ? "enabled" : "disabled"} />
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </DashboardLayout>
   );
 }

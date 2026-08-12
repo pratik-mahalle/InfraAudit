@@ -1,303 +1,316 @@
-import React, { useState } from "react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { useDrifts, useDriftSummary, useTriggerDriftDetection, useResolveDrift, useAcknowledgeDrift } from "@/hooks/use-drifts";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useMemo, useState } from "react";
 import {
-  Shield, ShieldAlert, ShieldCheck, Search, Loader2, Zap, CheckCircle2, Eye, AlertTriangle
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardCheck,
+  Eye,
+  GitCompareArrows,
+  History,
+  Loader2,
+  ShieldAlert,
+  ShieldCheck,
+  Zap,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  useAcknowledgeDrift,
+  useApproveDriftAsBaseline,
+  useDriftSummary,
+  useDrifts,
+  useResolveDrift,
+  useTriggerDriftDetection,
+} from "@/hooks/use-drifts";
+import { useToast } from "@/hooks/use-toast";
+import { cn, formatTimeAgo } from "@/lib/utils";
+import type { Drift } from "@/lib/api";
+import {
+  ActionButton,
+  DetailRow,
+  EmptyPanel,
+  FilterToolbar,
+  MetricTile,
+  ToneBadge,
+  compactDate,
+} from "@/components/security-ops/ops-ui";
+
+type DriftFinding = Drift & {
+  fieldChanged?: string;
+};
+
+const severityOptions = [
+  { value: "all", label: "All severity" },
+  { value: "critical", label: "Critical" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+];
+
+const statusOptions = [
+  { value: "all", label: "All status" },
+  { value: "detected", label: "Detected" },
+  { value: "acknowledged", label: "Acknowledged" },
+  { value: "resolved", label: "Resolved" },
+  { value: "approved", label: "Approved" },
+];
+
+const driftTypeLabels: Record<string, string> = {
+  configuration_change: "Configuration change",
+  security_group: "Security group",
+  iam_policy: "IAM policy",
+  network_rule: "Network rule",
+  encryption: "Encryption",
+  compliance: "Compliance",
+  k8s_deployment: "Kubernetes deployment",
+  k8s_image_change: "Kubernetes image change",
+};
+
+function labelForDrift(drift: DriftFinding) {
+  return driftTypeLabels[drift.driftType] ?? drift.driftType?.replace(/_/g, " ") ?? "Configuration drift";
+}
+
+function driftResource(drift: DriftFinding) {
+  return drift.resourceIdStr || String(drift.resourceId || "Unknown resource");
+}
+
+function formatConfig(value?: string) {
+  if (!value) return "No configuration snapshot is available.";
+  try {
+    return JSON.stringify(JSON.parse(value), null, 2);
+  } catch {
+    return value;
+  }
+}
 
 export default function DriftDetection() {
   const { toast } = useToast();
+  const [selectedDriftId, setSelectedDriftId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState("detected");
 
   const { data: driftsResponse, isLoading } = useDrifts();
   const { data: summary } = useDriftSummary();
   const detectMutation = useTriggerDriftDetection();
   const resolveMutation = useResolveDrift();
   const acknowledgeMutation = useAcknowledgeDrift();
+  const approveMutation = useApproveDriftAsBaseline();
 
-  const drifts = Array.isArray(driftsResponse) ? driftsResponse : (driftsResponse?.data || []);
+  const drifts: DriftFinding[] = Array.isArray(driftsResponse) ? driftsResponse : driftsResponse?.data ?? [];
 
-  const filtered = drifts.filter((d: any) => {
-    if (severityFilter !== "all" && d.severity !== severityFilter) return false;
-    if (statusFilter !== "all" && d.status !== statusFilter) return false;
-    if (search && !d.driftType?.toLowerCase().includes(search.toLowerCase()) && !d.fieldChanged?.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  const filteredDrifts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return drifts.filter((drift) => {
+      const matchesSeverity = severityFilter === "all" || drift.severity === severityFilter;
+      const matchesStatus = statusFilter === "all" || drift.status === statusFilter;
+      const haystack = `${labelForDrift(drift)} ${drift.description} ${driftResource(drift)} ${drift.fieldChanged ?? ""}`.toLowerCase();
+      return matchesSeverity && matchesStatus && (!query || haystack.includes(query));
+    });
+  }, [drifts, search, severityFilter, statusFilter]);
 
-  const driftTypeLabels: Record<string, string> = {
-    configuration_change: "Config Change",
-    security_group: "Security Group",
-    iam_policy: "IAM Policy",
-    network_rule: "Network Rule",
-    encryption: "Encryption",
-    compliance: "Compliance",
-    k8s_deployment: "K8s Deployment",
-    k8s_image_change: "K8s Image Change",
+  const selectedDrift = filteredDrifts.find((drift) => drift.id === selectedDriftId) ?? filteredDrifts[0] ?? null;
+  const detectedCount = drifts.filter((drift) => drift.status === "detected").length;
+  const acknowledgedCount = drifts.filter((drift) => drift.status === "acknowledged").length;
+  const resolvedCount = drifts.filter((drift) => drift.status === "resolved").length;
+  const baselineCoverage = drifts.length ? Math.round(((resolvedCount + drifts.filter((drift) => drift.status === "approved").length) / drifts.length) * 100) : 100;
+  const byType = summary?.byType ?? drifts.reduce<Record<string, number>>((acc, drift) => {
+    acc[drift.driftType] = (acc[drift.driftType] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const runScan = () => {
+    detectMutation.mutate(undefined, {
+      onSuccess: () => toast({ title: "Drift scan complete", description: "Cloud inventory was refreshed and compared with known baselines." }),
+      onError: (error: Error) => toast({ title: "Scan failed", description: error.message, variant: "destructive" }),
+    });
   };
 
-  const severityColors: Record<string, string> = {
-    critical: "bg-red-500/10 text-red-600 border-red-500/30",
-    high: "bg-orange-500/10 text-orange-600 border-orange-500/30",
-    medium: "bg-amber-500/10 text-amber-600 border-amber-500/30",
-    low: "bg-blue-500/10 text-blue-600 border-blue-500/30",
+  const acknowledge = (drift: DriftFinding) => {
+    acknowledgeMutation.mutate(drift.id, {
+      onSuccess: () => toast({ title: "Drift acknowledged", description: "The drift is now marked for owner review." }),
+    });
   };
 
-  const statusColors: Record<string, string> = {
-    detected: "bg-red-500/10 text-red-600 border-red-500/30",
-    acknowledged: "bg-amber-500/10 text-amber-600 border-amber-500/30",
-    resolved: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
-    approved: "bg-blue-500/10 text-blue-600 border-blue-500/30",
+  const resolve = (drift: DriftFinding) => {
+    resolveMutation.mutate(drift.id, {
+      onSuccess: () => toast({ title: "Drift resolved", description: "The drift has been closed." }),
+    });
   };
 
-  const totalDrifts = summary?.total ?? drifts.length;
-  const criticalCount = summary?.critical ?? drifts.filter((d: any) => d.severity === "critical").length;
-  const highCount = summary?.high ?? drifts.filter((d: any) => d.severity === "high").length;
-  const resolvedCount = drifts.filter((d: any) => d.status === "resolved").length;
+  const approve = (drift: DriftFinding) => {
+    approveMutation.mutate(drift.id, {
+      onSuccess: () => toast({ title: "Baseline approved", description: "This configuration is now accepted as baseline." }),
+    });
+  };
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Drift Detection</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Monitor and manage infrastructure configuration drifts
-            </p>
-          </div>
-          <Button
-            onClick={() => detectMutation.mutate(undefined, {
-              onSuccess: () => toast({ title: "Scan Complete", description: "Cloud inventory was refreshed and checked against its baselines." }),
-              onError: (error: Error) => toast({ title: "Scan Failed", description: error.message, variant: "destructive" }),
-            })}
-            disabled={detectMutation.isPending}
-            className="gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
-          >
+      <PageHeader
+        title="Drift Detection"
+        description="Compare live infrastructure against approved baselines and close configuration drift deliberately."
+        actions={
+          <Button onClick={runScan} disabled={detectMutation.isPending} className="gap-2">
             {detectMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
             Run Drift Scan
           </Button>
-        </div>
+        }
+      />
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-5">
-              <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 w-fit mb-3"><Shield className="h-5 w-5" /></div>
-              <div className="text-2xl font-bold">{totalDrifts}</div>
-              <div className="text-sm text-gray-500">Total Drifts</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5">
-              <div className="p-2 rounded-lg bg-red-500/10 text-red-600 w-fit mb-3"><ShieldAlert className="h-5 w-5" /></div>
-              <div className="text-2xl font-bold">{criticalCount}</div>
-              <div className="text-sm text-gray-500">Critical</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5">
-              <div className="p-2 rounded-lg bg-orange-500/10 text-orange-600 w-fit mb-3"><AlertTriangle className="h-5 w-5" /></div>
-              <div className="text-2xl font-bold">{highCount}</div>
-              <div className="text-sm text-gray-500">High Severity</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5">
-              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 w-fit mb-3"><ShieldCheck className="h-5 w-5" /></div>
-              <div className="text-2xl font-bold">{resolvedCount}</div>
-              <div className="text-sm text-gray-500">Resolved</div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricTile icon={GitCompareArrows} label="Total drifts" value={summary?.total ?? drifts.length} tone="blue" helper="All detected changes" />
+        <MetricTile icon={ShieldAlert} label="Needs review" value={detectedCount} tone="red" helper={`${summary?.critical ?? drifts.filter((d) => d.severity === "critical").length} critical`} />
+        <MetricTile icon={Eye} label="Acknowledged" value={acknowledgedCount} tone="amber" helper="Owner review started" />
+        <MetricTile icon={ClipboardCheck} label="Baseline coverage" value={`${baselineCoverage}%`} tone="emerald" helper={`${resolvedCount} resolved`} />
+      </div>
 
-        {/* Filters */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input placeholder="Search drifts..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-              </div>
-              <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                <SelectTrigger className="w-[140px]"><SelectValue placeholder="Severity" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Severity</SelectItem>
-                  <SelectItem value="critical">Critical</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="detected">Detected</SelectItem>
-                  <SelectItem value="acknowledged">Acknowledged</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="mt-6">
+        <FilterToolbar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search drift type, field, or resource..."
+          filters={[
+            { value: severityFilter, onChange: setSeverityFilter, placeholder: "Severity", options: severityOptions },
+            { value: statusFilter, onChange: setStatusFilter, placeholder: "Status", options: statusOptions },
+          ]}
+        />
+      </div>
 
-        {/* Table */}
-        <Card>
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
+        <Card className="rounded-lg">
           <CardHeader>
-            <CardTitle>Configuration Drifts</CardTitle>
-            <CardDescription>{filtered.length} drift{filtered.length !== 1 ? "s" : ""} found</CardDescription>
+            <CardTitle>Baseline Change Queue</CardTitle>
+            <CardDescription>{filteredDrifts.length} changes require review in the current view</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
-            ) : filtered.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <ShieldCheck className="h-10 w-10 text-gray-300 dark:text-gray-600 mb-3" />
-                <p className="text-sm font-medium text-gray-500">No drifts detected</p>
-                <p className="text-xs text-gray-400 mt-1">Run a drift scan to check your infrastructure configuration</p>
-              </div>
+              <EmptyPanel icon={History} title="Loading drifts" description="Checking live changes against stored baselines." />
+            ) : filteredDrifts.length === 0 ? (
+              <EmptyPanel icon={ShieldCheck} title="No drift in this view" description="Change filters or run a scan to compare current infrastructure state." />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Drift Type</TableHead>
-                    <TableHead>Severity</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Resource</TableHead>
-                    <TableHead>Detected</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((drift: any) => (
-                    <React.Fragment key={drift.id}>
-                    <TableRow>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900 dark:text-white">
-                            {driftTypeLabels[drift.driftType] || drift.driftType || "Configuration Drift"}
-                          </span>
-                          {drift.details?.cve_summary && drift.details.cve_summary.critical > 0 && (
-                            <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                              {drift.details.cve_summary.critical} Critical CVE{drift.details.cve_summary.critical > 1 ? "s" : ""}
-                            </Badge>
-                          )}
-                          {drift.details?.cve_summary && drift.details.cve_summary.critical === 0 && drift.details.cve_summary.high > 0 && (
-                            <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/30 text-[10px] px-1.5 py-0">
-                              {drift.details.cve_summary.high} High CVE{drift.details.cve_summary.high > 1 ? "s" : ""}
-                            </Badge>
-                          )}
+              <div className="divide-y rounded-lg border">
+                {filteredDrifts.map((drift) => (
+                  <button
+                    key={drift.id}
+                    type="button"
+                    onClick={() => setSelectedDriftId(drift.id)}
+                    className={cn("w-full px-4 py-4 text-left transition-colors hover:bg-muted/50", selectedDrift?.id === drift.id && "bg-muted")}
+                  >
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap gap-2">
+                          <ToneBadge value={drift.severity} />
+                          <ToneBadge value={drift.status} />
                         </div>
-                        {drift.fieldChanged && <div className="text-xs text-gray-500 mt-0.5">Field: {drift.fieldChanged}</div>}
-                        {drift.details?.namespace && (
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            {drift.details.namespace}/{drift.details.deployment} on {drift.details.cluster}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("text-xs", severityColors[drift.severity] || "")}>
-                          {drift.severity}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={cn("text-xs", statusColors[drift.status] || "")}>
-                          {drift.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-500">
-                        {drift.resourceIdStr || drift.resourceId || "Unknown resource"}
-                      </TableCell>
-                      <TableCell className="text-xs text-gray-500">
-                        {drift.detectedAt ? new Date(drift.detectedAt).toLocaleDateString() : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          {drift.details?.cve_summary && (
-                            <Button variant="ghost" size="sm"
-                              onClick={() => setExpandedId(expandedId === drift.id ? null : drift.id)}
-                            >
-                              <ShieldAlert className={cn("h-4 w-4", expandedId === drift.id ? "text-blue-600" : "text-gray-400")} />
-                            </Button>
-                          )}
-                          {drift.status !== "resolved" && (
-                            <>
-                              {drift.status === "detected" && (
-                                <Button variant="ghost" size="sm"
-                                  onClick={() => acknowledgeMutation.mutate(drift.id, {
-                                    onSuccess: () => toast({ title: "Acknowledged", description: "Drift has been acknowledged." }),
-                                  })}
-                                  disabled={acknowledgeMutation.isPending}
-                                >
-                                  <Eye className="h-4 w-4 text-amber-500" />
-                                </Button>
-                              )}
-                              <Button variant="ghost" size="sm"
-                                onClick={() => resolveMutation.mutate(drift.id, {
-                                  onSuccess: () => toast({ title: "Resolved", description: "Drift has been resolved." }),
-                                })}
-                                disabled={resolveMutation.isPending}
-                              >
-                                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    {expandedId === drift.id && drift.details?.cve_summary && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="bg-gray-50 dark:bg-gray-900/50 p-0">
-                          <div className="p-4">
-                            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
-                              <div className="text-sm font-medium text-red-700 dark:text-red-400 mb-2">
-                                CVE Report: {drift.details.cve_summary.image}
-                              </div>
-                              <div className="grid grid-cols-4 gap-2 text-xs mb-3">
-                                <div><span className="font-bold text-red-600">{drift.details.cve_summary.critical}</span> Critical</div>
-                                <div><span className="font-bold text-orange-600">{drift.details.cve_summary.high}</span> High</div>
-                                <div><span className="font-bold text-amber-600">{drift.details.cve_summary.medium}</span> Medium</div>
-                                <div><span className="font-bold text-blue-600">{drift.details.cve_summary.low}</span> Low</div>
-                              </div>
-                              {drift.details.cve_summary.top_cves?.length > 0 && (
-                                <div className="space-y-1 border-t border-red-200 dark:border-red-800 pt-2">
-                                  {drift.details.cve_summary.top_cves.map((cve: any) => (
-                                    <div key={cve.id} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                                      <Badge variant="outline" className={cn("text-[10px] px-1 py-0",
-                                        cve.severity === "critical" ? "border-red-400 text-red-600" : "border-orange-400 text-orange-600"
-                                      )}>
-                                        {cve.severity}
-                                      </Badge>
-                                      <span className="font-mono font-medium">{cve.id}</span>
-                                      <span className="truncate">{cve.title || cve.package}</span>
-                                      {cve.fixed && <span className="text-green-600 shrink-0">(fix: {cve.fixed})</span>}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    </React.Fragment>
-                  ))}
-                </TableBody>
-              </Table>
+                        <h3 className="mt-2 text-sm font-semibold capitalize">{labelForDrift(drift)}</h3>
+                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{drift.description}</p>
+                      </div>
+                      <span className="shrink-0 text-xs text-muted-foreground">{formatTimeAgo(drift.detectedAt)}</span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                      <span>{driftResource(drift)}</span>
+                      {drift.fieldChanged && <span>Field: {drift.fieldChanged}</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
+
+        <div className="space-y-6">
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Drift Review</CardTitle>
+              <CardDescription>Baseline context and remediation options</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!selectedDrift ? (
+                <EmptyPanel icon={GitCompareArrows} title="No drift selected" description="Select a change from the queue to compare baseline and live state." />
+              ) : (
+                <div className="space-y-5">
+                  <div>
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      <ToneBadge value={selectedDrift.severity} />
+                      <ToneBadge value={selectedDrift.status} />
+                    </div>
+                    <h2 className="text-lg font-semibold capitalize">{labelForDrift(selectedDrift)}</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">{selectedDrift.description}</p>
+                  </div>
+                  <Separator />
+                  <dl className="grid gap-4 sm:grid-cols-2">
+                    <DetailRow label="Resource">{driftResource(selectedDrift)}</DetailRow>
+                    <DetailRow label="Detected">{compactDate(selectedDrift.detectedAt)}</DetailRow>
+                    <DetailRow label="Changed field">{selectedDrift.fieldChanged || "Configuration"}</DetailRow>
+                    <DetailRow label="Workflow">{selectedDrift.status === "detected" ? "Needs review" : "In progress"}</DetailRow>
+                  </dl>
+                  <div className="grid gap-3">
+                    <div className="rounded-lg border bg-muted/30 p-3">
+                      <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Baseline</p>
+                      <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-xs">{formatConfig(selectedDrift.baselineConfig)}</pre>
+                    </div>
+                    <div className="rounded-lg border bg-muted/30 p-3">
+                      <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Current</p>
+                      <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-xs">{formatConfig(selectedDrift.currentConfig)}</pre>
+                    </div>
+                  </div>
+                  {selectedDrift.remediationTips && selectedDrift.remediationTips.length > 0 && (
+                    <div className="rounded-lg border p-3">
+                      <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Remediation</p>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                        {selectedDrift.remediationTips.map((tip) => (
+                          <li key={tip} className="flex gap-2">
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                            <span>{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {selectedDrift.status === "detected" && (
+                      <ActionButton variant="outline" onClick={() => acknowledge(selectedDrift)} disabled={acknowledgeMutation.isPending}>
+                        Acknowledge
+                      </ActionButton>
+                    )}
+                    {selectedDrift.status !== "resolved" && (
+                      <ActionButton onClick={() => resolve(selectedDrift)} disabled={resolveMutation.isPending}>
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Resolve
+                      </ActionButton>
+                    )}
+                    {selectedDrift.status !== "approved" && (
+                      <ActionButton variant="outline" onClick={() => approve(selectedDrift)} disabled={approveMutation.isPending}>
+                        Approve Baseline
+                      </ActionButton>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>Drift Types</CardTitle>
+              <CardDescription>Where configuration changes are concentrated</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {Object.entries(byType).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No drift type distribution is available.</p>
+              ) : (
+                Object.entries(byType).slice(0, 6).map(([type, count]) => (
+                  <div key={type} className="flex items-center justify-between rounded-lg border p-3">
+                    <span className="text-sm capitalize">{driftTypeLabels[type] ?? type.replace(/_/g, " ")}</span>
+                    <ToneBadge value={count} tone="blue" />
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );
