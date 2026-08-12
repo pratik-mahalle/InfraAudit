@@ -701,12 +701,29 @@ export default function Dashboard() {
   // ── Scan mutation ─────────────────────────────────────────────────────────
   const scanMutation = useMutation({
     mutationFn: async () => {
+      // Refresh cloud inventory before evaluating drift. Existing connections
+      // may predate newly supported resource types, so drift-only scans can
+      // otherwise keep evaluating an empty or stale inventory indefinitely.
+      for (const provider of connectedProviders) {
+        await api.providers.sync(provider.provider);
+      }
+
       const res = await apiRequest("POST", "/api/v1/drifts/detect");
       return await res.json();
     },
-    onMutate: () => { setIsScanning(true); toast({ title: "Scan started", description: "Detecting infrastructure drifts…" }); },
+    onMutate: () => {
+      setIsScanning(true);
+      toast({
+        title: "Sync started",
+        description: connectedProviders.length > 0
+          ? "Refreshing cloud inventory before detecting infrastructure drifts…"
+          : "Detecting infrastructure drifts…",
+      });
+    },
     onSuccess: () => {
-      toast({ title: "Scan complete", description: "Drift detection finished." });
+      toast({ title: "Sync complete", description: "Cloud inventory and drift detection are up to date." });
+      queryClient.invalidateQueries({ queryKey: ["providers"] });
+      queryClient.invalidateQueries({ queryKey: ["providers", "status"] });
       queryClient.invalidateQueries({ queryKey: ["/api/drifts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
@@ -715,7 +732,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/alerts/summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/v1/health-score"] });
     },
-    onError: (e: any) => toast({ title: "Scan failed", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: "Sync failed", description: e.message, variant: "destructive" }),
     onSettled: () => setIsScanning(false),
   });
 
@@ -847,7 +864,7 @@ export default function Dashboard() {
             </div>
             <button className="ia-btn-ghost" onClick={() => scanMutation.mutate()} disabled={isScanning}>
               <RefreshCw size={13} style={isScanning ? { animation: "spin 1s linear infinite" } : {}} />
-              {isScanning ? "Scanning…" : "Re-scan"}
+              {isScanning ? "Syncing…" : "Sync & scan"}
             </button>
             <button className="ia-btn-ghost" onClick={() => navigate("/reports")}>
               <FileText size={13} /> Report
