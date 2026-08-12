@@ -123,7 +123,8 @@ export default function Settings() {
 
   // Cloud — fetch real providers from Go backend
   const { data: cloudProviders, isLoading: isLoadingProviders } = useQuery<any[]>({
-    queryKey: ["/api/providers"],
+    queryKey: ["providers"],
+    queryFn: () => api.providers.list(),
   });
 
   // Kubernetes clusters from Go backend
@@ -267,7 +268,7 @@ export default function Settings() {
   const handleDisconnectProvider = async (providerName: string) => {
     try {
       await api.providers.disconnect(providerName.toLowerCase());
-      queryClient.invalidateQueries({ queryKey: ["/api/providers"] });
+      queryClient.invalidateQueries({ queryKey: ["providers"] });
       toast({ title: "Provider disconnected", description: `${providerName} has been disconnected.` });
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to disconnect provider.", variant: "destructive" });

@@ -26,7 +26,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SecurityDrift, Resource, Alert } from "@/types";
+import { Alert } from "@/types";
+import { useResources } from "@/hooks/use-resources";
+import api, { type Drift as ApiDrift } from "@/lib/api";
 import { 
   ShieldCheck, 
   ShieldAlert, 
@@ -45,6 +47,9 @@ import { useLocation } from "wouter";
 
 // BUG-016 fix: Proper types for paginated API responses instead of 'any'
 type PaginatedResponse<T> = T[] | { data: T[] };
+type SecurityDrift = Omit<ApiDrift, "status"> & {
+  status: ApiDrift["status"] | "open" | "remediated";
+};
 
 export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultTab?: string }) {
   const [, navigate] = useLocation();
@@ -64,8 +69,9 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
   const [activeAlertTab, setActiveAlertTab] = useState<string>("all");
 
   // Fetch security drifts (paginated — extract .data)
-  const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<PaginatedResponse<SecurityDrift>>({
-    queryKey: ["/api/drifts"],
+  const { data: driftsResponse, isLoading: isLoadingDrifts } = useQuery<PaginatedResponse<ApiDrift>>({
+    queryKey: ["drifts"],
+    queryFn: () => api.drifts.list(),
   });
   const securityDrifts: SecurityDrift[] = Array.isArray(driftsResponse) ? driftsResponse : (driftsResponse?.data ?? []);
 
@@ -76,10 +82,8 @@ export default function SecurityMonitoring({ defaultTab = "drifts" }: { defaultT
   const alerts: Alert[] = Array.isArray(alertsResponse) ? alertsResponse : (alertsResponse?.data ?? []);
 
   // Fetch resources to get names (paginated — extract .data)
-  const { data: resourcesResponse } = useQuery<PaginatedResponse<Resource>>({
-    queryKey: ["/api/resources"],
-  });
-  const resources: Resource[] = Array.isArray(resourcesResponse) ? resourcesResponse : (resourcesResponse?.data ?? []);
+  const { data: resourcesResponse } = useResources();
+  const resources = resourcesResponse?.data ?? [];
 
   const getResourceName = (id: number | undefined) => {
     if (id === undefined) return 'Unknown';

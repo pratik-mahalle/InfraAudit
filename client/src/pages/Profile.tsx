@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { LogOut, Settings, Shield, Cloud, Bell, Key, ChevronRight, Building2 } from "lucide-react";
+import api from "@/lib/api";
 
 export default function Profile() {
   const { user, signOut } = useAuth();
@@ -16,8 +17,11 @@ export default function Profile() {
   if (!user) return null;
 
   // Fetch provider count for the summary
-  const { data: providers } = useQuery<any[]>({ queryKey: ["/api/providers"] });
-  const connectedProviders = providers?.filter((p: any) => p.status === "connected")?.length ?? 0;
+  const { data: providers } = useQuery<any[]>({
+    queryKey: ["providers"],
+    queryFn: () => api.providers.list(),
+  });
+  const connectedProviders = providers?.filter((p: any) => p.isConnected || p.status === "connected")?.length ?? 0;
 
   const initials = (user.fullName || user.username || "US").slice(0, 2).toUpperCase();
   const memberSince = user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long" }) : "—";

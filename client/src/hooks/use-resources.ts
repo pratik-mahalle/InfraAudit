@@ -74,7 +74,6 @@ export function useRefreshResourceMetrics() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['providers'] }),
         queryClient.invalidateQueries({ queryKey: ['resources'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/resources'] }),
         queryClient.invalidateQueries({ queryKey: ['recommendations'] }),
         queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] }),
       ]);

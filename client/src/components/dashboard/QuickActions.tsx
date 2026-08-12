@@ -60,10 +60,10 @@ export function QuickActions() {
       });
       
       // Invalidate relevant queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/drifts"] });
+      queryClient.invalidateQueries({ queryKey: ["drifts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/v1/costs/anomalies"] });
       queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
     },
     onError: () => {
       toast({

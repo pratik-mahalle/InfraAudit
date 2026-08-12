@@ -35,7 +35,6 @@ export function useSyncProvider() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] });
       queryClient.invalidateQueries({ queryKey: ['resources'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
     },
   });
 }
@@ -48,7 +47,6 @@ export function useDisconnectProvider() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['providers'] });
       queryClient.invalidateQueries({ queryKey: ['resources'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
     },
   });
 }
