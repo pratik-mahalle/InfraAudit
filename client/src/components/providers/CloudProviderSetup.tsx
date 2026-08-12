@@ -236,7 +236,6 @@ export function CloudProviderSetup() {
       });
       queryClient.invalidateQueries({ queryKey: ['providers'] });
       queryClient.invalidateQueries({ queryKey: ['resources'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
     },
     onError: (error: any) => {
       toast({
@@ -256,7 +255,6 @@ export function CloudProviderSetup() {
       });
       queryClient.invalidateQueries({ queryKey: ['providers'] });
       queryClient.invalidateQueries({ queryKey: ['resources'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
     },
     onError: (error: Error) => {
       toast({

@@ -58,8 +58,8 @@ export function useScan() {
             setIsScanning(false);
 
             queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/drifts"] });
+            queryClient.invalidateQueries({ queryKey: ["resources"] });
+            queryClient.invalidateQueries({ queryKey: ["drifts"] });
 
             toast.success(
               `Found ${status.resourceCount ?? 0} resources and ${status.driftCount ?? 0} drifts. Security score: ${status.securityScore ?? "N/A"}`,

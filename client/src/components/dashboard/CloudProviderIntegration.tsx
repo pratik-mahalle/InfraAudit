@@ -26,7 +26,9 @@ import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { CloudProvider, AllCloudCredentials, AWSCredentials, GCPCredentials, AzureCredentials } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useResources } from "@/hooks/use-resources";
 import { apiRequest } from "@/lib/queryClient";
+import api from "@/lib/api";
 
 const awsFormSchema = z.object({
   accessKeyId: z.string().min(16, "Access Key ID must be at least 16 characters"),
@@ -95,15 +97,13 @@ export function CloudProviderIntegration() {
 
   // Fetch connected cloud accounts from Go backend
   const { data: cloudProviders, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/providers"],
+    queryKey: ["providers"],
+    queryFn: () => api.providers.list(),
   });
 
   // Fetch cloud resources (paginated — extract .data)
-  const { data: resourcesResponse } = useQuery<any>({
-    queryKey: ["/api/resources"],
-    enabled: !!cloudProviders && cloudProviders.length > 0,
-  });
-  const cloudResources = Array.isArray(resourcesResponse) ? resourcesResponse : (resourcesResponse?.data ?? []);
+  const { data: resourcesResponse } = useResources();
+  const cloudResources = resourcesResponse?.data ?? [];
 
   // Map cloud providers to UI format
   // Go backend returns: { provider: "aws", isConnected: true, lastSynced: "..." }
@@ -208,7 +208,7 @@ export function CloudProviderIntegration() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/providers"] });
+      queryClient.invalidateQueries({ queryKey: ["providers"] });
       setIsAddingProvider(false);
       toast({
         title: "Cloud provider connected",
@@ -242,8 +242,8 @@ export function CloudProviderIntegration() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/providers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
+      queryClient.invalidateQueries({ queryKey: ["providers"] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
       toast({
         title: "Sync successful",
         description: "Your cloud provider resources have been synchronized.",
@@ -271,8 +271,8 @@ export function CloudProviderIntegration() {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/providers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
+      queryClient.invalidateQueries({ queryKey: ["providers"] });
+      queryClient.invalidateQueries({ queryKey: ["resources"] });
       toast({
         title: "Provider disconnected",
         description: "Your cloud provider has been disconnected.",

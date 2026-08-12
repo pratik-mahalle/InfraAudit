@@ -33,7 +33,7 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
   });
 
   const { data: securityDrifts, isLoading: isLoadingSecurity } = useQuery({
-    queryKey: ['/api/drifts', resourceId],
+    queryKey: ['drifts', resourceId],
     queryFn: async () => {
       const res = await apiRequest('GET', `/api/v1/drifts?resource_id=${encodeURIComponent(resourceId)}`);
       return await res.json();
@@ -81,7 +81,7 @@ export function AiAnalysisPanel({ resourceId, resourceName, resourceType }: AiAn
         variant: 'default',
       });
       
-      queryClient.invalidateQueries({ queryKey: ['/api/drifts'] });
+      queryClient.invalidateQueries({ queryKey: ['drifts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
     },
     onError: (error: any) => {

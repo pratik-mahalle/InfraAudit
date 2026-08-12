@@ -447,7 +447,6 @@ export function KubernetesIntegration() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/kubernetes/clusters'] });
       queryClient.invalidateQueries({ queryKey: ['resources'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
       toast({ title: 'Cluster added', description: 'Your Kubernetes cluster has been added successfully.' });
       setIsAddingCluster(false);
     },
@@ -463,7 +462,6 @@ export function KubernetesIntegration() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/kubernetes/clusters'] });
       queryClient.invalidateQueries({ queryKey: ['resources'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/resources'] });
       setSelectedCluster(null);
       toast({ title: 'Cluster removed', description: 'The Kubernetes cluster has been removed.' });
     },
@@ -481,7 +479,6 @@ export function KubernetesIntegration() {
         queryClient.invalidateQueries({ queryKey: ['/api/kubernetes/clusters'] }),
         queryClient.invalidateQueries({ queryKey: ['/api/kubernetes/clusters', clusterId, 'resources'] }),
         queryClient.invalidateQueries({ queryKey: ['resources'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/resources'] }),
       ]);
       toast({ title: 'Cluster synced', description: 'Kubernetes resources were refreshed in the inventory.' });
     },

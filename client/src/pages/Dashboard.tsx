@@ -691,7 +691,8 @@ export default function Dashboard() {
   const hasConnected = connectedProviders.length > 0 || k8sClusters.length > 0;
 
   const { data: driftsResponse, error: driftsError } = useQuery<any>({
-    queryKey: ["/api/drifts"],
+    queryKey: ["drifts"],
+    queryFn: () => api.drifts.list(),
     enabled: hasConnected,
     staleTime: 0,
     refetchOnMount: "always",
@@ -716,7 +717,8 @@ export default function Dashboard() {
     refetchOnMount: "always",
   });
   const { data: driftSummary } = useQuery<any>({
-    queryKey: ["/api/drifts/summary"],
+    queryKey: ["drifts", "summary"],
+    queryFn: () => api.drifts.getSummary(),
     enabled: hasConnected,
     staleTime: 0,
     refetchOnMount: "always",
@@ -780,11 +782,10 @@ export default function Dashboard() {
       toast({ title: "Sync complete", description: "Cloud inventory and drift detection are up to date." });
       queryClient.invalidateQueries({ queryKey: ["providers"] });
       queryClient.invalidateQueries({ queryKey: ["providers", "status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/drifts"] });
+      queryClient.invalidateQueries({ queryKey: ["drifts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/resources"] });
       queryClient.invalidateQueries({ queryKey: ["resources"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/drifts/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["drifts", "summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/alerts/summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/v1/health-score"] });
     },
