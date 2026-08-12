@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AssessmentFinding } from '@/types';
-import { AlertCircle, ArrowRight } from "lucide-react";
+import { AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
 
 interface FailingControlsListProps {
     findings: AssessmentFinding[];
@@ -19,14 +19,15 @@ export function FailingControlsList({ findings, isLoading, onReview, onViewAll }
 
     const criticalCount = findings.filter(f => f.severity === 'critical').length;
     const highCount = findings.filter(f => f.severity === 'high').length;
+    const hasFailures = findings.length > 0;
 
     return (
-        <Card className="h-full border-red-200">
-            <CardHeader className="bg-red-50/50 pb-2">
+        <Card className={`h-full ${hasFailures ? "border-red-200" : "border-emerald-200"}`}>
+            <CardHeader className={`${hasFailures ? "bg-red-50/50" : "bg-emerald-50/60"} pb-2`}>
                 <div className="flex justify-between items-center">
-                    <CardTitle className="text-red-700 flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5" />
-                        Failing Controls
+                    <CardTitle className={`${hasFailures ? "text-red-700" : "text-emerald-700"} flex items-center gap-2`}>
+                        {hasFailures ? <AlertCircle className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+                        {hasFailures ? "Failing Controls" : "Controls Passing"}
                     </CardTitle>
                     <div className="flex gap-2">
                         {criticalCount > 0 && <Badge variant="destructive">{criticalCount} Critical</Badge>}
@@ -65,8 +66,10 @@ export function FailingControlsList({ findings, isLoading, onReview, onViewAll }
                         )}
                     </div>
                 ) : (
-                    <div className="text-center py-8 text-green-600">
-                        <p>No failing controls detected!</p>
+                    <div className="flex min-h-[220px] flex-col items-center justify-center text-center text-emerald-700">
+                        <ShieldCheck className="mb-3 h-7 w-7" />
+                        <p className="font-medium">No failing controls detected</p>
+                        <p className="mt-1 max-w-xs text-sm text-muted-foreground">Run an assessment to refresh evidence for the selected framework.</p>
                     </div>
                 )}
             </CardContent>

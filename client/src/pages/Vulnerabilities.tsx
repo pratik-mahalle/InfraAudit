@@ -22,8 +22,9 @@ import {
 import { useFindings, useUpdateFindingStatus } from "@/hooks/use-findings";
 import { isTerminalQueueState, useQueueJobStatus } from "@/hooks/use-queue-job";
 import { useToast } from "@/hooks/use-toast";
+import { cn, formatTimeAgo } from "@/lib/utils";
 import type { Finding, FindingStatus, Vulnerability } from "@/lib/api";
-import { FindingDetailPanel, FindingRow, formatFindingLabel } from "@/components/findings/finding-ui";
+import { FindingDetailPanel, findingEvidence, formatFindingLabel } from "@/components/findings/finding-ui";
 import {
   EmptyPanel,
   FilterToolbar,
@@ -48,7 +49,7 @@ const statusOptions = [
   { value: "ignored", label: "Ignored" },
 ];
 
-const vulnerabilityFindingTypes = new Set(["cve", "vulnerability", "misconfiguration", "exposure"]);
+const vulnerabilityFindingTypes = new Set(["cve", "vulnerability"]);
 
 function scanJobDescription(status?: string, lastError?: string) {
   switch (status) {
@@ -69,6 +70,55 @@ function scanJobDescription(status?: string, lastError?: string) {
     default:
       return "Waiting for the scan job to report status.";
   }
+}
+
+function VulnerabilityFindingRow({
+  finding,
+  selected,
+  onSelect,
+}: {
+  finding: Finding;
+  selected?: boolean;
+  onSelect: () => void;
+}) {
+  const evidence = findingEvidence(finding);
+  const packageName = String(evidence.package_name ?? evidence.packageName ?? "");
+  const packageVersion = String(evidence.package_version ?? evidence.packageVersion ?? "");
+  const fixedVersion = String(evidence.fixed_version ?? evidence.fixedVersion ?? "");
+  const cve = finding.externalId || finding.ruleId;
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn("w-full px-4 py-4 text-left transition-colors hover:bg-muted/50", selected && "bg-muted")}
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap gap-2">
+            <ToneBadge value={finding.severity} />
+            <ToneBadge value={finding.status} />
+            {cve && <ToneBadge value={cve} tone="blue" />}
+          </div>
+          <h3 className="mt-2 line-clamp-1 text-sm font-semibold">{finding.title}</h3>
+          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{finding.description || "No description provided."}</p>
+        </div>
+        <span className="shrink-0 text-xs text-muted-foreground">{formatTimeAgo(finding.lastSeenAt)}</span>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span>{finding.provider?.toUpperCase() || "Provider unknown"}</span>
+        <span>{finding.scannerType || finding.sourceType}</span>
+        {packageName && (
+          <span className="font-mono">
+            {packageName}
+            {packageVersion ? `@${packageVersion}` : ""}
+            {fixedVersion ? ` -> ${fixedVersion}` : ""}
+          </span>
+        )}
+        {finding.resourceId && <span className="font-mono">{finding.resourceId}</span>}
+      </div>
+    </button>
+  );
 }
 
 export default function Vulnerabilities() {
@@ -199,7 +249,7 @@ export default function Vulnerabilities() {
     <DashboardLayout>
       <PageHeader
         title="Vulnerability Remediation"
-        description="Prioritize CVEs, exposures, and vulnerable configuration findings with evidence-backed remediation detail."
+        description="Prioritize CVEs and vulnerable packages by severity, affected asset, fixed version, and remediation status."
         actions={
           <Button onClick={runScan} disabled={scanMutation.isPending || scanJobIsActive} className="gap-2">
             {scanMutation.isPending || scanJobIsActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
@@ -239,7 +289,7 @@ export default function Vulnerabilities() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricTile icon={Bug} label="Open findings" value={openCount} tone="red" helper={`${findings.length} vulnerability-domain findings`} />
+        <MetricTile icon={Bug} label="Open CVEs" value={openCount} tone="red" helper={`${findings.length} package/CVE findings`} />
         <MetricTile icon={ShieldAlert} label="Critical" value={criticalCount} tone="red" helper="Highest priority" />
         <MetricTile icon={AlertTriangle} label="High" value={highCount} tone="orange" helper="Patch planning" />
         <MetricTile icon={PackageCheck} label="Fix guidance" value={fixableCount} tone="emerald" helper="Open findings with remediation" />
@@ -290,17 +340,17 @@ export default function Vulnerabilities() {
         <Card className="rounded-lg">
           <CardHeader>
             <CardTitle>Remediation Queue</CardTitle>
-            <CardDescription>{filtered.length} evidence-backed findings match the current view</CardDescription>
+            <CardDescription>{filtered.length} CVE and package findings match the current view</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <EmptyPanel icon={FileWarning} title="Loading findings" description="Fetching normalized vulnerability and exposure findings." />
+              <EmptyPanel icon={FileWarning} title="Loading vulnerabilities" description="Fetching normalized CVE and package evidence." />
             ) : filtered.length === 0 ? (
-              <EmptyPanel icon={PackageCheck} title="No findings in this view" description="Change filters or run a scan to refresh vulnerability coverage." />
+              <EmptyPanel icon={PackageCheck} title="No vulnerabilities in this view" description="Change filters or run a scan to refresh vulnerability coverage." />
             ) : (
               <div className="divide-y rounded-lg border">
                 {filtered.map((finding: Finding) => (
-                  <FindingRow
+                  <VulnerabilityFindingRow
                     key={finding.id}
                     finding={finding}
                     selected={selectedFinding?.id === finding.id}
@@ -314,8 +364,8 @@ export default function Vulnerabilities() {
 
         <Card className="rounded-lg">
           <CardHeader>
-            <CardTitle>Finding Detail</CardTitle>
-            <CardDescription>Evidence, source, lifecycle, and remediation context</CardDescription>
+            <CardTitle>Vulnerability Detail</CardTitle>
+            <CardDescription>CVE/package evidence, source, lifecycle, and remediation context</CardDescription>
           </CardHeader>
           <CardContent>
             <FindingDetailPanel
@@ -327,10 +377,10 @@ export default function Vulnerabilities() {
               <div className="mt-5 rounded-lg border p-4">
                 <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
                   <FileSearch className="h-4 w-4" />
-                  Triage Step
+                  Patch Step
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Validate the affected package, image, resource, or exposure path, apply the remediation, then rerun the scan to confirm the fingerprint no longer appears.
+                  Validate the affected package, image, or host, apply the fixed version or mitigation, then rerun the vulnerability scan to confirm the fingerprint no longer appears.
                 </p>
               </div>
             )}

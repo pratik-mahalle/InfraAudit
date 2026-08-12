@@ -10,16 +10,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ComplianceControl } from '@/types';
-import { AlertCircle, ExternalLink } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface ControlsTableProps {
     controls: ComplianceControl[];
     isLoading: boolean;
     onView: (control: ComplianceControl) => void;
+    selectedId?: string | null;
 }
 
-export function ControlsTable({ controls, isLoading, onView }: ControlsTableProps) {
+export function ControlsTable({ controls, isLoading, onView, selectedId }: ControlsTableProps) {
     if (isLoading) {
         return (
             <div className="space-y-2">
@@ -45,7 +47,7 @@ export function ControlsTable({ controls, isLoading, onView }: ControlsTableProp
                 <TableBody>
                     {controls.length > 0 ? (
                         controls.map((control) => (
-                            <TableRow key={control.id}>
+                            <TableRow key={control.id} className={cn(selectedId === control.id && "bg-muted/70")}>
                                 <TableCell className="font-mono font-medium">{control.controlId}</TableCell>
                                 <TableCell>
                                     <div className="flex flex-col">
@@ -68,8 +70,9 @@ export function ControlsTable({ controls, isLoading, onView }: ControlsTableProp
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" title="View control" onClick={() => onView(control)}>
-                                        <ExternalLink className="w-4 h-4" />
+                                    <Button variant={selectedId === control.id ? "secondary" : "outline"} size="sm" className="gap-2" onClick={() => onView(control)}>
+                                        <Eye className="h-4 w-4" />
+                                        Review
                                     </Button>
                                 </TableCell>
                             </TableRow>
