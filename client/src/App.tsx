@@ -11,6 +11,7 @@ import SecurityMonitoring from "@/pages/SecurityMonitoring";
 import CostOptimization from "@/pages/CostOptimization";
 import CostPrediction from "@/pages/CostPrediction";
 import ResourceUtilization from "@/pages/ResourceUtilization";
+import ResourceDetailPage from "@/components/resources/ResourceDetailPage";
 import Settings from "@/pages/Settings";
 import Profile from "@/pages/Profile";
 import CloudProviders from "@/pages/CloudProviders";
@@ -132,6 +133,9 @@ function Router() {
             </ProtectedRoute>
             <ProtectedRoute path="/cost-prediction">
               <WithTrialCheck><CostPrediction /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/resources/:id">
+              <WithTrialCheck><ResourceDetailPage /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/resources">
               <WithTrialCheck><ResourceUtilization /></WithTrialCheck>

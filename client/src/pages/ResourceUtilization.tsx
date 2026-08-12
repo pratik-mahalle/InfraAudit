@@ -135,8 +135,8 @@ export default function ResourceUtilizationPage() {
   return (
     <DashboardLayout>
       <PageHeader
-        title="Resource Utilization"
-        description="Monitor and optimize resource usage across cloud providers"
+        title="Cloud Resources"
+        description="Search, inspect, and refresh the live infrastructure inventory"
         actions={
           <Button
             className="flex items-center gap-2"
@@ -175,9 +175,9 @@ export default function ResourceUtilizationPage() {
       {/* Resources List */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Cloud Resources</CardTitle>
+          <CardTitle>Resource inventory</CardTitle>
           <CardDescription>
-            All cloud resources across providers with utilization metrics
+            Provider-native assets discovered during the latest synchronization
           </CardDescription>
         </CardHeader>
         <CardContent>
