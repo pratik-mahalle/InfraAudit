@@ -19,7 +19,7 @@ import { useAlerts, useAlertSummary, useAcknowledgeAlert, useResolveAlert } from
 import { useResources } from "@/hooks/use-resources";
 import { useNotificationPreferences } from "@/hooks/use-notifications";
 import { useToast } from "@/hooks/use-toast";
-import { formatTimeAgo } from "@/lib/utils";
+import { cn, formatTimeAgo } from "@/lib/utils";
 import type { Alert } from "@/lib/api";
 import {
   ActionButton,
@@ -97,6 +97,17 @@ export default function Alerts() {
   const openAlerts = alerts.filter((alert) => alert.status === "open");
   const acknowledgedAlerts = alerts.filter((alert) => alert.status === "acknowledged");
   const criticalOpen = openAlerts.filter((alert) => alert.severity === "critical").length;
+  const alertTypes = Object.entries(alerts.reduce<Record<string, number>>((counts, alert) => {
+    counts[alert.type] = (counts[alert.type] ?? 0) + 1;
+    return counts;
+  }, {})).sort((a, b) => b[1] - a[1]);
+  const alertLanes = [
+    { label: "Critical Now", items: filteredAlerts.filter((alert) => alert.status !== "resolved" && alert.severity === "critical"), tone: "red" as const },
+    { label: "High Priority", items: filteredAlerts.filter((alert) => alert.status !== "resolved" && alert.severity === "high"), tone: "orange" as const },
+    { label: "Open Review", items: filteredAlerts.filter((alert) => alert.status === "open" && alert.severity !== "critical" && alert.severity !== "high"), tone: "amber" as const },
+    { label: "Acknowledged", items: filteredAlerts.filter((alert) => alert.status === "acknowledged"), tone: "blue" as const },
+    { label: "Resolved", items: filteredAlerts.filter((alert) => alert.status === "resolved"), tone: "emerald" as const },
+  ].filter((lane) => lane.items.length > 0);
 
   const openAlertContext = (alert: Alert) => {
     const resource = resources.find((item) => item.id === alert.resourceId);
@@ -142,7 +153,7 @@ export default function Alerts() {
         <MetricTile icon={MessageSquare} label="Channels" value={notificationPrefs.filter((pref: any) => pref.isEnabled ?? pref.is_enabled ?? pref.enabled).length} tone="blue" helper="Enabled destinations" />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <FilterToolbar
           search={searchQuery}
           onSearchChange={setSearchQuery}
@@ -153,42 +164,91 @@ export default function Alerts() {
             { value: statusFilter, onChange: setStatusFilter, placeholder: "Status", options: statusOptions },
           ]}
         />
+        <Card className="rounded-lg">
+          <CardContent className="flex h-full flex-col justify-center gap-3 p-3">
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant={statusFilter === "open" ? "default" : "outline"} onClick={() => setStatusFilter("open")}>Open</Button>
+              <Button size="sm" variant={severityFilter === "critical" ? "default" : "outline"} onClick={() => setSeverityFilter("critical")}>Critical</Button>
+              <Button size="sm" variant={statusFilter === "acknowledged" ? "default" : "outline"} onClick={() => setStatusFilter("acknowledged")}>Acknowledged</Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                setSearchQuery("");
+                setTypeFilter("all");
+                setSeverityFilter("all");
+                setStatusFilter("open");
+              }}>Reset</Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Alert filters update routing lanes and selected context immediately.</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <Card className="rounded-lg">
           <CardHeader>
-            <CardTitle>Alert Queue</CardTitle>
-            <CardDescription>{filteredAlerts.length} alerts match the current view</CardDescription>
+            <CardTitle>Alert Routing Board</CardTitle>
+            <CardDescription>{filteredAlerts.length} alerts grouped by response state</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {alertTypes.length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                {alertTypes.slice(0, 5).map(([type, count]) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setTypeFilter(type)}
+                    className="rounded-lg border p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+                  >
+                    <p className="text-xs capitalize text-muted-foreground">{type}</p>
+                    <p className="mt-1 text-lg font-semibold">{count}</p>
+                  </button>
+                ))}
+              </div>
+            )}
             {isLoading ? (
               <EmptyPanel icon={Bell} title="Loading alerts" description="Fetching current alert state from InfraAudit." />
             ) : filteredAlerts.length === 0 ? (
               <EmptyPanel icon={CheckCircle2} title="No alerts in this view" description="Change filters or run a scan to surface new alert activity." />
             ) : (
-              <div className="divide-y rounded-lg border">
-                {filteredAlerts.map((alert) => (
-                  <button
-                    key={alert.id}
-                    type="button"
-                    onClick={() => setSelectedAlertId(alert.id)}
-                    className={`w-full px-4 py-4 text-left transition-colors hover:bg-muted/50 ${selectedAlert?.id === alert.id ? "bg-muted" : ""}`}
-                  >
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <ToneBadge value={alert.severity} />
-                          <ToneBadge value={alert.status} />
-                          <span className="text-xs capitalize text-muted-foreground">{alert.type}</span>
-                        </div>
-                        <h3 className="mt-2 truncate text-sm font-semibold">{alert.title}</h3>
-                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{alert.message}</p>
-                      </div>
-                      <div className="shrink-0 text-xs text-muted-foreground">{formatTimeAgo(alert.createdAt)}</div>
+              <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+                {alertLanes.map((lane) => (
+                  <section key={lane.label} className="rounded-lg border bg-muted/20 p-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">{lane.label}</h3>
+                      <ToneBadge value={lane.items.length} tone={lane.tone} />
                     </div>
-                    <div className="mt-3 text-xs text-muted-foreground">{resourceName(alert.resourceId)}</div>
-                  </button>
+                    <div className="space-y-2">
+                      {lane.items.slice(0, 8).map((alert) => (
+                        <button
+                          key={alert.id}
+                          type="button"
+                          onClick={() => setSelectedAlertId(alert.id)}
+                          className={cn(
+                            "w-full rounded-lg border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40",
+                            selectedAlert?.id === alert.id && "border-primary/50 bg-primary/5",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <ToneBadge value={alert.severity} />
+                                <ToneBadge value={alert.status} />
+                              </div>
+                              <h3 className="mt-2 line-clamp-2 text-sm font-semibold">{alert.title}</h3>
+                            </div>
+                            <span className="shrink-0 text-xs text-muted-foreground">{formatTimeAgo(alert.createdAt)}</span>
+                          </div>
+                          <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{alert.message}</p>
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                            <span className="capitalize">{alert.type}</span>
+                            <span>{resourceName(alert.resourceId)}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    {lane.items.length > 8 && (
+                      <p className="mt-3 text-xs text-muted-foreground">+{lane.items.length - 8} more in this lane.</p>
+                    )}
+                  </section>
                 ))}
               </div>
             )}
