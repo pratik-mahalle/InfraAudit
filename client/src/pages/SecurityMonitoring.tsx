@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import {
   AlertTriangle,
@@ -6,6 +7,7 @@ import {
   Bug,
   CheckCircle2,
   ExternalLink,
+  Eye,
   Fingerprint,
   GitCompareArrows,
   Loader2,
@@ -18,15 +20,16 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAcknowledgeAlert, useAlerts, useResolveAlert } from "@/hooks/use-alerts";
-import { useComplianceOverview } from "@/hooks/use-compliance";
+import { useAssessments, useComplianceOverview } from "@/hooks/use-compliance";
 import { useAcknowledgeDrift, useApproveDriftAsBaseline, useDrifts, useResolveDrift, useTriggerDriftDetection } from "@/hooks/use-drifts";
 import { useFindings, useFindingSummary, useUpdateFindingStatus } from "@/hooks/use-findings";
 import { isTerminalQueueState, useQueueJobStatus } from "@/hooks/use-queue-job";
 import { useProviders } from "@/hooks/use-providers";
 import { useResources } from "@/hooks/use-resources";
-import { useTriggerVulnerabilityScan, useVulnerabilities } from "@/hooks/use-vulnerabilities";
+import { useTriggerVulnerabilityScan, useVulnerabilities, useVulnerabilityScan, useVulnerabilityScans } from "@/hooks/use-vulnerabilities";
 import { cn, formatTimeAgo } from "@/lib/utils";
-import type { Alert, Drift, Finding, FindingStatus, QueueJobStatus, Vulnerability } from "@/lib/api";
+import type { Alert, Drift, Finding, FindingStatus, QueueJobStatus, Vulnerability, VulnerabilityScan, VulnerabilityScanDetail } from "@/lib/api";
+import type { ComplianceAssessment } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { SocBadge, SocButton, SocPanel, SocProgress, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
 
@@ -47,6 +50,7 @@ type SignalItem = {
   resourceName: string;
   resourceType?: string;
   findingType?: string;
+  sourceType?: string;
   time?: string;
   raw: Alert | Drift | Finding | Vulnerability;
 };
@@ -132,13 +136,16 @@ function formatLabel(value?: string) {
 
 function isVulnerabilitySignal(item: SignalItem) {
   const type = String(item.findingType ?? item.type).toLowerCase();
-  return item.type === "Vulnerability" || type === "cve" || type === "vulnerability";
+  return item.type === "Vulnerability" || item.sourceType === "vulnerability" || type === "cve" || type === "vulnerability";
 }
 
 function patchLane(item: SignalItem) {
   if (item.severity === "critical") return "Emergency";
   if (item.severity === "high") return "Patch Window";
-  if (item.description || item.status === "open") return "Fix Ready";
+  const hasFix = item.type === "Vulnerability"
+    ? Boolean((item.raw as Vulnerability).fixedVersion || (item.raw as Vulnerability).remediation)
+    : Boolean((item.raw as Finding).remediation);
+  if (hasFix) return "Fix Ready";
   return "Backlog";
 }
 
@@ -226,9 +233,9 @@ function SignalFilters({
   );
 }
 
-function SignalTable({ items, selectedId, onSelect }: { items: SignalItem[]; selectedId?: string | null; onSelect: (item: SignalItem) => void }) {
+function SignalTable({ items, selectedId, onSelect, emptyTitle = "No matching signals", emptyDescription = "Adjust filters or run a scan to populate this view." }: { items: SignalItem[]; selectedId?: string | null; onSelect: (item: SignalItem) => void; emptyTitle?: string; emptyDescription?: string }) {
   if (items.length === 0) {
-    return <EmptyState title="No matching signals" description="Adjust filters or run a scan to populate this view." />;
+    return <EmptyState title={emptyTitle} description={emptyDescription} />;
   }
 
   return (
@@ -283,6 +290,19 @@ function formatEvidenceValue(value: unknown) {
   if (value == null) return "Not provided";
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
   return JSON.stringify(value);
+}
+
+function metadataEntries(metadata?: string) {
+  if (!metadata) return [];
+  try {
+    const parsed = JSON.parse(metadata);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return Object.entries(parsed).slice(0, 12);
+    }
+  } catch {
+    return [["metadata", metadata]];
+  }
+  return [["metadata", metadata]];
 }
 
 function MetaRow({ label, value }: { label: string; value?: React.ReactNode }) {
@@ -424,10 +444,153 @@ function SignalDetailDrawer({
   );
 }
 
+function ScanHistoryTable({ scans, onOpen }: { scans: VulnerabilityScan[]; onOpen: (id: number) => void }) {
+  if (scans.length === 0) {
+    return <EmptyState title="No vulnerability scans recorded" description="Run a vulnerability scan to create the first execution report." />;
+  }
+
+  return (
+    <div className="overflow-auto">
+      <table className="w-full min-w-[820px] text-left">
+        <thead className="border-b border-border text-xs text-muted-foreground">
+          <tr>
+            <th className="px-4 py-3 font-medium">Run</th>
+            <th className="px-4 py-3 font-medium">Status</th>
+            <th className="px-4 py-3 font-medium">Results</th>
+            <th className="px-4 py-3 font-medium">Pipeline</th>
+            <th className="px-4 py-3 font-medium">Started</th>
+            <th className="px-4 py-3 font-medium text-right">Report</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {scans.map((scan) => (
+            <tr key={scan.id} className="hover:bg-muted/50">
+              <td className="px-4 py-3">
+                <p className="font-mono text-sm font-medium text-foreground">SCAN-{scan.id}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatLabel(scan.scanType)} · {scan.resourceId || "all resources"}</p>
+              </td>
+              <td className="px-4 py-3"><SocBadge tone={scan.status === "completed" ? "green" : scan.status === "failed" ? "red" : scan.status === "running" ? "blue" : "slate"}>{scan.status}</SocBadge></td>
+              <td className="px-4 py-3">
+                <p className="font-mono text-sm text-foreground">{scan.totalVulnerabilities} total</p>
+                <p className="mt-1 text-xs text-muted-foreground">{scan.criticalCount} critical · {scan.highCount} high</p>
+              </td>
+              <td className="px-4 py-3">
+                <p className="font-mono text-sm text-foreground">{scan.findingsReconciled} reconciled</p>
+                <p className="mt-1 text-xs text-muted-foreground">{scan.sourcesFailed} source failures</p>
+              </td>
+              <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{formatTimeAgo(scan.startedAt || scan.createdAt)}</td>
+              <td className="px-4 py-3 text-right">
+                <button type="button" onClick={() => onOpen(scan.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" title={`Open scan ${scan.id} report`}>
+                  <Eye className="h-4 w-4" />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function VulnerabilityScanDrawer({ detail, open, onOpenChange, loading, error }: { detail?: VulnerabilityScanDetail; open: boolean; onOpenChange: (open: boolean) => void; loading: boolean; error: unknown }) {
+  const findings = detail?.findings ?? [];
+  const metadata = metadataEntries(detail?.metadata);
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="flex h-full w-full flex-col overflow-y-auto p-0 sm:max-w-2xl lg:max-w-4xl">
+        <SheetHeader className="border-b border-border p-6 pr-12">
+          <div className="flex flex-wrap items-center gap-2">
+            <SocBadge tone={detail?.status === "completed" ? "green" : detail?.status === "failed" ? "red" : "slate"}>{detail?.status ?? "loading"}</SocBadge>
+            {detail && <span className="font-mono text-xs text-muted-foreground">SCAN-{detail.id}</span>}
+          </div>
+          <SheetTitle className="mt-3 text-xl">Vulnerability scan report</SheetTitle>
+          <SheetDescription>{detail ? `${formatLabel(detail.scanType)} · ${detail.resourceId || "all resources"}` : "Loading execution report"}</SheetDescription>
+        </SheetHeader>
+        {error ? (
+          <div className="p-6"><EmptyState title="Could not load scan report" description={error instanceof Error ? error.message : "The scan report request failed."} /></div>
+        ) : loading || !detail ? (
+          <div className="flex flex-1 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        ) : (
+          <div className="flex-1 space-y-5 p-6">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <SocStat label="Total" value={detail.totalVulnerabilities} tone="blue" />
+              <SocStat label="Critical" value={detail.criticalCount} tone={detail.criticalCount ? "red" : "green"} />
+              <SocStat label="High" value={detail.highCount} tone={detail.highCount ? "orange" : "green"} />
+              <SocStat label="Duration" value={detail.scanDuration != null ? `${detail.scanDuration}s` : "-"} tone="slate" />
+            </div>
+            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <MetaRow label="Fetched" value={detail.findingsFetched} />
+              <MetaRow label="Normalized" value={detail.findingsNormalized} />
+              <MetaRow label="Reconciled" value={detail.findingsReconciled} />
+              <MetaRow label="Source Failures" value={detail.sourcesFailed} />
+            </section>
+            {detail.errorMessage && <div className="rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">{detail.errorMessage}</div>}
+            {metadata.length > 0 && (
+              <section className="rounded-md border border-border bg-card p-4">
+                <h3 className="text-sm font-semibold text-foreground">Execution metadata</h3>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {metadata.map(([key, value]) => <MetaRow key={key} label={formatLabel(key)} value={formatEvidenceValue(value)} />)}
+                </div>
+              </section>
+            )}
+            <SocPanel title="Captured findings" actions={<SocBadge tone="slate">{findings.length}</SocBadge>}>
+              {findings.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">No findings were captured for this run.</div>
+              ) : (
+                <div className="overflow-auto">
+                  <table className="w-full min-w-[760px] text-left">
+                    <thead className="border-b border-border text-xs text-muted-foreground"><tr><th className="px-4 py-3 font-medium">Finding</th><th className="px-4 py-3 font-medium">Severity</th><th className="px-4 py-3 font-medium">Resource</th><th className="px-4 py-3 font-medium">Scanner</th></tr></thead>
+                    <tbody className="divide-y divide-border">
+                      {findings.map((finding) => (
+                        <tr key={finding.id}>
+                          <td className="px-4 py-3"><p className="text-sm font-medium text-foreground">{finding.title}</p><p className="mt-1 font-mono text-xs text-muted-foreground">{finding.cveId || finding.vulnerabilityId || `VUL-${finding.id}`}</p></td>
+                          <td className="px-4 py-3"><SocBadge tone={severityTone(finding.severity)}>{finding.severity}</SocBadge></td>
+                          <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{finding.resourceId || "unlinked"}</td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">{formatLabel(finding.scannerType)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </SocPanel>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function AssessmentHistoryTable({ assessments }: { assessments: ComplianceAssessment[] }) {
+  if (assessments.length === 0) {
+    return <EmptyState title="No compliance assessments recorded" description="Run an assessment from Compliance to create the first assessment record." />;
+  }
+
+  return (
+    <div className="overflow-auto">
+      <table className="w-full min-w-[820px] text-left">
+        <thead className="border-b border-border text-xs text-muted-foreground"><tr><th className="px-4 py-3 font-medium">Framework</th><th className="px-4 py-3 font-medium">Status</th><th className="px-4 py-3 font-medium">Readiness</th><th className="px-4 py-3 font-medium">Controls</th><th className="px-4 py-3 font-medium">Assessed</th></tr></thead>
+        <tbody className="divide-y divide-border">
+          {assessments.map((assessment) => (
+            <tr key={assessment.id} className="hover:bg-muted/50">
+              <td className="px-4 py-3"><p className="text-sm font-medium text-foreground">{assessment.frameworkName}</p><p className="mt-1 font-mono text-xs text-muted-foreground">{assessment.frameworkId}</p></td>
+              <td className="px-4 py-3"><SocBadge tone={assessment.status === "completed" ? "green" : assessment.status === "failed" ? "red" : "blue"}>{assessment.status}</SocBadge></td>
+              <td className="px-4 py-3 font-mono text-sm text-foreground">{Math.round(assessment.compliancePercent)}%</td>
+              <td className="px-4 py-3"><p className="font-mono text-sm text-foreground">{assessment.passedControls} pass · {assessment.failedControls} fail</p><p className="mt-1 text-xs text-muted-foreground">{assessment.notApplicableControls} not applicable · {assessment.controlsEvaluated ?? assessment.totalControls} evaluated</p></td>
+              <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{formatTimeAgo(assessment.assessmentDate)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab?: string }) {
   const [, navigate] = useLocation();
   const searchParams = useSearch();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const requestedView = viewFromQuery(new URLSearchParams(searchParams).get("view") ?? defaultTab);
   const [activeView, setActiveView] = useState<SecurityView>(requestedView);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -438,6 +601,8 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   const [provider, setProvider] = useState("all");
   const [vulnerabilityJobId, setVulnerabilityJobId] = useState<number | null>(null);
   const [driftJobId, setDriftJobId] = useState<number | null>(null);
+  const [selectedScanId, setSelectedScanId] = useState<number | null>(null);
+  const [scanDetailOpen, setScanDetailOpen] = useState(false);
 
   const { data: providers = [], isLoading: providersLoading } = useProviders();
   const { data: alertsResponse, isLoading: alertsLoading, isError: alertsError } = useAlerts();
@@ -446,6 +611,9 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   const { data: findingsResponse, isLoading: findingsLoading, isError: findingsError } = useFindings({ page: 1, pageSize: 100 });
   const { data: findingSummary } = useFindingSummary();
   const { data: vulnerabilitiesResponse, isLoading: vulnerabilitiesLoading, isError: vulnerabilitiesError } = useVulnerabilities();
+  const { data: vulnerabilityScansResponse, isLoading: vulnerabilityScansLoading } = useVulnerabilityScans(activeView === "vulnerabilities");
+  const { data: selectedScan, isLoading: selectedScanLoading, error: selectedScanError } = useVulnerabilityScan(selectedScanId);
+  const { data: assessments = [], isLoading: assessmentsLoading } = useAssessments("", 10, 0);
   const { data: resourcesResponse } = useResources();
   const { data: vulnerabilityJob, error: vulnerabilityJobError, isFetching: vulnerabilityJobFetching } = useQueueJobStatus(vulnerabilityJobId);
   const { data: driftJob, error: driftJobError, isFetching: driftJobFetching } = useQueueJobStatus(driftJobId);
@@ -465,10 +633,30 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     setDetailOpen(false);
   }, [requestedView]);
 
+  useEffect(() => {
+    if (!vulnerabilityJobId || !isTerminalQueueState(vulnerabilityJob?.status)) return;
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["vulnerabilities"] }),
+      queryClient.invalidateQueries({ queryKey: ["vulnerability-scans"] }),
+      queryClient.invalidateQueries({ queryKey: ["findings"] }),
+      queryClient.invalidateQueries({ queryKey: ["findings", "summary"] }),
+    ]);
+  }, [queryClient, vulnerabilityJob?.status, vulnerabilityJobId]);
+
+  useEffect(() => {
+    if (!driftJobId || !isTerminalQueueState(driftJob?.status)) return;
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["drifts"] }),
+      queryClient.invalidateQueries({ queryKey: ["findings"] }),
+      queryClient.invalidateQueries({ queryKey: ["findings", "summary"] }),
+    ]);
+  }, [driftJob?.status, driftJobId, queryClient]);
+
   const alerts: Alert[] = alertsResponse?.data ?? [];
   const drifts: Drift[] = Array.isArray(driftsResponse) ? driftsResponse : driftsResponse?.data ?? [];
   const findings: Finding[] = findingsResponse?.data ?? [];
   const vulnerabilities: Vulnerability[] = Array.isArray(vulnerabilitiesResponse) ? vulnerabilitiesResponse : vulnerabilitiesResponse?.data ?? [];
+  const vulnerabilityScans = vulnerabilityScansResponse?.data ?? [];
   const resources = resourcesResponse?.data ?? [];
   const connectedProviders = providers.filter((item) => item.isConnected);
   const openFindings = findings.filter((finding) => !isClosedStatus(finding.status));
@@ -478,12 +666,12 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
 
   const legacyVulnerabilitiesWithoutFinding = useMemo(() => {
     const findingTargets = findings.map((finding) => `${finding.externalId ?? ""} ${finding.ruleId ?? ""} ${finding.title}`.toLowerCase());
-    return openVulnerabilities.filter((vulnerability) => {
+    return vulnerabilities.filter((vulnerability) => {
       const cve = vulnerability.cveId ?? vulnerability.vulnerabilityId;
       if (cve && findingTargets.some((target) => target.includes(cve.toLowerCase()))) return false;
       return !findingTargets.some((target) => target.includes(vulnerability.title.toLowerCase()));
     });
-  }, [findings, openVulnerabilities]);
+  }, [findings, vulnerabilities]);
 
   const allSignals: SignalItem[] = useMemo(() => [
     ...findings.map((finding) => ({
@@ -500,10 +688,11 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       resourceName: finding.resourceId || "No resource linked",
       resourceType: finding.resourceType,
       findingType: String(finding.findingType),
+      sourceType: finding.sourceType,
       time: finding.lastSeenAt || finding.firstSeenAt,
       raw: finding,
     })),
-    ...openAlerts.map((alert) => ({
+    ...alerts.map((alert) => ({
       id: `alert-${alert.id}`,
       title: alert.title,
       description: alert.message,
@@ -517,7 +706,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       time: alert.createdAt,
       raw: alert,
     })),
-    ...openDrifts.map((drift) => ({
+    ...drifts.map((drift) => ({
       id: `drift-${drift.id}`,
       title: formatLabel(drift.driftType),
       description: drift.description,
@@ -548,7 +737,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       time: vulnerability.lastSeenAt || vulnerability.firstSeenAt || vulnerability.detectedAt,
       raw: vulnerability,
     })),
-  ].sort((a, b) => severityRank(b.severity) - severityRank(a.severity) || new Date(b.time ?? 0).getTime() - new Date(a.time ?? 0).getTime()), [findings, legacyVulnerabilitiesWithoutFinding, openAlerts, openDrifts, resources]);
+  ].sort((a, b) => severityRank(b.severity) - severityRank(a.severity) || new Date(b.time ?? 0).getTime() - new Date(a.time ?? 0).getTime()), [alerts, drifts, findings, legacyVulnerabilitiesWithoutFinding, resources]);
 
   const openSecuritySignals = useMemo(() => allSignals.filter((item) => !isClosedStatus(item.status)), [allSignals]);
 
@@ -877,7 +1066,13 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   const renderFindings = () => (
     <div className="space-y-4">
       <SignalFilters search={search} setSearch={setSearch} severity={severity} setSeverity={setSeverity} status={status} setStatus={setStatus} provider={provider} setProvider={setProvider} providers={providerOptions} />
-      <SignalTable items={filteredSignals} selectedId={selectedItem?.id} onSelect={openSignalDetail} />
+      <SignalTable
+        items={filteredSignals}
+        selectedId={selectedItem?.id}
+        onSelect={openSignalDetail}
+        emptyTitle={activeView === "alerts" ? "No alerts recorded" : activeView === "drifts" ? "No drift recorded" : "No matching findings"}
+        emptyDescription={activeView === "alerts" ? "No alert records match the current filters." : activeView === "drifts" ? "No configuration changes match the current filters." : "Adjust the current filters to review normalized findings."}
+      />
     </div>
   );
 
@@ -918,20 +1113,27 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
             </SocPanel>
           ))}
         </div>
+        <SocPanel title="Scan history" actions={vulnerabilityScansLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <SocBadge tone="slate">{vulnerabilityScansResponse?.totalItems ?? vulnerabilityScans.length}</SocBadge>}>
+          <ScanHistoryTable scans={vulnerabilityScans} onOpen={(id) => { setSelectedScanId(id); setScanDetailOpen(true); }} />
+        </SocPanel>
       </div>
     );
   };
 
   const renderCompliance = () => (
     <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <SocStat label="Readiness" value={`${compliancePercent}%`} tone={compliancePercent >= 80 ? "green" : compliancePercent >= 60 ? "yellow" : "red"} />
         <SocStat label="Controls" value={totalControls} tone="blue" />
         <SocStat label="Passing" value={complianceOverview?.passedControls ?? 0} tone="green" />
         <SocStat label="Failing" value={failedControls} tone={failedControls > 0 ? "red" : "green"} />
+        <SocStat label="Not Applicable" value={complianceOverview?.notApplicableControls ?? 0} tone="slate" />
       </div>
       <SignalFilters search={search} setSearch={setSearch} severity={severity} setSeverity={setSeverity} status={status} setStatus={setStatus} provider={provider} setProvider={setProvider} providers={providerOptions} />
-      <SignalTable items={filteredSignals} selectedId={selectedItem?.id} onSelect={openSignalDetail} />
+      <SignalTable items={filteredSignals} selectedId={selectedItem?.id} onSelect={openSignalDetail} emptyTitle="No failing compliance controls" emptyDescription="The latest normalized compliance findings contain no failed controls matching these filters." />
+      <SocPanel title="Assessment history" actions={assessmentsLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <SocBadge tone="slate">{assessments.length}</SocBadge>}>
+        <AssessmentHistoryTable assessments={assessments} />
+      </SocPanel>
     </div>
   );
 
@@ -943,7 +1145,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   };
 
   return (
-    <SocWorkspace section="Security" title="Security Command Center" counts={{ findings: findings.length, vulnerabilities: openVulnerabilities.length }}>
+    <SocWorkspace section="Security" title="Security Command Center" counts={{ findings: findingTotal, vulnerabilities: openVulnerabilities.length }}>
       <div className="space-y-5">
         <div className="flex flex-wrap gap-2">
           {viewOptions.map((item) => (
@@ -973,6 +1175,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
           onOpenResource={() => selectedItem?.resourceId && navigate(`/resources/${encodeURIComponent(String(selectedItem.resourceId))}`)}
           isPending={actionPending}
         />
+        <VulnerabilityScanDrawer detail={selectedScan} open={scanDetailOpen} onOpenChange={setScanDetailOpen} loading={selectedScanLoading} error={selectedScanError} />
       </div>
     </SocWorkspace>
   );

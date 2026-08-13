@@ -414,6 +414,7 @@ export interface Anomaly {
 
 export interface Vulnerability {
   id: number;
+  scanId?: number;
   resourceId: string | number;
   cveId?: string;
   vulnerabilityId?: string;
@@ -423,16 +424,48 @@ export interface Vulnerability {
   packageVersion?: string;
   fixedVersion?: string;
   scannerType?: string;
+  detectionMethod?: string;
   cvssScore?: number;
   severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
   title: string;
   description: string;
   remediation?: string;
+  referenceUrls?: string;
   status: 'open' | 'patched' | 'ignored' | 'false_positive' | 'accepted' | 'fixed';
   detectedAt: string;
   firstSeenAt?: string;
   lastSeenAt?: string;
   resolvedAt?: string;
+}
+
+export interface VulnerabilityScan {
+  id: number;
+  queueJobId?: number;
+  resourceId?: string;
+  scanType: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  stage?: string;
+  progressPercent: number;
+  scannerVersion?: string;
+  totalVulnerabilities: number;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+  findingsFetched: number;
+  findingsNormalized: number;
+  findingsReconciled: number;
+  sourcesFailed: number;
+  scanDuration?: number;
+  errorMessage?: string;
+  metadata?: string;
+  startedAt?: string;
+  completedAt?: string;
+  createdAt: string;
+}
+
+export interface VulnerabilityScanDetail extends VulnerabilityScan {
+  findings: Vulnerability[];
 }
 
 // Health Score
@@ -716,7 +749,7 @@ export const api = {
   // Vulnerabilities
   // ============================================
   vulnerabilities: {
-    list: () => request<PaginatedResponse<Vulnerability>>('/api/v1/vulnerabilities'),
+    list: (page = 1, pageSize = 100) => request<PaginatedResponse<Vulnerability>>('/api/v1/vulnerabilities', { params: { page, page_size: pageSize } }),
 
     get: (id: number) => request<Vulnerability>(`/api/v1/vulnerabilities/${id}`),
 
@@ -725,6 +758,10 @@ export const api = {
     getTop: () => request<Vulnerability[]>('/api/v1/vulnerabilities/top'),
 
     scan: () => request<VulnerabilityScanResponse>('/api/v1/vulnerabilities/scan', { method: 'POST' }),
+
+    listScans: (page = 1, pageSize = 10) => request<PaginatedResponse<VulnerabilityScan>>('/api/v1/vulnerabilities/scans', { params: { page, page_size: pageSize } }),
+
+    getScan: (id: number) => request<VulnerabilityScanDetail>(`/api/v1/vulnerabilities/scans/${id}`),
   },
 
   // ============================================
