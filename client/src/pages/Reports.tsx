@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Server,
   RefreshCw,
+  Ban,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,11 +30,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 type Report = {
   id: number;
   status: string;
+  queueJobId?: number | null;
+  stage?: string;
+  progressPercent?: number;
   totalResources: number;
   totalDrifts: number;
   criticalCount: number;
@@ -46,6 +51,13 @@ type Report = {
   errorMessage?: string;
   createdAt: string;
 };
+
+const formatStage = (stage?: string) =>
+  (stage || "queued")
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join(" ");
 
 function SecurityScoreBadge({ score }: { score: number | null | undefined }) {
   if (score == null) return <Badge variant="secondary">N/A</Badge>;
@@ -62,12 +74,12 @@ function SecurityScoreBadge({ score }: { score: number | null | undefined }) {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, stage }: { status: string; stage?: string }) {
   if (status === "running") {
     return (
       <Badge variant="outline" className="gap-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
         <Loader2 className="h-3 w-3 animate-spin" />
-        Running
+        {formatStage(stage)}
       </Badge>
     );
   }
@@ -76,6 +88,14 @@ function StatusBadge({ status }: { status: string }) {
       <Badge variant="outline" className="gap-1.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
         <CheckCircle2 className="h-3 w-3" />
         Completed
+      </Badge>
+    );
+  }
+  if (status === "cancelled") {
+    return (
+      <Badge variant="outline" className="gap-1.5 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+        <Ban className="h-3 w-3" />
+        Cancelled
       </Badge>
     );
   }
@@ -112,6 +132,19 @@ export default function Reports() {
     },
     onError: (err: Error) => {
       toast({ title: "Delete failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("POST", `/api/reports/${id}/cancel`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
+      toast({ title: "Report cancelled", description: "The queued report generation was cancelled." });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Cancel failed", description: err.message, variant: "destructive" });
     },
   });
 
@@ -191,7 +224,7 @@ export default function Reports() {
                 <Card className="group cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 h-full">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <StatusBadge status={report.status} />
+                      <StatusBadge status={report.status} stage={report.stage} />
                       <SecurityScoreBadge score={report.reportData?.security_score} />
                     </div>
                     <CardTitle className="text-base mt-3 flex items-center gap-2">
@@ -215,8 +248,31 @@ export default function Reports() {
                       </span>
                     </div>
 
-                    {/* Delete button */}
-                    <div className="mt-4 flex justify-end">
+                    {report.status === "running" && (
+                      <div className="mt-4 space-y-1.5">
+                        <Progress value={report.progressPercent ?? 0} className="h-1.5" />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatStage(report.stage)} - {report.progressPercent ?? 0}%
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex justify-end gap-1">
+                      {report.status === "running" && report.queueJobId && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          disabled={cancelMutation.isPending}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            cancelMutation.mutate(report.id);
+                          }}
+                        >
+                          <Ban className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

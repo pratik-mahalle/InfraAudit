@@ -1,15 +1,25 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, unwrapResponse } from "@/lib/queryClient";
 import { toast } from "sonner";
 
 type ScanStatus = {
   id: number;
   status: string;
-  driftCount: number;
-  resourceCount: number;
-  securityScore: number | null;
+  queueJobId?: number | null;
+  stage?: string;
+  progressPercent?: number;
+  totalDrifts: number;
+  totalResources: number;
+  errorMessage?: string;
 };
+
+const stageLabel = (stage?: string) =>
+  (stage || "queued")
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join(" ");
 
 export function useScan() {
   const [isScanning, setIsScanning] = useState(false);
@@ -31,7 +41,7 @@ export function useScan() {
     try {
       const response = await apiRequest("POST", "/api/reports/scan");
       const json = await response.json();
-      const data = json?.data || json;
+      const data = unwrapResponse<{ id?: number }>(json);
       const reportId = data.id;
 
       if (!reportId) {
@@ -44,12 +54,12 @@ export function useScan() {
         try {
           const statusRes = await apiRequest("GET", `/api/reports/${reportId}/status`);
           const statusJson = await statusRes.json();
-          const status: ScanStatus = statusJson?.data || statusJson;
+          const status = unwrapResponse<ScanStatus>(statusJson);
 
           setCurrentReport(status);
 
           toast.loading(
-            `${status.resourceCount ?? 0} resources found, ${status.driftCount ?? 0} drifts detected`,
+            `${stageLabel(status.stage)} (${status.progressPercent ?? 0}%) - ${status.totalResources ?? 0} resources, ${status.totalDrifts ?? 0} drifts`,
             { id: "scan-progress" }
           );
 
@@ -62,16 +72,16 @@ export function useScan() {
             queryClient.invalidateQueries({ queryKey: ["drifts"] });
 
             toast.success(
-              `Found ${status.resourceCount ?? 0} resources and ${status.driftCount ?? 0} drifts. Security score: ${status.securityScore ?? "N/A"}`,
+              `Found ${status.totalResources ?? 0} resources and ${status.totalDrifts ?? 0} drifts.`,
               { id: "scan-progress" }
             );
 
             navigate(`/reports/${reportId}`);
-          } else if (status.status === "failed") {
+          } else if (status.status === "failed" || status.status === "cancelled") {
             stopPolling();
             setIsScanning(false);
 
-            toast.error("The infrastructure scan encountered an error.", {
+            toast.error(status.errorMessage || "The infrastructure scan did not complete.", {
               id: "scan-progress",
               action: { label: "Retry", onClick: () => startScan() },
             });
