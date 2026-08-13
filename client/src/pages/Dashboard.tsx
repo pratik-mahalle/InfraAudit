@@ -1018,8 +1018,8 @@ export default function Dashboard() {
 
         {/* ── Compliance + Findings + Savings ── */}
         <div className="grid grid-cols-1 xl:grid-cols-3" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
-          <ComplianceCard frameworks={complianceFrameworks} onJump={() => navigate("/compliance")} />
-          <FindingsRiskCard summary={findingSummary} findings={dashboardFindings} onJump={() => navigate("/findings")} />
+          <ComplianceCard frameworks={complianceFrameworks} onJump={() => navigate("/security?view=compliance")} />
+          <FindingsRiskCard summary={findingSummary} findings={dashboardFindings} onJump={() => navigate("/security?view=findings")} />
           <SavingsCard recommendations={recommendations} />
         </div>
 

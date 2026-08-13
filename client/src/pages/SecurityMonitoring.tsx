@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useSearch } from "wouter";
 import {
   BellRing,
   Bug,
@@ -45,11 +45,31 @@ function severityTone(severity: string) {
   return "blue" as const;
 }
 
+function streamFromView(view?: string) {
+  switch (view) {
+    case "alerts":
+      return "Alert";
+    case "drifts":
+      return "Drift";
+    case "vulnerabilities":
+      return "Vulnerability";
+    case "compliance":
+      return "Compliance";
+    case "findings":
+    case "all":
+    case "risk":
+    default:
+      return "All";
+  }
+}
+
 export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab?: string }) {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { toast } = useToast();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [activeStream, setActiveStream] = useState(defaultTab === "alerts" ? "Alert" : defaultTab === "drifts" ? "Drift" : "All");
+  const requestedStream = streamFromView(new URLSearchParams(search).get("view") ?? defaultTab);
+  const [activeStream, setActiveStream] = useState(requestedStream);
 
   const { data: alertsResponse, isLoading: alertsLoading } = useAlerts();
   const { data: driftsResponse, isLoading: driftsLoading } = useDrifts();
@@ -70,6 +90,11 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   const openAlerts = alerts.filter((alert) => alert.status !== "resolved");
   const openDrifts = drifts.filter((drift) => drift.status === "detected" || drift.status === "acknowledged");
   const openVulnerabilities = vulnerabilities.filter((vulnerability) => vulnerability.status === "open");
+
+  useEffect(() => {
+    setActiveStream(requestedStream);
+    setSelectedItemId(null);
+  }, [requestedStream]);
 
   const securityScore = useMemo(() => {
     const totalRisk =
@@ -118,7 +143,11 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     })),
   ].sort((a, b) => riskWeight(b.severity) - riskWeight(a.severity));
 
-  const visibleItems = priorityItems.filter((item) => activeStream === "All" || item.type === activeStream).slice(0, 14);
+  const visibleItems = priorityItems.filter((item) => {
+    if (activeStream === "All") return true;
+    if (activeStream === "Compliance") return item.severity === "critical" || item.severity === "high";
+    return item.type === activeStream;
+  }).slice(0, 14);
   const selectedItem = priorityItems.find((item) => item.id === selectedItemId) ?? visibleItems[0] ?? priorityItems[0] ?? null;
   const loading = alertsLoading || driftsLoading || vulnerabilitiesLoading;
   const criticalOpen = priorityItems.filter((item) => item.severity === "critical").length;
@@ -169,7 +198,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
         onError: (error: Error) => toast({ title: "Could not resolve drift", description: error.message, variant: "destructive" }),
       });
     } else {
-      navigate("/vulnerabilities");
+      setActiveStream("Vulnerability");
     }
   };
 
@@ -186,7 +215,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
         onError: (error: Error) => toast({ title: "Could not acknowledge drift", description: error.message, variant: "destructive" }),
       });
     } else {
-      navigate("/findings");
+      setActiveStream("All");
     }
   };
 
@@ -199,10 +228,10 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   };
 
   const streamCounters = [
-    { label: "Alert", value: openAlerts.length, total: alerts.length, delta: "+3", icon: BellRing, tone: "yellow" as const, route: "/alerts", closure: alertClosure },
-    { label: "Drift", value: openDrifts.length, total: drifts.length, delta: "-1", icon: GitCompareArrows, tone: "blue" as const, route: "/drift-detection", closure: driftClosure },
-    { label: "Vulnerability", value: openVulnerabilities.length, total: vulnerabilities.length, delta: "+5", icon: Bug, tone: "orange" as const, route: "/vulnerabilities", closure: vulnerabilityClosure },
-    { label: "Compliance", value: criticalOpen + highOpen, total: priorityItems.length, delta: "0", icon: Shield, tone: "red" as const, route: "/compliance", closure: 100 },
+    { label: "Alert", value: openAlerts.length, total: alerts.length, icon: BellRing, tone: "yellow" as const, closure: alertClosure },
+    { label: "Drift", value: openDrifts.length, total: drifts.length, icon: GitCompareArrows, tone: "blue" as const, closure: driftClosure },
+    { label: "Vulnerability", value: openVulnerabilities.length, total: vulnerabilities.length, icon: Bug, tone: "orange" as const, closure: vulnerabilityClosure },
+    { label: "Compliance", value: criticalOpen + highOpen, total: priorityItems.length, icon: Shield, tone: "red" as const, closure: 100 },
   ];
 
   return (
@@ -227,8 +256,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
                 <span className="text-red-300">{criticalOpen} critical</span>
                 <span> · </span>
                 <span className="text-orange-300">{highOpen} high</span>
-                <span> · trending </span>
-                <span className="text-red-300">▲ 6 pts in 24h</span>
+                <span> · based on active alert, drift, and vulnerability data</span>
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <SocButton onClick={runVulnerabilityScan} disabled={triggerVulnerabilityScan.isPending}>
@@ -249,11 +277,11 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
             <button key={item.label} type="button" onClick={() => setActiveStream(item.label)} className={cn("border-b border-border p-5 text-left hover:bg-muted/60 sm:odd:border-r xl:border-b-0 xl:border-r", activeStream === item.label && "bg-muted")}>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-sm text-muted-foreground"><item.icon className="h-4 w-4" /> {item.label}s</span>
-                <SocBadge tone="slate">{item.delta}</SocBadge>
+                <SocBadge tone="slate">{item.total} total</SocBadge>
               </div>
               <p className={cn("mt-5 text-4xl font-semibold", item.tone === "red" && "text-red-600 dark:text-red-300", item.tone === "orange" && "text-orange-600 dark:text-orange-300", item.tone === "yellow" && "text-yellow-600 dark:text-yellow-300", item.tone === "blue" && "text-blue-600 dark:text-blue-300")}>{item.value}</p>
               <div className="mt-4"><SocProgress value={item.total ? Math.round((item.value / item.total) * 100) : 0} tone={item.tone} /></div>
-              <p className="mt-3 font-mono text-xs text-muted-foreground">open queue ↗</p>
+              <p className="mt-3 font-mono text-xs text-muted-foreground">{item.closure}% closure</p>
             </button>
           ))}
         </div>
@@ -278,7 +306,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
                   onClick={() => setSelectedItemId(item.id)}
                   className={cn("grid w-full grid-cols-[64px_28px_minmax(0,1fr)_72px] border-b border-border px-4 py-4 text-left hover:bg-muted/60", selectedItem?.id === item.id && "bg-primary/10")}
                 >
-                  <span className="font-mono text-xs text-muted-foreground">{index === 0 ? "12m" : `${index + 1}h`}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{formatTimeAgo(item.time)}</span>
                   <span className={cn("mt-1 h-3 w-3 rounded-full", item.severity === "critical" ? "bg-red-500" : item.severity === "high" ? "bg-orange-500" : "bg-yellow-500")} />
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2">
@@ -319,10 +347,10 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
               <div className="rounded border border-border">
                 <div className="border-b border-border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Closure Progress</div>
                 <div className="space-y-3 p-4 text-sm text-foreground">
-                  {["Detected & fingerprinted", "Owner notified · #sec-alerts", "Remediation drafted", "Change ticket · CHG-0091", "Verified fix on next scan"].map((step, index) => (
+                  {["Detected", selectedItem.type === "Vulnerability" ? "Patch context available" : "Investigation context available", "Awaiting remediation", "Ready for verification"].map((step, index) => (
                     <div key={step} className="flex items-center gap-3">
-                      {index < 2 ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-green-400" /> : <span className="h-4 w-4 rounded-full border border-border" />}
-                      <span className={index < 2 ? "text-foreground" : "text-muted-foreground"}>{step}</span>
+                      {index === 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-green-400" /> : <span className="h-4 w-4 rounded-full border border-border" />}
+                      <span className={index === 0 ? "text-foreground" : "text-muted-foreground"}>{step}</span>
                     </div>
                   ))}
                 </div>
@@ -332,7 +360,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
                   <Play className="h-4 w-4" />
                   {selectedItem.type === "Vulnerability" ? "Open Patch Center" : "Resolve"}
                 </SocButton>
-                <SocButton variant="ghost" onClick={() => navigate(selectedItem.route)}>
+                <SocButton variant="ghost" onClick={() => setActiveStream(selectedItem.type === "Vulnerability" ? "Vulnerability" : "All")}>
                   <ExternalLink className="h-4 w-4" />
                   Open Investigation
                 </SocButton>
@@ -352,7 +380,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
         </SocPanel>
       </div>
 
-      <SocPanel className="mt-4" eyebrow="Assets Under Stress" title="At-risk resources · ranked by exposure score" actions={<SocButton variant="ghost" onClick={() => navigate("/findings")}>Open Findings <ExternalLink className="h-4 w-4" /></SocButton>}>
+      <SocPanel className="mt-4" eyebrow="Assets Under Stress" title="At-risk resources · ranked by exposure score" actions={<SocButton variant="ghost" onClick={() => setActiveStream("All")}>Open Findings <ExternalLink className="h-4 w-4" /></SocButton>}>
         <div className="overflow-auto">
           <table className="w-full min-w-[760px] text-left">
             <thead className="border-b border-border font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">

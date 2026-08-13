@@ -205,9 +205,12 @@ export default function Vulnerabilities() {
   };
 
   const scanRows = [
-    { id: scanJobId ? `SCN-${scanJobId}` : "SCN-2214", target: selectedFinding?.resourceId || "prod fleet", scanner: selectedFinding?.scannerType || "Trivy / Inspector", progress: scanJobIsActive ? 62 : 100, state: scanJobDescription(activeScanJobStatus, scanJobStatus?.lastError), started: scanJobId ? "just now" : "12m ago" },
-    { id: "SCN-2213", target: "container registry", scanner: "Trivy", progress: 42, state: "running", started: "5m ago" },
-    { id: "SCN-2210", target: "cloud assets", scanner: "Amazon Inspector", progress: 0, state: "queued", started: "queued" },
+    ...(scanJobId ? [{
+      id: `JOB-${scanJobId}`,
+      target: selectedFinding?.resourceId || "current workspace",
+      scanner: selectedFinding?.scannerType || selectedFinding?.sourceType || "configured scanner",
+      state: scanJobDescription(activeScanJobStatus, scanJobStatus?.lastError),
+    }] : []),
   ];
 
   return (
@@ -217,16 +220,17 @@ export default function Vulnerabilities() {
           <div className="overflow-auto">
             <table className="w-full min-w-[720px] text-left">
               <thead className="border-b border-border font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                <tr><th className="px-4 py-3">Scan</th><th className="px-4 py-3">Target</th><th className="px-4 py-3">Scanner</th><th className="px-4 py-3">Progress</th><th className="px-4 py-3">Started</th></tr>
+                <tr><th className="px-4 py-3">Scan</th><th className="px-4 py-3">Target</th><th className="px-4 py-3">Scanner</th><th className="px-4 py-3">Status</th></tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {scanRows.map((row) => (
+                {scanRows.length === 0 ? (
+                  <tr><td colSpan={4} className="px-4 py-8 text-sm text-muted-foreground">No vulnerability scan job has been started from this session.</td></tr>
+                ) : scanRows.map((row) => (
                   <tr key={row.id}>
                     <td className="px-4 py-3 font-mono text-sm text-foreground">{row.id}</td>
                     <td className="px-4 py-3 font-mono text-sm text-foreground">{row.target}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{row.scanner}</td>
-                    <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-40"><SocProgress value={row.progress} tone={row.state === "Done" || row.state === "done" ? "green" : "blue"} /></div><span className="font-mono text-xs text-blue-300">{row.state}</span></div></td>
-                    <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{row.started}</td>
+                    <td className="px-4 py-3"><SocBadge tone={row.state === "Done" ? "green" : "blue"}>{row.state}</SocBadge></td>
                   </tr>
                 ))}
               </tbody>

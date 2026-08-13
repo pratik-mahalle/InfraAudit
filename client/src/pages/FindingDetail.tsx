@@ -35,7 +35,7 @@ export default function FindingDetail() {
         description="Full evidence record, resource context, remediation, and lifecycle controls."
         actions={
           <Button asChild variant="outline" className="gap-2">
-            <Link href="/findings">
+            <Link href="/security?view=findings">
               <ArrowLeft className="h-4 w-4" />
               Back to Findings
             </Link>
