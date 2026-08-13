@@ -282,6 +282,7 @@ export interface ComplianceControl {
 
 export interface ComplianceAssessment {
   id: string;
+  queueJobId?: number;
   frameworkId: string;
   frameworkName: string;
   assessmentDate: string;
@@ -290,7 +291,12 @@ export interface ComplianceAssessment {
   failedControls: number;
   notApplicableControls: number;
   compliancePercent: number;
-  status: 'running' | 'completed' | 'failed';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  stage?: string;
+  progressPercent?: number;
+  controlsEvaluated?: number;
+  findingsReconciled?: number;
+  errorMessage?: string;
   findings?: string; // JSON string in backend, parsed in frontend usage
 }
 
@@ -311,6 +317,7 @@ export interface FrameworkCompliance {
   totalControls: number;
   passedControls: number;
   failedControls: number;
+  notApplicableControls: number;
   compliancePercent: number;
   lastAssessment?: string;
 }
@@ -319,6 +326,7 @@ export interface ComplianceOverview {
   totalControls: number;
   passedControls: number;
   failedControls: number;
+  notApplicableControls: number;
   compliancePercent: number;
   byFramework: FrameworkCompliance[];
   bySeverity: Record<string, number>;
