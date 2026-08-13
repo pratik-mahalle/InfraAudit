@@ -30,6 +30,7 @@ import {
     Fingerprint,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
 import {
     Tooltip,
     TooltipContent,
@@ -42,6 +43,8 @@ import { Permission } from "@/lib/permissions";
 interface SidebarProps {
     isCollapsed?: boolean;
     onToggle?: () => void;
+    mobileOpen?: boolean;
+    onNavigate?: () => void;
 }
 
 interface NavItem {
@@ -101,7 +104,7 @@ const navGroups: NavGroup[] = [
         items: [
             { label: "Jobs", href: "/automation", icon: Zap },
             { label: "Recommendations", href: "/recommendations", icon: Target },
-            { label: "Resource Analysis", href: "/ai-demo", icon: Sparkles },
+            { label: "Resource Analysis", href: "/resource-analysis", icon: Sparkles },
         ],
     },
     {
@@ -119,7 +122,7 @@ const bottomNavItems: NavItem[] = [
     { label: "Help", href: "/documentation", icon: HelpCircle },
 ];
 
-export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
+export function Sidebar({ isCollapsed = false, onToggle, mobileOpen = false, onNavigate }: SidebarProps) {
     const [location] = useLocation();
     const search = useSearch();
     const currentSecurityView = new URLSearchParams(search).get("view") ?? "all";
@@ -137,11 +140,14 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
         items.filter(item => !item.permission || hasPermission(item.permission));
 
     // Collapsed view — icon-only with tooltips
-    if (isCollapsed) {
+    if (isCollapsed && !mobileOpen) {
         return (
             <TooltipProvider delayDuration={0}>
-                <aside className="fixed left-0 top-14 bottom-0 w-14 bg-white dark:bg-slate-950 border-r border-gray-200 dark:border-gray-800 flex flex-col z-40">
-                    <div className="flex items-center justify-center py-3 border-b border-gray-200 dark:border-gray-800">
+                <aside className={cn(
+                    "fixed bottom-0 left-0 top-0 z-40 w-14 flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-slate-950",
+                    mobileOpen ? "flex" : "hidden md:flex"
+                )}>
+                    <div className="flex h-14 items-center justify-center border-b border-gray-200 dark:border-gray-800">
                         <Button variant="ghost" size="icon" onClick={onToggle} className="h-7 w-7">
                             <ChevronLeft className="h-3.5 w-3.5 rotate-180" />
                         </Button>
@@ -156,7 +162,7 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
                                     {visibleItems.map((item) => (
                                         <Tooltip key={item.href + item.label}>
                                             <TooltipTrigger asChild>
-                                                <Link href={item.href}>
+                                                <Link href={item.href} onClick={onNavigate}>
                                                     <span
                                                         className={cn(
                                                             "flex items-center justify-center h-8 w-8 mx-auto rounded-md transition-colors my-0.5",
@@ -182,7 +188,7 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
                         {filterByPermission(bottomNavItems).map((item) => (
                             <Tooltip key={item.label}>
                                 <TooltipTrigger asChild>
-                                    <Link href={item.href}>
+                                    <Link href={item.href} onClick={onNavigate}>
                                         <span className="flex items-center justify-center h-8 w-8 mx-auto rounded-md text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 transition-colors my-0.5">
                                             <item.icon className="h-4 w-4" />
                                         </span>
@@ -199,12 +205,21 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
 
     // Expanded view — compact flat list with group labels
     return (
-        <aside className="fixed left-0 top-14 bottom-0 w-56 bg-white dark:bg-slate-950 border-r border-gray-200 dark:border-gray-800 flex flex-col z-40">
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-200 dark:border-gray-800">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                    Menu
-                </span>
-                <Button variant="ghost" size="icon" onClick={onToggle} className="h-6 w-6">
+        <aside className={cn(
+            "fixed bottom-0 left-0 top-0 z-40 w-56 flex-col border-r border-gray-200 bg-white dark:border-gray-800 dark:bg-slate-950",
+            mobileOpen ? "flex" : "hidden md:flex"
+        )}>
+            <div className="flex h-14 items-center justify-between border-b border-gray-200 px-3 dark:border-gray-800">
+                <Link href="/dashboard" className="flex min-w-0 items-center" onClick={onNavigate}>
+                    <InfraAuditLogo height={30} />
+                </Link>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={mobileOpen ? onNavigate : onToggle}
+                    className="h-6 w-6"
+                    aria-label={mobileOpen ? "Close navigation" : "Collapse navigation"}
+                >
                     <ChevronLeft className="h-3.5 w-3.5" />
                 </Button>
             </div>
@@ -221,7 +236,7 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
                                 </span>
                             </div>
                             {visibleItems.map((item) => (
-                                <Link key={item.href + item.label} href={item.href}>
+                                <Link key={item.href + item.label} href={item.href} onClick={onNavigate}>
                                     <span
                                         className={cn(
                                             "flex items-center gap-2.5 px-2 h-8 rounded-md text-[13px] transition-colors relative",
@@ -243,7 +258,7 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
 
             <div className="py-2 px-2 border-t border-gray-200 dark:border-gray-800">
                 {filterByPermission(bottomNavItems).map((item) => (
-                    <Link key={item.label} href={item.href}>
+                    <Link key={item.label} href={item.href} onClick={onNavigate}>
                         <span
                             className={cn(
                                 "flex items-center gap-2.5 px-2 h-8 rounded-md text-[13px] transition-colors",

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/use-auth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +33,6 @@ interface SavedArchitecturesProps {
 }
 
 export function SavedArchitectures({ setNodes, setEdges, setArchitectureName }: SavedArchitecturesProps) {
-  const { user } = useAuth();
   const [architectures, setArchitectures] = useState<Architecture[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -46,132 +44,7 @@ export function SavedArchitectures({ setNodes, setEdges, setArchitectureName }: 
       try {
         setLoading(true);
         
-        // For now this will just set demo architectures since API isn't implemented yet
-        // In a real implementation, this would be an API call
-        const demoArchitectures: Architecture[] = [
-          {
-            id: 1,
-            name: 'AWS Web Application',
-            userId: user?.id || 1,
-            nodes: [
-              {
-                id: 'EC2-1',
-                type: 'cloudNode',
-                position: { x: 250, y: 100 },
-                data: { 
-                  label: 'Web Server', 
-                  type: 'EC2',
-                  provider: 'AWS',
-                  icon: 'compute',
-                  properties: {
-                    'instance_type': 't2.micro', 
-                    'ami': 'ami-0c55b159cbfafe1f0',
-                    'region': 'us-east-1'
-                  }
-                }
-              },
-              {
-                id: 'RDS-1',
-                type: 'cloudNode',
-                position: { x: 250, y: 250 },
-                data: { 
-                  label: 'Database', 
-                  type: 'RDS',
-                  provider: 'AWS',
-                  icon: 'database',
-                  properties: { 
-                    'engine': 'postgres',
-                    'instance_class': 'db.t3.micro',
-                    'storage': '20'
-                  }
-                }
-              }
-            ],
-            edges: [
-              {
-                id: 'e1-2',
-                source: 'EC2-1',
-                target: 'RDS-1',
-                animated: true,
-                style: { stroke: '#3b82f6' }
-              }
-            ],
-            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-          },
-          {
-            id: 2,
-            name: 'Kubernetes Microservices',
-            userId: user?.id || 1,
-            nodes: [
-              {
-                id: 'Pod-1',
-                type: 'cloudNode',
-                position: { x: 100, y: 100 },
-                data: { 
-                  label: 'Frontend Pod', 
-                  type: 'Pod',
-                  provider: 'Kubernetes',
-                  icon: 'pod',
-                  properties: {
-                    'image': 'nginx:latest',
-                    'replicas': '1'
-                  }
-                }
-              },
-              {
-                id: 'Service-1',
-                type: 'cloudNode',
-                position: { x: 250, y: 100 },
-                data: { 
-                  label: 'Frontend Service', 
-                  type: 'Service',
-                  provider: 'Kubernetes',
-                  icon: 'service',
-                  properties: {
-                    'type': 'ClusterIP',
-                    'port': '80'
-                  }
-                }
-              },
-              {
-                id: 'Deployment-1',
-                type: 'cloudNode',
-                position: { x: 100, y: 250 },
-                data: { 
-                  label: 'Backend Deployment', 
-                  type: 'Deployment',
-                  provider: 'Kubernetes',
-                  icon: 'deployment',
-                  properties: {
-                    'image': 'api:latest',
-                    'replicas': '3'
-                  }
-                }
-              }
-            ],
-            edges: [
-              {
-                id: 'e1-2',
-                source: 'Pod-1',
-                target: 'Service-1',
-                animated: true,
-                style: { stroke: '#3b82f6' }
-              },
-              {
-                id: 'e2-3',
-                source: 'Service-1',
-                target: 'Deployment-1',
-                animated: true,
-                style: { stroke: '#3b82f6' }
-              }
-            ],
-            createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-            updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-          }
-        ];
-        
-        setArchitectures(demoArchitectures);
+        setArchitectures([]);
       } catch (err: any) {
         setError(err.message || 'Failed to load saved architectures');
       } finally {
@@ -180,7 +53,7 @@ export function SavedArchitectures({ setNodes, setEdges, setArchitectureName }: 
     };
 
     fetchArchitectures();
-  }, [user?.id]);
+  }, []);
 
   const loadArchitecture = (architecture: Architecture) => {
     setNodes(architecture.nodes);

@@ -55,62 +55,31 @@ export function CostTrendChart({
 
   // Build chart data from real backend data points when available
   const buildChartData = (tf: ChartTimeframe) => {
-    // Filter data points based on timeframe
     const now = new Date();
     const daysMap: Record<ChartTimeframe, number> = { "7d": 7, "30d": 30, "90d": 90 };
     const days = daysMap[tf] || 30;
     const cutoff = new Date(now);
     cutoff.setDate(cutoff.getDate() - days);
 
-    // Use real data points if available
     const realPoints = (trendDataPoints || [])
       .filter(dp => new Date(dp.date) >= cutoff)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    let labels: string[];
-    let costData: number[];
-
-    if (realPoints.length > 0) {
-      // Use actual backend data
-      labels = realPoints.map(dp => {
-        const d = new Date(dp.date);
-        return tf === "7d"
-          ? d.toLocaleDateString("en-US", { weekday: "short" })
-          : `${d.getMonth() + 1}/${d.getDate()}`;
-      });
-      costData = realPoints.map(dp => dp.cost);
-    } else {
-      // No real data — show zero baseline for the time range
-      const count = tf === "7d" ? 7 : tf === "30d" ? 30 : 12;
-      labels = [];
-      costData = [];
-      for (let i = count - 1; i >= 0; i--) {
-        const d = new Date(now);
-        if (tf === "90d") {
-          // Weekly labels for 90-day view
-          d.setDate(d.getDate() - i * 7);
-        } else {
-          d.setDate(d.getDate() - i);
-        }
-        labels.push(
-          tf === "7d"
-            ? d.toLocaleDateString("en-US", { weekday: "short" })
-            : `${d.getMonth() + 1}/${d.getDate()}`
-        );
-        costData.push(0);
-      }
-    }
-
-    // Add a simple projected point
-    const lastCost = costData.length > 0 ? costData[costData.length - 1] : 0;
-    const projectedCost = projectedSpend > 0 ? projectedSpend / (tf === "7d" ? 7 : tf === "30d" ? 30 : 90) : lastCost * 1.1;
+    const labels = realPoints.map(dp => {
+      const d = new Date(dp.date);
+      return tf === "7d"
+        ? d.toLocaleDateString("en-US", { weekday: "short" })
+        : `${d.getMonth() + 1}/${d.getDate()}`;
+    });
+    const costData = realPoints.map(dp => dp.cost);
+    const projectedCost = projectedSpend > 0 ? projectedSpend / (tf === "7d" ? 7 : tf === "30d" ? 30 : 90) : null;
 
     return {
-      labels: [...labels, "Projected"],
+      labels: projectedCost == null ? labels : [...labels, "Projected"],
       datasets: [
         {
           label: "Actual Cost",
-          data: [...costData, null] as (number | null)[],
+          data: projectedCost == null ? costData : [...costData, null] as (number | null)[],
           borderColor: "#0066CC",
           backgroundColor: "rgba(0, 102, 204, 0.1)",
           fill: true,
@@ -118,7 +87,7 @@ export function CostTrendChart({
         },
         {
           label: "Projected",
-          data: [...costData.map(() => null as number | null), projectedCost],
+          data: projectedCost == null ? [] : [...costData.map(() => null as number | null), projectedCost],
           borderColor: "#DC3545",
           backgroundColor: "rgba(220, 53, 69, 0.1)",
           borderDash: [5, 5],
@@ -131,6 +100,7 @@ export function CostTrendChart({
   };
 
   const chartData = buildChartData(timeframe);
+  const hasTrendData = chartData.labels.length > 0;
   
   const options = {
     responsive: true,
@@ -186,8 +156,14 @@ export function CostTrendChart({
             <div className="h-full w-full flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-          ) : (
+          ) : hasTrendData ? (
             <Line data={chartData} options={options} />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center">
+              <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+              <p className="mt-3 text-sm font-medium text-foreground">No cost trend data available</p>
+              <p className="mt-1 max-w-md text-xs text-muted-foreground">Sync billing data to populate this chart with real historical spend.</p>
+            </div>
           )}
         </div>
         <div className="grid grid-cols-3 gap-4 mt-4">
@@ -205,14 +181,18 @@ export function CostTrendChart({
           </div>
           <div className="border-l-4 border-danger pl-3">
             <p className="text-xs text-gray-500 dark:text-gray-400">Projected</p>
-            <p className="font-semibold text-lg font-inter">{formatCurrency(projectedSpend)}</p>
+            <p className="font-semibold text-lg font-inter">{projectedSpend > 0 ? formatCurrency(projectedSpend) : "Not available"}</p>
             <p className={`text-xs flex items-center ${projectionChange > 0 ? 'text-danger' : 'text-secondary'}`}>
-              {projectionChange > 0 ? (
-                <ArrowUpRight className="mr-1 h-3 w-3" />
-              ) : (
-                <ArrowDownRight className="mr-1 h-3 w-3" />
-              )}
-              {projectionChange > 0 ? '+' : ''}{projectionChange}% vs forecast
+              {projectedSpend > 0 ? (
+                <>
+                  {projectionChange > 0 ? (
+                    <ArrowUpRight className="mr-1 h-3 w-3" />
+                  ) : (
+                    <ArrowDownRight className="mr-1 h-3 w-3" />
+                  )}
+                  {projectionChange > 0 ? '+' : ''}{projectionChange}% vs forecast
+                </>
+              ) : "Awaiting forecast"}
             </p>
           </div>
           <div className="border-l-4 border-warning pl-3">

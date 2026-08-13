@@ -5,12 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, ZoomIn, ZoomOut } from "lucide-react";
 
-interface ConnectionLine {
-  source: string;
-  target: string;
-  type: string;
-}
-
 interface ResourceNode {
   id: number;
   type: string;
@@ -37,84 +31,43 @@ export function InfrastructureMap({
   const [selectedProvider, setSelectedProvider] = useState<string>("all");
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [zoom, setZoom] = useState<number>(1);
-  const [connections, setConnections] = useState<ConnectionLine[]>([]);
 
   const filteredResources = resources.filter(resource => 
     (selectedProvider === "all" || resource.provider === selectedProvider) &&
     (selectedRegion === "all" || resource.region === selectedRegion)
   );
 
-  // Generate mock connections between resources
-  useEffect(() => {
-    if (filteredResources.length === 0) return;
-    
-    const newConnections: ConnectionLine[] = [];
-    // Connect some nodes for visualization
-    for (let i = 1; i < filteredResources.length; i++) {
-      if (Math.random() > 0.3) { // 70% chance of connection
-        newConnections.push({
-          source: filteredResources[i-1].name,
-          target: filteredResources[i].name,
-          type: ["network", "data", "dependency"][Math.floor(Math.random() * 3)]
-        });
-      }
-    }
-    setConnections(newConnections);
-  }, [filteredResources]);
-
-  // Assign positions to nodes
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || filteredResources.length === 0) return;
+    if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
     const width = canvas.width;
     const height = canvas.height;
-    
-    // Clear canvas
     ctx.clearRect(0, 0, width, height);
+    if (filteredResources.length === 0) return;
+
+    const rootStyles = getComputedStyle(document.documentElement);
+    const labelColor = rootStyles.getPropertyValue("--foreground").trim();
+    const mutedColor = rootStyles.getPropertyValue("--muted-foreground").trim();
     
-    // Position nodes in a circular layout
     const centerX = width / 2;
     const centerY = height / 2;
     const radius = Math.min(width, height) * 0.35 * zoom;
     
-    // Assign positions to nodes
-    filteredResources.forEach((node, i) => {
+    const positionedResources = filteredResources.map((node, i) => {
       const angle = (i / filteredResources.length) * Math.PI * 2;
-      node.x = centerX + radius * Math.cos(angle);
-      node.y = centerY + radius * Math.sin(angle);
+      return {
+        ...node,
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      };
     });
-    
-    // Draw connections
-    ctx.lineWidth = 1;
-    connections.forEach(conn => {
-      const source = filteredResources.find(r => r.name === conn.source);
-      const target = filteredResources.find(r => r.name === conn.target);
-      
-      if (source && target && source.x && source.y && target.x && target.y) {
-        ctx.beginPath();
-        ctx.moveTo(source.x, source.y);
-        ctx.lineTo(target.x, target.y);
-        
-        // Set line color based on connection type
-        if (conn.type === 'network') {
-          ctx.strokeStyle = '#3b82f6'; // blue
-        } else if (conn.type === 'data') {
-          ctx.strokeStyle = '#10b981'; // green
-        } else {
-          ctx.strokeStyle = '#8b5cf6'; // purple
-        }
-        
-        ctx.stroke();
-      }
-    });
-    
-    // Draw nodes
-    filteredResources.forEach((node) => {
-      if (node.x && node.y) {
+
+    positionedResources.forEach((node) => {
+      if (typeof node.x === "number" && typeof node.y === "number") {
         ctx.beginPath();
         ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
         
@@ -133,16 +86,17 @@ export function InfrastructureMap({
         
         ctx.fill();
         
-        // Draw node label
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = labelColor ? `hsl(${labelColor})` : "#111827";
         ctx.font = '10px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(node.name, node.x, node.y + 20);
+        ctx.fillStyle = mutedColor ? `hsl(${mutedColor})` : "#6b7280";
+        ctx.fillText(node.provider.toUpperCase(), node.x, node.y + 34);
       }
     });
     
-  }, [filteredResources, connections, zoom]);
+  }, [filteredResources, zoom]);
 
   const handleZoomIn = () => {
     setZoom(prev => Math.min(prev + 0.1, 2));
@@ -159,9 +113,9 @@ export function InfrastructureMap({
     <Card className="col-span-3">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>Real-Time Infrastructure Map</CardTitle>
+          <CardTitle>Infrastructure Inventory Map</CardTitle>
           <CardDescription>
-            Visual topology of your cloud resources and their relationships
+            Live resource layout grouped by provider and region
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
@@ -229,15 +183,6 @@ export function InfrastructureMap({
               </Badge>
               <Badge variant="outline" className="bg-purple-100">
                 <span className="block w-2 h-2 rounded-full bg-purple-500 mr-1"></span> API Gateway
-              </Badge>
-              <Badge variant="outline" className="bg-blue-100">
-                <span className="block w-2 h-2 rounded-full bg-blue-500 mr-1"></span> Network
-              </Badge>
-              <Badge variant="outline" className="bg-green-100">
-                <span className="block w-2 h-2 rounded-full bg-green-500 mr-1"></span> Data
-              </Badge>
-              <Badge variant="outline" className="bg-purple-100">
-                <span className="block w-2 h-2 rounded-full bg-purple-500 mr-1"></span> Dependency
               </Badge>
             </div>
             <div className="rounded-md border bg-card h-96 relative overflow-hidden">

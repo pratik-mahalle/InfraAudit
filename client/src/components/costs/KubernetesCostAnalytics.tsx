@@ -1,6 +1,5 @@
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Server, TrendingUp, TrendingDown, Zap, Cpu, HardDrive, Wifi } from 'lucide-react';
+import { Loader2, Server, TrendingUp, TrendingDown, Zap, Cpu, HardDrive } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -40,61 +39,6 @@ interface KubernetesCostData {
     description: string;
   }>;
 }
-
-// Default/mock data to display when no real data is available
-const defaultCostData: KubernetesCostData = {
-  currentCost: {
-    totalCost: 2450.00,
-    breakdown: {
-      compute: 1200.00,
-      memory: 650.00,
-      storage: 380.00,
-      networking: 220.00
-    },
-    percentChange: 8.5,
-    changeDirection: 'increase'
-  },
-  projectedCost: {
-    totalCost: 2680.00,
-    percentChange: 9.4
-  },
-  potentialSavings: {
-    totalSavings: 485.00,
-    recommendationCount: 4
-  },
-  utilization: {
-    cpu: 62,
-    memory: 78,
-    storage: 45,
-    network: 34
-  },
-  recommendations: [
-    {
-      id: '1',
-      title: 'Right-size underutilized pods',
-      saving: 185.00,
-      description: '12 pods have CPU requests 3x higher than actual usage'
-    },
-    {
-      id: '2',
-      title: 'Enable cluster autoscaling',
-      saving: 150.00,
-      description: 'Scale down during off-peak hours to reduce costs'
-    },
-    {
-      id: '3',
-      title: 'Use spot instances for batch workloads',
-      saving: 95.00,
-      description: '3 batch jobs can run on interruptible spot instances'
-    },
-    {
-      id: '4',
-      title: 'Optimize persistent volume claims',
-      saving: 55.00,
-      description: '5 PVCs are provisioned but barely used'
-    }
-  ]
-};
 
 export default function KubernetesCostAnalytics() {
   const [, navigate] = useLocation();
@@ -145,14 +89,25 @@ export default function KubernetesCostAnalytics() {
   }
   
   // Check if we received a message indicating no clusters or invalid data
-  const showEmptyState = error || 
-                         !data || 
-                         (isErrorResponse(data) && data.message) ||
-                         !isValidCostData(data);
+  const hasEmptyState = Boolean(error || !data || (isErrorResponse(data) && data.message));
 
-  // Use real data if valid, otherwise use default mock data
-  const costData: KubernetesCostData = isValidCostData(data) ? data : defaultCostData;
-  const isUsingMockData = !isValidCostData(data);
+  if (hasEmptyState || !isValidCostData(data)) {
+    return (
+      <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
+        <Server className="mx-auto h-8 w-8 text-muted-foreground" />
+        <h4 className="mt-4 text-sm font-semibold text-foreground">No Kubernetes cost data available</h4>
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          Connect a Kubernetes cluster and sync cost data to populate utilization, projections, and savings recommendations.
+        </p>
+        <Button className="mt-4" onClick={() => navigate('/kubernetes')}>
+          <Server className="mr-2 h-4 w-4" />
+          Open Kubernetes
+        </Button>
+      </div>
+    );
+  }
+
+  const costData = data;
 
   return (
     <div className="space-y-6">
@@ -162,11 +117,6 @@ export default function KubernetesCostAnalytics() {
           <Server className="h-4 w-4 text-blue-500" />
           Kubernetes Cost Analytics
         </h4>
-        {isUsingMockData && (
-          <span className="text-xs px-2 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            Sample Data
-          </span>
-        )}
       </div>
       
       {/* Cost Overview Cards */}
@@ -263,7 +213,7 @@ export default function KubernetesCostAnalytics() {
                 <motion.div 
                   className={cn("h-full rounded-full", item.color)}
                   initial={{ width: 0 }}
-                  animate={{ width: `${Math.round((item.value / item.total) * 100)}%` }}
+                  animate={{ width: `${item.total > 0 ? Math.round((item.value / item.total) * 100) : 0}%` }}
                   transition={{ duration: 0.8, delay: 0.6 + index * 0.1 }}
                 />
               </div>
@@ -366,23 +316,6 @@ export default function KubernetesCostAnalytics() {
         </div>
       </motion.div>
       
-      {/* Connect CTA if using mock data */}
-      {isUsingMockData && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.5 }}
-          className="p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-violet-500/10 border border-blue-500/20 text-center"
-        >
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-            Connect your Kubernetes cluster to see real-time cost analytics
-          </p>
-          <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => navigate('/kubernetes')}>
-            <Server className="h-4 w-4 mr-2" />
-            Connect Kubernetes Cluster
-          </Button>
-        </motion.div>
-      )}
     </div>
   );
 }

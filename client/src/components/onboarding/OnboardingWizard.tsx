@@ -275,7 +275,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                                 onClick={handleExploreDemo}
                                 className="px-6"
                             >
-                                Explore with demo data
+                                Skip setup for now
                             </Button>
                             <span className="text-gray-400">or</span>
                             <Button
@@ -331,7 +331,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                 </div>
             </motion.div>
 
-            {/* Demo Cluster Section */}
+            {/* Guided setup section */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -343,10 +343,10 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                         <div className="flex items-start justify-between">
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                    Explore Demo Environment
+                                    Need to explore first?
                                 </h3>
                                 <p className="text-gray-500 mb-4">
-                                    Click and play with demo data to discover how InfraAudit can help you.
+                                    Open the workspace without connecting a provider. Live data appears after you connect an account.
                                 </p>
                                 <Button
                                     variant="outline"
@@ -354,13 +354,13 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                                     className="gap-2"
                                 >
                                     <Play className="h-4 w-4" />
-                                    Start Demo Tour
+                                    Open Workspace
                                 </Button>
                             </div>
                             <div className="hidden md:block text-right">
                                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-sm font-medium">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    Demo Available
+                                    Setup Optional
                                 </div>
                             </div>
                         </div>

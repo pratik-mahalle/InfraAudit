@@ -26,7 +26,7 @@ import SubscriptionCancel from "@/pages/SubscriptionCancel";
 import PricingPage from "@/pages/pricing";
 import KubernetesPage from "@/pages/KubernetesPage";
 import ArchitecturePlaygroundPage from "@/pages/architecture-playground";
-import AiAnalysisDemo from "@/pages/AiAnalysisDemo";
+import ResourceAnalysis from "@/pages/ResourceAnalysis";
 import RoiCalculator from "@/pages/RoiCalculator";
 import Guide from "@/pages/Guide";
 import APIPage from "@/pages/API";
@@ -78,6 +78,7 @@ const PROTECTED_ROUTES = [
   "/policies",
   "/reports",
   "/alerts",
+  "/resource-analysis",
   "/ai-demo",
 ];
 
@@ -191,8 +192,11 @@ function Router() {
             <ProtectedRoute path="/alerts">
               <WithTrialCheck><Alerts /></WithTrialCheck>
             </ProtectedRoute>
+            <ProtectedRoute path="/resource-analysis">
+              <WithTrialCheck><ResourceAnalysis /></WithTrialCheck>
+            </ProtectedRoute>
             <ProtectedRoute path="/ai-demo">
-              <WithTrialCheck><AiAnalysisDemo /></WithTrialCheck>
+              <WithTrialCheck><Redirect to="/resource-analysis" /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/reports/:id">
               <WithTrialCheck><ReportDetail /></WithTrialCheck>

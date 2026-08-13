@@ -289,7 +289,7 @@ function DriftFeedCard({ drifts, onPick, onViewAll }: {
             <SevPill sev={d.severity} />
             <div style={{ minWidth: 0 }}>
               <div className="ia-feed-title">{d.driftType || (d as any).title || "Drift detected"}</div>
-              <div className="ia-feed-meta">{(d as any).resource || "resource"} · {(d as any).cat || d.status}</div>
+              <div className="ia-feed-meta">{(d as any).resource || `Resource ${d.resourceId ?? d.id}`} · {(d as any).cat || d.status}</div>
             </div>
             <div>
               <div className="ia-feed-time">{(d as any).age || "recent"}</div>
@@ -441,7 +441,7 @@ function SavingsCard({ recommendations }: { recommendations: Recommendation[] })
 
 // ─── Findings Table ───────────────────────────────────────────────────────────
 
-function FindingsTable({ drifts, selId, onPick }: {
+function DriftTable({ drifts, selId, onPick }: {
   drifts: SecurityDrift[]; selId?: string | number; onPick: (d: SecurityDrift) => void;
 }) {
   const [sort, setSort] = useState<"sev" | "id">("sev");
@@ -458,10 +458,10 @@ function FindingsTable({ drifts, selId, onPick }: {
       drift.severity,
       (drift as any).resource || "",
       drift.driftType,
-      (drift as any).cloud || "aws",
+      (drift as any).cloud || "",
       drift.status,
     ]);
-    const csv = [["ID", "Severity", "Resource", "Finding", "Cloud", "Status"], ...rows]
+    const csv = [["ID", "Severity", "Resource", "Drift", "Cloud", "Status"], ...rows]
       .map((row) => row.map(escapeCsv).join(","))
       .join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -476,7 +476,7 @@ function FindingsTable({ drifts, selId, onPick }: {
     <div className="ia-card">
       <div className="ia-card-head">
         <div className="ia-card-title">
-          <Filter size={15} /> Open Findings
+          <Filter size={15} /> Open Drifts
           <span className="ia-eyebrow">{drifts.length} total{autoCount > 0 ? ` · ${autoCount} auto-remediable` : ""}</span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
@@ -494,7 +494,7 @@ function FindingsTable({ drifts, selId, onPick }: {
             <tr>
               <th onClick={() => setSort("sev")} style={{ width: 90 }}>Severity</th>
               <th>Resource</th>
-              <th style={{ width: 130 }}>Finding</th>
+              <th style={{ width: 130 }}>Drift</th>
               <th style={{ width: 88 }}>Cloud</th>
               <th style={{ width: 110 }}>Category</th>
               <th style={{ width: 90 }}>Age</th>
@@ -508,7 +508,7 @@ function FindingsTable({ drifts, selId, onPick }: {
                 <td>
                   <div className="ia-res-name">{(d as any).resource || `drift-${d.id}`}</div>
                   <div className="ia-res-sub">
-                    {d.driftType || (d as any).title || ""}
+                    {d.driftType || (d as any).title || "Configuration drift"}
                     {d.driftType === "security_check" && (
                       <span style={{ fontSize: 10, background: "var(--ia-brand)", color: "#fff", borderRadius: 4, padding: "1px 6px", marginLeft: 6, fontWeight: 600 }}>
                         Security
@@ -519,7 +519,7 @@ function FindingsTable({ drifts, selId, onPick }: {
                 <td><span className="ia-mono" style={{ fontSize: 11, color: "var(--ia-ink-3)" }}>
                   {typeof d.id === "string" ? d.id : `INF-${d.id}`}
                 </span></td>
-                <td><CloudChip cloud={(d as any).cloud || "aws"} /></td>
+                <td><CloudChip cloud={(d as any).cloud || "unknown"} /></td>
                 <td><span style={{ fontSize: 11.5, color: "var(--ia-ink-2)" }}>{(d as any).cat || d.status}</span></td>
                 <td><span className="ia-mono ia-muted" style={{ fontSize: 12 }}>{(d as any).age || "recent"}</span></td>
                 <td style={{ textAlign: "right" }}>
@@ -535,7 +535,7 @@ function FindingsTable({ drifts, selId, onPick }: {
             {drifts.length === 0 && (
               <tr>
                 <td colSpan={7} style={{ textAlign: "center", padding: "32px", color: "var(--ia-ink-faint)", fontSize: 13 }}>
-                  No findings — run a scan to detect drifts
+                  No drifts detected. Run a scan to compare current infrastructure against baselines.
                 </td>
               </tr>
             )}
@@ -571,8 +571,8 @@ function RemediationDrawer({ finding, onClose, onOpenWorkflow }: {
             </div>
             <div style={{ fontSize: 12, color: "var(--ia-ink-3)", marginTop: 3, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <span className="ia-mono">{typeof finding.id === "string" ? finding.id : `INF-${finding.id}`}</span>
-              · <CloudChip cloud={f.cloud || "aws"} />
-              · <span>{f.region || "us-east-1"}</span>
+              · <CloudChip cloud={f.cloud || "unknown"} />
+              · <span>{f.region || "region unavailable"}</span>
             </div>
           </div>
           <button className="ia-x-btn" onClick={onClose}><X size={16} /></button>
@@ -585,7 +585,7 @@ function RemediationDrawer({ finding, onClose, onOpenWorkflow }: {
           </p>
           <dl className="ia-kv" style={{ marginTop: 12 }}>
             <dt>Resource</dt>
-            <dd className="ia-mono">{f.resource || `resource-${finding.id}`} <span className="ia-muted">· {f.resourceType || "AWS resource"}</span></dd>
+            <dd className="ia-mono">{f.resource || `Resource ${finding.resourceId ?? finding.id}`} <span className="ia-muted">· {f.resourceType || "resource type unavailable"}</span></dd>
             {f.baseline && <><dt>IaC baseline</dt><dd className="ia-mono" style={{ fontSize: 12 }}>{f.baseline}</dd></>}
             {f.drift && (
               <>
@@ -720,7 +720,6 @@ export default function Dashboard() {
   const [, navigate] = useLocation();
   const [isScanning, setIsScanning] = useState(false);
   const [sel, setSel] = useState<SecurityDrift | null>(null);
-  const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d">("24h");
   const { toast } = useToast();
 
   // ── Queries ─────────────────────────────────────────────────────────────────
@@ -982,11 +981,6 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="ia-head-controls">
-            <div className="ia-seg">
-              {(["24h", "7d", "30d"] as const).map(r => (
-                <button key={r} className={timeRange === r ? "on" : ""} onClick={() => setTimeRange(r)}>{r}</button>
-              ))}
-            </div>
             <button className="ia-btn-ghost" onClick={() => scanMutation.mutate()} disabled={isScanning}>
               <RefreshCw size={13} style={isScanning ? { animation: "spin 1s linear infinite" } : {}} />
               {isScanning ? "Syncing…" : "Sync & scan"}
@@ -1024,7 +1018,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Findings table ── */}
-        <FindingsTable
+        <DriftTable
           drifts={activeDrifts}
           selId={sel?.id}
           onPick={setSel}
