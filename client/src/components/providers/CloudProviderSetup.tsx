@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -78,10 +78,24 @@ interface K8sCluster {
   version?: string;
 }
 
-export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean }) {
-  const [activeTab, setActiveTab] = useState<string>('aws');
+export function CloudProviderSetup({
+  showHeader = true,
+  showConnectedProviders = true,
+  initialTab = 'aws',
+  allowConnectedProviderUpdate = false,
+}: {
+  showHeader?: boolean;
+  showConnectedProviders?: boolean;
+  initialTab?: string;
+  allowConnectedProviderUpdate?: boolean;
+}) {
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   // Kubernetes tab state
   const [k8sPasteContent, setK8sPasteContent] = useState('');
@@ -404,6 +418,9 @@ export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean
   const isAwsConnected = providers.some(p => p.provider === 'aws' && p.isConnected);
   const isGcpConnected = providers.some(p => p.provider === 'gcp' && p.isConnected);
   const isAzureConnected = providers.some(p => p.provider === 'azure' && p.isConnected);
+  const awsSubmitLabel = isAwsConnected && allowConnectedProviderUpdate ? 'Update AWS Account' : 'Connect AWS Account';
+  const gcpSubmitLabel = isGcpConnected && allowConnectedProviderUpdate ? 'Update GCP Account' : 'Connect GCP Account';
+  const azureSubmitLabel = isAzureConnected && allowConnectedProviderUpdate ? 'Update Azure Account' : 'Connect Azure Account';
 
   return (
     <div className="space-y-6">
@@ -418,92 +435,93 @@ export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean
         </div>
       )}
 
-      {/* Connected providers */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {isLoadingProviders ? (
-          <Card className="col-span-full flex items-center justify-center p-6">
-            <Loader2 className="h-6 w-6 animate-spin mr-2" />
-            <p>Loading connected providers...</p>
-          </Card>
-        ) : providersError ? (
-          <Card className="col-span-full bg-destructive/10 p-6">
-            <AlertTriangle className="h-6 w-6 text-destructive mb-2" />
-            <h3 className="font-medium">Error loading providers</h3>
-            <p className="text-sm text-muted-foreground">
-              {(providersError as Error).message || "Failed to load connected cloud providers"}
-            </p>
-          </Card>
-        ) : providers.length === 0 ? (
-          <Card className="col-span-full p-6">
-            <div className="flex flex-col items-center justify-center gap-2 p-4">
-              <ServerCog className="h-10 w-10 text-muted-foreground mb-2" />
-              <h3 className="font-medium text-center">No cloud providers connected</h3>
-              <p className="text-sm text-muted-foreground text-center">
-                Connect your cloud providers below to start monitoring your infrastructure
-              </p>
-            </div>
-          </Card>
-        ) : (
-          providers.map((prov) => (
-            <Card key={prov.provider} className="overflow-hidden">
-              <CardHeader className="bg-primary/5">
-                <div className="flex justify-between items-center">
-                  {getProviderIcon(prov.provider.toUpperCase() as CloudProvider)}
-                  <div className="flex items-center">
-                    {prov.isConnected ? (
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center">
-                        <Check className="h-3 w-3 mr-1" /> Connected
-                      </span>
-                    ) : (
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full flex items-center">
-                        <AlertTriangle className="h-3 w-3 mr-1" /> Disconnected
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <CardTitle className="text-lg">{getProviderName(prov.provider.toUpperCase() as CloudProvider)}</CardTitle>
-                <CardDescription>
-                  {prov.lastSynced ? (
-                    <>Last synced: {new Date(prov.lastSynced).toLocaleString()}</>
-                  ) : (
-                    <>Not yet synced</>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardFooter className="flex justify-between pt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex items-center"
-                  onClick={() => handleRemoveProvider(prov.provider.toUpperCase() as CloudProvider)}
-                  disabled={removeProviderMutation.isPending}
-                >
-                  {removeProviderMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4 mr-1" />
-                  )}
-                  Disconnect
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  size="sm"
-                  className="flex items-center"
-                  onClick={() => syncProviderMutation.mutate(prov.provider)}
-                  disabled={syncProviderMutation.isPending}
-                >
-                  {syncProviderMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4 mr-1" />
-                  )}
-                  Sync now
-                </Button>
-              </CardFooter>
+      {showConnectedProviders && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {isLoadingProviders ? (
+            <Card className="col-span-full flex items-center justify-center p-6">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <p>Loading connected providers...</p>
             </Card>
-          ))
-        )}
-      </div>
+          ) : providersError ? (
+            <Card className="col-span-full bg-destructive/10 p-6">
+              <AlertTriangle className="h-6 w-6 text-destructive mb-2" />
+              <h3 className="font-medium">Error loading providers</h3>
+              <p className="text-sm text-muted-foreground">
+                {(providersError as Error).message || "Failed to load connected cloud providers"}
+              </p>
+            </Card>
+          ) : providers.length === 0 ? (
+            <Card className="col-span-full p-6">
+              <div className="flex flex-col items-center justify-center gap-2 p-4">
+                <ServerCog className="h-10 w-10 text-muted-foreground mb-2" />
+                <h3 className="font-medium text-center">No cloud providers connected</h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  Connect your cloud providers below to start monitoring your infrastructure
+                </p>
+              </div>
+            </Card>
+          ) : (
+            providers.map((prov) => (
+              <Card key={prov.provider} className="overflow-hidden">
+                <CardHeader className="bg-primary/5">
+                  <div className="flex justify-between items-center">
+                    {getProviderIcon(prov.provider.toUpperCase() as CloudProvider)}
+                    <div className="flex items-center">
+                      {prov.isConnected ? (
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center">
+                          <Check className="h-3 w-3 mr-1" /> Connected
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" /> Disconnected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <CardTitle className="text-lg">{getProviderName(prov.provider.toUpperCase() as CloudProvider)}</CardTitle>
+                  <CardDescription>
+                    {prov.lastSynced ? (
+                      <>Last synced: {new Date(prov.lastSynced).toLocaleString()}</>
+                    ) : (
+                      <>Not yet synced</>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardFooter className="flex justify-between pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center"
+                    onClick={() => handleRemoveProvider(prov.provider.toUpperCase() as CloudProvider)}
+                    disabled={removeProviderMutation.isPending}
+                  >
+                    {removeProviderMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-1" />
+                    )}
+                    Disconnect
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center"
+                    onClick={() => syncProviderMutation.mutate(prov.provider)}
+                    disabled={syncProviderMutation.isPending}
+                  >
+                    {syncProviderMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                    )}
+                    Sync now
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Connect new providers form */}
       <Card>
@@ -525,19 +543,19 @@ export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-4 mb-4">
-              <TabsTrigger value="aws" disabled={isAwsConnected}>
+              <TabsTrigger value="aws" disabled={isAwsConnected && !allowConnectedProviderUpdate}>
                 <div className="flex items-center">
                   <SiAmazon className="h-4 w-4 mr-2 text-orange-500" />
                   AWS
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="gcp" disabled={isGcpConnected}>
+              <TabsTrigger value="gcp" disabled={isGcpConnected && !allowConnectedProviderUpdate}>
                 <div className="flex items-center">
                   <SiGooglecloud className="h-4 w-4 mr-2 text-blue-500" />
                   GCP
                 </div>
               </TabsTrigger>
-              <TabsTrigger value="azure" disabled={isAzureConnected}>
+              <TabsTrigger value="azure" disabled={isAzureConnected && !allowConnectedProviderUpdate}>
                 <div className="flex items-center">
                   <Cloud className="h-4 w-4 mr-2 text-blue-700" />
                   Azure
@@ -553,7 +571,7 @@ export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean
 
             {/* AWS Form */}
             <TabsContent value="aws">
-              {isAwsConnected ? (
+              {isAwsConnected && !allowConnectedProviderUpdate ? (
                 <Alert>
                   <Check className="h-4 w-4" />
                   <AlertTitle>AWS Already Connected</AlertTitle>
@@ -654,7 +672,7 @@ export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean
                         ) : (
                           <CloudCog className="h-4 w-4 mr-2" />
                         )}
-                        {awsConnectionMutation.isPending ? 'Validating Credentials...' : 'Connect AWS Account'}
+                        {awsConnectionMutation.isPending ? 'Validating Credentials...' : awsSubmitLabel}
                       </Button>
                       {awsConnectionMutation.isError && (
                         <div className="text-sm text-red-500 flex items-center">
@@ -671,7 +689,7 @@ export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean
 
             {/* GCP Form */}
             <TabsContent value="gcp">
-              {isGcpConnected ? (
+              {isGcpConnected && !allowConnectedProviderUpdate ? (
                 <Alert>
                   <Check className="h-4 w-4" />
                   <AlertTitle>GCP Already Connected</AlertTitle>
@@ -746,7 +764,7 @@ export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean
                         ) : (
                           <CloudCog className="h-4 w-4 mr-2" />
                         )}
-                        {gcpConnectionMutation.isPending ? 'Validating Credentials...' : 'Connect GCP Account'}
+                        {gcpConnectionMutation.isPending ? 'Validating Credentials...' : gcpSubmitLabel}
                       </Button>
                       {gcpConnectionMutation.isError && (
                         <div className="text-sm text-red-500 flex items-center">
@@ -762,7 +780,7 @@ export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean
 
             {/* Azure Form */}
             <TabsContent value="azure">
-              {isAzureConnected ? (
+              {isAzureConnected && !allowConnectedProviderUpdate ? (
                 <Alert>
                   <Check className="h-4 w-4" />
                   <AlertTitle>Azure Already Connected</AlertTitle>
@@ -864,7 +882,7 @@ export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean
                         ) : (
                           <CloudCog className="h-4 w-4 mr-2" />
                         )}
-                        {azureConnectionMutation.isPending ? 'Validating Credentials...' : 'Connect Azure Account'}
+                        {azureConnectionMutation.isPending ? 'Validating Credentials...' : azureSubmitLabel}
                       </Button>
                       {azureConnectionMutation.isError && (
                         <div className="text-sm text-red-500 flex items-center">

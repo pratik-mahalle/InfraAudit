@@ -1,22 +1,5 @@
-import React, { ReactNode, useMemo, useState } from "react";
-import { useLocation, useSearch } from "wouter";
-import {
-  Bell,
-  Bug,
-  Cloud,
-  FileText,
-  Fingerprint,
-  GitBranch,
-  LucideIcon,
-  Scale,
-  Search,
-  Shield,
-  ShieldCheck,
-  Terminal,
-} from "lucide-react";
-import { CommandPalette } from "@/components/layout/CommandPalette";
-import { useAuth } from "@/hooks/use-auth";
-import { useDriftStream } from "@/hooks/use-drift-stream";
+import React, { ReactNode } from "react";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { cn } from "@/lib/utils";
 
 type Tone = "red" | "orange" | "yellow" | "blue" | "green" | "slate" | "cyan";
@@ -30,40 +13,6 @@ const toneClasses: Record<Tone, string> = {
   slate: "border-border bg-muted text-muted-foreground",
   cyan: "border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
 };
-
-const navGroups: Array<{
-  label: string;
-  items: Array<{ label: string; href: string; icon: LucideIcon; countKey?: string }>;
-}> = [
-  {
-    label: "Operations",
-    items: [
-      { label: "Command Center", href: "/security?view=all", icon: ShieldCheck },
-      { label: "Findings", href: "/security?view=findings", icon: Fingerprint, countKey: "findings" },
-      { label: "Vulnerabilities", href: "/security?view=vulnerabilities", icon: Bug, countKey: "vulnerabilities" },
-    ],
-  },
-  {
-    label: "Governance",
-    items: [
-      { label: "Compliance", href: "/security?view=compliance", icon: Scale },
-      { label: "Policies", href: "/policies", icon: FileText, countKey: "policies" },
-    ],
-  },
-  {
-    label: "Supply Chain",
-    items: [{ label: "SBOM Library", href: "/sbom", icon: Terminal, countKey: "sbom" }],
-  },
-  {
-    label: "Infrastructure",
-    items: [{ label: "Cloud Providers", href: "/cloud-providers", icon: Cloud }],
-  },
-];
-
-function normalizeCount(value?: number | string) {
-  if (value === undefined || value === null || value === "") return null;
-  return String(value);
-}
 
 export function SocBadge({
   children,
@@ -173,121 +122,24 @@ export function SocWorkspace({
   counts?: Record<string, number | string | undefined>;
   children: ReactNode;
 }) {
-  const [location, navigate] = useLocation();
-  const search = useSearch();
-  const [commandOpen, setCommandOpen] = useState(false);
-  const { user } = useAuth();
-  useDriftStream();
-
-  const initials = useMemo(() => {
-    const name = user?.fullName || user?.username || user?.email || "IA";
-    return name.split(/\s|@/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "IA";
-  }, [user]);
-  const currentSecurityView = new URLSearchParams(search).get("view") ?? "all";
-  const signalCount = Object.values(counts ?? {}).reduce<number>((total, value) => {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? total + parsed : total;
-  }, 0);
-
-  const isActive = (href: string) => {
-    const [path, query = ""] = href.split("?");
-    if (path === "/security") {
-      const view = new URLSearchParams(query).get("view") ?? "all";
-      return location === "/security" && currentSecurityView === view;
-    }
-    return location === path || location.startsWith(`${path}/`);
-  };
+  const metrics = Object.entries(counts ?? {}).filter(([, value]) => value !== undefined && value !== null && value !== "");
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="grid min-h-screen lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="border-b border-border bg-card lg:border-b-0 lg:border-r">
-          <div className="flex h-[72px] items-center justify-between border-b border-border px-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded border border-blue-500/50 bg-blue-500/10 text-blue-300">
-                <Shield className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">InfraAudit</p>
-                <p className="text-xs text-muted-foreground">Security Ops</p>
-              </div>
-            </div>
-            <SocBadge tone="green">Active</SocBadge>
-          </div>
-          <nav className="space-y-7 p-4">
-            {navGroups.map((group) => (
-              <div key={group.label}>
-                <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{group.label}</p>
-                <div className="space-y-1">
-                  {group.items.map((item) => {
-                    const active = isActive(item.href);
-                    const count = normalizeCount(item.countKey ? counts?.[item.countKey] : undefined);
-                    return (
-                      <button
-                        key={item.href}
-                        type="button"
-                        onClick={() => navigate(item.href)}
-                        className={cn(
-                          "flex h-10 w-full items-center gap-3 rounded-md border border-transparent px-3 text-left text-sm text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground",
-                          active && "border-primary/30 bg-primary/10 text-primary",
-                        )}
-                      >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                        {count && <span className="rounded border border-border bg-background px-2 py-0.5 font-mono text-xs text-muted-foreground">{count}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+    <DashboardLayout>
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-muted-foreground">{section}</p>
+          <h1 className="mt-1 text-2xl font-semibold text-foreground">{title}</h1>
+        </div>
+        {metrics.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {metrics.map(([key, value]) => (
+              <SocBadge key={key} tone="slate">{key} {value}</SocBadge>
             ))}
-          </nav>
-          <div className="mt-auto hidden border-t border-border p-4 text-xs text-muted-foreground lg:block">
-            <div className="flex justify-between"><span>Org</span><span>{user?.orgName || "Current org"}</span></div>
-            <div className="mt-2 flex justify-between"><span>Role</span><span>{user?.role || "member"}</span></div>
           </div>
-        </aside>
-
-        <main className="min-w-0 bg-background">
-          <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
-            <div className="flex min-h-[72px] flex-col gap-3 px-4 py-3 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{section}</p>
-                <h1 className="text-base font-semibold text-foreground">{title}</h1>
-              </div>
-              <div className="flex min-w-0 flex-1 items-center gap-3 xl:max-w-[720px]">
-                <button
-                  type="button"
-                  onClick={() => setCommandOpen(true)}
-                  className="relative flex h-10 min-w-0 flex-1 items-center rounded-md border border-border bg-background pl-10 pr-3 text-left text-sm text-muted-foreground hover:bg-muted"
-                >
-                  <Search className="absolute left-3 h-4 w-4" />
-                  <span className="truncate">Search findings, CVEs, resources...</span>
-                  <kbd className="ml-auto rounded border border-border bg-muted px-1.5 py-0.5 text-[10px]">⌘K</kbd>
-                </button>
-                <button className="relative flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground" type="button" aria-label="Notifications">
-                  <Bell className="h-4 w-4" />
-                </button>
-                <div className="hidden items-center gap-3 border-l border-border pl-4 md:flex">
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-foreground">{user?.fullName || user?.username || user?.email || "Account"}</p>
-                    <p className="text-xs text-muted-foreground">{user?.role || "member"}</p>
-                  </div>
-                  <div className="flex h-9 w-9 items-center justify-center rounded border border-primary/30 bg-primary/10 text-sm font-semibold text-primary">{initials}</div>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border px-4 py-2 font-mono text-xs text-muted-foreground">
-              <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> session <strong className="text-foreground">active</strong></span>
-              <span>signals <strong className="text-foreground">{signalCount}</strong></span>
-              <span className="flex items-center gap-2"><GitBranch className="h-3.5 w-3.5" /> policy data from API</span>
-              <span className="ml-auto hidden xl:inline">InfraAudit security workspace</span>
-            </div>
-          </header>
-          <div className="p-4 xl:p-5">{children}</div>
-        </main>
+        )}
       </div>
-      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
-    </div>
+      {children}
+    </DashboardLayout>
   );
 }
