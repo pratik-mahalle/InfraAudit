@@ -21,14 +21,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAcknowledgeAlert, useAlerts, useResolveAlert } from "@/hooks/use-alerts";
 import { useAssessments, useComplianceOverview } from "@/hooks/use-compliance";
-import { useAcknowledgeDrift, useApproveDriftAsBaseline, useDrifts, useResolveDrift, useTriggerDriftDetection } from "@/hooks/use-drifts";
+import { useAcknowledgeDrift, useApproveDriftAsBaseline, useDriftScan, useDriftScans, useDrifts, useResolveDrift, useTriggerDriftDetection } from "@/hooks/use-drifts";
 import { useFindings, useFindingSummary, useUpdateFindingStatus } from "@/hooks/use-findings";
 import { isTerminalQueueState, useQueueJobStatus } from "@/hooks/use-queue-job";
 import { useProviders } from "@/hooks/use-providers";
 import { useResources } from "@/hooks/use-resources";
 import { useTriggerVulnerabilityScan, useVulnerabilities, useVulnerabilityScan, useVulnerabilityScans } from "@/hooks/use-vulnerabilities";
 import { cn, formatTimeAgo } from "@/lib/utils";
-import type { Alert, Drift, Finding, FindingStatus, QueueJobStatus, Vulnerability, VulnerabilityScan, VulnerabilityScanDetail } from "@/lib/api";
+import type { Alert, Drift, DriftScan, DriftScanDetail, Finding, FindingStatus, QueueJobStatus, Vulnerability, VulnerabilityScan, VulnerabilityScanDetail } from "@/lib/api";
 import type { ComplianceAssessment } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { SocBadge, SocButton, SocPanel, SocProgress, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
@@ -99,6 +99,13 @@ function riskWeight(severity?: string) {
   if (severity === "medium") return 3;
   if (severity === "low") return 1;
   return 0;
+}
+
+function calculatePostureIndex(signals: SignalItem[]) {
+  const weightedExposure = signals.reduce((sum, item) => sum + riskWeight(item.severity), 0);
+  if (weightedExposure === 0) return 100;
+  const penalty = Math.min(95, Math.round(24 * Math.log10(1 + weightedExposure)));
+  return 100 - penalty;
 }
 
 function pct(closed: number, total: number) {
@@ -561,6 +568,59 @@ function VulnerabilityScanDrawer({ detail, open, onOpenChange, loading, error }:
   );
 }
 
+function DriftScanHistoryTable({ scans, onOpen }: { scans: DriftScan[]; onOpen: (id: number) => void }) {
+  if (scans.length === 0) {
+    return <EmptyState title="No drift scans recorded" description="Run a drift scan to create the first baseline comparison report." />;
+  }
+  return (
+    <div className="overflow-auto">
+      <table className="w-full min-w-[860px] text-left">
+        <thead className="border-b border-border text-xs text-muted-foreground">
+          <tr><th className="px-4 py-3 font-medium">Run</th><th className="px-4 py-3 font-medium">Status</th><th className="px-4 py-3 font-medium">Coverage</th><th className="px-4 py-3 font-medium">Results</th><th className="px-4 py-3 font-medium">Started</th><th className="px-4 py-3 text-right font-medium">Report</th></tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {scans.map((scan) => (
+            <tr key={scan.id} className="hover:bg-muted/50">
+              <td className="px-4 py-3"><p className="font-mono text-sm font-medium text-foreground">DRIFT-{scan.id}</p><p className="mt-1 text-xs text-muted-foreground">{formatLabel(scan.trigger)} · {formatLabel(scan.stage)}</p></td>
+              <td className="px-4 py-3"><SocBadge tone={scan.status === "completed" ? "green" : scan.status === "failed" ? "red" : scan.status === "running" ? "blue" : "slate"}>{scan.status}</SocBadge></td>
+              <td className="px-4 py-3"><p className="font-mono text-sm text-foreground">{scan.resourcesEvaluated} resources</p><p className="mt-1 text-xs text-muted-foreground">{scan.baselinesCreated} baselines created</p></td>
+              <td className="px-4 py-3"><p className="font-mono text-sm text-foreground">{scan.driftsDetected} observed</p><p className="mt-1 text-xs text-muted-foreground">{scan.driftsCreated} new · {scan.policyViolations} policy</p></td>
+              <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{formatTimeAgo(scan.startedAt || scan.createdAt)}</td>
+              <td className="px-4 py-3 text-right"><button type="button" onClick={() => onOpen(scan.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" title={`Open drift scan ${scan.id} report`}><Eye className="h-4 w-4" /></button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function DriftScanDrawer({ detail, open, onOpenChange, loading, error }: { detail?: DriftScanDetail; open: boolean; onOpenChange: (open: boolean) => void; loading: boolean; error: unknown }) {
+  const scan = detail?.scan;
+  const findings = detail?.findings ?? [];
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="flex h-full w-full flex-col overflow-y-auto p-0 sm:max-w-2xl lg:max-w-4xl">
+        <SheetHeader className="border-b border-border p-6 pr-12">
+          <div className="flex flex-wrap items-center gap-2"><SocBadge tone={scan?.status === "completed" ? "green" : scan?.status === "failed" ? "red" : "slate"}>{scan?.status ?? "loading"}</SocBadge>{scan && <span className="font-mono text-xs text-muted-foreground">DRIFT-{scan.id}</span>}</div>
+          <SheetTitle className="mt-3 text-xl">Drift scan report</SheetTitle>
+          <SheetDescription>{scan ? `${scan.resourcesEvaluated} resources compared · ${formatLabel(scan.trigger)}` : "Loading execution report"}</SheetDescription>
+        </SheetHeader>
+        {error ? <div className="p-6"><EmptyState title="Could not load drift report" description={error instanceof Error ? error.message : "The drift report request failed."} /></div> : loading || !scan ? <div className="flex flex-1 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div> : (
+          <div className="flex-1 space-y-5 p-6">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><SocStat label="Resources" value={scan.resourcesEvaluated} tone="blue" /><SocStat label="Drifts observed" value={scan.driftsDetected} tone={scan.driftsDetected ? "orange" : "green"} /><SocStat label="New records" value={scan.driftsCreated} tone={scan.driftsCreated ? "red" : "green"} /><SocStat label="Baselines created" value={scan.baselinesCreated} tone="slate" /></div>
+            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><MetaRow label="Stage" value={formatLabel(scan.stage)} /><MetaRow label="Policy violations" value={scan.policyViolations} /><MetaRow label="Started" value={formatTimeAgo(scan.startedAt || scan.createdAt)} /><MetaRow label="Completed" value={scan.completedAt ? formatTimeAgo(scan.completedAt) : "Not completed"} /></section>
+            {scan.errorMessage && <div className="rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">{scan.errorMessage}</div>}
+            <SocPanel title="Captured drifts" actions={<SocBadge tone="slate">{findings.length}</SocBadge>}>
+              {findings.length === 0 ? <div className="p-4 text-sm text-muted-foreground">No configuration drift was observed in this run.</div> : <div className="overflow-auto"><table className="w-full min-w-[720px] text-left"><thead className="border-b border-border text-xs text-muted-foreground"><tr><th className="px-4 py-3 font-medium">Drift</th><th className="px-4 py-3 font-medium">Severity</th><th className="px-4 py-3 font-medium">Resource</th><th className="px-4 py-3 font-medium">Status</th></tr></thead><tbody className="divide-y divide-border">{findings.map((finding, index) => <tr key={`${finding.id}-${finding.resourceIdStr}-${index}`}><td className="px-4 py-3"><p className="text-sm font-medium text-foreground">{formatLabel(finding.driftType)}</p><p className="mt-1 max-w-md truncate text-xs text-muted-foreground">{finding.description}</p></td><td className="px-4 py-3"><SocBadge tone={severityTone(finding.severity)}>{finding.severity}</SocBadge></td><td className="px-4 py-3 font-mono text-sm text-muted-foreground">{finding.resourceIdStr || finding.resourceId}</td><td className="px-4 py-3"><SocBadge tone={statusTone(finding.status)}>{formatLabel(finding.status)}</SocBadge></td></tr>)}</tbody></table></div>}
+            </SocPanel>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 function AssessmentHistoryTable({ assessments }: { assessments: ComplianceAssessment[] }) {
   if (assessments.length === 0) {
     return <EmptyState title="No compliance assessments recorded" description="Run an assessment from Compliance to create the first assessment record." />;
@@ -603,16 +663,20 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   const [driftJobId, setDriftJobId] = useState<number | null>(null);
   const [selectedScanId, setSelectedScanId] = useState<number | null>(null);
   const [scanDetailOpen, setScanDetailOpen] = useState(false);
+  const [selectedDriftScanId, setSelectedDriftScanId] = useState<number | null>(null);
+  const [driftScanDetailOpen, setDriftScanDetailOpen] = useState(false);
 
   const { data: providers = [], isLoading: providersLoading } = useProviders();
-  const { data: alertsResponse, isLoading: alertsLoading, isError: alertsError } = useAlerts();
+  const { data: alertsResponse, isLoading: alertsLoading, isError: alertsError } = useAlerts({ page: 1, pageSize: 100 });
   const { data: complianceOverview, isLoading: complianceLoading, isError: complianceError } = useComplianceOverview();
-  const { data: driftsResponse, isLoading: driftsLoading, isError: driftsError } = useDrifts();
+  const { data: driftsResponse, isLoading: driftsLoading, isError: driftsError } = useDrifts({ page: 1, pageSize: 100 });
   const { data: findingsResponse, isLoading: findingsLoading, isError: findingsError } = useFindings({ page: 1, pageSize: 100 });
   const { data: findingSummary } = useFindingSummary();
   const { data: vulnerabilitiesResponse, isLoading: vulnerabilitiesLoading, isError: vulnerabilitiesError } = useVulnerabilities();
   const { data: vulnerabilityScansResponse, isLoading: vulnerabilityScansLoading } = useVulnerabilityScans(activeView === "vulnerabilities");
   const { data: selectedScan, isLoading: selectedScanLoading, error: selectedScanError } = useVulnerabilityScan(selectedScanId);
+  const { data: driftScansResponse, isLoading: driftScansLoading } = useDriftScans(activeView === "drifts" || activeView === "overview");
+  const { data: selectedDriftScan, isLoading: selectedDriftScanLoading, error: selectedDriftScanError } = useDriftScan(selectedDriftScanId);
   const { data: assessments = [], isLoading: assessmentsLoading } = useAssessments("", 10, 0);
   const { data: resourcesResponse } = useResources();
   const { data: vulnerabilityJob, error: vulnerabilityJobError, isFetching: vulnerabilityJobFetching } = useQueueJobStatus(vulnerabilityJobId);
@@ -640,6 +704,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       queryClient.invalidateQueries({ queryKey: ["vulnerability-scans"] }),
       queryClient.invalidateQueries({ queryKey: ["findings"] }),
       queryClient.invalidateQueries({ queryKey: ["findings", "summary"] }),
+      queryClient.invalidateQueries({ queryKey: ["alerts"] }),
     ]);
   }, [queryClient, vulnerabilityJob?.status, vulnerabilityJobId]);
 
@@ -647,6 +712,8 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     if (!driftJobId || !isTerminalQueueState(driftJob?.status)) return;
     void Promise.all([
       queryClient.invalidateQueries({ queryKey: ["drifts"] }),
+      queryClient.invalidateQueries({ queryKey: ["drift-scans"] }),
+      queryClient.invalidateQueries({ queryKey: ["alerts"] }),
       queryClient.invalidateQueries({ queryKey: ["findings"] }),
       queryClient.invalidateQueries({ queryKey: ["findings", "summary"] }),
     ]);
@@ -657,10 +724,11 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   const findings: Finding[] = findingsResponse?.data ?? [];
   const vulnerabilities: Vulnerability[] = Array.isArray(vulnerabilitiesResponse) ? vulnerabilitiesResponse : vulnerabilitiesResponse?.data ?? [];
   const vulnerabilityScans = vulnerabilityScansResponse?.data ?? [];
+  const driftScans = driftScansResponse?.data ?? [];
   const resources = resourcesResponse?.data ?? [];
   const connectedProviders = providers.filter((item) => item.isConnected);
   const openFindings = findings.filter((finding) => !isClosedStatus(finding.status));
-  const openAlerts = alerts.filter((alert) => alert.status !== "resolved");
+  const openAlerts = alerts.filter((alert) => !isClosedStatus(alert.status));
   const openDrifts = drifts.filter((drift) => drift.status === "detected" || drift.status === "acknowledged");
   const openVulnerabilities = vulnerabilities.filter((vulnerability) => vulnerability.status === "open");
 
@@ -700,9 +768,9 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       type: "Alert" as const,
       displayId: `ALT-${alert.id}`,
       status: alert.status,
-      source: alert.type,
-      resourceId: alert.resourceId,
-      resourceName: resourceName(resources, alert.resourceId),
+      source: alert.sourceType || alert.type,
+      resourceId: alert.resource || alert.resourceId,
+      resourceName: alert.resource || resourceName(resources, alert.resourceId),
       time: alert.createdAt,
       raw: alert,
     })),
@@ -786,8 +854,6 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     : [];
   const loading = providersLoading || alertsLoading || driftsLoading || findingsLoading || vulnerabilitiesLoading || complianceLoading;
   const hasLoadError = alertsError || driftsError || findingsError || vulnerabilitiesError || complianceError;
-  const criticalOpen = openSecuritySignals.filter((item) => item.severity === "critical").length;
-  const highOpen = openSecuritySignals.filter((item) => item.severity === "high").length;
   const alertClosure = pct(alerts.filter((alert) => alert.status === "resolved").length, alerts.length);
   const driftClosure = pct(drifts.filter((drift) => drift.status === "resolved" || drift.status === "approved").length, drifts.length);
   const vulnerabilityClosure = pct(vulnerabilities.filter((vulnerability) => vulnerability.status === "fixed" || vulnerability.status === "patched").length, vulnerabilities.length);
@@ -795,7 +861,14 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   const failedControls = complianceOverview?.failedControls ?? 0;
   const totalControls = complianceOverview?.totalControls ?? 0;
   const compliancePercent = complianceOverview?.compliancePercent ?? 0;
-  const postureIndex = Math.max(0, 100 - Math.min(100, openSecuritySignals.reduce((sum, item) => sum + riskWeight(item.severity), 0)));
+  const postureSignals = useMemo(() => openSecuritySignals.filter((item) => {
+    if (item.type !== "Alert") return true;
+    const alert = item.raw as Alert;
+    return !alert.sourceType && alert.type !== "config_drift";
+  }), [openSecuritySignals]);
+  const postureIndex = calculatePostureIndex(postureSignals);
+  const criticalOpen = postureSignals.filter((item) => item.severity === "critical").length;
+  const highOpen = postureSignals.filter((item) => item.severity === "high").length;
 
   const resourceRisk = useMemo(() => {
     const rows = new Map<string, {
@@ -808,7 +881,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       resourceId?: string | number;
     }>();
 
-    openSecuritySignals.forEach((item) => {
+    postureSignals.forEach((item) => {
       if (!item.resourceId && item.resourceName === "No resource linked") return;
       const key = String(item.resourceId ?? item.resourceName);
       const existing = rows.get(key);
@@ -830,7 +903,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     });
 
     return Array.from(rows.values()).sort((a, b) => b.count - a.count || severityRank(b.maxSeverity) - severityRank(a.maxSeverity)).slice(0, 8);
-  }, [openSecuritySignals]);
+  }, [postureSignals]);
 
   const navigateView = (view: SecurityView) => {
     navigate(`/security?view=${queryFromView(view)}`);
@@ -845,6 +918,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     triggerDriftDetection.mutate(undefined, {
       onSuccess: (result) => {
         setDriftJobId(result.jobId ?? null);
+        void queryClient.invalidateQueries({ queryKey: ["drift-scans"] });
         toast({
           title: result.jobId ? "Drift scan queued" : "Drift scan started",
           description: result.jobId ? `Job #${result.jobId} is running on the ${result.queue ?? "scan"} queue.` : "InfraAudit is checking resource configuration drift.",
@@ -1076,6 +1150,23 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     </div>
   );
 
+  const renderDrifts = () => (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <SocButton onClick={runDriftScan} disabled={triggerDriftDetection.isPending || connectedProviders.length === 0}>
+          {triggerDriftDetection.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitCompareArrows className="h-4 w-4" />}
+          Run Drift Scan
+        </SocButton>
+      </div>
+      {renderScanStatus()}
+      <SignalFilters search={search} setSearch={setSearch} severity={severity} setSeverity={setSeverity} status={status} setStatus={setStatus} provider={provider} setProvider={setProvider} providers={providerOptions} />
+      <SignalTable items={filteredSignals} selectedId={selectedItem?.id} onSelect={openSignalDetail} emptyTitle="No active drift" emptyDescription="The current filters contain no configuration changes. Review scan history to confirm when resources were last compared." />
+      <SocPanel title="Drift scan history" actions={driftScansLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <SocBadge tone="slate">{driftScansResponse?.totalItems ?? driftScans.length}</SocBadge>}>
+        <DriftScanHistoryTable scans={driftScans} onOpen={(id) => { setSelectedDriftScanId(id); setDriftScanDetailOpen(true); }} />
+      </SocPanel>
+    </div>
+  );
+
   const renderVulnerabilities = () => {
     const lanes = ["Emergency", "Patch Window", "Fix Ready", "Backlog"].map((lane) => ({
       lane,
@@ -1141,6 +1232,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     if (activeView === "overview") return renderOverview();
     if (activeView === "vulnerabilities") return renderVulnerabilities();
     if (activeView === "compliance") return renderCompliance();
+    if (activeView === "drifts") return renderDrifts();
     return renderFindings();
   };
 
@@ -1176,6 +1268,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
           isPending={actionPending}
         />
         <VulnerabilityScanDrawer detail={selectedScan} open={scanDetailOpen} onOpenChange={setScanDetailOpen} loading={selectedScanLoading} error={selectedScanError} />
+        <DriftScanDrawer detail={selectedDriftScan} open={driftScanDetailOpen} onOpenChange={setDriftScanDetailOpen} loading={selectedDriftScanLoading} error={selectedDriftScanError} />
       </div>
     </SocWorkspace>
   );

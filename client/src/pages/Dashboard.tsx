@@ -752,7 +752,8 @@ export default function Dashboard() {
     refetchOnMount: "always",
   });
   const { data: alertsResponse, error: alertsError } = useQuery<any>({
-    queryKey: ["/api/alerts"],
+    queryKey: ["alerts", { page: 1, pageSize: 100 }],
+    queryFn: () => api.alerts.list({ page: 1, pageSize: 100 }),
     enabled: hasConnected,
     staleTime: 0,
     refetchOnMount: "always",
@@ -778,7 +779,8 @@ export default function Dashboard() {
     refetchOnMount: "always",
   });
   const { data: alertSummary } = useQuery<any>({
-    queryKey: ["/api/alerts/summary"],
+    queryKey: ["alerts", "summary"],
+    queryFn: () => api.alerts.getSummary(),
     enabled: hasConnected,
     staleTime: 0,
     refetchOnMount: "always",
@@ -850,10 +852,10 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["providers"] });
       queryClient.invalidateQueries({ queryKey: ["providers", "status"] });
       queryClient.invalidateQueries({ queryKey: ["drifts"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["resources"] });
       queryClient.invalidateQueries({ queryKey: ["drifts", "summary"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts/summary"] });
+      queryClient.invalidateQueries({ queryKey: ["alerts", "summary"] });
       queryClient.invalidateQueries({ queryKey: ["/api/v1/health-score"] });
     },
     onError: (e: any) => toast({ title: "Sync failed", description: e.message, variant: "destructive" }),

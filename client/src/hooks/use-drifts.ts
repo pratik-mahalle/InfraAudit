@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type Drift, type DriftParams, type DriftSummary, type PaginatedResponse } from '@/lib/api';
+import { api, type Drift, type DriftParams, type DriftScan, type DriftScanDetail, type DriftSummary, type PaginatedResponse } from '@/lib/api';
 
 export function useDrifts(params?: DriftParams) {
   return useQuery<PaginatedResponse<Drift>>({
@@ -23,6 +23,22 @@ export function useDriftSummary() {
   });
 }
 
+export function useDriftScans(enabled = true) {
+  return useQuery<PaginatedResponse<DriftScan>>({
+    queryKey: ['drift-scans'],
+    queryFn: () => api.drifts.listScans(1, 50),
+    enabled,
+  });
+}
+
+export function useDriftScan(id: number | null) {
+  return useQuery<DriftScanDetail>({
+    queryKey: ['drift-scans', id],
+    queryFn: () => api.drifts.getScan(id!),
+    enabled: id != null,
+  });
+}
+
 export function useTriggerDriftDetection() {
   const queryClient = useQueryClient();
   
@@ -30,6 +46,7 @@ export function useTriggerDriftDetection() {
     mutationFn: () => api.drifts.detect(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drifts'] });
+      queryClient.invalidateQueries({ queryKey: ['drift-scans'] });
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
     },
   });
