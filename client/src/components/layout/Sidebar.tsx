@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
@@ -78,10 +78,10 @@ const navGroups: NavGroup[] = [
     {
         label: "Security",
         items: [
-            { label: "Security Dashboard", href: "/security", icon: Shield },
-            { label: "Compliance", href: "/compliance", icon: FileCheck },
-            { label: "Findings", href: "/findings", icon: Fingerprint },
-            { label: "Vulnerabilities", href: "/vulnerabilities", icon: Lock },
+            { label: "Security Dashboard", href: "/security?view=all", icon: Shield },
+            { label: "Compliance", href: "/security?view=compliance", icon: FileCheck },
+            { label: "Findings", href: "/security?view=findings", icon: Fingerprint },
+            { label: "Vulnerabilities", href: "/security?view=vulnerabilities", icon: Lock },
             { label: "SBOM", href: "/sbom", icon: FileText },
             { label: "Policies", href: "/policies", icon: Scale },
         ],
@@ -120,7 +120,16 @@ const bottomNavItems: NavItem[] = [
 
 export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
     const [location] = useLocation();
-    const isActive = (href: string) => location === href;
+    const search = useSearch();
+    const currentSecurityView = new URLSearchParams(search).get("view") ?? "all";
+    const isActive = (href: string) => {
+        const [path, query = ""] = href.split("?");
+        if (path === "/security") {
+            const view = new URLSearchParams(query).get("view") ?? "all";
+            return location === "/security" && currentSecurityView === view;
+        }
+        return location === path;
+    };
     const { hasPermission } = usePermission();
 
     const filterByPermission = (items: NavItem[]) =>

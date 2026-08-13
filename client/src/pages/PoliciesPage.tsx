@@ -241,7 +241,7 @@ export default function PoliciesPage() {
         </SocPanel>
       </div>
 
-      <SocPanel className="mt-4" eyebrow="Live Evaluations" title="Policy Violations" actions={<SocBadge tone="green">last eval 4m ago</SocBadge>}>
+      <SocPanel className="mt-4" eyebrow="Live Evaluations" title="Policy Violations" actions={<SocBadge tone={openViolations.length > 0 ? "orange" : "green"}>{openViolations.length} open</SocBadge>}>
         <div className="divide-y divide-border">
           {openViolations.length === 0 ? (
             <div className="p-6 text-sm text-muted-foreground">No open policy violations.</div>

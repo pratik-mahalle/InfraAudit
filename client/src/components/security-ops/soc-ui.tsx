@@ -1,5 +1,5 @@
 import React, { ReactNode, useMemo, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import {
   Bell,
   Bug,
@@ -38,15 +38,15 @@ const navGroups: Array<{
   {
     label: "Operations",
     items: [
-      { label: "Command Center", href: "/security", icon: ShieldCheck },
-      { label: "Findings", href: "/findings", icon: Fingerprint, countKey: "findings" },
-      { label: "Vulnerabilities", href: "/vulnerabilities", icon: Bug, countKey: "vulnerabilities" },
+      { label: "Command Center", href: "/security?view=all", icon: ShieldCheck },
+      { label: "Findings", href: "/security?view=findings", icon: Fingerprint, countKey: "findings" },
+      { label: "Vulnerabilities", href: "/security?view=vulnerabilities", icon: Bug, countKey: "vulnerabilities" },
     ],
   },
   {
     label: "Governance",
     items: [
-      { label: "Compliance", href: "/compliance", icon: Scale },
+      { label: "Compliance", href: "/security?view=compliance", icon: Scale },
       { label: "Policies", href: "/policies", icon: FileText, countKey: "policies" },
     ],
   },
@@ -174,14 +174,29 @@ export function SocWorkspace({
   children: ReactNode;
 }) {
   const [location, navigate] = useLocation();
+  const search = useSearch();
   const [commandOpen, setCommandOpen] = useState(false);
   const { user } = useAuth();
   useDriftStream();
 
   const initials = useMemo(() => {
-    const name = user?.fullName || user?.username || user?.email || "PR";
-    return name.split(/\s|@/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "PR";
+    const name = user?.fullName || user?.username || user?.email || "IA";
+    return name.split(/\s|@/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "IA";
   }, [user]);
+  const currentSecurityView = new URLSearchParams(search).get("view") ?? "all";
+  const signalCount = Object.values(counts ?? {}).reduce<number>((total, value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? total + parsed : total;
+  }, 0);
+
+  const isActive = (href: string) => {
+    const [path, query = ""] = href.split("?");
+    if (path === "/security") {
+      const view = new URLSearchParams(query).get("view") ?? "all";
+      return location === "/security" && currentSecurityView === view;
+    }
+    return location === path || location.startsWith(`${path}/`);
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -194,10 +209,10 @@ export function SocWorkspace({
               </div>
               <div>
                 <p className="text-sm font-semibold text-foreground">InfraAudit</p>
-                <p className="text-xs text-muted-foreground">Security Ops · v2.4.1</p>
+                <p className="text-xs text-muted-foreground">Security Ops</p>
               </div>
             </div>
-            <SocBadge tone="green">Live</SocBadge>
+            <SocBadge tone="green">Active</SocBadge>
           </div>
           <nav className="space-y-7 p-4">
             {navGroups.map((group) => (
@@ -205,7 +220,7 @@ export function SocWorkspace({
                 <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{group.label}</p>
                 <div className="space-y-1">
                   {group.items.map((item) => {
-                    const active = location === item.href || location.startsWith(`${item.href}/`);
+                    const active = isActive(item.href);
                     const count = normalizeCount(item.countKey ? counts?.[item.countKey] : undefined);
                     return (
                       <button
@@ -228,9 +243,8 @@ export function SocWorkspace({
             ))}
           </nav>
           <div className="mt-auto hidden border-t border-border p-4 text-xs text-muted-foreground lg:block">
-            <div className="flex justify-between"><span>Region</span><span>us-east-1</span></div>
-            <div className="mt-2 flex justify-between"><span>Org</span><span>{user?.orgName || "acme-corp"}</span></div>
-            <div className="mt-2 flex justify-between"><span>Tenant</span><span>prod</span></div>
+            <div className="flex justify-between"><span>Org</span><span>{user?.orgName || "Current org"}</span></div>
+            <div className="mt-2 flex justify-between"><span>Role</span><span>{user?.role || "member"}</span></div>
           </div>
         </aside>
 
@@ -253,23 +267,21 @@ export function SocWorkspace({
                 </button>
                 <button className="relative flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground" type="button" aria-label="Notifications">
                   <Bell className="h-4 w-4" />
-                  <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-red-500" />
                 </button>
                 <div className="hidden items-center gap-3 border-l border-border pl-4 md:flex">
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-foreground">{user?.fullName || user?.username || "P. Ravi"}</p>
-                    <p className="text-xs text-muted-foreground">{user?.role || "security-eng"}</p>
+                    <p className="text-sm font-semibold text-foreground">{user?.fullName || user?.username || user?.email || "Account"}</p>
+                    <p className="text-xs text-muted-foreground">{user?.role || "member"}</p>
                   </div>
                   <div className="flex h-9 w-9 items-center justify-center rounded border border-primary/30 bg-primary/10 text-sm font-semibold text-primary">{initials}</div>
                 </div>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border px-4 py-2 font-mono text-xs text-muted-foreground">
-              <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> agents online <strong className="text-foreground">14/14</strong></span>
-              <span>last scan <strong className="text-foreground">12m ago</strong></span>
-              <span>evidence sync <strong className="text-foreground">healthy</strong></span>
-              <span className="flex items-center gap-2"><GitBranch className="h-3.5 w-3.5" /> policy@main</span>
-              <span className="ml-auto hidden xl:inline">© InfraAudit · shift + ? for shortcuts</span>
+              <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> session <strong className="text-foreground">active</strong></span>
+              <span>signals <strong className="text-foreground">{signalCount}</strong></span>
+              <span className="flex items-center gap-2"><GitBranch className="h-3.5 w-3.5" /> policy data from API</span>
+              <span className="ml-auto hidden xl:inline">InfraAudit security workspace</span>
             </div>
           </header>
           <div className="p-4 xl:p-5">{children}</div>

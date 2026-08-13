@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
@@ -35,12 +35,9 @@ import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import PrivacyPolicyPage from "@/pages/legal/PrivacyPolicyPage";
 import TermsOfServicePage from "@/pages/legal/TermsOfServicePage";
-import Compliance from "@/pages/Compliance";
 import Automation from "@/pages/Automation";
 import Recommendations from "@/pages/Recommendations";
 import DriftDetectionPage from "@/pages/DriftDetection";
-import VulnerabilitiesPage from "@/pages/Vulnerabilities";
-import FindingsPage from "@/pages/Findings";
 import FindingDetail from "@/pages/FindingDetail";
 import BillingImport from "@/pages/BillingImport";
 import IaCManagement from "@/pages/IaCManagement";
@@ -117,19 +114,19 @@ function Router() {
               <WithTrialCheck><Dashboard /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/security">
-              <WithTrialCheck><SecurityMonitoring defaultTab="drifts" /></WithTrialCheck>
+              <WithTrialCheck><SecurityMonitoring defaultTab="all" /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/drift-detection">
               <WithTrialCheck><DriftDetectionPage /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/vulnerabilities">
-              <WithTrialCheck><VulnerabilitiesPage /></WithTrialCheck>
+              <WithTrialCheck><Redirect to="/security?view=vulnerabilities" /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/findings/:id">
               <WithTrialCheck><FindingDetail /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/findings">
-              <WithTrialCheck><FindingsPage /></WithTrialCheck>
+              <WithTrialCheck><Redirect to="/security?view=findings" /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/recommendations">
               <WithTrialCheck><Recommendations /></WithTrialCheck>
@@ -177,7 +174,7 @@ function Router() {
               <WithTrialCheck><RoiCalculator /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/compliance">
-              <WithTrialCheck><Compliance /></WithTrialCheck>
+              <WithTrialCheck><Redirect to="/security?view=compliance" /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/automation">
               <WithTrialCheck><Automation /></WithTrialCheck>
