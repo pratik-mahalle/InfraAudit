@@ -192,6 +192,28 @@ export default function Vulnerabilities() {
     lane,
     items: filtered.filter((finding) => vulnerabilityLane(finding) === lane),
   })).filter((group) => group.items.length > 0);
+  const packageImpact = Object.entries(
+    findings.reduce<Record<string, number>>((counts, finding) => {
+      const evidence = findingEvidence(finding);
+      const pkg = String(evidence.package_name ?? evidence.packageName ?? finding.ruleId ?? "unknown");
+      counts[pkg] = (counts[pkg] ?? 0) + 1;
+      return counts;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]);
+  const resourceImpact = Object.entries(
+    findings.reduce<Record<string, number>>((counts, finding) => {
+      const resource = finding.resourceId || "not resource scoped";
+      counts[resource] = (counts[resource] ?? 0) + 1;
+      return counts;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]);
+  const scannerMix = Object.entries(
+    findings.reduce<Record<string, number>>((counts, finding) => {
+      const scanner = finding.scannerType || finding.sourceType || "unknown";
+      counts[scanner] = (counts[scanner] ?? 0) + 1;
+      return counts;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]);
   const activeScanJobStatus = scanJobStatus?.status ?? (scanJobId ? "available" : undefined);
   const scanJobIsActive = !!scanJobId && !scanJobStatusError && !isTerminalQueueState(activeScanJobStatus);
 
@@ -338,7 +360,7 @@ export default function Vulnerabilities() {
         </Card>
       )}
 
-      <div className="mt-6">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
         <FilterToolbar
           search={search}
           onSearchChange={setSearch}
@@ -348,6 +370,69 @@ export default function Vulnerabilities() {
             { value: statusFilter, onChange: setStatusFilter, placeholder: "Status", options: statusOptions },
           ]}
         />
+        <Card className="rounded-lg">
+          <CardContent className="flex h-full flex-col justify-center gap-3 p-3">
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant={severityFilter === "critical" ? "default" : "outline"} onClick={() => setSeverityFilter("critical")}>Critical</Button>
+              <Button size="sm" variant={severityFilter === "high" ? "default" : "outline"} onClick={() => setSeverityFilter("high")}>High</Button>
+              <Button size="sm" variant={statusFilter === "open" ? "default" : "outline"} onClick={() => setStatusFilter("open")}>Open</Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                setSearch("");
+                setSeverityFilter("all");
+                setStatusFilter("open");
+              }}>Reset</Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Fast filters keep the patch board focused on immediate remediation work.</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-6 grid gap-4 xl:grid-cols-3">
+        <Card className="rounded-lg">
+          <CardHeader>
+            <CardTitle>Package Impact</CardTitle>
+            <CardDescription>Most repeated vulnerable packages or CVE rules</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {packageImpact.slice(0, 5).map(([pkg, count]) => (
+              <button key={pkg} type="button" onClick={() => setSearch(pkg)} className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-muted/40">
+                <span className="truncate font-mono text-xs">{pkg}</span>
+                <ToneBadge value={count} tone="orange" />
+              </button>
+            ))}
+            {packageImpact.length === 0 && <p className="text-sm text-muted-foreground">No package evidence yet.</p>}
+          </CardContent>
+        </Card>
+        <Card className="rounded-lg">
+          <CardHeader>
+            <CardTitle>Affected Assets</CardTitle>
+            <CardDescription>Resources carrying the most open vulnerability fingerprints</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {resourceImpact.slice(0, 5).map(([resource, count]) => (
+              <button key={resource} type="button" onClick={() => setSearch(resource)} className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-muted/40">
+                <span className="truncate font-mono text-xs">{resource}</span>
+                <ToneBadge value={count} tone="red" />
+              </button>
+            ))}
+            {resourceImpact.length === 0 && <p className="text-sm text-muted-foreground">No affected resource evidence yet.</p>}
+          </CardContent>
+        </Card>
+        <Card className="rounded-lg">
+          <CardHeader>
+            <CardTitle>Scanner Sources</CardTitle>
+            <CardDescription>Which scanners contributed the current vulnerability set</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {scannerMix.slice(0, 5).map(([scanner, count]) => (
+              <button key={scanner} type="button" onClick={() => setSearch(scanner)} className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-muted/40">
+                <span className="truncate text-sm">{scanner}</span>
+                <ToneBadge value={count} tone="blue" />
+              </button>
+            ))}
+            {scannerMix.length === 0 && <p className="text-sm text-muted-foreground">No scanner evidence yet.</p>}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_440px]">

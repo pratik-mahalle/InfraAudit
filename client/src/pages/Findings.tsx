@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, FileSearch, Fingerprint, ListFilter, ShieldCheck } from "lucide-react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PageHeader } from "@/components/dashboard/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useFindings, useFindingSummary, useUpdateFindingStatus } from "@/hooks/use-findings";
@@ -153,6 +154,20 @@ export default function Findings() {
       count: findings.filter((finding) => finding.findingType === option.value).length,
     }))
     .filter((item) => item.count > 0);
+  const providerMix = Object.entries(
+    findings.reduce<Record<string, number>>((counts, finding) => {
+      const provider = finding.provider?.toUpperCase() || "UNKNOWN";
+      counts[provider] = (counts[provider] ?? 0) + 1;
+      return counts;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]);
+  const sourceMix = Object.entries(
+    findings.reduce<Record<string, number>>((counts, finding) => {
+      const source = formatFindingLabel(finding.scannerType || finding.sourceType || "unknown");
+      counts[source] = (counts[source] ?? 0) + 1;
+      return counts;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]);
 
   const handleStatusChange = (nextStatus: FindingStatus) => {
     if (!selectedFinding) return;
@@ -179,7 +194,7 @@ export default function Findings() {
         <MetricTile icon={ListFilter} label="Critical / High" value={(bySeverity.critical ?? 0) + (bySeverity.high ?? 0)} tone="orange" helper="Priority queue" />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <FilterToolbar
           search={search}
           onSearchChange={setSearch}
@@ -191,6 +206,23 @@ export default function Findings() {
             { value: sourceType, onChange: setSourceType, placeholder: "Source", options: sourceOptions, widthClassName: "sm:w-[170px]" },
           ]}
         />
+        <Card className="rounded-lg">
+          <CardContent className="flex h-full flex-col justify-center gap-3 p-3">
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant={status === "open" ? "default" : "outline"} onClick={() => setStatus("open")}>Open</Button>
+              <Button size="sm" variant={severity === "critical" ? "default" : "outline"} onClick={() => setSeverity("critical")}>Critical</Button>
+              <Button size="sm" variant={findingType === "compliance_violation" ? "default" : "outline"} onClick={() => setFindingType("compliance_violation")}>Audit</Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                setSearch("");
+                setSeverity("all");
+                setStatus("open");
+                setFindingType("all");
+                setSourceType("all");
+              }}>Reset</Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Quick filters update the board immediately.</p>
+          </CardContent>
+        </Card>
       </div>
 
       {isError && (
@@ -206,14 +238,43 @@ export default function Findings() {
             <CardDescription>{filtered.length} findings grouped by analyst workflow</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {typeMix.length > 0 && (
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                {typeMix.slice(0, 8).map((item) => (
-                  <div key={item.value} className="rounded-lg border p-3">
-                    <p className="text-xs text-muted-foreground">{item.label}</p>
-                    <p className="mt-1 text-lg font-semibold">{item.count}</p>
+            {(typeMix.length > 0 || providerMix.length > 0 || sourceMix.length > 0) && (
+              <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_220px_220px]">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  {typeMix.slice(0, 8).map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => setFindingType(item.value)}
+                      className="rounded-lg border p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+                    >
+                      <p className="text-xs text-muted-foreground">{item.label}</p>
+                      <p className="mt-1 text-lg font-semibold">{item.count}</p>
+                    </button>
+                  ))}
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Providers</p>
+                  <div className="space-y-2">
+                    {providerMix.slice(0, 4).map(([provider, count]) => (
+                      <button key={provider} type="button" onClick={() => setSearch(provider.toLowerCase())} className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-sm hover:bg-muted">
+                        <span>{provider}</span>
+                        <ToneBadge value={count} tone="slate" />
+                      </button>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Sources</p>
+                  <div className="space-y-2">
+                    {sourceMix.slice(0, 4).map(([source, count]) => (
+                      <button key={source} type="button" onClick={() => setSearch(source.toLowerCase())} className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-sm hover:bg-muted">
+                        <span className="truncate">{source}</span>
+                        <ToneBadge value={count} tone="slate" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
             {isLoading ? (
