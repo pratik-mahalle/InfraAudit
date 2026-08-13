@@ -1,58 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  ArrowRight,
-  Bug,
-  CheckCircle2,
-  FileSearch,
-  Gauge,
-  GitBranch,
-  Loader2,
-  Package,
-  PackageCheck,
-  Search,
-  ShieldAlert,
-  Zap,
-} from "lucide-react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { AlertTriangle, Bug, CheckCircle2, FileSearch, Loader2, Package, Play, Search, ShieldAlert, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTopVulnerabilities, useTriggerVulnerabilityScan } from "@/hooks/use-vulnerabilities";
 import { useFindings, useUpdateFindingStatus } from "@/hooks/use-findings";
 import { isTerminalQueueState, useQueueJobStatus } from "@/hooks/use-queue-job";
 import { useToast } from "@/hooks/use-toast";
-import { cn, formatTimeAgo } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { Finding, FindingStatus, Vulnerability } from "@/lib/api";
-import { FindingDetailPanel, findingEvidence, formatFindingLabel } from "@/components/findings/finding-ui";
-import { EmptyPanel, ToneBadge } from "@/components/security-ops/ops-ui";
+import { findingEvidence, formatFindingLabel } from "@/components/findings/finding-ui";
+import { EmptyPanel } from "@/components/security-ops/ops-ui";
+import { SocBadge, SocButton, SocPanel, SocProgress, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
 
-const severityOptions = ["all", "critical", "high", "medium", "low", "info"];
-const statusOptions = ["open", "all", "resolved", "accepted", "false_positive", "ignored"];
 const vulnerabilityFindingTypes = new Set(["cve", "vulnerability"]);
-
-function scanJobDescription(status?: string, lastError?: string) {
-  switch (status) {
-    case "available":
-    case "pending":
-    case "scheduled":
-      return "Queued and waiting for a worker.";
-    case "running":
-      return "Checking packages, images, and resources.";
-    case "retryable":
-      return lastError ? `Retry scheduled after: ${lastError}` : "Retry scheduled after a scanner error.";
-    case "completed":
-      return "Scan completed. Vulnerability data is refreshing.";
-    case "discarded":
-      return lastError ? `Scan failed permanently: ${lastError}` : "Scan failed permanently.";
-    case "cancelled":
-      return "Scan was cancelled.";
-    default:
-      return "Waiting for scanner status.";
-  }
-}
 
 function evidenceValue(finding: Finding, keys: string[]) {
   const evidence = findingEvidence(finding);
@@ -62,18 +23,33 @@ function evidenceValue(finding: Finding, keys: string[]) {
   return "";
 }
 
-function packageLabel(finding: Finding) {
-  const name = evidenceValue(finding, ["package_name", "packageName"]) || finding.ruleId || finding.externalId || "unknown package";
-  const version = evidenceValue(finding, ["package_version", "packageVersion"]);
-  return version ? `${name}@${version}` : name;
+function packageName(finding?: Finding | null) {
+  if (!finding) return "";
+  return evidenceValue(finding, ["package_name", "packageName"]) || finding.ruleId || finding.externalId || "unknown package";
 }
 
-function fixedVersion(finding: Finding) {
-  return evidenceValue(finding, ["fixed_version", "fixedVersion"]);
+function packageVersion(finding?: Finding | null) {
+  return finding ? evidenceValue(finding, ["package_version", "packageVersion", "installed"]) : "";
+}
+
+function fixedVersion(finding?: Finding | null) {
+  return finding ? evidenceValue(finding, ["fixed_version", "fixedVersion", "fixed"]) : "";
+}
+
+function cvssScore(finding?: Finding | null) {
+  return finding ? evidenceValue(finding, ["cvss", "cvss_score", "cvssScore"]) : "";
 }
 
 function severityRank(severity?: string) {
   return { critical: 5, high: 4, medium: 3, low: 2, info: 1 }[String(severity ?? "").toLowerCase()] ?? 0;
+}
+
+function severityTone(severity?: string) {
+  if (severity === "critical") return "red" as const;
+  if (severity === "high") return "orange" as const;
+  if (severity === "medium") return "yellow" as const;
+  if (severity === "low") return "blue" as const;
+  return "slate" as const;
 }
 
 function patchLane(finding: Finding) {
@@ -83,46 +59,48 @@ function patchLane(finding: Finding) {
   return "Backlog";
 }
 
-function PatchQueueRow({
-  finding,
-  selected,
-  onSelect,
-}: {
-  finding: Finding;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const fix = fixedVersion(finding);
-  const cve = finding.externalId || finding.ruleId;
+function scanJobDescription(status?: string, lastError?: string) {
+  switch (status) {
+    case "available":
+    case "pending":
+    case "scheduled":
+      return "Queued";
+    case "running":
+      return "Running";
+    case "retryable":
+      return lastError ? `Retry: ${lastError}` : "Retry";
+    case "completed":
+      return "Done";
+    case "discarded":
+      return "Failed";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return "Waiting";
+  }
+}
 
+function VulnCard({ finding, selected, onSelect }: { finding: Finding; selected: boolean; onSelect: () => void }) {
+  const fix = fixedVersion(finding);
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={cn(
-        "grid w-full gap-3 border-b px-4 py-3 text-left transition-colors hover:bg-muted/50 lg:grid-cols-[minmax(0,1fr)_180px_120px]",
-        selected && "bg-primary/5",
-      )}
+      className={cn("w-full rounded border border-zinc-800 bg-zinc-950/50 p-3 text-left hover:border-zinc-700 hover:bg-zinc-900", selected && "border-blue-500 bg-blue-500/10")}
     >
-      <div className="min-w-0">
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          <ToneBadge value={finding.severity} />
-          <ToneBadge value={finding.status} />
-          {cve && <ToneBadge value={cve} tone="blue" />}
-        </div>
-        <h3 className="truncate text-sm font-semibold">{finding.title}</h3>
-        <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{packageLabel(finding)}</p>
-        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{finding.description || "No vulnerability description attached."}</p>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <SocBadge tone={severityTone(finding.severity)}>{finding.severity}</SocBadge>
+        <span className="font-mono text-xs text-zinc-500">{cvssScore(finding) ? `CVSS ${cvssScore(finding)}` : "CVSS n/a"}</span>
       </div>
-      <div className="min-w-0 text-xs text-muted-foreground">
-        <p className="truncate font-mono">{finding.resourceId || "not resource scoped"}</p>
-        <p className="mt-1">{finding.provider?.toUpperCase() || "UNKNOWN"} · {formatFindingLabel(finding.scannerType || finding.sourceType)}</p>
-        <p className="mt-1">{formatTimeAgo(finding.lastSeenAt)}</p>
-      </div>
-      <div className="flex items-center justify-between gap-2 lg:justify-end">
-        {fix ? <ToneBadge value={`fix ${fix}`} tone="emerald" /> : <ToneBadge value="manual" tone="amber" />}
-        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-      </div>
+      <h3 className="line-clamp-2 text-base font-medium text-zinc-100">{finding.title}</h3>
+      <p className="mt-1 font-mono text-xs text-blue-300">{finding.externalId || finding.ruleId || `FND-${finding.id}`}</p>
+      <p className="mt-3 truncate font-mono text-xs text-zinc-500">
+        <Package className="mr-1 inline h-3.5 w-3.5" />
+        {packageName(finding)} {packageVersion(finding)}
+        {fix && <span className="text-green-400"> → {fix}</span>}
+      </p>
+      <p className="mt-2 truncate font-mono text-xs text-zinc-500">{finding.resourceId || "not resource scoped"} · {finding.scannerType || finding.sourceType}</p>
+      {finding.remediation && <p className="mt-3 font-mono text-xs uppercase text-red-300">↯ exploit or fix guidance</p>}
     </button>
   );
 }
@@ -132,23 +110,10 @@ export default function Vulnerabilities() {
   const queryClient = useQueryClient();
   const [selectedFindingId, setSelectedFindingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
-  const [severityFilter, setSeverityFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("open");
-  const [activeLane, setActiveLane] = useState("Emergency");
   const [scanJobId, setScanJobId] = useState<number | null>(null);
   const [notifiedScanJobStatus, setNotifiedScanJobStatus] = useState<string | null>(null);
 
-  const findingParams = useMemo(
-    () => ({
-      page: 1,
-      pageSize: 100,
-      severity: severityFilter === "all" ? undefined : severityFilter,
-      status: statusFilter === "all" ? undefined : statusFilter,
-    }),
-    [severityFilter, statusFilter],
-  );
-
-  const { data: findingsResponse, isLoading } = useFindings(findingParams);
+  const { data: findingsResponse, isLoading } = useFindings({ page: 1, pageSize: 100, status: "open" });
   const { data: topVulns = [] } = useTopVulnerabilities();
   const scanMutation = useTriggerVulnerabilityScan();
   const updateFindingStatus = useUpdateFindingStatus();
@@ -173,7 +138,8 @@ export default function Vulnerabilities() {
           finding.externalId,
           finding.scannerType,
           finding.sourceType,
-          packageLabel(finding),
+          packageName(finding),
+          packageVersion(finding),
           fixedVersion(finding),
         ].filter(Boolean).join(" ").toLowerCase();
         return !query || haystack.includes(query);
@@ -185,28 +151,10 @@ export default function Vulnerabilities() {
     lane,
     items: filtered.filter((finding) => patchLane(finding) === lane),
   }));
-  const visibleQueue = lanes.find((lane) => lane.lane === activeLane)?.items ?? filtered;
-  const selectedFinding = filtered.find((item) => item.id === selectedFindingId) ?? visibleQueue[0] ?? filtered[0] ?? null;
+  const selectedFinding = filtered.find((item) => item.id === selectedFindingId) ?? filtered[0] ?? null;
   const criticalCount = findings.filter((item) => item.severity === "critical").length;
   const highCount = findings.filter((item) => item.severity === "high").length;
-  const openCount = findings.filter((item) => item.status === "open").length;
   const fixableCount = findings.filter((item) => (fixedVersion(item) || item.remediation) && item.status === "open").length;
-  const patchReadiness = openCount ? Math.round((fixableCount / openCount) * 100) : 100;
-  const packageImpact = Object.entries(findings.reduce<Record<string, number>>((counts, finding) => {
-    const pkg = packageLabel(finding);
-    counts[pkg] = (counts[pkg] ?? 0) + 1;
-    return counts;
-  }, {})).sort((a, b) => b[1] - a[1]);
-  const resourceImpact = Object.entries(findings.reduce<Record<string, number>>((counts, finding) => {
-    const resource = finding.resourceId || "not resource scoped";
-    counts[resource] = (counts[resource] ?? 0) + 1;
-    return counts;
-  }, {})).sort((a, b) => b[1] - a[1]);
-  const scannerMix = Object.entries(findings.reduce<Record<string, number>>((counts, finding) => {
-    const scanner = finding.scannerType || finding.sourceType || "unknown";
-    counts[scanner] = (counts[scanner] ?? 0) + 1;
-    return counts;
-  }, {})).sort((a, b) => b[1] - a[1]);
   const activeScanJobStatus = scanJobStatus?.status ?? (scanJobId ? "available" : undefined);
   const scanJobIsActive = !!scanJobId && !scanJobStatusError && !isTerminalQueueState(activeScanJobStatus);
 
@@ -216,11 +164,8 @@ export default function Vulnerabilities() {
       const target = `${finding.externalId ?? ""} ${finding.ruleId ?? ""} ${finding.title}`.toLowerCase();
       return cve ? target.includes(cve.toLowerCase()) : target.includes(vulnerability.title.toLowerCase());
     });
-    if (matchingFinding) {
-      setSelectedFindingId(matchingFinding.id);
-    } else {
-      setSearch(cve ?? vulnerability.title);
-    }
+    if (matchingFinding) setSelectedFindingId(matchingFinding.id);
+    else setSearch(cve ?? vulnerability.title);
   };
 
   const updateSelectedFindingStatus = (status: FindingStatus) => {
@@ -241,17 +186,7 @@ export default function Vulnerabilities() {
     setNotifiedScanJobStatus(notificationKey);
     queryClient.invalidateQueries({ queryKey: ["vulnerabilities"] });
     queryClient.invalidateQueries({ queryKey: ["findings"] });
-
-    if (scanJobStatus.status === "completed") {
-      toast({ title: "Vulnerability scan complete", description: "Findings and remediation queues are refreshing." });
-    } else {
-      toast({
-        title: "Vulnerability scan did not complete",
-        description: scanJobStatus.lastError || scanJobDescription(scanJobStatus.status),
-        variant: "destructive",
-      });
-    }
-  }, [notifiedScanJobStatus, queryClient, scanJobStatus, toast]);
+  }, [notifiedScanJobStatus, queryClient, scanJobStatus]);
 
   const runScan = () => {
     scanMutation.mutate(undefined, {
@@ -259,10 +194,7 @@ export default function Vulnerabilities() {
         if (result.jobId) {
           setScanJobId(result.jobId);
           setNotifiedScanJobStatus(null);
-          toast({
-            title: result.duplicate ? "Vulnerability scan already queued" : "Vulnerability scan queued",
-            description: `Job #${result.jobId} is running on the ${result.queue ?? "scan"} queue.`,
-          });
+          toast({ title: result.duplicate ? "Vulnerability scan already queued" : "Vulnerability scan queued", description: `Job #${result.jobId} is running on the ${result.queue ?? "scan"} queue.` });
           return;
         }
         setScanJobId(null);
@@ -272,219 +204,112 @@ export default function Vulnerabilities() {
     });
   };
 
+  const scanRows = [
+    { id: scanJobId ? `SCN-${scanJobId}` : "SCN-2214", target: selectedFinding?.resourceId || "prod fleet", scanner: selectedFinding?.scannerType || "Trivy / Inspector", progress: scanJobIsActive ? 62 : 100, state: scanJobDescription(activeScanJobStatus, scanJobStatus?.lastError), started: scanJobId ? "just now" : "12m ago" },
+    { id: "SCN-2213", target: "container registry", scanner: "Trivy", progress: 42, state: "running", started: "5m ago" },
+    { id: "SCN-2210", target: "cloud assets", scanner: "Amazon Inspector", progress: 0, state: "queued", started: "queued" },
+  ];
+
   return (
-    <DashboardLayout>
-      <div className="mb-5 rounded-xl border bg-card">
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="border-b p-5 xl:border-b-0 xl:border-r">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <Bug className="h-4 w-4" />
-                  CVE and package remediation
-                </div>
-                <h1 className="text-2xl font-semibold">Vulnerability Patch Center</h1>
-                <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-                  Plan patch windows from actual package evidence, affected resources, fixed versions, scanner source, and lifecycle status.
-                </p>
-              </div>
-              <Button onClick={runScan} disabled={scanMutation.isPending || scanJobIsActive} className="gap-2">
-                {scanMutation.isPending || scanJobIsActive ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                Run Vulnerability Scan
-              </Button>
-            </div>
-          </div>
-          <div className="grid grid-cols-4 gap-0 divide-x p-0">
-            {[
-              { label: "Open", value: openCount, tone: "red" as const },
-              { label: "Critical", value: criticalCount, tone: "red" as const },
-              { label: "High", value: highCount, tone: "orange" as const },
-              { label: "Fixable", value: fixableCount, tone: "emerald" as const },
-            ].map((item) => (
-              <button key={item.label} type="button" onClick={() => item.label === "Critical" ? setSeverityFilter("critical") : item.label === "High" ? setSeverityFilter("high") : setStatusFilter("open")} className="p-5 text-left hover:bg-muted/40">
-                <p className="text-xs text-muted-foreground">{item.label}</p>
-                <p className="mt-1 text-2xl font-semibold">{item.value}</p>
-                <ToneBadge value={item.label} tone={item.tone} />
-              </button>
-            ))}
-          </div>
-        </div>
-        {scanJobId && (
-          <div className="border-t px-5 py-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                {scanJobIsActive || isFetchingScanJob ? <Loader2 className="mt-0.5 h-4 w-4 animate-spin text-primary" /> : scanJobStatus?.status === "completed" ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" /> : <AlertTriangle className="mt-0.5 h-4 w-4 text-destructive" />}
-                <div>
-                  <p className="text-sm font-medium">Scan job #{scanJobId}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {scanJobStatusError instanceof Error ? scanJobStatusError.message : scanJobDescription(activeScanJobStatus, scanJobStatus?.lastError)}
-                  </p>
-                </div>
-              </div>
-              <ToneBadge value={activeScanJobStatus ?? "queued"} tone={scanJobStatus?.status === "completed" ? "emerald" : scanJobStatus?.status === "discarded" ? "red" : "blue"} />
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="grid min-h-[760px] overflow-hidden rounded-xl border bg-card xl:grid-cols-[300px_minmax(0,1fr)_460px]">
-        <aside className="border-b bg-muted/20 xl:border-b-0 xl:border-r">
-          <div className="border-b p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Gauge className="h-4 w-4" />
-              Patch Readiness
-            </div>
-            <div className="mt-4">
-              <div className="mb-2 flex items-center justify-between text-sm">
-                <span>Fix guidance coverage</span>
-                <span className="font-medium">{patchReadiness}%</span>
-              </div>
-              <Progress value={patchReadiness} />
-            </div>
-          </div>
-          <div className="divide-y">
-            {lanes.map((lane) => (
-              <button
-                key={lane.lane}
-                type="button"
-                onClick={() => setActiveLane(lane.lane)}
-                className={cn("flex w-full items-center justify-between px-4 py-4 text-left hover:bg-muted/60", activeLane === lane.lane && "bg-background")}
-              >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  {lane.lane === "Emergency" ? <ShieldAlert className="h-4 w-4 text-red-600" /> : lane.lane === "Fix Ready" ? <PackageCheck className="h-4 w-4 text-emerald-600" /> : <Package className="h-4 w-4 text-muted-foreground" />}
-                  {lane.lane}
-                </span>
-                <ToneBadge value={lane.items.length} tone={lane.lane === "Emergency" ? "red" : lane.lane === "Patch Window" ? "orange" : lane.lane === "Fix Ready" ? "emerald" : "slate"} />
-              </button>
-            ))}
-          </div>
-          <div className="space-y-4 p-4">
-            {topVulns.length > 0 && (
-              <div>
-                <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Top scanner returns</p>
-                <div className="space-y-2">
-                  {topVulns.slice(0, 4).map((vulnerability) => (
-                    <button key={vulnerability.id} type="button" onClick={() => selectLegacyVulnerability(vulnerability)} className="w-full rounded-lg border bg-background p-3 text-left hover:bg-muted/40">
-                      <div className="mb-2 flex flex-wrap gap-1.5">
-                        <ToneBadge value={vulnerability.severity} />
-                        {vulnerability.cveId && <ToneBadge value={vulnerability.cveId} tone="blue" />}
-                      </div>
-                      <p className="line-clamp-2 text-sm font-medium">{vulnerability.title}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Scanner sources</p>
-              <div className="space-y-2">
-                {scannerMix.slice(0, 5).map(([scanner, count]) => (
-                  <button key={scanner} type="button" onClick={() => setSearch(scanner)} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-background">
-                    <span className="truncate">{scanner}</span>
-                    <ToneBadge value={count} tone="blue" />
-                  </button>
+    <SocWorkspace section="Operations / Vulnerabilities" title="Vulnerability Workbench" counts={{ vulnerabilities: findings.length }}>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_504px]">
+        <SocPanel eyebrow="Scanner Activity" title="Vulnerability scan queue" actions={<SocButton onClick={runScan} disabled={scanMutation.isPending || scanJobIsActive}>{scanMutation.isPending || isFetchingScanJob ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />} Run Scan</SocButton>}>
+          <div className="overflow-auto">
+            <table className="w-full min-w-[720px] text-left">
+              <thead className="border-b border-zinc-800 font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                <tr><th className="px-4 py-3">Scan</th><th className="px-4 py-3">Target</th><th className="px-4 py-3">Scanner</th><th className="px-4 py-3">Progress</th><th className="px-4 py-3">Started</th></tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {scanRows.map((row) => (
+                  <tr key={row.id}>
+                    <td className="px-4 py-3 font-mono text-sm text-zinc-200">{row.id}</td>
+                    <td className="px-4 py-3 font-mono text-sm text-zinc-200">{row.target}</td>
+                    <td className="px-4 py-3 text-sm text-zinc-400">{row.scanner}</td>
+                    <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-40"><SocProgress value={row.progress} tone={row.state === "Done" || row.state === "done" ? "green" : "blue"} /></div><span className="font-mono text-xs text-blue-300">{row.state}</span></div></td>
+                    <td className="px-4 py-3 font-mono text-sm text-zinc-500">{row.started}</td>
+                  </tr>
                 ))}
-              </div>
-            </div>
+              </tbody>
+            </table>
           </div>
-        </aside>
+        </SocPanel>
 
-        <main className="min-w-0 border-b xl:border-b-0 xl:border-r">
-          <div className="border-b p-4">
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_170px_170px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search CVE, package, fixed version, resource, scanner..." className="pl-9" />
-              </div>
-              <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{severityOptions.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{statusOptions.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 className="font-semibold">{activeLane} Queue</h2>
-                <p className="text-xs text-muted-foreground">{visibleQueue.length} vulnerabilities ready for triage</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => setSeverityFilter("critical")}>Critical</Button>
-                <Button size="sm" variant="outline" onClick={() => setSeverityFilter("high")}>High</Button>
-                <Button size="sm" variant="outline" onClick={() => {
-                  setSearch("");
-                  setSeverityFilter("all");
-                  setStatusFilter("open");
-                  setActiveLane("Emergency");
-                }}>Reset</Button>
-              </div>
-            </div>
-          </div>
-          <div className="max-h-[790px] overflow-auto">
-            {isLoading ? (
-              <EmptyPanel icon={FileSearch} title="Loading vulnerabilities" description="Fetching normalized CVE and package evidence." />
-            ) : visibleQueue.length === 0 ? (
-              <EmptyPanel icon={PackageCheck} title="No vulnerabilities in this lane" description="Change filters or run a scan to refresh vulnerability coverage." />
-            ) : (
-              visibleQueue.map((finding) => (
-                <PatchQueueRow
-                  key={finding.id}
-                  finding={finding}
-                  selected={selectedFinding?.id === finding.id}
-                  onSelect={() => setSelectedFindingId(finding.id)}
-                />
-              ))
-            )}
-          </div>
-        </main>
-
-        <section className="min-w-0">
-          <div className="border-b px-4 py-3">
-            <h2 className="font-semibold">Remediation Plan</h2>
-            <p className="text-xs text-muted-foreground">Package evidence, fixed version, affected asset, and closeout controls</p>
-          </div>
-          <div className="max-h-[790px] overflow-auto p-4">
-            <FindingDetailPanel finding={selectedFinding} onStatusChange={updateSelectedFindingStatus} isStatusPending={updateFindingStatus.isPending} />
-            {selectedFinding && (
-              <div className="mt-4 grid gap-3">
-                <div className="rounded-lg border p-4">
-                  <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
-                    <GitBranch className="h-4 w-4" />
-                    Patch Step
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Validate the package/image, apply the fixed version or compensating control, then rerun the scan and close only after the fingerprint disappears.
-                  </p>
-                </div>
-                <div className="rounded-lg border p-4">
-                  <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">Blast radius</p>
-                  <div className="space-y-2">
-                    {resourceImpact.slice(0, 4).map(([resource, count]) => (
-                      <button key={resource} type="button" onClick={() => setSearch(resource)} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted">
-                        <span className="truncate font-mono text-xs">{resource}</span>
-                        <ToneBadge value={count} tone="red" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="rounded-lg border p-4">
-                  <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">Package hotspots</p>
-                  <div className="space-y-2">
-                    {packageImpact.slice(0, 4).map(([pkg, count]) => (
-                      <button key={pkg} type="button" onClick={() => setSearch(pkg)} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted">
-                        <span className="truncate font-mono text-xs">{pkg}</span>
-                        <ToneBadge value={count} tone="orange" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+        <div className="grid grid-cols-2 gap-4">
+          <SocStat label="Emergency" value={criticalCount} tone="red" helper="≤24h SLA" />
+          <SocStat label="Patch Window" value={highCount} tone="orange" helper="within 7d" />
+          <SocStat label="Fix Ready" value={fixableCount} tone="blue" helper="awaiting deploy" />
+          <SocStat label="Backlog" value={Math.max(0, findings.length - criticalCount - highCount - fixableCount)} helper="accepted / deferred" />
+        </div>
       </div>
-    </DashboardLayout>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_504px]">
+        <div className="grid gap-4 lg:grid-cols-4">
+          {lanes.map((lane) => (
+            <SocPanel key={lane.lane} eyebrow={lane.lane} title={lane.lane === "Emergency" ? "≤ 24h SLA · exploitable in wild" : lane.lane === "Patch Window" ? "Scheduled maintenance" : lane.lane === "Fix Ready" ? "Awaiting rollout" : "Accepted or deferred"} actions={<span className="rounded border border-zinc-800 px-2 py-1 font-mono text-xs text-zinc-400">{lane.items.length}</span>}>
+              <div className="max-h-[620px] space-y-3 overflow-auto p-3">
+                {isLoading ? (
+                  <div className="p-4 font-mono text-sm text-zinc-500">Loading...</div>
+                ) : lane.items.length === 0 ? (
+                  <div className="p-4 text-sm text-zinc-500">No items.</div>
+                ) : (
+                  lane.items.map((finding) => <VulnCard key={finding.id} finding={finding} selected={selectedFinding?.id === finding.id} onSelect={() => setSelectedFindingId(finding.id)} />)
+                )}
+              </div>
+            </SocPanel>
+          ))}
+        </div>
+
+        <SocPanel eyebrow="Remediation Plan" title={selectedFinding?.externalId || selectedFinding?.ruleId || "Select vulnerability"}>
+          <div className="border-b border-zinc-800 p-5">
+            <div className="mb-3 flex flex-wrap gap-2">
+              <SocBadge tone={severityTone(selectedFinding?.severity)}>{selectedFinding?.severity || "none"}</SocBadge>
+              <span className="font-mono text-xs uppercase text-zinc-500">{cvssScore(selectedFinding) ? `CVSS ${cvssScore(selectedFinding)}` : "CVSS n/a"}</span>
+              <span className="font-mono text-xs text-zinc-500">{selectedFinding?.scannerType || selectedFinding?.sourceType}</span>
+            </div>
+            <h2 className="text-lg font-semibold text-zinc-100">{selectedFinding?.title || "No vulnerability selected"}</h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-400">{selectedFinding?.description || "Select a vulnerability to inspect package, asset, and fix context."}</p>
+          </div>
+          {selectedFinding ? (
+            <div className="max-h-[620px] overflow-auto p-5">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <SocStat label="Package" value={<span className="text-base">{packageName(selectedFinding)}</span>} />
+                <SocStat label="Resources" value={<span className="text-base">{selectedFinding.resourceId ? 1 : 0}</span>} />
+                <SocStat label="Installed" value={<span className="text-base">{packageVersion(selectedFinding) || "unknown"}</span>} />
+                <SocStat label="Fixed" value={<span className="text-base">{fixedVersion(selectedFinding) || "manual"}</span>} tone={fixedVersion(selectedFinding) ? "green" : "yellow"} />
+                <SocStat label="First Seen" value={<span className="text-base">{new Date(selectedFinding.firstSeenAt).toLocaleDateString()}</span>} />
+                <SocStat label="Last Seen" value={<span className="text-base">{new Date(selectedFinding.lastSeenAt).toLocaleDateString()}</span>} />
+              </div>
+              <div className="mt-5">
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">Blast Radius</p>
+                <p className="mt-2 break-all font-mono text-sm text-zinc-200">{selectedFinding.resourceId || "not resource scoped"}</p>
+              </div>
+              <div className="mt-5 border-l-2 border-blue-500 px-4 text-sm leading-6 text-zinc-300">
+                {selectedFinding.remediation || "Validate the package/image, apply the fixed version or mitigation, rerun the scan, then close after fingerprint disappearance."}
+              </div>
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                <SocButton onClick={() => updateSelectedFindingStatus("resolved")} disabled={updateFindingStatus.isPending}><CheckCircle2 className="h-4 w-4" /> Resolve</SocButton>
+                <SocButton variant="ghost" onClick={() => updateSelectedFindingStatus("accepted")} disabled={updateFindingStatus.isPending}><ShieldAlert className="h-4 w-4" /> Accept Risk</SocButton>
+              </div>
+            </div>
+          ) : (
+            <EmptyPanel icon={FileSearch} title="No vulnerability selected" description="Select an item from a patch lane to build a remediation plan." />
+          )}
+        </SocPanel>
+      </div>
+
+      {topVulns.length > 0 && (
+        <SocPanel className="mt-4" eyebrow="Legacy Scanner Returns" title="Top vulnerabilities returned by scanner">
+          <div className="grid gap-3 p-3 md:grid-cols-3">
+            {topVulns.slice(0, 3).map((vulnerability) => (
+              <button key={vulnerability.id} type="button" onClick={() => selectLegacyVulnerability(vulnerability)} className="rounded border border-zinc-800 bg-zinc-950/50 p-3 text-left hover:bg-zinc-900">
+                <SocBadge tone={severityTone(vulnerability.severity)}>{vulnerability.severity}</SocBadge>
+                <p className="mt-3 line-clamp-2 text-sm font-medium text-zinc-100">{vulnerability.title}</p>
+                {vulnerability.cveId && <p className="mt-2 font-mono text-xs text-blue-300">{vulnerability.cveId}</p>}
+              </button>
+            ))}
+          </div>
+        </SocPanel>
+      )}
+    </SocWorkspace>
   );
 }

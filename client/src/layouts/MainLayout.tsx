@@ -28,11 +28,15 @@ export function MainLayout({ children, showFooter = true }: MainLayoutProps) {
     );
   }
 
+  if (!showFooter) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-1 pt-14">{children}</main>
-      {showFooter && <Footer />}
+      <Footer />
     </div>
   );
 }

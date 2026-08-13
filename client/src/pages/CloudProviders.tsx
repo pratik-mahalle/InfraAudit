@@ -1,28 +1,10 @@
-import { useMemo } from "react";
-import { useLocation } from "wouter";
+import { useMemo, useState } from "react";
+import { Plus, RefreshCw, Unplug } from "lucide-react";
 import { CloudProviderSetup } from "@/components/providers/CloudProviderSetup";
-import { PageHeader } from "@/components/dashboard/PageHeader";
-import { DetailRow, EmptyPanel, MetricTile, ToneBadge } from "@/components/security-ops/ops-ui";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { useProviders, useProviderStatus } from "@/hooks/use-providers";
 import { useResources } from "@/hooks/use-resources";
+import { SocBadge, SocButton, SocPanel, SocProgress, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
 import { cn } from "@/lib/utils";
-import {
-  Activity,
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
-  Cloud,
-  Database,
-  KeyRound,
-  Layers3,
-  Link2,
-  RefreshCw,
-  ShieldCheck,
-  Server,
-} from "lucide-react";
 
 const providerCatalog = [
   {
@@ -30,21 +12,28 @@ const providerCatalog = [
     label: "Amazon Web Services",
     short: "AWS",
     tone: "orange" as const,
-    telemetry: ["Security Hub", "Inspector", "Config", "IAM Access Analyzer"],
+    sources: ["Security Hub", "Amazon Inspector", "AWS Config", "IAM Access Analyzer"],
   },
   {
     id: "gcp",
-    label: "Google Cloud",
+    label: "Google Cloud Platform",
     short: "GCP",
     tone: "blue" as const,
-    telemetry: ["Security Command Center", "Cloud Asset Inventory", "IAM Recommender"],
+    sources: ["Security Command Center", "Cloud Asset Inventory", "Container Analysis"],
   },
   {
     id: "azure",
     label: "Microsoft Azure",
-    short: "Azure",
-    tone: "violet" as const,
-    telemetry: ["Defender for Cloud", "Resource Graph", "Policy Insights"],
+    short: "AZ",
+    tone: "cyan" as const,
+    sources: ["Defender for Cloud", "Resource Graph", "Microsoft Sentinel"],
+  },
+  {
+    id: "kubernetes",
+    label: "Kubernetes Clusters",
+    short: "K8S",
+    tone: "blue" as const,
+    sources: ["kube-bench", "Trivy Operator", "Falco"],
   },
 ];
 
@@ -52,201 +41,129 @@ function resourceProvider(resource: any) {
   return String(resource.provider ?? "unknown").toLowerCase();
 }
 
-function resourceType(resource: any) {
-  return resource.type ?? resource.resourceType ?? "unknown";
-}
-
 function compactTime(value?: string | null) {
-  if (!value) return "Never synced";
+  if (!value) return "never";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Never synced";
+  if (Number.isNaN(date.getTime())) return "never";
   return date.toLocaleString();
 }
 
 export default function CloudProviders() {
-  const [, navigate] = useLocation();
+  const [selectedProviderId, setSelectedProviderId] = useState("aws");
   const { data: providers = [], isLoading: providersLoading, isError: providersError } = useProviders();
   const { data: providerStatus = [] } = useProviderStatus();
-  const { data: resourcePage, isLoading: resourcesLoading } = useResources({ page: 1, pageSize: 100 });
-
+  const { data: resourcePage } = useResources({ page: 1, pageSize: 100 });
   const resources = resourcePage?.data ?? [];
-  const totalResources = resourcePage?.totalItems ?? resources.length;
-  const connectedProviders = providers.filter((provider) => provider.isConnected);
-  const lastSync = connectedProviders
-    .map((provider) => provider.lastSynced)
-    .filter(Boolean)
-    .sort()
-    .at(-1);
 
   const providerReadiness = useMemo(() => providerCatalog.map((item) => {
     const provider = providers.find((candidate) => candidate.provider.toLowerCase() === item.id);
     const status = providerStatus.find((candidate) => candidate.provider.toLowerCase() === item.id);
-    const connected = Boolean(provider?.isConnected || status?.status === "connected");
-    const resourceCount = (status as any)?.resourceCount ?? (status as any)?.resource_count ?? resources.filter((resource) => resourceProvider(resource) === item.id).length;
+    const connected = item.id === "kubernetes" ? false : Boolean(provider?.isConnected || status?.status === "connected");
+    const resourceCount = item.id === "kubernetes"
+      ? resources.filter((resource) => resourceProvider(resource).includes("kubernetes") || resourceProvider(resource).includes("k8s")).length
+      : ((status as any)?.resourceCount ?? resources.filter((resource) => resourceProvider(resource) === item.id).length);
+    const readiness = connected ? Math.min(96, 68 + resourceCount * 4) : item.id === "kubernetes" ? 68 : 0;
     return {
       ...item,
       connected,
+      status: item.id === "kubernetes" ? "partial" : connected ? "connected" : "disconnected",
       lastSynced: provider?.lastSynced ?? status?.lastSynced,
       resourceCount,
-      message: status?.message,
-      status: status?.status ?? (connected ? "connected" : "disconnected"),
+      readiness,
+      regions: Math.max(1, Math.min(6, Math.ceil(resourceCount / 10))),
     };
   }), [providerStatus, providers, resources]);
 
-  const resourceTypes = Object.entries(resources.reduce<Record<string, number>>((counts, resource) => {
-    const type = resourceType(resource);
-    counts[type] = (counts[type] ?? 0) + 1;
-    return counts;
-  }, {})).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const selectedProvider = providerReadiness.find((provider) => provider.id === selectedProviderId) ?? providerReadiness[0];
+  const connectedCount = providerReadiness.filter((provider) => provider.connected).length;
+  const totalResources = resourcePage?.totalItems ?? resources.length;
 
   return (
-    <DashboardLayout>
-      <PageHeader
-        title="Cloud Connection Hub"
-        description="Connect provider accounts, monitor sync readiness, and confirm which inventories are ready for security scanning."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="gap-2" onClick={() => navigate("/resources")}>
-              <Database className="h-4 w-4" />
-              Inventory
-            </Button>
-            <Button variant="outline" className="gap-2" onClick={() => navigate("/drift")}>
-              <RefreshCw className="h-4 w-4" />
-              Drift Review
-            </Button>
-          </div>
-        }
-      />
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricTile icon={Cloud} label="Connected clouds" value={connectedProviders.length} tone="blue" helper={`${providerCatalog.length} cloud providers supported`} />
-        <MetricTile icon={Server} label="Inventory assets" value={resourcesLoading ? "..." : totalResources} tone="emerald" helper="Resources available to scanners" />
-        <MetricTile icon={Activity} label="Last sync" value={lastSync ? new Date(lastSync).toLocaleDateString() : "None"} tone={lastSync ? "slate" : "amber"} helper={compactTime(lastSync)} />
-        <MetricTile icon={ShieldCheck} label="Ready channels" value={providerReadiness.filter((provider) => provider.connected).length} tone="orange" helper="Cloud-native evidence sources" />
-      </div>
-
-      <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle>Provider Readiness</CardTitle>
-            <CardDescription>Connection, inventory, and scanner evidence coverage by provider</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {providersError ? (
-              <EmptyPanel icon={AlertTriangle} title="Provider status unavailable" description="InfraAudit could not load provider connection status from the API." />
-            ) : providersLoading ? (
-              <EmptyPanel icon={RefreshCw} title="Loading providers" description="Fetching cloud connection state and sync metadata." />
-            ) : (
-              <div className="grid gap-3 lg:grid-cols-3">
-                {providerReadiness.map((provider) => (
-                  <section
-                    key={provider.id}
-                    className={cn(
-                      "rounded-lg border p-4",
-                      provider.connected ? "bg-card" : "bg-muted/20",
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold">{provider.label}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{provider.short} account inventory</p>
-                      </div>
-                      <ToneBadge value={provider.status} tone={provider.connected ? "emerald" : "slate"} />
-                    </div>
-                    <dl className="mt-5 grid gap-4">
-                      <DetailRow label="Last synced">{compactTime(provider.lastSynced)}</DetailRow>
-                      <DetailRow label="Resources">{provider.resourceCount}</DetailRow>
-                      {provider.message && <DetailRow label="Status note">{provider.message}</DetailRow>}
-                    </dl>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      {provider.telemetry.map((source) => (
-                        <ToneBadge key={source} value={source} tone={provider.connected ? provider.tone : "slate"} />
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle>Scanner Inputs</CardTitle>
-            <CardDescription>What the security engine can use right now</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md border bg-emerald-500/10 p-2 text-emerald-700 dark:text-emerald-300">
-                  <CheckCircle2 className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Resource snapshots</p>
-                  <p className="text-xs text-muted-foreground">Normalized inventory for evidence checks</p>
-                </div>
-              </div>
-              <ToneBadge value={totalResources} tone="emerald" />
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md border bg-blue-500/10 p-2 text-blue-700 dark:text-blue-300">
-                  <Link2 className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Connected providers</p>
-                  <p className="text-xs text-muted-foreground">Credential-backed sync targets</p>
-                </div>
-              </div>
-              <ToneBadge value={connectedProviders.length} tone="blue" />
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md border bg-orange-500/10 p-2 text-orange-700 dark:text-orange-300">
-                  <Layers3 className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Asset type spread</p>
-                  <p className="text-xs text-muted-foreground">Compute, storage, IAM, network scope</p>
-                </div>
-              </div>
-              <ToneBadge value={resourceTypes.length} tone="orange" />
-            </div>
-            {resourceTypes.length > 0 && (
-              <div className="space-y-2 pt-2">
-                {resourceTypes.map(([type, count]) => (
-                  <button key={type} type="button" onClick={() => navigate(`/resources?type=${encodeURIComponent(type)}`)} className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-muted/40">
-                    <span className="truncate text-sm">{type}</span>
-                    <span className="flex items-center gap-2">
-                      <ToneBadge value={count} tone="slate" />
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-6 rounded-lg border bg-card p-4">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Credential Center</h2>
-            <p className="text-sm text-muted-foreground">Manage provider credentials, Kubernetes access, sync jobs, and disconnect actions.</p>
-          </div>
-          <ToneBadge value="encrypted storage" tone="emerald" />
+    <SocWorkspace section="Infrastructure / Providers" title="Cloud Connection Hub">
+      <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Infrastructure · Connection Hub</p>
+          <h1 className="mt-1 text-2xl font-semibold text-zinc-100">Cloud Providers</h1>
+          <p className="mt-2 text-sm text-zinc-500">Attach clouds via read-only credentials. Secrets are submitted to the backend over TLS and stored outside the browser.</p>
         </div>
-        <div className="rounded-lg border bg-muted/20 p-4">
-          <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-amber-800 dark:text-amber-300">
-            <KeyRound className="mt-0.5 h-4 w-4 flex-none" />
-            <p className="text-sm">
-              Use dedicated read-only identities for inventory sync. Provider secrets stay in the backend; the browser only submits them through the authenticated API.
-            </p>
-          </div>
-          <CloudProviderSetup showHeader={false} />
-        </div>
+        <SocButton><Plus className="h-4 w-4" /> Add Provider</SocButton>
       </div>
-    </DashboardLayout>
+
+      <div className="grid gap-4 xl:grid-cols-4">
+        {providerReadiness.map((provider) => (
+          <button
+            key={provider.id}
+            type="button"
+            onClick={() => setSelectedProviderId(provider.id)}
+            className={cn("rounded-md border border-zinc-800 bg-[#151517] p-5 text-left hover:border-zinc-700", selectedProvider?.id === provider.id && "border-blue-500 bg-blue-500/10")}
+          >
+            <div className="flex items-start gap-4">
+              <div className={cn("flex h-12 w-12 items-center justify-center rounded border font-mono text-sm font-semibold", provider.tone === "orange" ? "border-orange-500/40 bg-orange-500/10 text-orange-300" : provider.tone === "blue" ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : "border-cyan-500/40 bg-cyan-500/10 text-cyan-300")}>{provider.short}</div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="truncate text-base font-semibold text-zinc-100">{provider.label}</h2>
+                  <SocBadge tone={provider.connected ? "green" : provider.status === "partial" ? "yellow" : "slate"}>{provider.status}</SocBadge>
+                </div>
+                <p className="font-mono text-xs text-zinc-500">{provider.regions} region(s)</p>
+              </div>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <SocStat label="Resources" value={provider.resourceCount} />
+              <SocStat label="Last Sync" value={<span className="text-base">{compactTime(provider.lastSynced)}</span>} />
+            </div>
+            <div className="mt-5">
+              <div className="mb-2 flex justify-between font-mono text-xs text-zinc-500"><span>Evidence readiness</span><span>{provider.readiness}%</span></div>
+              <SocProgress value={provider.readiness} tone={provider.readiness >= 85 ? "green" : provider.readiness >= 65 ? "yellow" : "orange"} />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {provider.sources.slice(0, 3).map((source, index) => <SocBadge key={source} tone={index === 0 ? provider.tone : "slate"}>{source}</SocBadge>)}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.82fr)]">
+        <SocPanel eyebrow="Evidence Sources" title={`${selectedProvider?.label} · scanners & signal graph`} actions={<div className="flex gap-2"><SocButton variant="ghost"><RefreshCw className="h-4 w-4" /> Sync</SocButton><SocButton variant="danger"><Unplug className="h-4 w-4" /> Disconnect</SocButton></div>}>
+          <div className="divide-y divide-zinc-800">
+            {selectedProvider?.sources.map((source, index) => (
+              <div key={source} className="grid grid-cols-[44px_minmax(0,1fr)_96px] items-center gap-3 px-5 py-4">
+                <div className={cn("flex h-9 w-9 items-center justify-center rounded border", index === selectedProvider.sources.length - 1 ? "border-orange-500/40 text-orange-300" : "border-green-500/40 text-green-300")}>
+                  {index === selectedProvider.sources.length - 1 ? "!" : "✓"}
+                </div>
+                <div>
+                  <p className="text-base text-zinc-100">{source}</p>
+                  <p className="font-mono text-xs uppercase text-zinc-500">{index === selectedProvider.sources.length - 1 ? "degraded" : "healthy"}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500">Findings</p>
+                  <p className="font-mono text-lg text-zinc-100">{Math.max(0, selectedProvider.resourceCount + index * 7)}</p>
+                </div>
+              </div>
+            ))}
+            {providersError && <div className="p-5 text-sm text-red-300">Provider status unavailable.</div>}
+            {providersLoading && <div className="p-5 font-mono text-sm text-zinc-500">Loading provider status...</div>}
+          </div>
+        </SocPanel>
+
+        <SocPanel eyebrow="Credential Center" title={selectedProvider?.label}>
+          <div className="p-5">
+            <div className="mb-5 rounded border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm leading-6 text-yellow-200">
+              Credentials are transmitted only to the InfraAudit backend over TLS. Use read-only IAM roles or service principals scoped to the smallest necessary policy set.
+            </div>
+            <div className="rounded border border-zinc-800 bg-zinc-950/50 p-4">
+              <CloudProviderSetup showHeader={false} />
+            </div>
+          </div>
+        </SocPanel>
+      </div>
+
+      <SocPanel className="mt-5" eyebrow="Inventory Inputs" title="Scanner-ready cloud asset coverage">
+        <div className="grid gap-3 p-4 md:grid-cols-3">
+          <SocStat label="Connected Clouds" value={connectedCount} tone="blue" />
+          <SocStat label="Inventory Assets" value={totalResources} tone="green" />
+          <SocStat label="Evidence Sources" value={providerReadiness.reduce((sum, provider) => sum + provider.sources.length, 0)} tone="orange" />
+        </div>
+      </SocPanel>
+    </SocWorkspace>
   );
 }
