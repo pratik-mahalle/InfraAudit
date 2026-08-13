@@ -2,9 +2,10 @@ import React, { useState, useMemo, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useLocation, Link } from "wouter";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 import {
   Loader2,
@@ -21,6 +22,7 @@ import {
   Cloud,
   FileText,
   Mail,
+  Ban,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -47,6 +50,9 @@ import { cn } from "@/lib/utils";
 type Report = {
   id: number;
   status: string;
+  queueJobId?: number | null;
+  stage?: string;
+  progressPercent?: number;
   totalResources: number;
   totalDrifts: number;
   criticalCount: number;
@@ -59,6 +65,13 @@ type Report = {
   errorMessage?: string;
   createdAt: string;
 };
+
+const formatStage = (stage?: string) =>
+  (stage || "queued")
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part[0].toUpperCase() + part.slice(1))
+    .join(" ");
 
 // ─── Security Score Gauge ──────────────────────────────────────────
 function SecurityGauge({ score }: { score: number }) {
@@ -174,6 +187,24 @@ export default function ReportDetail() {
   } = useQuery<Report>({
     queryKey: [`/api/reports/${reportId}`],
     enabled: !!reportId,
+    refetchInterval: (query) => {
+      const current = query.state.data as Report | undefined;
+      return current?.status === "running" ? 3000 : false;
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/reports/${reportId}/cancel`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/reports/${reportId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
+      toast.success("Report generation cancelled");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to cancel report");
+    },
   });
 
   const handleDownloadPdf = useCallback(async () => {
@@ -359,6 +390,7 @@ export default function ReportDetail() {
     const secs = seconds % 60;
     return `${mins}m ${secs}s`;
   };
+  const isRunning = report.status === "running";
 
   return (
     <DashboardLayout>
@@ -381,6 +413,21 @@ export default function ReportDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {isRunning && report.queueJobId && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                disabled={cancelMutation.isPending}
+                onClick={() => cancelMutation.mutate()}
+              >
+                {cancelMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Ban className="h-4 w-4" />
+                )}
+                Cancel
+              </Button>
+            )}
             <Button
               variant="outline"
               className="gap-2"
@@ -399,6 +446,23 @@ export default function ReportDetail() {
             </Button>
           </div>
         </div>
+
+        {isRunning && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between gap-4 text-sm mb-2">
+                <div className="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  {formatStage(report.stage)}
+                </div>
+                <span className="text-gray-500 dark:text-gray-400">
+                  {report.progressPercent ?? 0}%
+                </span>
+              </div>
+              <Progress value={report.progressPercent ?? 0} className="h-2" />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Tabs */}
         <Tabs defaultValue="summary" className="w-full">
