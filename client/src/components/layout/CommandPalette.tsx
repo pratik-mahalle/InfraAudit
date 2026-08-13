@@ -22,7 +22,7 @@ const navItems = [
   { label: "Predictions", href: "/cost-prediction", icon: TrendingUp, group: "Cost" },
   { label: "Billing Import", href: "/billing-import", icon: DollarSign, group: "Cost" },
   { label: "ROI Calculator", href: "/roi-calculator", icon: Calculator, group: "Cost" },
-  { label: "Security Dashboard", href: "/security?view=all", icon: Shield, group: "Security" },
+  { label: "Security Command Center", href: "/security?view=all", icon: Shield, group: "Security" },
   { label: "Compliance", href: "/security?view=compliance", icon: FileCheck, group: "Security" },
   { label: "Findings", href: "/security?view=findings", icon: Fingerprint, group: "Security" },
   { label: "Vulnerabilities", href: "/security?view=vulnerabilities", icon: Lock, group: "Security" },

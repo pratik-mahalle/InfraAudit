@@ -49,6 +49,7 @@ interface NavItem {
     href: string;
     icon: React.ElementType;
     permission?: Permission;
+    isChild?: boolean;
 }
 
 interface NavGroup {
@@ -78,10 +79,10 @@ const navGroups: NavGroup[] = [
     {
         label: "Security",
         items: [
-            { label: "Security Dashboard", href: "/security?view=all", icon: Shield },
-            { label: "Compliance", href: "/security?view=compliance", icon: FileCheck },
-            { label: "Findings", href: "/security?view=findings", icon: Fingerprint },
-            { label: "Vulnerabilities", href: "/security?view=vulnerabilities", icon: Lock },
+            { label: "Command Center", href: "/security?view=all", icon: Shield },
+            { label: "Compliance", href: "/security?view=compliance", icon: FileCheck, isChild: true },
+            { label: "Findings", href: "/security?view=findings", icon: Fingerprint, isChild: true },
+            { label: "Vulnerabilities", href: "/security?view=vulnerabilities", icon: Lock, isChild: true },
             { label: "SBOM", href: "/sbom", icon: FileText },
             { label: "Policies", href: "/policies", icon: Scale },
         ],
@@ -224,6 +225,7 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
                                     <span
                                         className={cn(
                                             "flex items-center gap-2.5 px-2 h-8 rounded-md text-[13px] transition-colors relative",
+                                            item.isChild && "ml-5 h-7 text-[12px] before:absolute before:-left-2 before:top-0 before:bottom-0 before:w-px before:bg-gray-200 dark:before:bg-gray-800",
                                             isActive(item.href)
                                                 ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 font-medium before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:rounded-full before:bg-blue-500"
                                                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-200"
