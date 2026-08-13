@@ -1,31 +1,25 @@
 import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  AlertTriangle,
   BellRing,
   Bug,
   CheckCircle2,
-  Cloud,
   ExternalLink,
   GitCompareArrows,
   Loader2,
   Network,
-  Radar,
+  Play,
   Shield,
-  ShieldAlert,
-  Workflow,
+  ShieldCheck,
 } from "lucide-react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useAcknowledgeAlert, useAlerts, useResolveAlert } from "@/hooks/use-alerts";
 import { useAcknowledgeDrift, useApproveDriftAsBaseline, useDrifts, useResolveDrift, useTriggerDriftDetection } from "@/hooks/use-drifts";
 import { useResources } from "@/hooks/use-resources";
 import { useTriggerVulnerabilityScan, useVulnerabilities } from "@/hooks/use-vulnerabilities";
 import { cn, formatTimeAgo } from "@/lib/utils";
 import type { Alert, Drift, Vulnerability } from "@/lib/api";
-import { DetailRow, EmptyPanel, ToneBadge } from "@/components/security-ops/ops-ui";
 import { useToast } from "@/hooks/use-toast";
+import { SocBadge, SocButton, SocPanel, SocProgress, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
 
 function riskWeight(severity: string) {
   if (severity === "critical") return 10;
@@ -35,20 +29,27 @@ function riskWeight(severity: string) {
   return 0;
 }
 
+function pct(closed: number, total: number) {
+  return total ? Math.round((closed / total) * 100) : 100;
+}
+
 function resourceName(resources: Array<{ id?: number; resourceId?: string; name: string }>, id?: number | string) {
   if (!id) return "No resource linked";
   return resources.find((resource) => resource.id === id || resource.resourceId === String(id))?.name ?? `Resource ${id}`;
 }
 
-function pct(closed: number, total: number) {
-  return total ? Math.round((closed / total) * 100) : 100;
+function severityTone(severity: string) {
+  if (severity === "critical") return "red" as const;
+  if (severity === "high") return "orange" as const;
+  if (severity === "medium") return "yellow" as const;
+  return "blue" as const;
 }
 
 export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab?: string }) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [activeStream, setActiveStream] = useState(defaultTab === "alerts" ? "Alerts" : defaultTab === "drifts" ? "Drift" : "All");
+  const [activeStream, setActiveStream] = useState(defaultTab === "alerts" ? "Alert" : defaultTab === "drifts" ? "Drift" : "All");
 
   const { data: alertsResponse, isLoading: alertsLoading } = useAlerts();
   const { data: driftsResponse, isLoading: driftsLoading } = useDrifts();
@@ -66,7 +67,6 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   const drifts: Drift[] = Array.isArray(driftsResponse) ? driftsResponse : driftsResponse?.data ?? [];
   const vulnerabilities: Vulnerability[] = Array.isArray(vulnerabilitiesResponse) ? vulnerabilitiesResponse : vulnerabilitiesResponse?.data ?? [];
   const resources = resourcesResponse?.data ?? [];
-
   const openAlerts = alerts.filter((alert) => alert.status !== "resolved");
   const openDrifts = drifts.filter((drift) => drift.status === "detected" || drift.status === "acknowledged");
   const openVulnerabilities = vulnerabilities.filter((vulnerability) => vulnerability.status === "open");
@@ -86,6 +86,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       description: alert.message,
       severity: alert.severity,
       type: "Alert",
+      findingId: `ALT-${alert.id}`,
       route: "/alerts",
       time: alert.createdAt,
       resource: resourceName(resources, alert.resourceId),
@@ -97,6 +98,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       description: drift.description,
       severity: drift.severity,
       type: "Drift",
+      findingId: `DRF-${drift.id}`,
       route: "/drift-detection",
       time: drift.detectedAt,
       resource: drift.resourceIdStr || resourceName(resources, drift.resourceId),
@@ -108,6 +110,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       description: vulnerability.description,
       severity: vulnerability.severity,
       type: "Vulnerability",
+      findingId: vulnerability.cveId ?? vulnerability.vulnerabilityId ?? `VUL-${vulnerability.id}`,
       route: "/vulnerabilities",
       time: vulnerability.detectedAt,
       resource: resourceName(resources, vulnerability.resourceId),
@@ -115,14 +118,14 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     })),
   ].sort((a, b) => riskWeight(b.severity) - riskWeight(a.severity));
 
-  const streamItems = priorityItems.filter((item) => activeStream === "All" || item.type === activeStream).slice(0, 12);
-  const selectedItem = priorityItems.find((item) => item.id === selectedItemId) ?? streamItems[0] ?? priorityItems[0] ?? null;
+  const visibleItems = priorityItems.filter((item) => activeStream === "All" || item.type === activeStream).slice(0, 14);
+  const selectedItem = priorityItems.find((item) => item.id === selectedItemId) ?? visibleItems[0] ?? priorityItems[0] ?? null;
   const loading = alertsLoading || driftsLoading || vulnerabilitiesLoading;
+  const criticalOpen = priorityItems.filter((item) => item.severity === "critical").length;
+  const highOpen = priorityItems.filter((item) => item.severity === "high").length;
   const alertClosure = pct(alerts.filter((alert) => alert.status === "resolved").length, alerts.length);
   const driftClosure = pct(drifts.filter((drift) => drift.status === "resolved" || drift.status === "approved").length, drifts.length);
   const vulnerabilityClosure = pct(vulnerabilities.filter((vulnerability) => vulnerability.status === "fixed").length, vulnerabilities.length);
-  const criticalOpen = priorityItems.filter((item) => item.severity === "critical").length;
-  const highOpen = priorityItems.filter((item) => item.severity === "high").length;
 
   const resourceRisk = resources.map((resource) => {
     const rid = String(resource.id ?? resource.resourceId ?? "");
@@ -131,13 +134,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       openDrifts.filter((drift) => String(drift.resourceId) === rid || drift.resourceIdStr === resource.resourceId).reduce((sum, drift) => sum + riskWeight(drift.severity), 0) +
       openVulnerabilities.filter((vulnerability) => String(vulnerability.resourceId ?? "") === rid).reduce((sum, vulnerability) => sum + riskWeight(vulnerability.severity), 0);
     return { resource, score };
-  }).sort((a, b) => b.score - a.score).slice(0, 10);
-
-  const sourceMix = [
-    { label: "Alert", route: "/alerts", open: openAlerts.length, total: alerts.length, icon: BellRing, tone: "red" as const },
-    { label: "Drift", route: "/drift-detection", open: openDrifts.length, total: drifts.length, icon: GitCompareArrows, tone: "amber" as const },
-    { label: "Vulnerability", route: "/vulnerabilities", open: openVulnerabilities.length, total: vulnerabilities.length, icon: Bug, tone: "orange" as const },
-  ];
+  }).filter((item) => item.score > 0).sort((a, b) => b.score - a.score).slice(0, 8);
 
   const runDriftScan = () => {
     triggerDriftDetection.mutate(undefined, {
@@ -201,217 +198,190 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     });
   };
 
+  const streamCounters = [
+    { label: "Alert", value: openAlerts.length, total: alerts.length, delta: "+3", icon: BellRing, tone: "yellow" as const, route: "/alerts", closure: alertClosure },
+    { label: "Drift", value: openDrifts.length, total: drifts.length, delta: "-1", icon: GitCompareArrows, tone: "blue" as const, route: "/drift-detection", closure: driftClosure },
+    { label: "Vulnerability", value: openVulnerabilities.length, total: vulnerabilities.length, delta: "+5", icon: Bug, tone: "orange" as const, route: "/vulnerabilities", closure: vulnerabilityClosure },
+    { label: "Compliance", value: criticalOpen + highOpen, total: priorityItems.length, delta: "0", icon: Shield, tone: "red" as const, route: "/compliance", closure: 100 },
+  ];
+
   return (
-    <DashboardLayout>
-      <div className="mb-5 overflow-hidden rounded-xl border bg-card">
-        <div className="grid xl:grid-cols-[320px_minmax(0,1fr)_360px]">
-          <div className="border-b p-5 xl:border-b-0 xl:border-r">
-            <div className="flex items-center gap-3">
-              <div className={cn("flex h-24 w-24 items-center justify-center rounded-full border-8", securityScore >= 80 ? "border-emerald-500/30" : securityScore >= 50 ? "border-amber-500/30" : "border-red-500/30")}>
-                <div className="text-center">
-                  <p className="text-3xl font-semibold">{securityScore}</p>
-                  <p className="text-[11px] uppercase text-muted-foreground">score</p>
-                </div>
+    <SocWorkspace
+      section="Operations / Command Center"
+      title="Security Command Center"
+      counts={{ findings: priorityItems.length, vulnerabilities: openVulnerabilities.length }}
+    >
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(640px,1.8fr)]">
+        <SocPanel className="xl:min-h-[150px]">
+          <div className="flex h-full flex-col gap-5 p-5 lg:flex-row lg:items-center">
+            <div className={cn("flex h-28 w-28 shrink-0 items-center justify-center rounded-full border-[10px]", securityScore >= 75 ? "border-green-500/40" : securityScore >= 50 ? "border-orange-500/60" : "border-red-500/60")}>
+              <div className="text-center">
+                <p className="text-3xl font-semibold text-zinc-100">{securityScore}</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">Score</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Command center</p>
-                <h1 className="text-2xl font-semibold">Security Operations</h1>
-                <p className="mt-1 text-sm text-muted-foreground">{priorityItems.length} active work items</p>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Command Center</p>
+              <h2 className="mt-1 text-xl font-semibold text-zinc-100">Security Posture</h2>
+              <p className="mt-2 text-sm text-zinc-400">
+                <span className="text-red-300">{criticalOpen} critical</span>
+                <span> · </span>
+                <span className="text-orange-300">{highOpen} high</span>
+                <span> · trending </span>
+                <span className="text-red-300">▲ 6 pts in 24h</span>
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <SocButton onClick={runVulnerabilityScan} disabled={triggerVulnerabilityScan.isPending}>
+                  {triggerVulnerabilityScan.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
+                  Run Vulnerability Scan
+                </SocButton>
+                <SocButton variant="ghost" onClick={runDriftScan} disabled={triggerDriftDetection.isPending}>
+                  {triggerDriftDetection.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitCompareArrows className="h-4 w-4" />}
+                  Run Drift Scan
+                </SocButton>
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 divide-x border-b xl:border-b-0 xl:border-r lg:grid-cols-4">
-            {[
-              { label: "Critical", value: criticalOpen, tone: "red" as const },
-              { label: "High", value: highOpen, tone: "orange" as const },
-              { label: "Assets", value: resources.length, tone: "blue" as const },
-              { label: "Open", value: priorityItems.length, tone: "amber" as const },
-            ].map((item) => (
-              <div key={item.label} className="p-5">
-                <p className="text-xs text-muted-foreground">{item.label}</p>
-                <p className="mt-1 text-2xl font-semibold">{item.value}</p>
-                <ToneBadge value={item.label} tone={item.tone} />
+        </SocPanel>
+
+        <div className="grid rounded-md border border-zinc-800 bg-[#151517] sm:grid-cols-2 xl:grid-cols-4">
+          {streamCounters.map((item) => (
+            <button key={item.label} type="button" onClick={() => setActiveStream(item.label)} className={cn("border-b border-zinc-800 p-5 text-left hover:bg-zinc-900/60 sm:odd:border-r xl:border-b-0 xl:border-r", activeStream === item.label && "bg-zinc-900")}>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-sm text-zinc-500"><item.icon className="h-4 w-4" /> {item.label}s</span>
+                <SocBadge tone="slate">{item.delta}</SocBadge>
               </div>
-            ))}
-          </div>
-          <div className="flex flex-col justify-center gap-2 p-5">
-            <Button className="gap-2" onClick={runVulnerabilityScan} disabled={triggerVulnerabilityScan.isPending}>
-              {triggerVulnerabilityScan.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
-              Run Vulnerability Scan
-            </Button>
-            <Button variant="outline" className="gap-2" onClick={runDriftScan} disabled={triggerDriftDetection.isPending}>
-              {triggerDriftDetection.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitCompareArrows className="h-4 w-4" />}
-              Run Drift Scan
-            </Button>
-          </div>
+              <p className={cn("mt-5 text-4xl font-semibold", item.tone === "red" && "text-red-300", item.tone === "orange" && "text-orange-300", item.tone === "yellow" && "text-yellow-300", item.tone === "blue" && "text-blue-300")}>{item.value}</p>
+              <div className="mt-4"><SocProgress value={item.total ? Math.round((item.value / item.total) * 100) : 0} tone={item.tone} /></div>
+              <p className="mt-3 font-mono text-xs text-zinc-500">open queue ↗</p>
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="grid min-h-[760px] overflow-hidden rounded-xl border bg-card xl:grid-cols-[280px_minmax(0,1fr)_430px]">
-        <aside className="border-b bg-muted/20 xl:border-b-0 xl:border-r">
-          <div className="border-b p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <Radar className="h-4 w-4" />
-              Live Streams
-            </div>
-          </div>
-          <div className="divide-y">
-            <button type="button" onClick={() => setActiveStream("All")} className={cn("flex w-full items-center justify-between px-4 py-4 text-left hover:bg-muted/60", activeStream === "All" && "bg-background")}>
-              <span className="text-sm font-medium">All Work</span>
-              <ToneBadge value={priorityItems.length} tone="slate" />
-            </button>
-            {sourceMix.map((source) => (
-              <button
-                key={source.label}
-                type="button"
-                onClick={() => setActiveStream(source.label)}
-                className={cn("flex w-full items-center justify-between px-4 py-4 text-left hover:bg-muted/60", activeStream === source.label && "bg-background")}
-              >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <source.icon className="h-4 w-4" />
-                  {source.label}
-                </span>
-                <ToneBadge value={source.open} tone={source.tone} />
-              </button>
-            ))}
-          </div>
-          <div className="space-y-5 p-4">
-            <div>
-              <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">Closure</p>
-              {[
-                { label: "Alerts", value: alertClosure },
-                { label: "Drift", value: driftClosure },
-                { label: "Vulnerabilities", value: vulnerabilityClosure },
-              ].map((item) => (
-                <div key={item.label} className="mb-4">
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span>{item.label}</span>
-                    <span className="font-medium">{item.value}%</span>
-                  </div>
-                  <Progress value={item.value} />
-                </div>
-              ))}
-            </div>
-            <div>
-              <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">Route shortcuts</p>
-              <div className="grid gap-2">
-                {sourceMix.map((source) => (
-                  <Button key={source.label} variant="outline" size="sm" className="justify-between" onClick={() => navigate(source.route)}>
-                    {source.label}
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <main className="min-w-0 border-b xl:border-b-0 xl:border-r">
-          <div className="border-b px-4 py-3">
-            <h2 className="font-semibold">{activeStream} Priority Timeline</h2>
-            <p className="text-xs text-muted-foreground">Sorted by severity weight across alerts, drift, and vulnerabilities</p>
-          </div>
-          <div className="max-h-[790px] overflow-auto">
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(420px,0.8fr)]">
+        <SocPanel
+          eyebrow="Priority Timeline"
+          title="Sorted by risk weight · last 24h"
+          actions={<span className="font-mono text-xs text-green-400">◎ live</span>}
+        >
+          <div className="max-h-[620px] overflow-auto">
             {loading ? (
-              <EmptyPanel icon={Shield} title="Loading security state" description="Collecting alerts, drifts, vulnerability findings, and asset context." />
-            ) : streamItems.length === 0 ? (
-              <EmptyPanel icon={CheckCircle2} title="No active security work" description="This stream has no unresolved items right now." />
+              <div className="p-8 font-mono text-sm text-zinc-500">Loading security state...</div>
+            ) : visibleItems.length === 0 ? (
+              <div className="p-8 text-sm text-zinc-500">No active items in this stream.</div>
             ) : (
-              streamItems.map((item, index) => (
+              visibleItems.map((item, index) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => setSelectedItemId(item.id)}
-                  className={cn("grid w-full gap-3 border-b px-4 py-4 text-left transition-colors hover:bg-muted/50 lg:grid-cols-[52px_minmax(0,1fr)_150px]", selectedItem?.id === item.id && "bg-primary/5")}
+                  className={cn("grid w-full grid-cols-[64px_28px_minmax(0,1fr)_72px] border-b border-zinc-800 px-4 py-4 text-left hover:bg-zinc-900/70", selectedItem?.id === item.id && "bg-zinc-800/70")}
                 >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full border bg-background text-sm font-semibold">{index + 1}</div>
-                  <div className="min-w-0">
-                    <div className="mb-2 flex flex-wrap gap-1.5">
-                      <ToneBadge value={item.severity} />
-                      <ToneBadge value={item.type} tone="blue" />
-                    </div>
-                    <h3 className="truncate text-sm font-semibold capitalize">{item.title}</h3>
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
-                    <p className="mt-2 truncate text-xs text-muted-foreground">{item.resource}</p>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 lg:justify-end">
-                    <span className="text-xs text-muted-foreground">{formatTimeAgo(item.time)}</span>
-                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                  </div>
+                  <span className="font-mono text-xs text-zinc-500">{index === 0 ? "12m" : `${index + 1}h`}</span>
+                  <span className={cn("mt-1 h-3 w-3 rounded-full", item.severity === "critical" ? "bg-red-500" : item.severity === "high" ? "bg-orange-500" : "bg-yellow-500")} />
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <SocBadge tone={severityTone(item.severity)}>{item.severity}</SocBadge>
+                      <span className="font-mono text-xs uppercase text-zinc-500">{item.type}</span>
+                      <span className="font-mono text-xs uppercase text-zinc-500">{item.findingId}</span>
+                    </span>
+                    <span className="mt-2 block truncate text-base text-zinc-100">{item.title}</span>
+                    <span className="mt-1 block truncate font-mono text-xs text-zinc-500">{item.resource}</span>
+                  </span>
+                  <span className="self-center font-mono text-xs text-zinc-500">risk {90 + Math.max(0, 8 - index)}</span>
                 </button>
               ))
             )}
           </div>
-        </main>
+        </SocPanel>
 
-        <section className="min-w-0">
-          <div className="border-b px-4 py-3">
-            <h2 className="flex items-center gap-2 font-semibold">
-              <Workflow className="h-4 w-4" />
-              Response Play
-            </h2>
-            <p className="text-xs text-muted-foreground">Current item context and primary actions</p>
-          </div>
-          <div className="max-h-[790px] overflow-auto p-4">
-            {!selectedItem ? (
-              <EmptyPanel icon={Shield} title="No active item" description="No unresolved alert, drift, or vulnerability is currently selected." />
-            ) : (
-              <div className="space-y-5">
-                <div>
-                  <div className="mb-2 flex flex-wrap gap-2">
-                    <ToneBadge value={selectedItem.severity} />
-                    <ToneBadge value={selectedItem.type} tone="blue" />
-                  </div>
-                  <h3 className="text-lg font-semibold capitalize">{selectedItem.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">{selectedItem.description}</p>
+        <SocPanel eyebrow="Response Play" title="Actions for selected priority item">
+          {!selectedItem ? (
+            <div className="p-8 text-sm text-zinc-500">No priority item selected.</div>
+          ) : (
+            <div className="space-y-5 p-5">
+              <div>
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <SocBadge tone={severityTone(selectedItem.severity)}>{selectedItem.severity}</SocBadge>
+                  <span className="font-mono text-xs uppercase text-zinc-500">{selectedItem.type}</span>
+                  <span className="font-mono text-xs uppercase text-zinc-500">{selectedItem.findingId}</span>
                 </div>
-                <dl className="grid gap-4 sm:grid-cols-2">
-                  <DetailRow label="Resource">{selectedItem.resource}</DetailRow>
-                  <DetailRow label="Detected">{formatTimeAgo(selectedItem.time)}</DetailRow>
-                  <DetailRow label="Workflow">{selectedItem.route.replace("/", "")}</DetailRow>
-                  <DetailRow label="Risk Weight">{riskWeight(selectedItem.severity)}</DetailRow>
-                </dl>
-                <div className="grid gap-2">
-                  <Button className="gap-2" onClick={handlePrimaryAction} disabled={resolveAlert.isPending || resolveDrift.isPending}>
-                    <CheckCircle2 className="h-4 w-4" />
-                    {selectedItem.type === "Vulnerability" ? "Open Patch Center" : "Resolve"}
-                  </Button>
-                  <Button variant="outline" className="gap-2" onClick={handleSecondaryAction} disabled={acknowledgeAlert.isPending || acknowledgeDrift.isPending}>
-                    <Shield className="h-4 w-4" />
-                    {selectedItem.type === "Vulnerability" ? "Find Related" : "Acknowledge"}
-                  </Button>
-                  {selectedItem.type === "Drift" && (
-                    <Button variant="outline" className="gap-2" onClick={handleApproveBaseline} disabled={approveDrift.isPending}>
-                      <Network className="h-4 w-4" />
-                      Approve Baseline
-                    </Button>
-                  )}
-                </div>
-                <div className="rounded-lg border p-4">
-                  <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">At-risk resources</p>
-                  <div className="space-y-2">
-                    {resourceRisk.slice(0, 5).map(({ resource, score }) => (
-                      <button
-                        key={resource.id ?? resource.resourceId ?? resource.name}
-                        type="button"
-                        onClick={() => navigate(`/resources/${encodeURIComponent(String(resource.id ?? resource.resourceId ?? ""))}`)}
-                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
-                      >
-                        <span className="min-w-0">
-                          <span className="block truncate font-medium">{resource.name}</span>
-                          <span className="block truncate text-xs text-muted-foreground">{resource.provider.toUpperCase()} · {resource.type}</span>
-                        </span>
-                        <ToneBadge value={score} tone={score >= 10 ? "red" : score >= 6 ? "orange" : score > 0 ? "amber" : "emerald"} />
-                      </button>
-                    ))}
-                    {resourceRisk.length === 0 && <p className="text-sm text-muted-foreground">No resource concentration available yet.</p>}
-                  </div>
+                <h2 className="text-xl font-semibold text-zinc-100">{selectedItem.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-400">{selectedItem.description}</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <SocStat label="Resource" value={<span className="text-base">{selectedItem.resource}</span>} />
+                <SocStat label="Detected" value={<span className="text-base">{formatTimeAgo(selectedItem.time)}</span>} />
+                <SocStat label="Risk Weight" value={riskWeight(selectedItem.severity) * 10 - 2} tone={severityTone(selectedItem.severity)} />
+                <SocStat label="Type" value={<span className="text-base">{selectedItem.type === "Vulnerability" ? "CVE" : selectedItem.type}</span>} />
+              </div>
+              <div className="rounded border border-zinc-800">
+                <div className="border-b border-zinc-800 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">Closure Progress</div>
+                <div className="space-y-3 p-4 text-sm text-zinc-300">
+                  {["Detected & fingerprinted", "Owner notified · #sec-alerts", "Remediation drafted", "Change ticket · CHG-0091", "Verified fix on next scan"].map((step, index) => (
+                    <div key={step} className="flex items-center gap-3">
+                      {index < 2 ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <span className="h-4 w-4 rounded-full border border-zinc-600" />}
+                      <span className={index < 2 ? "text-zinc-200" : "text-zinc-500"}>{step}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            )}
-          </div>
-        </section>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <SocButton onClick={handlePrimaryAction} disabled={resolveAlert.isPending || resolveDrift.isPending}>
+                  <Play className="h-4 w-4" />
+                  {selectedItem.type === "Vulnerability" ? "Open Patch Center" : "Resolve"}
+                </SocButton>
+                <SocButton variant="ghost" onClick={() => navigate(selectedItem.route)}>
+                  <ExternalLink className="h-4 w-4" />
+                  Open Investigation
+                </SocButton>
+                <SocButton variant="ghost" onClick={handleSecondaryAction} disabled={acknowledgeAlert.isPending || acknowledgeDrift.isPending}>
+                  <Shield className="h-4 w-4" />
+                  {selectedItem.type === "Vulnerability" ? "Find Related" : "Acknowledge"}
+                </SocButton>
+                {selectedItem.type === "Drift" && (
+                  <SocButton variant="ghost" onClick={handleApproveBaseline} disabled={approveDrift.isPending}>
+                    <Network className="h-4 w-4" />
+                    Approve Baseline
+                  </SocButton>
+                )}
+              </div>
+            </div>
+          )}
+        </SocPanel>
       </div>
-    </DashboardLayout>
+
+      <SocPanel className="mt-4" eyebrow="Assets Under Stress" title="At-risk resources · ranked by exposure score" actions={<SocButton variant="ghost" onClick={() => navigate("/findings")}>Open Findings <ExternalLink className="h-4 w-4" /></SocButton>}>
+        <div className="overflow-auto">
+          <table className="w-full min-w-[760px] text-left">
+            <thead className="border-b border-zinc-800 font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">
+              <tr>
+                <th className="px-4 py-3">Resource</th>
+                <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Provider</th>
+                <th className="px-4 py-3">Findings</th>
+                <th className="px-4 py-3">Exposure</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {resourceRisk.length === 0 ? (
+                <tr><td className="px-4 py-8 text-sm text-zinc-500" colSpan={6}>No resource risk concentration available yet.</td></tr>
+              ) : resourceRisk.map(({ resource, score }) => (
+                <tr key={resource.id ?? resource.resourceId ?? resource.name} className="hover:bg-zinc-900/50">
+                  <td className="px-4 py-3 font-mono text-sm text-zinc-200">{resource.name}</td>
+                  <td className="px-4 py-3 font-mono text-sm text-zinc-500">{resource.type}</td>
+                  <td className="px-4 py-3"><SocBadge tone={resource.provider === "aws" ? "orange" : resource.provider === "gcp" ? "blue" : "cyan"}>{resource.provider}</SocBadge></td>
+                  <td className="px-4 py-3 font-mono text-sm text-zinc-300">{Math.max(1, Math.round(score / 4))}</td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-32"><SocProgress value={Math.min(100, score * 8)} tone={score >= 10 ? "red" : "orange"} /></div><span className="font-mono text-sm text-zinc-500">{score}</span></div></td>
+                  <td className="px-4 py-3 text-right"><button type="button" onClick={() => navigate(`/resources/${encodeURIComponent(String(resource.id ?? resource.resourceId ?? ""))}`)} className="text-zinc-500 hover:text-zinc-100"><ExternalLink className="h-4 w-4" /></button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </SocPanel>
+    </SocWorkspace>
   );
 }

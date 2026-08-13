@@ -1,30 +1,34 @@
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
+  Bug,
   CheckCircle2,
   CircleDot,
+  EyeOff,
   ExternalLink,
   Fingerprint,
-  ListFilter,
+  KeyRound,
   Search,
+  Shield,
   ShieldCheck,
+  ShieldOff,
   Siren,
+  XCircle,
 } from "lucide-react";
-import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useFindings, useFindingSummary, useUpdateFindingStatus } from "@/hooks/use-findings";
 import type { Finding, FindingParams, FindingStatus } from "@/lib/api";
-import { FindingDetailPanel, formatFindingLabel } from "@/components/findings/finding-ui";
-import { EmptyPanel, ToneBadge } from "@/components/security-ops/ops-ui";
-import { cn, formatTimeAgo } from "@/lib/utils";
+import { findingEvidence, formatFindingLabel } from "@/components/findings/finding-ui";
+import { EmptyPanel } from "@/components/security-ops/ops-ui";
+import { SocBadge, SocButton, SocPanel, SocWorkspace } from "@/components/security-ops/soc-ui";
+import { cn } from "@/lib/utils";
 
 const severities = ["all", "critical", "high", "medium", "low", "info"];
 const statuses = ["open", "all", "resolved", "accepted", "false_positive", "ignored"];
-const types = ["all", "cve", "vulnerability", "misconfiguration", "compliance_violation", "exposure", "secret", "malware"];
-const sources = ["all", "vulnerability", "compliance", "cloud_native", "policy"];
+const clouds = ["all", "aws", "gcp", "azure", "kubernetes"];
 
 function findingLane(finding: Finding) {
   if (finding.status === "resolved") return "Resolved";
@@ -38,44 +42,58 @@ function severityRank(severity?: string) {
   return { critical: 5, high: 4, medium: 3, low: 2, info: 1 }[String(severity ?? "").toLowerCase()] ?? 0;
 }
 
-function SignalRow({
-  finding,
-  selected,
-  onSelect,
-}: {
-  finding: Finding;
-  selected: boolean;
-  onSelect: () => void;
-}) {
+function severityTone(severity?: string) {
+  if (severity === "critical") return "red" as const;
+  if (severity === "high") return "orange" as const;
+  if (severity === "medium") return "yellow" as const;
+  if (severity === "low") return "blue" as const;
+  return "slate" as const;
+}
+
+function typeIcon(type?: string) {
+  if (type === "secret") return KeyRound;
+  if (type === "cve" || type === "vulnerability") return Bug;
+  if (type === "exposure") return Siren;
+  return Fingerprint;
+}
+
+function compactDate(value?: string) {
+  if (!value) return "unknown";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "unknown";
+  return date.toLocaleDateString();
+}
+
+function DetailField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">{label}</p>
+      <div className="mt-2 break-words font-mono text-sm text-zinc-200">{children}</div>
+    </div>
+  );
+}
+
+function FindingRow({ finding, selected, onSelect }: { finding: Finding; selected: boolean; onSelect: () => void }) {
+  const Icon = typeIcon(finding.findingType);
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={cn(
-        "grid w-full gap-3 border-b px-4 py-3 text-left transition-colors hover:bg-muted/50 lg:grid-cols-[96px_minmax(0,1fr)_150px]",
-        selected && "bg-primary/5",
-      )}
+      className={cn("grid w-full grid-cols-[34px_minmax(0,1fr)_96px] gap-3 border-b border-zinc-800 px-4 py-4 text-left hover:bg-zinc-900/70", selected && "border-l-2 border-l-blue-500 bg-zinc-800/70")}
     >
-      <div className="flex flex-wrap items-start gap-1.5">
-        <ToneBadge value={finding.severity} />
-        <ToneBadge value={finding.status} />
-      </div>
+      <Icon className="mt-1 h-4 w-4 text-zinc-500" />
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="min-w-0 truncate text-sm font-semibold">{finding.title}</h3>
-          <ToneBadge value={formatFindingLabel(finding.findingType)} tone="blue" />
+          <SocBadge tone={severityTone(finding.severity)}>{finding.severity}</SocBadge>
+          <SocBadge tone={finding.provider === "aws" ? "orange" : finding.provider === "gcp" ? "blue" : "cyan"}>{finding.provider || "unknown"}</SocBadge>
+          <span className="font-mono text-xs uppercase text-zinc-500">{finding.externalId || finding.ruleId || `FND-${finding.id}`}</span>
+          <span className="font-mono text-xs text-zinc-500">· {formatFindingLabel(finding.scannerType || finding.sourceType)}</span>
         </div>
-        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{finding.description || "No description attached."}</p>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <span className="font-mono">{finding.resourceId || "not resource scoped"}</span>
-          <span>{finding.provider?.toUpperCase() || "UNKNOWN"}</span>
-          <span>{formatFindingLabel(finding.scannerType || finding.sourceType)}</span>
-        </div>
+        <h3 className="mt-2 truncate text-base font-medium text-zinc-100">{finding.title}</h3>
+        <p className="mt-1 truncate font-mono text-xs text-zinc-500">{finding.resourceId || "not resource scoped"}</p>
+        {(finding.externalId || finding.ruleId) && <p className="mt-1 font-mono text-xs text-blue-300">{finding.externalId || finding.ruleId}</p>}
       </div>
-      <div className="flex items-center justify-between gap-3 lg:justify-end">
-        <span className="text-xs text-muted-foreground">{formatTimeAgo(finding.lastSeenAt)}</span>
-        <ExternalLink className="h-4 w-4 text-muted-foreground" />
-      </div>
+      <span className="font-mono text-xs text-zinc-500">{compactDate(finding.lastSeenAt)}</span>
     </button>
   );
 }
@@ -85,8 +103,7 @@ export default function Findings() {
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("all");
   const [status, setStatus] = useState("open");
-  const [findingType, setFindingType] = useState("all");
-  const [sourceType, setSourceType] = useState("all");
+  const [cloud, setCloud] = useState("all");
   const [activeLane, setActiveLane] = useState("Priority");
   const [selectedFindingId, setSelectedFindingId] = useState<number | null>(null);
 
@@ -95,8 +112,7 @@ export default function Findings() {
     pageSize: 100,
     severity: severity === "all" ? undefined : severity,
     status: status === "all" ? undefined : status,
-    findingType: findingType === "all" ? undefined : findingType,
-    sourceType: sourceType === "all" ? undefined : sourceType,
+    provider: cloud === "all" ? undefined : cloud,
   };
 
   const { data: findingsResponse, isLoading, isError, error } = useFindings(params);
@@ -130,16 +146,9 @@ export default function Findings() {
   }));
   const visibleQueue = lanes.find((lane) => lane.lane === activeLane)?.items ?? filtered;
   const selectedFinding = filtered.find((finding) => finding.id === selectedFindingId) ?? visibleQueue[0] ?? filtered[0] ?? null;
-  const bySeverity = summary?.bySeverity ?? {};
-  const byStatus = summary?.byStatus ?? {};
   const byType = summary?.byType ?? {};
-  const priorityTotal = (bySeverity.critical ?? 0) + (bySeverity.high ?? 0);
-
-  const providerMix = Object.entries(findings.reduce<Record<string, number>>((counts, finding) => {
-    const provider = finding.provider?.toUpperCase() || "UNKNOWN";
-    counts[provider] = (counts[provider] ?? 0) + 1;
-    return counts;
-  }, {})).sort((a, b) => b[1] - a[1]);
+  const evidence = findingEvidence(selectedFinding);
+  const evidenceEntries = Object.entries(evidence).filter(([, value]) => value !== "" && value !== undefined && value !== null);
 
   const handleStatusChange = (nextStatus: FindingStatus) => {
     if (!selectedFinding) return;
@@ -153,172 +162,142 @@ export default function Findings() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="mb-5 overflow-hidden rounded-xl border bg-card">
-        <div className="grid gap-0 xl:grid-cols-[minmax(0,1fr)_520px]">
-          <div className="border-b p-5 xl:border-b-0 xl:border-r">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <div className="mb-2 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <Fingerprint className="h-4 w-4" />
-                  Normalized evidence layer
-                </div>
-                <h1 className="text-2xl font-semibold">Security Findings Console</h1>
-                <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-                  Investigate CVEs, misconfigurations, compliance violations, exposure, secrets, malware, and provider-native signals in one queue.
-                </p>
-              </div>
-              <div className="grid grid-cols-3 gap-2 text-center sm:min-w-[360px]">
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Open</p>
-                  <p className="text-2xl font-semibold">{byStatus.open ?? 0}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Priority</p>
-                  <p className="text-2xl font-semibold">{priorityTotal}</p>
-                </div>
-                <div className="rounded-lg border p-3">
-                  <p className="text-xs text-muted-foreground">Total</p>
-                  <p className="text-2xl font-semibold">{summary?.total ?? findingsResponse?.totalItems ?? 0}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4">
-            {["critical", "high", "medium", "low"].map((item) => (
-              <button key={item} type="button" onClick={() => setSeverity(item)} className="rounded-lg border p-3 text-left hover:bg-muted/40">
-                <ToneBadge value={item} />
-                <p className="mt-3 text-xl font-semibold">{bySeverity[item] ?? 0}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_210px_190px_220px_190px]">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search rule, resource, CVE, fingerprint, provider..." className="pl-9" />
-        </div>
-        <Select value={severity} onValueChange={setSeverity}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>{severities.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>{statuses.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={findingType} onValueChange={setFindingType}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>{types.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={sourceType} onValueChange={setSourceType}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>{sources.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
-        </Select>
-      </div>
-
+    <SocWorkspace
+      section="Operations / Findings"
+      title="Findings Console"
+      counts={{ findings: summary?.total ?? findingsResponse?.totalItems ?? 0 }}
+    >
       {isError && (
         <div className="mb-4">
           <EmptyPanel icon={AlertTriangle} title="Could not load findings" description={error instanceof Error ? error.message : "The findings API returned an error."} />
         </div>
       )}
 
-      <div className="grid min-h-[720px] overflow-hidden rounded-xl border bg-card xl:grid-cols-[280px_minmax(0,1fr)_460px]">
-        <aside className="border-b bg-muted/20 xl:border-b-0 xl:border-r">
-          <div className="border-b p-4">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <ListFilter className="h-4 w-4" />
-              Signal Stack
-            </div>
+      <div className="grid min-h-[calc(100vh-130px)] overflow-hidden rounded-md border border-zinc-800 bg-[#151517] xl:grid-cols-[280px_minmax(0,1fr)_420px]">
+        <aside className="border-b border-zinc-800 xl:border-b-0 xl:border-r">
+          <div className="border-b border-zinc-800 p-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Signal Stack</p>
+            <h2 className="mt-1 text-base font-semibold text-zinc-100">Investigation Lanes</h2>
           </div>
-          <div className="divide-y">
+          <div className="space-y-2 p-3">
             {lanes.map((lane) => (
               <button
                 key={lane.lane}
                 type="button"
                 onClick={() => setActiveLane(lane.lane)}
-                className={cn("flex w-full items-center justify-between px-4 py-4 text-left hover:bg-muted/60", activeLane === lane.lane && "bg-background")}
+                className={cn("flex h-12 w-full items-center justify-between rounded border border-transparent px-3 text-left text-zinc-300 hover:border-zinc-800 hover:bg-zinc-900", activeLane === lane.lane && "border-blue-500/40 bg-blue-500/10 text-blue-200")}
               >
-                <span className="flex items-center gap-2">
-                  {lane.lane === "Priority" ? <Siren className="h-4 w-4 text-red-600" /> : lane.lane === "Resolved" ? <ShieldCheck className="h-4 w-4 text-emerald-600" /> : <CircleDot className="h-4 w-4 text-muted-foreground" />}
-                  <span className="text-sm font-medium">{lane.lane}</span>
+                <span className="flex items-center gap-3">
+                  {lane.lane === "Priority" ? <Siren className="h-4 w-4 text-red-400" /> : lane.lane === "Exposure" ? <ShieldOff className="h-4 w-4 text-orange-400" /> : lane.lane === "Audit" ? <ShieldCheck className="h-4 w-4 text-yellow-300" /> : lane.lane === "Resolved" ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <CircleDot className="h-4 w-4 text-blue-400" />}
+                  {lane.lane}
                 </span>
-                <ToneBadge value={lane.items.length} tone={lane.lane === "Priority" ? "red" : lane.lane === "Resolved" ? "emerald" : "slate"} />
+                <span className="rounded border border-zinc-800 bg-zinc-950 px-2 py-0.5 font-mono text-xs text-zinc-400">{lane.items.length}</span>
               </button>
             ))}
           </div>
-          <div className="space-y-4 p-4">
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Finding types</p>
-              <div className="space-y-2">
-                {Object.entries(byType).slice(0, 6).map(([type, count]) => (
-                  <button key={type} type="button" onClick={() => setFindingType(type)} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-background">
-                    <span className="truncate">{formatFindingLabel(type)}</span>
-                    <ToneBadge value={count} tone="blue" />
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">Providers</p>
-              <div className="space-y-2">
-                {providerMix.slice(0, 5).map(([provider, count]) => (
-                  <button key={provider} type="button" onClick={() => setSearch(provider.toLowerCase())} className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-background">
-                    <span>{provider}</span>
-                    <ToneBadge value={count} tone="slate" />
-                  </button>
-                ))}
-              </div>
+          <div className="border-t border-zinc-800 p-4">
+            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Type Facets</p>
+            <div className="space-y-2">
+              {Object.entries(byType).slice(0, 8).map(([type, count]) => (
+                <div key={type} className="flex items-center justify-between font-mono text-sm uppercase text-zinc-300">
+                  <span>{formatFindingLabel(type)}</span>
+                  <span className="text-zinc-500">{count}</span>
+                </div>
+              ))}
             </div>
           </div>
         </aside>
 
-        <main className="min-w-0 border-b xl:border-b-0 xl:border-r">
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <div>
-              <h2 className="font-semibold">{activeLane} Queue</h2>
-              <p className="text-xs text-muted-foreground">{visibleQueue.length} matching findings</p>
+        <main className="min-w-0 border-b border-zinc-800 xl:border-b-0 xl:border-r">
+          <div className="grid gap-3 border-b border-zinc-800 p-3 lg:grid-cols-[minmax(0,1fr)_145px_132px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" />
+              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="rule, resource, CVE, fingerprint..." className="h-10 border-zinc-800 bg-zinc-950 pl-9 font-mono text-zinc-200 placeholder:text-zinc-600" />
             </div>
-            <Button variant="outline" size="sm" onClick={() => {
-              setSearch("");
-              setSeverity("all");
-              setStatus("open");
-              setFindingType("all");
-              setSourceType("all");
-              setActiveLane("Priority");
-            }}>
-              Reset
-            </Button>
+            <Select value={severity} onValueChange={setSeverity}>
+              <SelectTrigger className="h-10 border-zinc-800 bg-zinc-950 font-mono text-zinc-300"><SelectValue /></SelectTrigger>
+              <SelectContent>{severities.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={cloud} onValueChange={setCloud}>
+              <SelectTrigger className="h-10 border-zinc-800 bg-zinc-950 font-mono text-zinc-300"><SelectValue /></SelectTrigger>
+              <SelectContent>{clouds.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
+            </Select>
           </div>
-          <div className="max-h-[760px] overflow-auto">
+          <div className="flex items-center gap-3 border-b border-zinc-800 px-4 py-3 font-mono text-xs text-zinc-500">
+            <span>{visibleQueue.length} matching</span>
+            <span>·</span>
+            <span>lane {activeLane.toLowerCase()}</span>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="ml-auto h-8 w-[150px] border-zinc-800 bg-zinc-950 font-mono text-xs text-zinc-300"><SelectValue /></SelectTrigger>
+              <SelectContent>{statuses.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="max-h-[calc(100vh-260px)] overflow-auto">
             {isLoading ? (
-              <EmptyPanel icon={Fingerprint} title="Loading findings" description="Fetching normalized finding evidence." />
+              <div className="p-8 font-mono text-sm text-zinc-500">Loading normalized findings...</div>
             ) : visibleQueue.length === 0 ? (
-              <EmptyPanel icon={CheckCircle2} title="No findings in this lane" description="Change the filters or choose a different signal stack lane." />
+              <div className="p-8 text-sm text-zinc-500">No findings in this lane.</div>
             ) : (
               visibleQueue.map((finding) => (
-                <SignalRow
-                  key={finding.id}
-                  finding={finding}
-                  selected={selectedFinding?.id === finding.id}
-                  onSelect={() => setSelectedFindingId(finding.id)}
-                />
+                <FindingRow key={finding.id} finding={finding} selected={selectedFinding?.id === finding.id} onSelect={() => setSelectedFindingId(finding.id)} />
               ))
             )}
           </div>
         </main>
 
         <section className="min-w-0">
-          <div className="border-b px-4 py-3">
-            <h2 className="font-semibold">Investigation Record</h2>
-            <p className="text-xs text-muted-foreground">Evidence, remediation, ownership, and lifecycle actions</p>
-          </div>
-          <div className="max-h-[760px] overflow-auto p-4">
-            <FindingDetailPanel finding={selectedFinding} onStatusChange={handleStatusChange} isStatusPending={updateStatus.isPending} />
-          </div>
+          {!selectedFinding ? (
+            <div className="p-6 text-sm text-zinc-500">Select a finding to inspect evidence.</div>
+          ) : (
+            <div className="flex h-full flex-col">
+              <div className="border-b border-zinc-800 p-5">
+                <div className="flex flex-wrap gap-2">
+                  <SocBadge tone={severityTone(selectedFinding.severity)}>{selectedFinding.severity}</SocBadge>
+                  <SocBadge tone={selectedFinding.status === "open" ? "orange" : "slate"}>{selectedFinding.status}</SocBadge>
+                  <span className="font-mono text-xs uppercase text-zinc-500">{formatFindingLabel(selectedFinding.findingType)}</span>
+                  {selectedFinding.confidence && <span className="font-mono text-xs uppercase text-zinc-500">{selectedFinding.confidence} conf.</span>}
+                </div>
+                <h2 className="mt-4 text-xl font-semibold text-zinc-100">{selectedFinding.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-400">{selectedFinding.description || "No description is attached to this finding."}</p>
+              </div>
+              <div className="max-h-[calc(100vh-310px)] flex-1 overflow-auto p-5">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <DetailField label="ID">FND-{selectedFinding.id}</DetailField>
+                  <DetailField label="External">{selectedFinding.externalId || selectedFinding.ruleId || "none"}</DetailField>
+                  <DetailField label="Provider">{selectedFinding.provider || "unknown"}</DetailField>
+                  <DetailField label="Scanner">{selectedFinding.scannerType || selectedFinding.sourceType}</DetailField>
+                  <DetailField label="First Seen">{compactDate(selectedFinding.firstSeenAt)}</DetailField>
+                  <DetailField label="Last Seen">{compactDate(selectedFinding.lastSeenAt)}</DetailField>
+                </div>
+                <div className="mt-5">
+                  <DetailField label="Resource">{selectedFinding.resourceId || "not resource scoped"}</DetailField>
+                </div>
+                <div className="mt-5">
+                  <DetailField label="Fingerprint">{selectedFinding.fingerprint}</DetailField>
+                </div>
+                <div className="mt-5">
+                  <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">Evidence</p>
+                  <pre className="max-h-64 overflow-auto rounded border border-zinc-800 bg-zinc-950 p-4 text-xs text-blue-100">
+                    {evidenceEntries.length ? JSON.stringify(evidence, null, 2) : "No structured evidence was stored for this finding."}
+                  </pre>
+                </div>
+                <div className="mt-5 border-l-2 border-blue-500 px-4 text-sm leading-6 text-zinc-300">
+                  {selectedFinding.remediation || "No remediation guidance is attached yet."}
+                </div>
+              </div>
+              <div className="grid gap-2 border-t border-zinc-800 p-4 sm:grid-cols-2">
+                <SocButton onClick={() => handleStatusChange("resolved")} disabled={updateStatus.isPending}><CheckCircle2 className="h-4 w-4" /> Resolve</SocButton>
+                <SocButton variant="ghost" onClick={() => handleStatusChange("accepted")} disabled={updateStatus.isPending}><Shield className="h-4 w-4" /> Accept Risk</SocButton>
+                <SocButton variant="ghost" onClick={() => handleStatusChange("false_positive")} disabled={updateStatus.isPending}><XCircle className="h-4 w-4" /> False Positive</SocButton>
+                <SocButton variant="ghost" onClick={() => handleStatusChange("ignored")} disabled={updateStatus.isPending}><EyeOff className="h-4 w-4" /> Ignore</SocButton>
+                <Button asChild variant="ghost" className="h-10 border border-zinc-800 bg-zinc-950 text-zinc-200 hover:bg-zinc-900 sm:col-span-2">
+                  <a href={`/findings/${selectedFinding.id}`}><ExternalLink className="mr-2 h-4 w-4" /> Full Page</a>
+                </Button>
+              </div>
+            </div>
+          )}
         </section>
       </div>
-    </DashboardLayout>
+    </SocWorkspace>
   );
 }
