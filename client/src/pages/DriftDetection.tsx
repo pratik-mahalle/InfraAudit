@@ -152,6 +152,12 @@ export default function DriftDetection() {
     acc[drift.driftType] = (acc[drift.driftType] ?? 0) + 1;
     return acc;
   }, {});
+  const driftLanes = [
+    { label: "Needs Review", items: filteredDrifts.filter((drift) => drift.status === "detected"), tone: "red" as const },
+    { label: "Owner Review", items: filteredDrifts.filter((drift) => drift.status === "acknowledged"), tone: "amber" as const },
+    { label: "Resolved", items: filteredDrifts.filter((drift) => drift.status === "resolved"), tone: "emerald" as const },
+    { label: "Approved Baseline", items: filteredDrifts.filter((drift) => drift.status === "approved"), tone: "blue" as const },
+  ].filter((lane) => lane.items.length > 0);
   const activeScanJobStatus = scanJobStatus?.status ?? (scanJobId ? "available" : undefined);
   const scanJobIsActive = !!scanJobId && !scanJobStatusError && !isTerminalQueueState(activeScanJobStatus);
 
@@ -264,7 +270,7 @@ export default function DriftDetection() {
         <MetricTile icon={ClipboardCheck} label="Baseline coverage" value={`${baselineCoverage}%`} tone="emerald" helper={`${resolvedCount} resolved`} />
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
         <FilterToolbar
           search={search}
           onSearchChange={setSearch}
@@ -274,6 +280,21 @@ export default function DriftDetection() {
             { value: statusFilter, onChange: setStatusFilter, placeholder: "Status", options: statusOptions },
           ]}
         />
+        <Card className="rounded-lg">
+          <CardContent className="flex h-full flex-col justify-center gap-3 p-3">
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant={statusFilter === "detected" ? "default" : "outline"} onClick={() => setStatusFilter("detected")}>Needs Review</Button>
+              <Button size="sm" variant={statusFilter === "acknowledged" ? "default" : "outline"} onClick={() => setStatusFilter("acknowledged")}>Owner Review</Button>
+              <Button size="sm" variant={severityFilter === "critical" ? "default" : "outline"} onClick={() => setSeverityFilter("critical")}>Critical</Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                setSearch("");
+                setSeverityFilter("all");
+                setStatusFilter("detected");
+              }}>Reset</Button>
+            </div>
+            <p className="text-xs text-muted-foreground">Filter by review state before comparing baseline and current config.</p>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_460px]">
@@ -282,36 +303,67 @@ export default function DriftDetection() {
             <CardTitle>Baseline Change Queue</CardTitle>
             <CardDescription>{filteredDrifts.length} changes require review in the current view</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {Object.entries(byType).length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {Object.entries(byType).slice(0, 8).map(([type, count]) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setSearch(driftTypeLabels[type] ?? type.replace(/_/g, " "))}
+                    className="rounded-lg border p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40"
+                  >
+                    <p className="line-clamp-1 text-xs capitalize text-muted-foreground">{driftTypeLabels[type] ?? type.replace(/_/g, " ")}</p>
+                    <p className="mt-1 text-lg font-semibold">{count}</p>
+                  </button>
+                ))}
+              </div>
+            )}
             {isLoading ? (
               <EmptyPanel icon={History} title="Loading drifts" description="Checking live changes against stored baselines." />
             ) : filteredDrifts.length === 0 ? (
               <EmptyPanel icon={ShieldCheck} title="No drift in this view" description="Change filters or run a scan to compare current infrastructure state." />
             ) : (
-              <div className="divide-y rounded-lg border">
-                {filteredDrifts.map((drift) => (
-                  <button
-                    key={drift.id}
-                    type="button"
-                    onClick={() => setSelectedDriftId(drift.id)}
-                    className={cn("w-full px-4 py-4 text-left transition-colors hover:bg-muted/50", selectedDrift?.id === drift.id && "bg-muted")}
-                  >
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap gap-2">
-                          <ToneBadge value={drift.severity} />
-                          <ToneBadge value={drift.status} />
-                        </div>
-                        <h3 className="mt-2 text-sm font-semibold capitalize">{labelForDrift(drift)}</h3>
-                        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{drift.description}</p>
-                      </div>
-                      <span className="shrink-0 text-xs text-muted-foreground">{formatTimeAgo(drift.detectedAt)}</span>
+              <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-4">
+                {driftLanes.map((lane) => (
+                  <section key={lane.label} className="rounded-lg border bg-muted/20 p-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <h3 className="text-sm font-semibold">{lane.label}</h3>
+                      <ToneBadge value={lane.items.length} tone={lane.tone} />
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                      <span>{driftResource(drift)}</span>
-                      {drift.fieldChanged && <span>Field: {drift.fieldChanged}</span>}
+                    <div className="space-y-2">
+                      {lane.items.slice(0, 8).map((drift) => (
+                        <button
+                          key={drift.id}
+                          type="button"
+                          onClick={() => setSelectedDriftId(drift.id)}
+                          className={cn(
+                            "w-full rounded-lg border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40",
+                            selectedDrift?.id === drift.id && "border-primary/50 bg-primary/5",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap gap-1.5">
+                                <ToneBadge value={drift.severity} />
+                                <ToneBadge value={drift.status} />
+                              </div>
+                              <h3 className="mt-2 line-clamp-2 text-sm font-semibold capitalize">{labelForDrift(drift)}</h3>
+                            </div>
+                            <span className="shrink-0 text-xs text-muted-foreground">{formatTimeAgo(drift.detectedAt)}</span>
+                          </div>
+                          <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{drift.description}</p>
+                          <div className="mt-3 grid gap-1 text-xs text-muted-foreground">
+                            <span className="truncate font-mono">{driftResource(drift)}</span>
+                            {drift.fieldChanged && <span>Field: {drift.fieldChanged}</span>}
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  </button>
+                    {lane.items.length > 8 && (
+                      <p className="mt-3 text-xs text-muted-foreground">+{lane.items.length - 8} more in this lane.</p>
+                    )}
+                  </section>
                 ))}
               </div>
             )}
@@ -392,20 +444,20 @@ export default function DriftDetection() {
 
           <Card className="rounded-lg">
             <CardHeader>
-              <CardTitle>Drift Types</CardTitle>
-              <CardDescription>Where configuration changes are concentrated</CardDescription>
+              <CardTitle>Review Runbook</CardTitle>
+              <CardDescription>How to move a drift through the lifecycle</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {Object.entries(byType).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No drift type distribution is available.</p>
-              ) : (
-                Object.entries(byType).slice(0, 6).map(([type, count]) => (
-                  <div key={type} className="flex items-center justify-between rounded-lg border p-3">
-                    <span className="text-sm capitalize">{driftTypeLabels[type] ?? type.replace(/_/g, " ")}</span>
-                    <ToneBadge value={count} tone="blue" />
-                  </div>
-                ))
-              )}
+              {[
+                ["Acknowledge", "Confirm an owner has started review and prevent duplicate triage."],
+                ["Resolve", "Close the drift after reverting or confirming the live state is corrected."],
+                ["Approve Baseline", "Accept the current configuration as the new intended state."],
+              ].map(([step, description]) => (
+                <div key={step} className="rounded-lg border p-3">
+                  <p className="text-sm font-medium">{step}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>

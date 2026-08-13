@@ -78,7 +78,7 @@ interface K8sCluster {
   version?: string;
 }
 
-export function CloudProviderSetup() {
+export function CloudProviderSetup({ showHeader = true }: { showHeader?: boolean }) {
   const [activeTab, setActiveTab] = useState<string>('aws');
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -407,14 +407,16 @@ export function CloudProviderSetup() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Cloud Provider Integration</h2>
-          <p className="text-muted-foreground">
-            Connect your cloud accounts to monitor resources, costs, and security
-          </p>
+      {showHeader && (
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Cloud Provider Integration</h2>
+            <p className="text-muted-foreground">
+              Connect your cloud accounts to monitor resources, costs, and security
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Connected providers */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">

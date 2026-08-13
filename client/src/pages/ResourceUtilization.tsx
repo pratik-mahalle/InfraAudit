@@ -8,14 +8,6 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -36,14 +28,23 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import {
+  AlertTriangle,
+  Activity,
+  DollarSign,
+  ExternalLink,
+  Layers3,
+  MapPin,
   RefreshCw,
   Search,
+  Server,
 } from "lucide-react";
+import { DetailRow, EmptyPanel, ToneBadge } from "@/components/security-ops/ops-ui";
 
 export default function ResourceUtilizationPage() {
   const [resourceType, setResourceType] = useState("all");
   const [provider, setProvider] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedResourceKey, setSelectedResourceKey] = useState<string | null>(null);
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const refreshMetrics = useRefreshResourceMetrics();
@@ -116,20 +117,24 @@ export default function ResourceUtilizationPage() {
 
     return matchesType && matchesProvider && matchesSearch;
   });
+  const resourceKey = (resource: any) => String(resource.resourceId ?? resource.id ?? resource.name);
+  const selectedResource = filteredResources.find((resource) => resourceKey(resource) === selectedResourceKey) ?? filteredResources[0] ?? null;
+  const regionCounts = resources.reduce<Record<string, number>>((counts, resource) => {
+    counts[resource.region || "unknown"] = (counts[resource.region || "unknown"] ?? 0) + 1;
+    return counts;
+  }, {});
+  const providerEntries = Object.entries(providerCounts).sort((a, b) => b[1] - a[1]);
+  const typeEntries = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+  const regionEntries = Object.entries(regionCounts).sort((a, b) => b[1] - a[1]);
 
   // Get unique resource types and providers for filters
   const resourceTypes = Array.from(new Set(resources.map((r) => r.type)));
   const providers = Array.from(new Set(resources.map((r) => r.provider)));
 
-  // Show real status-based indicator per resource (no fake utilization without real metrics API)
-  const getResourceUtilization = (resource: any): { value: number; color: string; label: string } => {
-    if (resource.status === "running" || resource.status === "active") {
-      return { value: 100, color: "bg-emerald-500", label: "Active" };
-    } else if (resource.status === "stopped" || resource.status === "inactive") {
-      return { value: 0, color: "bg-gray-400", label: "Stopped" };
-    } else {
-      return { value: 50, color: "bg-amber-500", label: resource.status };
-    }
+  const statusTone = (status?: string) => {
+    if (status === "running" || status === "active") return "emerald" as const;
+    if (status === "stopped" || status === "inactive") return "slate" as const;
+    return "amber" as const;
   };
 
   return (
@@ -172,12 +177,68 @@ export default function ResourceUtilizationPage() {
         <UtilizationCharts resources={resources} />
       </div>
 
-      {/* Resources List */}
+      <div className="mb-6 grid gap-4 xl:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Server className="h-5 w-5" />
+              Provider Spread
+            </CardTitle>
+            <CardDescription>Inventory grouped by connected cloud</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {providerEntries.map(([name, count]) => (
+              <button key={name} type="button" onClick={() => setProvider(name)} className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-muted/40">
+                <span className="text-sm uppercase">{name}</span>
+                <ToneBadge value={count} tone="blue" />
+              </button>
+            ))}
+            {providerEntries.length === 0 && <p className="text-sm text-muted-foreground">No providers have synced resources yet.</p>}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Layers3 className="h-5 w-5" />
+              Resource Classes
+            </CardTitle>
+            <CardDescription>Most common infrastructure types</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {typeEntries.slice(0, 5).map(([type, count]) => (
+              <button key={type} type="button" onClick={() => setResourceType(type)} className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-muted/40">
+                <span className="truncate text-sm">{formatResourceType(type)}</span>
+                <ToneBadge value={count} tone="slate" />
+              </button>
+            ))}
+            {typeEntries.length === 0 && <p className="text-sm text-muted-foreground">No resource classes available.</p>}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Regions
+            </CardTitle>
+            <CardDescription>Where inventory is currently running</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {regionEntries.slice(0, 5).map(([region, count]) => (
+              <button key={region} type="button" onClick={() => setSearchQuery(region)} className="flex w-full items-center justify-between rounded-lg border p-3 text-left hover:bg-muted/40">
+                <span className="truncate text-sm">{region}</span>
+                <ToneBadge value={count} tone="amber" />
+              </button>
+            ))}
+            {regionEntries.length === 0 && <p className="text-sm text-muted-foreground">No region data available.</p>}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Resource inventory</CardTitle>
+          <CardTitle>Inventory Atlas</CardTitle>
           <CardDescription>
-            Provider-native assets discovered during the latest synchronization
+            Select an asset to inspect ownership, runtime status, cost, and provider context
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -227,80 +288,88 @@ export default function ResourceUtilizationPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Region</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Health</TableHead>
-                  <TableHead>Monthly Cost</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoadingResources ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
-                      Loading resources...
-                    </TableCell>
-                  </TableRow>
-                ) : isResourcesError ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center text-destructive">
-                      {resourcesError instanceof Error ? resourcesError.message : "Failed to load resources."}
-                    </TableCell>
-                  </TableRow>
-                ) : filteredResources.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
-                      No resources found matching the current filters.
-                    </TableCell>
-                  </TableRow>
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+            {isLoadingResources ? (
+              <EmptyPanel icon={Server} title="Loading resources" description="Fetching provider-native inventory." />
+            ) : isResourcesError ? (
+              <EmptyPanel icon={AlertTriangle} title="Could not load resources" description={resourcesError instanceof Error ? resourcesError.message : "Failed to load resources."} />
+            ) : filteredResources.length === 0 ? (
+              <EmptyPanel icon={Search} title="No resources found" description="Change filters or refresh metrics to update inventory." />
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {filteredResources.map((resource) => {
+                  const key = resourceKey(resource);
+                  const selected = selectedResource && resourceKey(selectedResource) === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setSelectedResourceKey(key)}
+                      className={`rounded-lg border p-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/40 ${selected ? "border-primary/50 bg-primary/5" : ""}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">{resource.name}</p>
+                          <p className="mt-1 truncate text-xs text-muted-foreground">{formatResourceType(resource.type)}</p>
+                        </div>
+                        <ToneBadge value={resource.status} tone={statusTone(resource.status)} />
+                      </div>
+                      <div className="mt-4 grid gap-2 text-xs text-muted-foreground">
+                        <span>{resource.provider.toUpperCase()} · {resource.region}</span>
+                        <span className="font-mono">{resource.resourceId ?? `resource-${resource.id}`}</span>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between border-t pt-3">
+                        <span className="text-xs text-muted-foreground">Monthly cost</span>
+                        <span className="text-sm font-medium">{resource.cost == null ? "Unknown" : formatCurrency(resource.cost)}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <Card className="rounded-lg">
+              <CardHeader>
+                <CardTitle>Asset Detail</CardTitle>
+                <CardDescription>Selected resource context and next actions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!selectedResource ? (
+                  <EmptyPanel icon={Server} title="No resource selected" description="Select an asset from the atlas to inspect provider context." />
                 ) : (
-                  filteredResources.map((resource) => {
-                    const util = getResourceUtilization(resource);
-                    return (
-                      <TableRow key={resource.resourceId ?? resource.id}>
-                        <TableCell className="font-medium">{resource.name}</TableCell>
-                        <TableCell>{formatResourceType(resource.type)}</TableCell>
-                        <TableCell>{resource.provider}</TableCell>
-                        <TableCell>{resource.region}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            resource.status === "running" || resource.status === "active"
-                              ? "bg-emerald-500/10 text-emerald-600"
-                              : "bg-amber-500/10 text-amber-600"
-                          }`}>
-                            {resource.status.charAt(0).toUpperCase() + resource.status.slice(1)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <div className={`w-2 h-2 rounded-full mr-2 ${util.color}`}></div>
-                            <span className="text-xs">{util.label}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{resource.cost == null ? "—" : formatCurrency(resource.cost)}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 text-primary hover:text-primary/80"
-                            onClick={() => navigate(`/resources/${encodeURIComponent(resource.resourceId ?? String(resource.id))}`)}
-                          >
-                            Details
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                  <div className="space-y-5">
+                    <div>
+                      <div className="mb-2 flex flex-wrap gap-2">
+                        <ToneBadge value={selectedResource.provider} tone="blue" />
+                        <ToneBadge value={selectedResource.status} tone={statusTone(selectedResource.status)} />
+                      </div>
+                      <h3 className="text-lg font-semibold">{selectedResource.name}</h3>
+                      <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{selectedResource.resourceId ?? `resource-${selectedResource.id}`}</p>
+                    </div>
+                    <dl className="grid gap-4 sm:grid-cols-2">
+                      <DetailRow label="Type">{formatResourceType(selectedResource.type)}</DetailRow>
+                      <DetailRow label="Region">{selectedResource.region || "Unknown"}</DetailRow>
+                      <DetailRow label="Cost">{selectedResource.cost == null ? "Unknown" : formatCurrency(selectedResource.cost)}</DetailRow>
+                      <DetailRow label="Updated">{selectedResource.updatedAt ? new Date(selectedResource.updatedAt).toLocaleString() : "Unknown"}</DetailRow>
+                    </dl>
+                    <div className="grid gap-2">
+                      <Button className="gap-2" onClick={() => navigate(`/resources/${encodeURIComponent(selectedResource.resourceId ?? String(selectedResource.id))}`)}>
+                        <ExternalLink className="h-4 w-4" />
+                        Open Full Resource
+                      </Button>
+                      <Button variant="outline" className="gap-2" onClick={() => navigate(`/drift-detection?resource=${encodeURIComponent(selectedResource.resourceId ?? String(selectedResource.id))}`)}>
+                        <Activity className="h-4 w-4" />
+                        Review Drift
+                      </Button>
+                      <Button variant="outline" className="gap-2" onClick={() => navigate("/cost")}>
+                        <DollarSign className="h-4 w-4" />
+                        Cost Analysis
+                      </Button>
+                    </div>
+                  </div>
                 )}
-              </TableBody>
-            </Table>
+              </CardContent>
+            </Card>
           </div>
         </CardContent>
       </Card>

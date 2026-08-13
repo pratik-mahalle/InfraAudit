@@ -16,18 +16,15 @@ import {
   Workflow,
 } from "lucide-react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
-import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAcknowledgeAlert, useAlerts, useResolveAlert } from "@/hooks/use-alerts";
 import { useAcknowledgeDrift, useApproveDriftAsBaseline, useDrifts, useResolveDrift, useTriggerDriftDetection } from "@/hooks/use-drifts";
 import { useResources } from "@/hooks/use-resources";
 import { useTriggerVulnerabilityScan, useVulnerabilities } from "@/hooks/use-vulnerabilities";
 import { cn, formatTimeAgo } from "@/lib/utils";
 import type { Alert, Drift, Vulnerability } from "@/lib/api";
-import { DetailRow, EmptyPanel, MetricTile, ToneBadge } from "@/components/security-ops/ops-ui";
+import { DetailRow, EmptyPanel, ToneBadge } from "@/components/security-ops/ops-ui";
 import { useToast } from "@/hooks/use-toast";
 
 function riskWeight(severity: string) {
@@ -43,10 +40,16 @@ function resourceName(resources: Array<{ id?: number; resourceId?: string; name:
   return resources.find((resource) => resource.id === id || resource.resourceId === String(id))?.name ?? `Resource ${id}`;
 }
 
+function pct(closed: number, total: number) {
+  return total ? Math.round((closed / total) * 100) : 100;
+}
+
 export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab?: string }) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [activeStream, setActiveStream] = useState(defaultTab === "alerts" ? "Alerts" : defaultTab === "drifts" ? "Drift" : "All");
+
   const { data: alertsResponse, isLoading: alertsLoading } = useAlerts();
   const { data: driftsResponse, isLoading: driftsLoading } = useDrifts();
   const { data: vulnerabilitiesResponse, isLoading: vulnerabilitiesLoading } = useVulnerabilities();
@@ -110,16 +113,17 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       resource: resourceName(resources, vulnerability.resourceId),
       raw: vulnerability,
     })),
-  ].sort((a, b) => riskWeight(b.severity) - riskWeight(a.severity)).slice(0, 8);
-  const selectedItem = priorityItems.find((item) => item.id === selectedItemId) ?? priorityItems[0] ?? null;
+  ].sort((a, b) => riskWeight(b.severity) - riskWeight(a.severity));
 
-  const criticalCount = priorityItems.filter((item) => item.severity === "critical").length;
-  const highCount = priorityItems.filter((item) => item.severity === "high").length;
+  const streamItems = priorityItems.filter((item) => activeStream === "All" || item.type === activeStream).slice(0, 12);
+  const selectedItem = priorityItems.find((item) => item.id === selectedItemId) ?? streamItems[0] ?? priorityItems[0] ?? null;
   const loading = alertsLoading || driftsLoading || vulnerabilitiesLoading;
+  const alertClosure = pct(alerts.filter((alert) => alert.status === "resolved").length, alerts.length);
+  const driftClosure = pct(drifts.filter((drift) => drift.status === "resolved" || drift.status === "approved").length, drifts.length);
+  const vulnerabilityClosure = pct(vulnerabilities.filter((vulnerability) => vulnerability.status === "fixed").length, vulnerabilities.length);
+  const criticalOpen = priorityItems.filter((item) => item.severity === "critical").length;
+  const highOpen = priorityItems.filter((item) => item.severity === "high").length;
 
-  const driftCoverage = drifts.length ? Math.round((drifts.filter((drift) => drift.status === "resolved" || drift.status === "approved").length / drifts.length) * 100) : 100;
-  const vulnerabilityClosure = vulnerabilities.length ? Math.round((vulnerabilities.filter((vulnerability) => vulnerability.status === "fixed").length / vulnerabilities.length) * 100) : 100;
-  const alertClosure = alerts.length ? Math.round((alerts.filter((alert) => alert.status === "resolved").length / alerts.length) * 100) : 100;
   const resourceRisk = resources.map((resource) => {
     const rid = String(resource.id ?? resource.resourceId ?? "");
     const score =
@@ -127,11 +131,12 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       openDrifts.filter((drift) => String(drift.resourceId) === rid || drift.resourceIdStr === resource.resourceId).reduce((sum, drift) => sum + riskWeight(drift.severity), 0) +
       openVulnerabilities.filter((vulnerability) => String(vulnerability.resourceId ?? "") === rid).reduce((sum, vulnerability) => sum + riskWeight(vulnerability.severity), 0);
     return { resource, score };
-  }).sort((a, b) => b.score - a.score).slice(0, 6);
+  }).sort((a, b) => b.score - a.score).slice(0, 10);
+
   const sourceMix = [
-    { label: "Alerts", open: openAlerts.length, total: alerts.length, tone: "red" as const },
-    { label: "Drift", open: openDrifts.length, total: drifts.length, tone: "amber" as const },
-    { label: "Vulnerabilities", open: openVulnerabilities.length, total: vulnerabilities.length, tone: "orange" as const },
+    { label: "Alert", route: "/alerts", open: openAlerts.length, total: alerts.length, icon: BellRing, tone: "red" as const },
+    { label: "Drift", route: "/drift-detection", open: openDrifts.length, total: drifts.length, icon: GitCompareArrows, tone: "amber" as const },
+    { label: "Vulnerability", route: "/vulnerabilities", open: openVulnerabilities.length, total: vulnerabilities.length, icon: Bug, tone: "orange" as const },
   ];
 
   const runDriftScan = () => {
@@ -198,136 +203,156 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
 
   return (
     <DashboardLayout>
-      <PageHeader
-        title="Security Dashboard"
-        description="One place to see active infrastructure risk, ownership context, and response progress."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" className="gap-2" onClick={() => navigate("/alerts")}>
-              <BellRing className="h-4 w-4" />
-              Alert Inbox
+      <div className="mb-5 overflow-hidden rounded-xl border bg-card">
+        <div className="grid xl:grid-cols-[320px_minmax(0,1fr)_360px]">
+          <div className="border-b p-5 xl:border-b-0 xl:border-r">
+            <div className="flex items-center gap-3">
+              <div className={cn("flex h-24 w-24 items-center justify-center rounded-full border-8", securityScore >= 80 ? "border-emerald-500/30" : securityScore >= 50 ? "border-amber-500/30" : "border-red-500/30")}>
+                <div className="text-center">
+                  <p className="text-3xl font-semibold">{securityScore}</p>
+                  <p className="text-[11px] uppercase text-muted-foreground">score</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Command center</p>
+                <h1 className="text-2xl font-semibold">Security Operations</h1>
+                <p className="mt-1 text-sm text-muted-foreground">{priorityItems.length} active work items</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 divide-x border-b xl:border-b-0 xl:border-r lg:grid-cols-4">
+            {[
+              { label: "Critical", value: criticalOpen, tone: "red" as const },
+              { label: "High", value: highOpen, tone: "orange" as const },
+              { label: "Assets", value: resources.length, tone: "blue" as const },
+              { label: "Open", value: priorityItems.length, tone: "amber" as const },
+            ].map((item) => (
+              <div key={item.label} className="p-5">
+                <p className="text-xs text-muted-foreground">{item.label}</p>
+                <p className="mt-1 text-2xl font-semibold">{item.value}</p>
+                <ToneBadge value={item.label} tone={item.tone} />
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col justify-center gap-2 p-5">
+            <Button className="gap-2" onClick={runVulnerabilityScan} disabled={triggerVulnerabilityScan.isPending}>
+              {triggerVulnerabilityScan.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
+              Run Vulnerability Scan
             </Button>
             <Button variant="outline" className="gap-2" onClick={runDriftScan} disabled={triggerDriftDetection.isPending}>
               {triggerDriftDetection.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitCompareArrows className="h-4 w-4" />}
               Run Drift Scan
             </Button>
-            <Button className="gap-2" onClick={runVulnerabilityScan} disabled={triggerVulnerabilityScan.isPending}>
-              {triggerVulnerabilityScan.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
-              Run Vuln Scan
-            </Button>
           </div>
-        }
-      />
+        </div>
+      </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle>Security Posture</CardTitle>
-            <CardDescription>Weighted from unresolved alerts, drifts, and vulnerabilities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-6 md:flex-row md:items-center">
-              <div className="flex h-36 w-36 shrink-0 items-center justify-center rounded-full border bg-muted/30">
-                <div className="text-center">
-                  <div className="text-4xl font-semibold">{securityScore}</div>
-                  <div className="text-xs text-muted-foreground">score</div>
-                </div>
-              </div>
-              <div className="grid flex-1 gap-4 sm:grid-cols-3">
-                <MetricTile icon={ShieldAlert} label="Critical" value={criticalCount} tone="red" helper="Across queues" />
-                <MetricTile icon={AlertTriangle} label="High" value={highCount} tone="orange" helper="Needs planning" />
-                <MetricTile icon={Cloud} label="Resources" value={resources.length} tone="blue" helper="Observed assets" />
-              </div>
+      <div className="grid min-h-[760px] overflow-hidden rounded-xl border bg-card xl:grid-cols-[280px_minmax(0,1fr)_430px]">
+        <aside className="border-b bg-muted/20 xl:border-b-0 xl:border-r">
+          <div className="border-b p-4">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Radar className="h-4 w-4" />
+              Live Streams
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle>Response Coverage</CardTitle>
-            <CardDescription>Closure rate by security workflow</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {[
-              { label: "Alert closure", value: alertClosure },
-              { label: "Drift baseline", value: driftCoverage },
-              { label: "Vulnerability fixes", value: vulnerabilityClosure },
-            ].map((item) => (
-              <div key={item.label}>
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <span>{item.label}</span>
-                  <span className="font-medium">{item.value}%</span>
-                </div>
-                <Progress value={item.value} />
-              </div>
+          </div>
+          <div className="divide-y">
+            <button type="button" onClick={() => setActiveStream("All")} className={cn("flex w-full items-center justify-between px-4 py-4 text-left hover:bg-muted/60", activeStream === "All" && "bg-background")}>
+              <span className="text-sm font-medium">All Work</span>
+              <ToneBadge value={priorityItems.length} tone="slate" />
+            </button>
+            {sourceMix.map((source) => (
+              <button
+                key={source.label}
+                type="button"
+                onClick={() => setActiveStream(source.label)}
+                className={cn("flex w-full items-center justify-between px-4 py-4 text-left hover:bg-muted/60", activeStream === source.label && "bg-background")}
+              >
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <source.icon className="h-4 w-4" />
+                  {source.label}
+                </span>
+                <ToneBadge value={source.open} tone={source.tone} />
+              </button>
             ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        <MetricTile icon={BellRing} label="Unresolved alerts" value={openAlerts.length} tone="red" helper={`${alerts.length} total`} />
-        <MetricTile icon={GitCompareArrows} label="Open drift" value={openDrifts.length} tone="amber" helper="Detected or acknowledged" />
-        <MetricTile icon={Bug} label="Open vulnerabilities" value={openVulnerabilities.length} tone="orange" helper="Awaiting fix" />
-      </div>
-
-      <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Radar className="h-5 w-5" />
-              Exposure Map
-            </CardTitle>
-            <CardDescription>Where active risk is concentrated by signal source and asset</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid gap-3 md:grid-cols-3">
-              {sourceMix.map((source) => (
-                <div key={source.label} className="rounded-lg border p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium">{source.label}</p>
-                    <ToneBadge value={source.open} tone={source.tone} />
+          </div>
+          <div className="space-y-5 p-4">
+            <div>
+              <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">Closure</p>
+              {[
+                { label: "Alerts", value: alertClosure },
+                { label: "Drift", value: driftClosure },
+                { label: "Vulnerabilities", value: vulnerabilityClosure },
+              ].map((item) => (
+                <div key={item.label} className="mb-4">
+                  <div className="mb-1 flex justify-between text-sm">
+                    <span>{item.label}</span>
+                    <span className="font-medium">{item.value}%</span>
                   </div>
-                  <Progress className="mt-3" value={source.total ? Math.round((source.open / source.total) * 100) : 0} />
-                  <p className="mt-2 text-xs text-muted-foreground">{source.open} open of {source.total} total</p>
+                  <Progress value={item.value} />
                 </div>
               ))}
             </div>
-            <div className="grid gap-2">
-              {resourceRisk.length === 0 ? (
-                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">No resource risk concentration available yet.</p>
-              ) : (
-                resourceRisk.map(({ resource, score }) => (
-                  <button
-                    key={resource.id ?? resource.resourceId ?? resource.name}
-                    type="button"
-                    onClick={() => navigate(`/resources/${encodeURIComponent(String(resource.id ?? resource.resourceId ?? ""))}`)}
-                    className="grid gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/40 sm:grid-cols-[minmax(0,1fr)_120px]"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{resource.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{resource.provider.toUpperCase()} · {resource.type} · {resource.region}</p>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 sm:justify-end">
-                      <span className="text-xs text-muted-foreground">risk</span>
-                      <ToneBadge value={score} tone={score >= 10 ? "red" : score >= 6 ? "orange" : score > 0 ? "amber" : "emerald"} />
-                    </div>
-                  </button>
-                ))
-              )}
+            <div>
+              <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">Route shortcuts</p>
+              <div className="grid gap-2">
+                {sourceMix.map((source) => (
+                  <Button key={source.label} variant="outline" size="sm" className="justify-between" onClick={() => navigate(source.route)}>
+                    {source.label}
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Button>
+                ))}
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </aside>
 
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Workflow className="h-5 w-5" />
+        <main className="min-w-0 border-b xl:border-b-0 xl:border-r">
+          <div className="border-b px-4 py-3">
+            <h2 className="font-semibold">{activeStream} Priority Timeline</h2>
+            <p className="text-xs text-muted-foreground">Sorted by severity weight across alerts, drift, and vulnerabilities</p>
+          </div>
+          <div className="max-h-[790px] overflow-auto">
+            {loading ? (
+              <EmptyPanel icon={Shield} title="Loading security state" description="Collecting alerts, drifts, vulnerability findings, and asset context." />
+            ) : streamItems.length === 0 ? (
+              <EmptyPanel icon={CheckCircle2} title="No active security work" description="This stream has no unresolved items right now." />
+            ) : (
+              streamItems.map((item, index) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSelectedItemId(item.id)}
+                  className={cn("grid w-full gap-3 border-b px-4 py-4 text-left transition-colors hover:bg-muted/50 lg:grid-cols-[52px_minmax(0,1fr)_150px]", selectedItem?.id === item.id && "bg-primary/5")}
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full border bg-background text-sm font-semibold">{index + 1}</div>
+                  <div className="min-w-0">
+                    <div className="mb-2 flex flex-wrap gap-1.5">
+                      <ToneBadge value={item.severity} />
+                      <ToneBadge value={item.type} tone="blue" />
+                    </div>
+                    <h3 className="truncate text-sm font-semibold capitalize">{item.title}</h3>
+                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
+                    <p className="mt-2 truncate text-xs text-muted-foreground">{item.resource}</p>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 lg:justify-end">
+                    <span className="text-xs text-muted-foreground">{formatTimeAgo(item.time)}</span>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </main>
+
+        <section className="min-w-0">
+          <div className="border-b px-4 py-3">
+            <h2 className="flex items-center gap-2 font-semibold">
+              <Workflow className="h-4 w-4" />
               Response Play
-            </CardTitle>
-            <CardDescription>{selectedItem ? "Actions and context for the selected priority item" : "Select an item from the priority queue"}</CardDescription>
-          </CardHeader>
-          <CardContent>
+            </h2>
+            <p className="text-xs text-muted-foreground">Current item context and primary actions</p>
+          </div>
+          <div className="max-h-[790px] overflow-auto p-4">
             {!selectedItem ? (
               <EmptyPanel icon={Shield} title="No active item" description="No unresolved alert, drift, or vulnerability is currently selected." />
             ) : (
@@ -337,136 +362,56 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
                     <ToneBadge value={selectedItem.severity} />
                     <ToneBadge value={selectedItem.type} tone="blue" />
                   </div>
-                  <h3 className="text-base font-semibold capitalize">{selectedItem.title}</h3>
+                  <h3 className="text-lg font-semibold capitalize">{selectedItem.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">{selectedItem.description}</p>
                 </div>
                 <dl className="grid gap-4 sm:grid-cols-2">
                   <DetailRow label="Resource">{selectedItem.resource}</DetailRow>
                   <DetailRow label="Detected">{formatTimeAgo(selectedItem.time)}</DetailRow>
                   <DetailRow label="Workflow">{selectedItem.route.replace("/", "")}</DetailRow>
-                  <DetailRow label="Queue Rank">{priorityItems.findIndex((item) => item.id === selectedItem.id) + 1}</DetailRow>
+                  <DetailRow label="Risk Weight">{riskWeight(selectedItem.severity)}</DetailRow>
                 </dl>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" className="gap-2" onClick={handlePrimaryAction} disabled={resolveAlert.isPending || resolveDrift.isPending}>
+                <div className="grid gap-2">
+                  <Button className="gap-2" onClick={handlePrimaryAction} disabled={resolveAlert.isPending || resolveDrift.isPending}>
                     <CheckCircle2 className="h-4 w-4" />
-                    {selectedItem.type === "Vulnerability" ? "Open Workbench" : "Resolve"}
+                    {selectedItem.type === "Vulnerability" ? "Open Patch Center" : "Resolve"}
                   </Button>
-                  <Button size="sm" variant="outline" className="gap-2" onClick={handleSecondaryAction} disabled={acknowledgeAlert.isPending || acknowledgeDrift.isPending}>
+                  <Button variant="outline" className="gap-2" onClick={handleSecondaryAction} disabled={acknowledgeAlert.isPending || acknowledgeDrift.isPending}>
                     <Shield className="h-4 w-4" />
                     {selectedItem.type === "Vulnerability" ? "Find Related" : "Acknowledge"}
                   </Button>
                   {selectedItem.type === "Drift" && (
-                    <Button size="sm" variant="outline" className="gap-2" onClick={handleApproveBaseline} disabled={approveDrift.isPending}>
+                    <Button variant="outline" className="gap-2" onClick={handleApproveBaseline} disabled={approveDrift.isPending}>
                       <Network className="h-4 w-4" />
                       Approve Baseline
                     </Button>
                   )}
                 </div>
+                <div className="rounded-lg border p-4">
+                  <p className="mb-3 text-xs font-medium uppercase text-muted-foreground">At-risk resources</p>
+                  <div className="space-y-2">
+                    {resourceRisk.slice(0, 5).map(({ resource, score }) => (
+                      <button
+                        key={resource.id ?? resource.resourceId ?? resource.name}
+                        type="button"
+                        onClick={() => navigate(`/resources/${encodeURIComponent(String(resource.id ?? resource.resourceId ?? ""))}`)}
+                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium">{resource.name}</span>
+                          <span className="block truncate text-xs text-muted-foreground">{resource.provider.toUpperCase()} · {resource.type}</span>
+                        </span>
+                        <ToneBadge value={score} tone={score >= 10 ? "red" : score >= 6 ? "orange" : score > 0 ? "amber" : "emerald"} />
+                      </button>
+                    ))}
+                    {resourceRisk.length === 0 && <p className="text-sm text-muted-foreground">No resource concentration available yet.</p>}
+                  </div>
+                </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </div>
-
-      <Tabs defaultValue={defaultTab === "alerts" || defaultTab === "drifts" ? defaultTab : "risk"} className="mt-6">
-        <TabsList>
-          <TabsTrigger value="risk">Priority Queue</TabsTrigger>
-          <TabsTrigger value="drifts">Drift</TabsTrigger>
-          <TabsTrigger value="alerts">Alerts</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="risk" className="mt-4">
-          <Card className="rounded-lg">
-            <CardHeader>
-              <CardTitle>Needs Attention</CardTitle>
-              <CardDescription>Highest risk active work across security workflows</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <EmptyPanel icon={Shield} title="Loading security state" description="Collecting alerts, drifts, and vulnerability findings." />
-              ) : priorityItems.length === 0 ? (
-                <EmptyPanel icon={CheckCircle2} title="No active security work" description="All tracked security findings are closed or currently filtered out." />
-              ) : (
-                <div className="grid gap-3">
-                  {priorityItems.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelectedItemId(item.id)}
-                      className={cn(
-                        "w-full rounded-lg border px-4 py-4 text-left transition-colors hover:border-primary/40 hover:bg-muted/40",
-                        selectedItem?.id === item.id && "border-primary/50 bg-primary/5",
-                      )}
-                    >
-                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div className="min-w-0">
-                          <div className="mb-2 flex flex-wrap gap-2">
-                            <ToneBadge value={item.severity} />
-                            <ToneBadge value={item.type} tone="blue" />
-                          </div>
-                          <h3 className="text-sm font-semibold capitalize">{item.title}</h3>
-                          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
-                          <p className="mt-2 text-xs text-muted-foreground">{item.resource}</p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                          <span>{formatTimeAgo(item.time)}</span>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 gap-1 px-2"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              navigate(item.route);
-                            }}
-                          >
-                            Open
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="drifts" className="mt-4">
-          <Card className="rounded-lg">
-            <CardHeader>
-              <CardTitle>Drift Summary</CardTitle>
-              <CardDescription>Open baseline changes by severity</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-4">
-              {["critical", "high", "medium", "low"].map((severity) => (
-                <div key={severity} className="rounded-lg border p-4">
-                  <ToneBadge value={severity} />
-                  <div className="mt-3 text-2xl font-semibold">{openDrifts.filter((drift) => drift.severity === severity).length}</div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="alerts" className="mt-4">
-          <Card className="rounded-lg">
-            <CardHeader>
-              <CardTitle>Alert Summary</CardTitle>
-              <CardDescription>Unresolved alert distribution</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-4">
-              {["critical", "high", "medium", "low"].map((severity) => (
-                <div key={severity} className="rounded-lg border p-4">
-                  <ToneBadge value={severity} />
-                  <div className="mt-3 text-2xl font-semibold">{openAlerts.filter((alert) => alert.severity === severity).length}</div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </DashboardLayout>
   );
 }
