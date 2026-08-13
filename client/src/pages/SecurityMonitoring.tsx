@@ -216,14 +216,14 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
           <div className="flex h-full flex-col gap-5 p-5 lg:flex-row lg:items-center">
             <div className={cn("flex h-28 w-28 shrink-0 items-center justify-center rounded-full border-[10px]", securityScore >= 75 ? "border-green-500/40" : securityScore >= 50 ? "border-orange-500/60" : "border-red-500/60")}>
               <div className="text-center">
-                <p className="text-3xl font-semibold text-zinc-100">{securityScore}</p>
-                <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-zinc-500">Score</p>
+                <p className="text-3xl font-semibold text-foreground">{securityScore}</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">Score</p>
               </div>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Command Center</p>
-              <h2 className="mt-1 text-xl font-semibold text-zinc-100">Security Posture</h2>
-              <p className="mt-2 text-sm text-zinc-400">
+              <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Command Center</p>
+              <h2 className="mt-1 text-xl font-semibold text-foreground">Security Posture</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
                 <span className="text-red-300">{criticalOpen} critical</span>
                 <span> · </span>
                 <span className="text-orange-300">{highOpen} high</span>
@@ -244,16 +244,16 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
           </div>
         </SocPanel>
 
-        <div className="grid rounded-md border border-zinc-800 bg-[#151517] sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid rounded-md border border-border bg-card sm:grid-cols-2 xl:grid-cols-4">
           {streamCounters.map((item) => (
-            <button key={item.label} type="button" onClick={() => setActiveStream(item.label)} className={cn("border-b border-zinc-800 p-5 text-left hover:bg-zinc-900/60 sm:odd:border-r xl:border-b-0 xl:border-r", activeStream === item.label && "bg-zinc-900")}>
+            <button key={item.label} type="button" onClick={() => setActiveStream(item.label)} className={cn("border-b border-border p-5 text-left hover:bg-muted/60 sm:odd:border-r xl:border-b-0 xl:border-r", activeStream === item.label && "bg-muted")}>
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm text-zinc-500"><item.icon className="h-4 w-4" /> {item.label}s</span>
+                <span className="flex items-center gap-2 text-sm text-muted-foreground"><item.icon className="h-4 w-4" /> {item.label}s</span>
                 <SocBadge tone="slate">{item.delta}</SocBadge>
               </div>
-              <p className={cn("mt-5 text-4xl font-semibold", item.tone === "red" && "text-red-300", item.tone === "orange" && "text-orange-300", item.tone === "yellow" && "text-yellow-300", item.tone === "blue" && "text-blue-300")}>{item.value}</p>
+              <p className={cn("mt-5 text-4xl font-semibold", item.tone === "red" && "text-red-600 dark:text-red-300", item.tone === "orange" && "text-orange-600 dark:text-orange-300", item.tone === "yellow" && "text-yellow-600 dark:text-yellow-300", item.tone === "blue" && "text-blue-600 dark:text-blue-300")}>{item.value}</p>
               <div className="mt-4"><SocProgress value={item.total ? Math.round((item.value / item.total) * 100) : 0} tone={item.tone} /></div>
-              <p className="mt-3 font-mono text-xs text-zinc-500">open queue ↗</p>
+              <p className="mt-3 font-mono text-xs text-muted-foreground">open queue ↗</p>
             </button>
           ))}
         </div>
@@ -263,33 +263,33 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
         <SocPanel
           eyebrow="Priority Timeline"
           title="Sorted by risk weight · last 24h"
-          actions={<span className="font-mono text-xs text-green-400">◎ live</span>}
+          actions={<span className="font-mono text-xs text-emerald-600 dark:text-green-400">◎ live</span>}
         >
           <div className="max-h-[620px] overflow-auto">
             {loading ? (
-              <div className="p-8 font-mono text-sm text-zinc-500">Loading security state...</div>
+              <div className="p-8 font-mono text-sm text-muted-foreground">Loading security state...</div>
             ) : visibleItems.length === 0 ? (
-              <div className="p-8 text-sm text-zinc-500">No active items in this stream.</div>
+              <div className="p-8 text-sm text-muted-foreground">No active items in this stream.</div>
             ) : (
               visibleItems.map((item, index) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => setSelectedItemId(item.id)}
-                  className={cn("grid w-full grid-cols-[64px_28px_minmax(0,1fr)_72px] border-b border-zinc-800 px-4 py-4 text-left hover:bg-zinc-900/70", selectedItem?.id === item.id && "bg-zinc-800/70")}
+                  className={cn("grid w-full grid-cols-[64px_28px_minmax(0,1fr)_72px] border-b border-border px-4 py-4 text-left hover:bg-muted/60", selectedItem?.id === item.id && "bg-primary/10")}
                 >
-                  <span className="font-mono text-xs text-zinc-500">{index === 0 ? "12m" : `${index + 1}h`}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{index === 0 ? "12m" : `${index + 1}h`}</span>
                   <span className={cn("mt-1 h-3 w-3 rounded-full", item.severity === "critical" ? "bg-red-500" : item.severity === "high" ? "bg-orange-500" : "bg-yellow-500")} />
                   <span className="min-w-0">
                     <span className="flex flex-wrap items-center gap-2">
                       <SocBadge tone={severityTone(item.severity)}>{item.severity}</SocBadge>
-                      <span className="font-mono text-xs uppercase text-zinc-500">{item.type}</span>
-                      <span className="font-mono text-xs uppercase text-zinc-500">{item.findingId}</span>
+                      <span className="font-mono text-xs uppercase text-muted-foreground">{item.type}</span>
+                      <span className="font-mono text-xs uppercase text-muted-foreground">{item.findingId}</span>
                     </span>
-                    <span className="mt-2 block truncate text-base text-zinc-100">{item.title}</span>
-                    <span className="mt-1 block truncate font-mono text-xs text-zinc-500">{item.resource}</span>
+                    <span className="mt-2 block truncate text-base text-foreground">{item.title}</span>
+                    <span className="mt-1 block truncate font-mono text-xs text-muted-foreground">{item.resource}</span>
                   </span>
-                  <span className="self-center font-mono text-xs text-zinc-500">risk {90 + Math.max(0, 8 - index)}</span>
+                  <span className="self-center font-mono text-xs text-muted-foreground">risk {90 + Math.max(0, 8 - index)}</span>
                 </button>
               ))
             )}
@@ -298,17 +298,17 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
 
         <SocPanel eyebrow="Response Play" title="Actions for selected priority item">
           {!selectedItem ? (
-            <div className="p-8 text-sm text-zinc-500">No priority item selected.</div>
+            <div className="p-8 text-sm text-muted-foreground">No priority item selected.</div>
           ) : (
             <div className="space-y-5 p-5">
               <div>
                 <div className="mb-3 flex flex-wrap gap-2">
                   <SocBadge tone={severityTone(selectedItem.severity)}>{selectedItem.severity}</SocBadge>
-                  <span className="font-mono text-xs uppercase text-zinc-500">{selectedItem.type}</span>
-                  <span className="font-mono text-xs uppercase text-zinc-500">{selectedItem.findingId}</span>
+                  <span className="font-mono text-xs uppercase text-muted-foreground">{selectedItem.type}</span>
+                  <span className="font-mono text-xs uppercase text-muted-foreground">{selectedItem.findingId}</span>
                 </div>
-                <h2 className="text-xl font-semibold text-zinc-100">{selectedItem.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-400">{selectedItem.description}</p>
+                <h2 className="text-xl font-semibold text-foreground">{selectedItem.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{selectedItem.description}</p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <SocStat label="Resource" value={<span className="text-base">{selectedItem.resource}</span>} />
@@ -316,13 +316,13 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
                 <SocStat label="Risk Weight" value={riskWeight(selectedItem.severity) * 10 - 2} tone={severityTone(selectedItem.severity)} />
                 <SocStat label="Type" value={<span className="text-base">{selectedItem.type === "Vulnerability" ? "CVE" : selectedItem.type}</span>} />
               </div>
-              <div className="rounded border border-zinc-800">
-                <div className="border-b border-zinc-800 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">Closure Progress</div>
-                <div className="space-y-3 p-4 text-sm text-zinc-300">
+              <div className="rounded border border-border">
+                <div className="border-b border-border px-4 py-3 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Closure Progress</div>
+                <div className="space-y-3 p-4 text-sm text-foreground">
                   {["Detected & fingerprinted", "Owner notified · #sec-alerts", "Remediation drafted", "Change ticket · CHG-0091", "Verified fix on next scan"].map((step, index) => (
                     <div key={step} className="flex items-center gap-3">
-                      {index < 2 ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <span className="h-4 w-4 rounded-full border border-zinc-600" />}
-                      <span className={index < 2 ? "text-zinc-200" : "text-zinc-500"}>{step}</span>
+                      {index < 2 ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-green-400" /> : <span className="h-4 w-4 rounded-full border border-border" />}
+                      <span className={index < 2 ? "text-foreground" : "text-muted-foreground"}>{step}</span>
                     </div>
                   ))}
                 </div>
@@ -355,7 +355,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       <SocPanel className="mt-4" eyebrow="Assets Under Stress" title="At-risk resources · ranked by exposure score" actions={<SocButton variant="ghost" onClick={() => navigate("/findings")}>Open Findings <ExternalLink className="h-4 w-4" /></SocButton>}>
         <div className="overflow-auto">
           <table className="w-full min-w-[760px] text-left">
-            <thead className="border-b border-zinc-800 font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">
+            <thead className="border-b border-border font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
               <tr>
                 <th className="px-4 py-3">Resource</th>
                 <th className="px-4 py-3">Type</th>
@@ -365,17 +365,17 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800">
+            <tbody className="divide-y divide-border">
               {resourceRisk.length === 0 ? (
-                <tr><td className="px-4 py-8 text-sm text-zinc-500" colSpan={6}>No resource risk concentration available yet.</td></tr>
+                <tr><td className="px-4 py-8 text-sm text-muted-foreground" colSpan={6}>No resource risk concentration available yet.</td></tr>
               ) : resourceRisk.map(({ resource, score }) => (
-                <tr key={resource.id ?? resource.resourceId ?? resource.name} className="hover:bg-zinc-900/50">
-                  <td className="px-4 py-3 font-mono text-sm text-zinc-200">{resource.name}</td>
-                  <td className="px-4 py-3 font-mono text-sm text-zinc-500">{resource.type}</td>
+                <tr key={resource.id ?? resource.resourceId ?? resource.name} className="hover:bg-muted/50">
+                  <td className="px-4 py-3 font-mono text-sm text-foreground">{resource.name}</td>
+                  <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{resource.type}</td>
                   <td className="px-4 py-3"><SocBadge tone={resource.provider === "aws" ? "orange" : resource.provider === "gcp" ? "blue" : "cyan"}>{resource.provider}</SocBadge></td>
-                  <td className="px-4 py-3 font-mono text-sm text-zinc-300">{Math.max(1, Math.round(score / 4))}</td>
-                  <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-32"><SocProgress value={Math.min(100, score * 8)} tone={score >= 10 ? "red" : "orange"} /></div><span className="font-mono text-sm text-zinc-500">{score}</span></div></td>
-                  <td className="px-4 py-3 text-right"><button type="button" onClick={() => navigate(`/resources/${encodeURIComponent(String(resource.id ?? resource.resourceId ?? ""))}`)} className="text-zinc-500 hover:text-zinc-100"><ExternalLink className="h-4 w-4" /></button></td>
+                  <td className="px-4 py-3 font-mono text-sm text-foreground">{Math.max(1, Math.round(score / 4))}</td>
+                  <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-32"><SocProgress value={Math.min(100, score * 8)} tone={score >= 10 ? "red" : "orange"} /></div><span className="font-mono text-sm text-muted-foreground">{score}</span></div></td>
+                  <td className="px-4 py-3 text-right"><button type="button" onClick={() => navigate(`/resources/${encodeURIComponent(String(resource.id ?? resource.resourceId ?? ""))}`)} className="text-muted-foreground hover:text-foreground"><ExternalLink className="h-4 w-4" /></button></td>
                 </tr>
               ))}
             </tbody>

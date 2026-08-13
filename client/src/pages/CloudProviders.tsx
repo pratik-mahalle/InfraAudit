@@ -82,9 +82,9 @@ export default function CloudProviders() {
     <SocWorkspace section="Infrastructure / Providers" title="Cloud Connection Hub">
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Infrastructure · Connection Hub</p>
-          <h1 className="mt-1 text-2xl font-semibold text-zinc-100">Cloud Providers</h1>
-          <p className="mt-2 text-sm text-zinc-500">Attach clouds via read-only credentials. Secrets are submitted to the backend over TLS and stored outside the browser.</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Infrastructure · Connection Hub</p>
+          <h1 className="mt-1 text-2xl font-semibold text-foreground">Cloud Providers</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Attach clouds via read-only credentials. Secrets are submitted to the backend over TLS and stored outside the browser.</p>
         </div>
         <SocButton><Plus className="h-4 w-4" /> Add Provider</SocButton>
       </div>
@@ -95,16 +95,16 @@ export default function CloudProviders() {
             key={provider.id}
             type="button"
             onClick={() => setSelectedProviderId(provider.id)}
-            className={cn("rounded-md border border-zinc-800 bg-[#151517] p-5 text-left hover:border-zinc-700", selectedProvider?.id === provider.id && "border-blue-500 bg-blue-500/10")}
+            className={cn("rounded-md border border-border bg-card p-5 text-left hover:border-border", selectedProvider?.id === provider.id && "border-blue-500 bg-blue-500/10")}
           >
             <div className="flex items-start gap-4">
               <div className={cn("flex h-12 w-12 items-center justify-center rounded border font-mono text-sm font-semibold", provider.tone === "orange" ? "border-orange-500/40 bg-orange-500/10 text-orange-300" : provider.tone === "blue" ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : "border-cyan-500/40 bg-cyan-500/10 text-cyan-300")}>{provider.short}</div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="truncate text-base font-semibold text-zinc-100">{provider.label}</h2>
+                  <h2 className="truncate text-base font-semibold text-foreground">{provider.label}</h2>
                   <SocBadge tone={provider.connected ? "green" : provider.status === "partial" ? "yellow" : "slate"}>{provider.status}</SocBadge>
                 </div>
-                <p className="font-mono text-xs text-zinc-500">{provider.regions} region(s)</p>
+                <p className="font-mono text-xs text-muted-foreground">{provider.regions} region(s)</p>
               </div>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
@@ -112,7 +112,7 @@ export default function CloudProviders() {
               <SocStat label="Last Sync" value={<span className="text-base">{compactTime(provider.lastSynced)}</span>} />
             </div>
             <div className="mt-5">
-              <div className="mb-2 flex justify-between font-mono text-xs text-zinc-500"><span>Evidence readiness</span><span>{provider.readiness}%</span></div>
+              <div className="mb-2 flex justify-between font-mono text-xs text-muted-foreground"><span>Evidence readiness</span><span>{provider.readiness}%</span></div>
               <SocProgress value={provider.readiness} tone={provider.readiness >= 85 ? "green" : provider.readiness >= 65 ? "yellow" : "orange"} />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -124,24 +124,24 @@ export default function CloudProviders() {
 
       <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.82fr)]">
         <SocPanel eyebrow="Evidence Sources" title={`${selectedProvider?.label} · scanners & signal graph`} actions={<div className="flex gap-2"><SocButton variant="ghost"><RefreshCw className="h-4 w-4" /> Sync</SocButton><SocButton variant="danger"><Unplug className="h-4 w-4" /> Disconnect</SocButton></div>}>
-          <div className="divide-y divide-zinc-800">
+          <div className="divide-y divide-border">
             {selectedProvider?.sources.map((source, index) => (
               <div key={source} className="grid grid-cols-[44px_minmax(0,1fr)_96px] items-center gap-3 px-5 py-4">
                 <div className={cn("flex h-9 w-9 items-center justify-center rounded border", index === selectedProvider.sources.length - 1 ? "border-orange-500/40 text-orange-300" : "border-green-500/40 text-green-300")}>
                   {index === selectedProvider.sources.length - 1 ? "!" : "✓"}
                 </div>
                 <div>
-                  <p className="text-base text-zinc-100">{source}</p>
-                  <p className="font-mono text-xs uppercase text-zinc-500">{index === selectedProvider.sources.length - 1 ? "degraded" : "healthy"}</p>
+                  <p className="text-base text-foreground">{source}</p>
+                  <p className="font-mono text-xs uppercase text-muted-foreground">{index === selectedProvider.sources.length - 1 ? "degraded" : "healthy"}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500">Findings</p>
-                  <p className="font-mono text-lg text-zinc-100">{Math.max(0, selectedProvider.resourceCount + index * 7)}</p>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Findings</p>
+                  <p className="font-mono text-lg text-foreground">{Math.max(0, selectedProvider.resourceCount + index * 7)}</p>
                 </div>
               </div>
             ))}
             {providersError && <div className="p-5 text-sm text-red-300">Provider status unavailable.</div>}
-            {providersLoading && <div className="p-5 font-mono text-sm text-zinc-500">Loading provider status...</div>}
+            {providersLoading && <div className="p-5 font-mono text-sm text-muted-foreground">Loading provider status...</div>}
           </div>
         </SocPanel>
 
@@ -150,7 +150,7 @@ export default function CloudProviders() {
             <div className="mb-5 rounded border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm leading-6 text-yellow-200">
               Credentials are transmitted only to the InfraAudit backend over TLS. Use read-only IAM roles or service principals scoped to the smallest necessary policy set.
             </div>
-            <div className="rounded border border-zinc-800 bg-zinc-950/50 p-4">
+            <div className="rounded border border-border bg-background p-4">
               <CloudProviderSetup showHeader={false} />
             </div>
           </div>

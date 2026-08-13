@@ -22,13 +22,13 @@ import { cn } from "@/lib/utils";
 type Tone = "red" | "orange" | "yellow" | "blue" | "green" | "slate" | "cyan";
 
 const toneClasses: Record<Tone, string> = {
-  red: "border-red-500/40 bg-red-500/10 text-red-300",
-  orange: "border-orange-500/40 bg-orange-500/10 text-orange-300",
-  yellow: "border-yellow-500/40 bg-yellow-500/10 text-yellow-300",
-  blue: "border-blue-500/40 bg-blue-500/10 text-blue-300",
-  green: "border-green-500/40 bg-green-500/10 text-green-300",
-  slate: "border-zinc-700 bg-zinc-900 text-zinc-300",
-  cyan: "border-cyan-500/40 bg-cyan-500/10 text-cyan-300",
+  red: "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300",
+  orange: "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300",
+  yellow: "border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300",
+  blue: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  green: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  slate: "border-border bg-muted text-muted-foreground",
+  cyan: "border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
 };
 
 const navGroups: Array<{
@@ -95,12 +95,12 @@ export function SocPanel({
   className?: string;
 }) {
   return (
-    <section className={cn("overflow-hidden rounded-md border border-zinc-800 bg-[#151517]", className)}>
+    <section className={cn("overflow-hidden rounded-lg border border-border bg-card", className)}>
       {(title || eyebrow || actions) && (
-        <div className="flex min-h-[58px] items-center justify-between gap-4 border-b border-zinc-800 px-4 py-3">
+        <div className="flex min-h-[58px] items-center justify-between gap-4 border-b border-border px-4 py-3">
           <div className="min-w-0">
-            {eyebrow && <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">{eyebrow}</p>}
-            {title && <h2 className="truncate text-base font-semibold text-zinc-100">{title}</h2>}
+            {eyebrow && <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{eyebrow}</p>}
+            {title && <h2 className="truncate text-base font-semibold text-foreground">{title}</h2>}
           </div>
           {actions && <div className="shrink-0">{actions}</div>}
         </div>
@@ -121,9 +121,9 @@ export function SocButton({
       type="button"
       className={cn(
         "inline-flex h-10 items-center justify-center gap-2 rounded border px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60",
-        variant === "primary" && "border-blue-500 bg-blue-500 text-white hover:bg-blue-400",
-        variant === "ghost" && "border-zinc-800 bg-zinc-950 text-zinc-200 hover:bg-zinc-900",
-        variant === "danger" && "border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20",
+        variant === "primary" && "border-primary bg-primary text-primary-foreground hover:bg-primary/90",
+        variant === "ghost" && "border-border bg-background text-foreground hover:bg-muted",
+        variant === "danger" && "border-red-500/30 bg-red-500/10 text-red-700 hover:bg-red-500/15 dark:text-red-300",
         className,
       )}
       {...props}
@@ -136,7 +136,7 @@ export function SocButton({
 export function SocProgress({ value, tone = "blue" }: { value: number; tone?: Tone }) {
   const color = tone === "red" ? "bg-red-500" : tone === "orange" ? "bg-orange-500" : tone === "yellow" ? "bg-yellow-400" : tone === "green" ? "bg-green-500" : "bg-blue-500";
   return (
-    <div className="h-1.5 overflow-hidden rounded-full bg-zinc-900">
+    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
       <div className={cn("h-full rounded-full", color)} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
     </div>
   );
@@ -154,10 +154,10 @@ export function SocStat({
   helper?: ReactNode;
 }) {
   return (
-    <div className="rounded border border-zinc-800 bg-zinc-950/50 p-4">
-      <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">{label}</p>
-      <div className={cn("mt-2 text-3xl font-semibold", tone === "red" && "text-red-300", tone === "orange" && "text-orange-300", tone === "yellow" && "text-yellow-300", tone === "blue" && "text-blue-300", tone === "green" && "text-green-300")}>{value}</div>
-      {helper && <p className="mt-1 font-mono text-xs text-zinc-500">{helper}</p>}
+    <div className="rounded-lg border border-border bg-background p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+      <div className={cn("mt-2 text-3xl font-semibold text-foreground", tone === "red" && "text-red-600 dark:text-red-300", tone === "orange" && "text-orange-600 dark:text-orange-300", tone === "yellow" && "text-yellow-600 dark:text-yellow-300", tone === "blue" && "text-blue-600 dark:text-blue-300", tone === "green" && "text-emerald-600 dark:text-emerald-300")}>{value}</div>
+      {helper && <p className="mt-1 text-xs text-muted-foreground">{helper}</p>}
     </div>
   );
 }
@@ -184,17 +184,17 @@ export function SocWorkspace({
   }, [user]);
 
   return (
-    <div className="dark min-h-screen bg-[#0b0b0d] text-zinc-200">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="grid min-h-screen lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="border-b border-zinc-800 bg-[#141416] lg:border-b-0 lg:border-r">
-          <div className="flex h-[72px] items-center justify-between border-b border-zinc-800 px-4">
+        <aside className="border-b border-border bg-card lg:border-b-0 lg:border-r">
+          <div className="flex h-[72px] items-center justify-between border-b border-border px-4">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded border border-blue-500/50 bg-blue-500/10 text-blue-300">
                 <Shield className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-zinc-100">InfraAudit</p>
-                <p className="font-mono text-xs text-zinc-500">SOC · v2.4.1</p>
+                <p className="text-sm font-semibold text-foreground">InfraAudit</p>
+                <p className="text-xs text-muted-foreground">Security Ops · v2.4.1</p>
               </div>
             </div>
             <SocBadge tone="green">Live</SocBadge>
@@ -202,7 +202,7 @@ export function SocWorkspace({
           <nav className="space-y-7 p-4">
             {navGroups.map((group) => (
               <div key={group.label}>
-                <p className="mb-2 px-2 font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-600">{group.label}</p>
+                <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{group.label}</p>
                 <div className="space-y-1">
                   {group.items.map((item) => {
                     const active = location === item.href || location.startsWith(`${item.href}/`);
@@ -213,13 +213,13 @@ export function SocWorkspace({
                         type="button"
                         onClick={() => navigate(item.href)}
                         className={cn(
-                          "flex h-10 w-full items-center gap-3 rounded border px-3 text-left text-sm text-zinc-400 transition-colors hover:border-zinc-700 hover:bg-zinc-900 hover:text-zinc-100",
-                          active && "border-blue-500/40 bg-blue-500/10 text-blue-200",
+                          "flex h-10 w-full items-center gap-3 rounded-md border border-transparent px-3 text-left text-sm text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground",
+                          active && "border-primary/30 bg-primary/10 text-primary",
                         )}
                       >
                         <item.icon className="h-4 w-4 shrink-0" />
                         <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                        {count && <span className="rounded border border-zinc-800 bg-zinc-950 px-2 py-0.5 font-mono text-xs text-zinc-400">{count}</span>}
+                        {count && <span className="rounded border border-border bg-background px-2 py-0.5 font-mono text-xs text-muted-foreground">{count}</span>}
                       </button>
                     );
                   })}
@@ -227,47 +227,47 @@ export function SocWorkspace({
               </div>
             ))}
           </nav>
-          <div className="mt-auto hidden border-t border-zinc-800 p-4 font-mono text-xs text-zinc-500 lg:block">
+          <div className="mt-auto hidden border-t border-border p-4 text-xs text-muted-foreground lg:block">
             <div className="flex justify-between"><span>Region</span><span>us-east-1</span></div>
             <div className="mt-2 flex justify-between"><span>Org</span><span>{user?.orgName || "acme-corp"}</span></div>
             <div className="mt-2 flex justify-between"><span>Tenant</span><span>prod</span></div>
           </div>
         </aside>
 
-        <main className="min-w-0 bg-[#0f0f11]">
-          <header className="sticky top-0 z-20 border-b border-zinc-800 bg-[#111113]/95 backdrop-blur">
+        <main className="min-w-0 bg-background">
+          <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
             <div className="flex min-h-[72px] flex-col gap-3 px-4 py-3 xl:flex-row xl:items-center xl:justify-between">
               <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-zinc-500">{section}</p>
-                <h1 className="text-base font-semibold text-zinc-100">{title}</h1>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{section}</p>
+                <h1 className="text-base font-semibold text-foreground">{title}</h1>
               </div>
               <div className="flex min-w-0 flex-1 items-center gap-3 xl:max-w-[720px]">
                 <button
                   type="button"
                   onClick={() => setCommandOpen(true)}
-                  className="relative flex h-10 min-w-0 flex-1 items-center rounded border border-zinc-800 bg-zinc-950 pl-10 pr-3 text-left font-mono text-sm text-zinc-500 hover:border-zinc-700"
+                  className="relative flex h-10 min-w-0 flex-1 items-center rounded-md border border-border bg-background pl-10 pr-3 text-left text-sm text-muted-foreground hover:bg-muted"
                 >
                   <Search className="absolute left-3 h-4 w-4" />
                   <span className="truncate">Search findings, CVEs, resources...</span>
-                  <kbd className="ml-auto rounded border border-zinc-800 px-1.5 py-0.5 text-[10px]">⌘K</kbd>
+                  <kbd className="ml-auto rounded border border-border bg-muted px-1.5 py-0.5 text-[10px]">⌘K</kbd>
                 </button>
-                <button className="relative flex h-10 w-10 items-center justify-center rounded border border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-zinc-700" type="button" aria-label="Notifications">
+                <button className="relative flex h-10 w-10 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground" type="button" aria-label="Notifications">
                   <Bell className="h-4 w-4" />
                   <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-red-500" />
                 </button>
-                <div className="hidden items-center gap-3 border-l border-zinc-800 pl-4 md:flex">
+                <div className="hidden items-center gap-3 border-l border-border pl-4 md:flex">
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-zinc-100">{user?.fullName || user?.username || "P. Ravi"}</p>
-                    <p className="font-mono text-xs text-zinc-500">{user?.role || "security-eng"}</p>
+                    <p className="text-sm font-semibold text-foreground">{user?.fullName || user?.username || "P. Ravi"}</p>
+                    <p className="text-xs text-muted-foreground">{user?.role || "security-eng"}</p>
                   </div>
-                  <div className="flex h-9 w-9 items-center justify-center rounded border border-blue-500/50 bg-blue-500/10 text-sm font-semibold text-blue-200">{initials}</div>
+                  <div className="flex h-9 w-9 items-center justify-center rounded border border-primary/30 bg-primary/10 text-sm font-semibold text-primary">{initials}</div>
                 </div>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-zinc-800 px-4 py-2 font-mono text-xs text-zinc-500">
-              <span className="flex items-center gap-2 text-zinc-400"><span className="h-2 w-2 rounded-full bg-green-500" /> agents online <strong className="text-zinc-200">14/14</strong></span>
-              <span>last scan <strong className="text-zinc-300">12m ago</strong></span>
-              <span>evidence sync <strong className="text-zinc-300">healthy</strong></span>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border px-4 py-2 font-mono text-xs text-muted-foreground">
+              <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> agents online <strong className="text-foreground">14/14</strong></span>
+              <span>last scan <strong className="text-foreground">12m ago</strong></span>
+              <span>evidence sync <strong className="text-foreground">healthy</strong></span>
               <span className="flex items-center gap-2"><GitBranch className="h-3.5 w-3.5" /> policy@main</span>
               <span className="ml-auto hidden xl:inline">© InfraAudit · shift + ? for shortcuts</span>
             </div>

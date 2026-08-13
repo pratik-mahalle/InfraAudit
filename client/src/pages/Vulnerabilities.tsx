@@ -86,20 +86,20 @@ function VulnCard({ finding, selected, onSelect }: { finding: Finding; selected:
     <button
       type="button"
       onClick={onSelect}
-      className={cn("w-full rounded border border-zinc-800 bg-zinc-950/50 p-3 text-left hover:border-zinc-700 hover:bg-zinc-900", selected && "border-blue-500 bg-blue-500/10")}
+      className={cn("w-full rounded border border-border bg-background p-3 text-left hover:border-border hover:bg-muted", selected && "border-blue-500 bg-blue-500/10")}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <SocBadge tone={severityTone(finding.severity)}>{finding.severity}</SocBadge>
-        <span className="font-mono text-xs text-zinc-500">{cvssScore(finding) ? `CVSS ${cvssScore(finding)}` : "CVSS n/a"}</span>
+        <span className="font-mono text-xs text-muted-foreground">{cvssScore(finding) ? `CVSS ${cvssScore(finding)}` : "CVSS n/a"}</span>
       </div>
-      <h3 className="line-clamp-2 text-base font-medium text-zinc-100">{finding.title}</h3>
+      <h3 className="line-clamp-2 text-base font-medium text-foreground">{finding.title}</h3>
       <p className="mt-1 font-mono text-xs text-blue-300">{finding.externalId || finding.ruleId || `FND-${finding.id}`}</p>
-      <p className="mt-3 truncate font-mono text-xs text-zinc-500">
+      <p className="mt-3 truncate font-mono text-xs text-muted-foreground">
         <Package className="mr-1 inline h-3.5 w-3.5" />
         {packageName(finding)} {packageVersion(finding)}
-        {fix && <span className="text-green-400"> → {fix}</span>}
+        {fix && <span className="text-emerald-600 dark:text-green-400"> → {fix}</span>}
       </p>
-      <p className="mt-2 truncate font-mono text-xs text-zinc-500">{finding.resourceId || "not resource scoped"} · {finding.scannerType || finding.sourceType}</p>
+      <p className="mt-2 truncate font-mono text-xs text-muted-foreground">{finding.resourceId || "not resource scoped"} · {finding.scannerType || finding.sourceType}</p>
       {finding.remediation && <p className="mt-3 font-mono text-xs uppercase text-red-300">↯ exploit or fix guidance</p>}
     </button>
   );
@@ -216,17 +216,17 @@ export default function Vulnerabilities() {
         <SocPanel eyebrow="Scanner Activity" title="Vulnerability scan queue" actions={<SocButton onClick={runScan} disabled={scanMutation.isPending || scanJobIsActive}>{scanMutation.isPending || isFetchingScanJob ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />} Run Scan</SocButton>}>
           <div className="overflow-auto">
             <table className="w-full min-w-[720px] text-left">
-              <thead className="border-b border-zinc-800 font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+              <thead className="border-b border-border font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                 <tr><th className="px-4 py-3">Scan</th><th className="px-4 py-3">Target</th><th className="px-4 py-3">Scanner</th><th className="px-4 py-3">Progress</th><th className="px-4 py-3">Started</th></tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800">
+              <tbody className="divide-y divide-border">
                 {scanRows.map((row) => (
                   <tr key={row.id}>
-                    <td className="px-4 py-3 font-mono text-sm text-zinc-200">{row.id}</td>
-                    <td className="px-4 py-3 font-mono text-sm text-zinc-200">{row.target}</td>
-                    <td className="px-4 py-3 text-sm text-zinc-400">{row.scanner}</td>
+                    <td className="px-4 py-3 font-mono text-sm text-foreground">{row.id}</td>
+                    <td className="px-4 py-3 font-mono text-sm text-foreground">{row.target}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{row.scanner}</td>
                     <td className="px-4 py-3"><div className="flex items-center gap-3"><div className="w-40"><SocProgress value={row.progress} tone={row.state === "Done" || row.state === "done" ? "green" : "blue"} /></div><span className="font-mono text-xs text-blue-300">{row.state}</span></div></td>
-                    <td className="px-4 py-3 font-mono text-sm text-zinc-500">{row.started}</td>
+                    <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{row.started}</td>
                   </tr>
                 ))}
               </tbody>
@@ -245,12 +245,12 @@ export default function Vulnerabilities() {
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_504px]">
         <div className="grid gap-4 lg:grid-cols-4">
           {lanes.map((lane) => (
-            <SocPanel key={lane.lane} eyebrow={lane.lane} title={lane.lane === "Emergency" ? "≤ 24h SLA · exploitable in wild" : lane.lane === "Patch Window" ? "Scheduled maintenance" : lane.lane === "Fix Ready" ? "Awaiting rollout" : "Accepted or deferred"} actions={<span className="rounded border border-zinc-800 px-2 py-1 font-mono text-xs text-zinc-400">{lane.items.length}</span>}>
+            <SocPanel key={lane.lane} eyebrow={lane.lane} title={lane.lane === "Emergency" ? "≤ 24h SLA · exploitable in wild" : lane.lane === "Patch Window" ? "Scheduled maintenance" : lane.lane === "Fix Ready" ? "Awaiting rollout" : "Accepted or deferred"} actions={<span className="rounded border border-border px-2 py-1 font-mono text-xs text-muted-foreground">{lane.items.length}</span>}>
               <div className="max-h-[620px] space-y-3 overflow-auto p-3">
                 {isLoading ? (
-                  <div className="p-4 font-mono text-sm text-zinc-500">Loading...</div>
+                  <div className="p-4 font-mono text-sm text-muted-foreground">Loading...</div>
                 ) : lane.items.length === 0 ? (
-                  <div className="p-4 text-sm text-zinc-500">No items.</div>
+                  <div className="p-4 text-sm text-muted-foreground">No items.</div>
                 ) : (
                   lane.items.map((finding) => <VulnCard key={finding.id} finding={finding} selected={selectedFinding?.id === finding.id} onSelect={() => setSelectedFindingId(finding.id)} />)
                 )}
@@ -260,14 +260,14 @@ export default function Vulnerabilities() {
         </div>
 
         <SocPanel eyebrow="Remediation Plan" title={selectedFinding?.externalId || selectedFinding?.ruleId || "Select vulnerability"}>
-          <div className="border-b border-zinc-800 p-5">
+          <div className="border-b border-border p-5">
             <div className="mb-3 flex flex-wrap gap-2">
               <SocBadge tone={severityTone(selectedFinding?.severity)}>{selectedFinding?.severity || "none"}</SocBadge>
-              <span className="font-mono text-xs uppercase text-zinc-500">{cvssScore(selectedFinding) ? `CVSS ${cvssScore(selectedFinding)}` : "CVSS n/a"}</span>
-              <span className="font-mono text-xs text-zinc-500">{selectedFinding?.scannerType || selectedFinding?.sourceType}</span>
+              <span className="font-mono text-xs uppercase text-muted-foreground">{cvssScore(selectedFinding) ? `CVSS ${cvssScore(selectedFinding)}` : "CVSS n/a"}</span>
+              <span className="font-mono text-xs text-muted-foreground">{selectedFinding?.scannerType || selectedFinding?.sourceType}</span>
             </div>
-            <h2 className="text-lg font-semibold text-zinc-100">{selectedFinding?.title || "No vulnerability selected"}</h2>
-            <p className="mt-2 text-sm leading-6 text-zinc-400">{selectedFinding?.description || "Select a vulnerability to inspect package, asset, and fix context."}</p>
+            <h2 className="text-lg font-semibold text-foreground">{selectedFinding?.title || "No vulnerability selected"}</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{selectedFinding?.description || "Select a vulnerability to inspect package, asset, and fix context."}</p>
           </div>
           {selectedFinding ? (
             <div className="max-h-[620px] overflow-auto p-5">
@@ -280,10 +280,10 @@ export default function Vulnerabilities() {
                 <SocStat label="Last Seen" value={<span className="text-base">{new Date(selectedFinding.lastSeenAt).toLocaleDateString()}</span>} />
               </div>
               <div className="mt-5">
-                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">Blast Radius</p>
-                <p className="mt-2 break-all font-mono text-sm text-zinc-200">{selectedFinding.resourceId || "not resource scoped"}</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Blast Radius</p>
+                <p className="mt-2 break-all font-mono text-sm text-foreground">{selectedFinding.resourceId || "not resource scoped"}</p>
               </div>
-              <div className="mt-5 border-l-2 border-blue-500 px-4 text-sm leading-6 text-zinc-300">
+              <div className="mt-5 border-l-2 border-blue-500 px-4 text-sm leading-6 text-foreground">
                 {selectedFinding.remediation || "Validate the package/image, apply the fixed version or mitigation, rerun the scan, then close after fingerprint disappearance."}
               </div>
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
@@ -301,9 +301,9 @@ export default function Vulnerabilities() {
         <SocPanel className="mt-4" eyebrow="Legacy Scanner Returns" title="Top vulnerabilities returned by scanner">
           <div className="grid gap-3 p-3 md:grid-cols-3">
             {topVulns.slice(0, 3).map((vulnerability) => (
-              <button key={vulnerability.id} type="button" onClick={() => selectLegacyVulnerability(vulnerability)} className="rounded border border-zinc-800 bg-zinc-950/50 p-3 text-left hover:bg-zinc-900">
+              <button key={vulnerability.id} type="button" onClick={() => selectLegacyVulnerability(vulnerability)} className="rounded border border-border bg-background p-3 text-left hover:bg-muted">
                 <SocBadge tone={severityTone(vulnerability.severity)}>{vulnerability.severity}</SocBadge>
-                <p className="mt-3 line-clamp-2 text-sm font-medium text-zinc-100">{vulnerability.title}</p>
+                <p className="mt-3 line-clamp-2 text-sm font-medium text-foreground">{vulnerability.title}</p>
                 {vulnerability.cveId && <p className="mt-2 font-mono text-xs text-blue-300">{vulnerability.cveId}</p>}
               </button>
             ))}
