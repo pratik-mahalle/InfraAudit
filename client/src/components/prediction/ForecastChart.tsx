@@ -1,10 +1,7 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 import {
   AreaChart,
   Area,
@@ -18,8 +15,6 @@ import {
 } from "recharts";
 import { 
   TrendingUp, 
-  Calendar, 
-  Target,
   Info,
   Download
 } from "lucide-react";
@@ -39,48 +34,6 @@ interface ForecastChartProps {
   model?: "linear" | "movingAverage" | "weightedMovingAverage";
   isLoading?: boolean;
 }
-
-const generateMockData = (): ForecastDataPoint[] => {
-  const data: ForecastDataPoint[] = [];
-  const today = new Date();
-  let baseValue = 600;
-  
-  // Historical data (past 30 days)
-  for (let i = 30; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    const variation = Math.random() * 100 - 50;
-    const trend = (30 - i) * 3;
-    const actual = Math.max(400, baseValue + variation + trend);
-    
-    data.push({
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      actual: Math.round(actual),
-      budget: 850
-    });
-  }
-  
-  // Forecast data (next 14 days)
-  let lastActual = data[data.length - 1].actual;
-  for (let i = 1; i <= 14; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() + i);
-    const trend = i * 5;
-    const forecast = lastActual + trend + (Math.random() * 30 - 15);
-    const uncertainty = i * 8;
-    
-    data.push({
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      actual: undefined as any,
-      forecast: Math.round(forecast),
-      budget: 850,
-      lowerBound: Math.round(forecast - uncertainty),
-      upperBound: Math.round(forecast + uncertainty)
-    });
-  }
-  
-  return data;
-};
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -124,15 +77,15 @@ export function ForecastChart({
 }: ForecastChartProps) {
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d">("30d");
   
-  const chartData = data || generateMockData();
+  const chartData = data ?? [];
+  const hasChartData = chartData.length > 0;
   
-  // Calculate stats
-  const actualData = chartData.filter(d => d.actual);
-  const forecastData = chartData.filter(d => d.forecast);
-  const avgActual = actualData.reduce((sum, d) => sum + (d.actual || 0), 0) / actualData.length;
-  const lastForecast = forecastData[forecastData.length - 1]?.forecast || 0;
+  const actualData = chartData.filter(d => typeof d.actual === "number");
+  const forecastData = chartData.filter(d => typeof d.forecast === "number");
+  const avgActual = actualData.length > 0 ? actualData.reduce((sum, d) => sum + (d.actual || 0), 0) / actualData.length : 0;
   const projectedTotal = forecastData.reduce((sum, d) => sum + (d.forecast || 0), 0);
   const exportForecast = () => {
+    if (!hasChartData) return;
     const escapeCsv = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
     const csv = [
       ["Date", "Actual", "Forecast", "Budget", "Lower bound", "Upper bound"],
@@ -167,7 +120,7 @@ export function ForecastChart({
                 <TabsTrigger value="90d" className="text-xs px-2 h-6">90D</TabsTrigger>
               </TabsList>
             </Tabs>
-            <Button variant="outline" size="sm" className="h-8 gap-1" onClick={exportForecast}>
+            <Button variant="outline" size="sm" className="h-8 gap-1" onClick={exportForecast} disabled={!hasChartData}>
               <Download className="h-3.5 w-3.5" />
               Export
             </Button>
@@ -185,7 +138,7 @@ export function ForecastChart({
           <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
             <p className="text-xs text-gray-500 dark:text-gray-400">14-Day Projection</p>
             <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-              ${Math.round(projectedTotal).toLocaleString()}
+              {forecastData.length > 0 ? `$${Math.round(projectedTotal).toLocaleString()}` : "-"}
             </p>
           </div>
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
@@ -199,8 +152,9 @@ export function ForecastChart({
       <CardContent>
         {/* Chart */}
         <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          {hasChartData ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -285,8 +239,17 @@ export function ForecastChart({
                   fontSize: 11
                 }}
               />
-            </AreaChart>
-          </ResponsiveContainer>
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
+              <TrendingUp className="h-8 w-8 text-muted-foreground" />
+              <h3 className="mt-4 text-sm font-semibold text-foreground">No forecast data available</h3>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                Sync cost data or run a forecast to populate this chart with backend-generated values.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Legend & Info */}

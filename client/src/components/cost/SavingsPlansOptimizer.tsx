@@ -155,7 +155,6 @@ export function SavingsPlansOptimizer({
 
     onPurchase?.(selectedSavingsPlans, 'savings_plan');
 
-    // For demo purposes
     toast({
       title: "Savings Plans Purchase Initiated",
       description: `${selectedSavingsPlans.length} savings plans have been initiated for purchase.`,
@@ -175,7 +174,6 @@ export function SavingsPlansOptimizer({
 
     onPurchase?.(selectedRIs, 'reserved_instance');
 
-    // For demo purposes
     toast({
       title: "Reserved Instances Purchase Initiated",
       description: `${selectedRIs.length} reserved instances have been initiated for purchase.`,

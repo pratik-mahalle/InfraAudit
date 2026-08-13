@@ -94,7 +94,6 @@ export function UnusedResourceRecommender({
 
     onCleanup?.(selectedResources);
     
-    // For demo purposes - normally would wait for API response
     toast({
       title: "Cleanup initiated",
       description: `${selectedResources.length} resources have been scheduled for cleanup.`,

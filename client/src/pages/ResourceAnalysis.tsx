@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAIProviders } from '@/hooks/use-ai';
 import api from '@/lib/api';
 
-export default function AiAnalysisDemo() {
+export default function ResourceAnalysis() {
   const { toast } = useToast();
   const [resourceJson, setResourceJson] = useState('');
   const [analyzing, setAnalyzing] = useState(false);

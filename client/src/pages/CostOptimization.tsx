@@ -108,10 +108,9 @@ export default function CostOptimization() {
   };
 
   const currentSpend = overview?.monthlyCost || 0;
-  const projectedSpend = currentSpend * 1.1; // Simple projection if backend doesn't provide
+  const projectedSpend = 0;
   const potentialSavings = overview?.potentialSavings || 0;
 
-  // Calculate changes (mock logic if backend doesn't provide prev period yet)
   const spendChange = overview?.trend?.changePercent || 0;
 
   // Export report as CSV
