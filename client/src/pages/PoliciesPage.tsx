@@ -147,8 +147,8 @@ export default function PoliciesPage() {
     <SocWorkspace section="Governance / Policies" title="Policy Control Room" counts={{ policies: policyList.length }}>
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Governance · Policy Control Room</p>
-          <h1 className="mt-1 text-2xl font-semibold text-zinc-100">OPA / Rego Policy Registry</h1>
+          <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Governance · Policy Control Room</p>
+          <h1 className="mt-1 text-2xl font-semibold text-foreground">OPA / Rego Policy Registry</h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <SocButton variant="ghost" onClick={() => evaluateMutation.mutate(undefined, {
@@ -174,24 +174,24 @@ export default function PoliciesPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(420px,0.85fr)]">
-        <SocPanel title="Policy Registry" actions={<input className="h-9 rounded border border-zinc-800 bg-zinc-950 px-3 font-mono text-sm text-zinc-300 placeholder:text-zinc-600" placeholder="filter policies..." />}>
+        <SocPanel title="Policy Registry" actions={<input className="h-9 rounded border border-border bg-background px-3 font-mono text-sm text-foreground placeholder:text-muted-foreground" placeholder="filter policies..." />}>
           <div className="overflow-auto">
             <table className="w-full min-w-[760px] text-left">
-              <thead className="border-b border-zinc-800 font-mono text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+              <thead className="border-b border-border font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                 <tr><th className="px-4 py-3">Name</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Severity</th><th className="px-4 py-3">Violations</th><th className="px-4 py-3">Updated</th><th className="px-4 py-3">Enabled</th></tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800">
+              <tbody className="divide-y divide-border">
                 {isLoading ? (
-                  <tr><td colSpan={6} className="px-4 py-8 font-mono text-sm text-zinc-500">Loading policies...</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-8 font-mono text-sm text-muted-foreground">Loading policies...</td></tr>
                 ) : policyList.length === 0 ? (
-                  <tr><td colSpan={6} className="px-4 py-8 text-sm text-zinc-500">No policies yet. Create one or enable a template.</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-8 text-sm text-muted-foreground">No policies yet. Create one or enable a template.</td></tr>
                 ) : policyList.map((policy: any) => (
-                  <tr key={policy.id} onClick={() => setSelectedPolicyId(policy.id)} className={cn("cursor-pointer hover:bg-zinc-900/60", selectedPolicy?.id === policy.id && "bg-zinc-800/80")}>
-                    <td className="px-4 py-4"><p className="font-semibold text-zinc-100">{policy.name}</p><p className="font-mono text-xs text-zinc-500">POL-{String(policy.id).padStart(3, "0")} · {policy.category}</p></td>
-                    <td className="px-4 py-4 font-mono text-sm uppercase text-zinc-500">{policy.category}</td>
+                  <tr key={policy.id} onClick={() => setSelectedPolicyId(policy.id)} className={cn("cursor-pointer hover:bg-muted/60", selectedPolicy?.id === policy.id && "bg-primary/10")}>
+                    <td className="px-4 py-4"><p className="font-semibold text-foreground">{policy.name}</p><p className="font-mono text-xs text-muted-foreground">POL-{String(policy.id).padStart(3, "0")} · {policy.category}</p></td>
+                    <td className="px-4 py-4 font-mono text-sm uppercase text-muted-foreground">{policy.category}</td>
                     <td className="px-4 py-4"><SocBadge tone={severityTone(policy.severity)}>{policy.severity}</SocBadge></td>
                     <td className="px-4 py-4 font-mono text-sm text-red-300">{violationList.filter((violation: any) => violationPolicyId(violation) === policy.id && violation.status === "open").length}</td>
-                    <td className="px-4 py-4 font-mono text-sm text-zinc-500">{policyUpdatedAt(policy) ? new Date(policyUpdatedAt(policy)).toLocaleDateString() : "unknown"}</td>
+                    <td className="px-4 py-4 font-mono text-sm text-muted-foreground">{policyUpdatedAt(policy) ? new Date(policyUpdatedAt(policy)).toLocaleDateString() : "unknown"}</td>
                     <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}><Switch checked={policy.enabled} onCheckedChange={() => handleToggle(policy)} /></td>
                   </tr>
                 ))}
@@ -222,12 +222,12 @@ export default function PoliciesPage() {
               <>
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-mono text-xs text-zinc-500">POL-{String(selectedPolicy.id).padStart(3, "0")} · OPA/Rego</p>
-                    <h2 className="mt-1 text-lg font-semibold text-zinc-100">{selectedPolicy.name}</h2>
+                    <p className="font-mono text-xs text-muted-foreground">POL-{String(selectedPolicy.id).padStart(3, "0")} · OPA/Rego</p>
+                    <h2 className="mt-1 text-lg font-semibold text-foreground">{selectedPolicy.name}</h2>
                   </div>
                   <SocBadge tone={severityTone(selectedPolicy.severity)}>{selectedPolicy.severity}</SocBadge>
                 </div>
-                <pre className="max-h-[430px] overflow-auto rounded border border-zinc-800 bg-zinc-950 p-4 text-sm text-blue-100">{policyRego(selectedPolicy) || "No policy source available."}</pre>
+                <pre className="max-h-[430px] overflow-auto rounded border border-border bg-muted/40 p-4 text-sm text-foreground">{policyRego(selectedPolicy) || "No policy source available."}</pre>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <SocButton onClick={() => evaluateMutation.mutate()} disabled={evaluateMutation.isPending}><Play className="h-4 w-4" /> Evaluate</SocButton>
                   <SocButton variant="ghost">Save version</SocButton>
@@ -235,26 +235,26 @@ export default function PoliciesPage() {
                 </div>
               </>
             ) : (
-              <div className="p-8 text-sm text-zinc-500">Select a policy to inspect source.</div>
+              <div className="p-8 text-sm text-muted-foreground">Select a policy to inspect source.</div>
             )}
           </div>
         </SocPanel>
       </div>
 
       <SocPanel className="mt-4" eyebrow="Live Evaluations" title="Policy Violations" actions={<SocBadge tone="green">last eval 4m ago</SocBadge>}>
-        <div className="divide-y divide-zinc-800">
+        <div className="divide-y divide-border">
           {openViolations.length === 0 ? (
-            <div className="p-6 text-sm text-zinc-500">No open policy violations.</div>
+            <div className="p-6 text-sm text-muted-foreground">No open policy violations.</div>
           ) : openViolations.map((violation: any) => (
-            <button key={violation.id} type="button" onClick={() => setSelectedViolationId(violation.id)} className={cn("grid w-full gap-3 px-4 py-3 text-left hover:bg-zinc-900/60 lg:grid-cols-[130px_90px_minmax(0,1fr)_minmax(0,280px)_80px_76px]", selectedViolation?.id === violation.id && "bg-zinc-800/80")}>
+            <button key={violation.id} type="button" onClick={() => setSelectedViolationId(violation.id)} className={cn("grid w-full gap-3 px-4 py-3 text-left hover:bg-muted/60 lg:grid-cols-[130px_90px_minmax(0,1fr)_minmax(0,280px)_80px_76px]", selectedViolation?.id === violation.id && "bg-primary/10")}>
               <span className="font-mono text-sm text-orange-300">VIO-{violation.id}</span>
               <SocBadge tone={severityTone(violation.severity)}>{violation.severity}</SocBadge>
-              <span className="truncate text-sm text-zinc-200"><span className="font-mono text-blue-300">{policyName(violationPolicyId(violation))}</span> · {violationDetail(violation)}</span>
-              <span className="truncate font-mono text-xs text-zinc-500">{violationResourceId(violation)}</span>
-              <span className="font-mono text-xs text-zinc-500">{violation.status}</span>
+              <span className="truncate text-sm text-foreground"><span className="font-mono text-blue-300">{policyName(violationPolicyId(violation))}</span> · {violationDetail(violation)}</span>
+              <span className="truncate font-mono text-xs text-muted-foreground">{violationResourceId(violation)}</span>
+              <span className="font-mono text-xs text-muted-foreground">{violation.status}</span>
               <span className="flex justify-end gap-2" onClick={(event) => event.stopPropagation()}>
-                <button type="button" onClick={() => updateViolation(violation.id, "resolved")} className="text-green-400 hover:text-green-300"><CheckCircle2 className="h-4 w-4" /></button>
-                <button type="button" onClick={() => updateViolation(violation.id, "ignored")} className="text-zinc-500 hover:text-zinc-300"><X className="h-4 w-4" /></button>
+                <button type="button" onClick={() => updateViolation(violation.id, "resolved")} className="text-emerald-600 hover:text-emerald-700 dark:text-green-400 dark:hover:text-green-300"><CheckCircle2 className="h-4 w-4" /></button>
+                <button type="button" onClick={() => updateViolation(violation.id, "ignored")} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
               </span>
             </button>
           ))}
@@ -265,10 +265,10 @@ export default function PoliciesPage() {
         <SocPanel className="mt-4" eyebrow="Templates" title="Ready-made policies">
           <div className="grid gap-3 p-3 md:grid-cols-3">
             {templateList.slice(0, 6).map((tmpl: any, index: number) => (
-              <button key={`${tmpl.name}-${index}`} type="button" onClick={() => handleEnableTemplate(tmpl)} className="rounded border border-zinc-800 bg-zinc-950/50 p-3 text-left hover:bg-zinc-900">
+              <button key={`${tmpl.name}-${index}`} type="button" onClick={() => handleEnableTemplate(tmpl)} className="rounded border border-border bg-background p-3 text-left hover:bg-muted">
                 <SocBadge tone={severityTone(tmpl.severity)}>{tmpl.severity}</SocBadge>
-                <p className="mt-3 line-clamp-2 text-sm font-medium text-zinc-100">{tmpl.name}</p>
-                <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{tmpl.description}</p>
+                <p className="mt-3 line-clamp-2 text-sm font-medium text-foreground">{tmpl.name}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{tmpl.description}</p>
               </button>
             ))}
           </div>

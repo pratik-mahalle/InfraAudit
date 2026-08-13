@@ -67,8 +67,8 @@ function compactDate(value?: string) {
 function DetailField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">{label}</p>
-      <div className="mt-2 break-words font-mono text-sm text-zinc-200">{children}</div>
+      <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{label}</p>
+      <div className="mt-2 break-words font-mono text-sm text-foreground">{children}</div>
     </div>
   );
 }
@@ -79,21 +79,21 @@ function FindingRow({ finding, selected, onSelect }: { finding: Finding; selecte
     <button
       type="button"
       onClick={onSelect}
-      className={cn("grid w-full grid-cols-[34px_minmax(0,1fr)_96px] gap-3 border-b border-zinc-800 px-4 py-4 text-left hover:bg-zinc-900/70", selected && "border-l-2 border-l-blue-500 bg-zinc-800/70")}
+      className={cn("grid w-full grid-cols-[34px_minmax(0,1fr)_96px] gap-3 border-b border-border px-4 py-4 text-left hover:bg-muted/60", selected && "border-l-2 border-l-blue-500 bg-primary/10")}
     >
-      <Icon className="mt-1 h-4 w-4 text-zinc-500" />
+      <Icon className="mt-1 h-4 w-4 text-muted-foreground" />
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <SocBadge tone={severityTone(finding.severity)}>{finding.severity}</SocBadge>
           <SocBadge tone={finding.provider === "aws" ? "orange" : finding.provider === "gcp" ? "blue" : "cyan"}>{finding.provider || "unknown"}</SocBadge>
-          <span className="font-mono text-xs uppercase text-zinc-500">{finding.externalId || finding.ruleId || `FND-${finding.id}`}</span>
-          <span className="font-mono text-xs text-zinc-500">· {formatFindingLabel(finding.scannerType || finding.sourceType)}</span>
+          <span className="font-mono text-xs uppercase text-muted-foreground">{finding.externalId || finding.ruleId || `FND-${finding.id}`}</span>
+          <span className="font-mono text-xs text-muted-foreground">· {formatFindingLabel(finding.scannerType || finding.sourceType)}</span>
         </div>
-        <h3 className="mt-2 truncate text-base font-medium text-zinc-100">{finding.title}</h3>
-        <p className="mt-1 truncate font-mono text-xs text-zinc-500">{finding.resourceId || "not resource scoped"}</p>
+        <h3 className="mt-2 truncate text-base font-medium text-foreground">{finding.title}</h3>
+        <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{finding.resourceId || "not resource scoped"}</p>
         {(finding.externalId || finding.ruleId) && <p className="mt-1 font-mono text-xs text-blue-300">{finding.externalId || finding.ruleId}</p>}
       </div>
-      <span className="font-mono text-xs text-zinc-500">{compactDate(finding.lastSeenAt)}</span>
+      <span className="font-mono text-xs text-muted-foreground">{compactDate(finding.lastSeenAt)}</span>
     </button>
   );
 }
@@ -173,11 +173,11 @@ export default function Findings() {
         </div>
       )}
 
-      <div className="grid min-h-[calc(100vh-130px)] overflow-hidden rounded-md border border-zinc-800 bg-[#151517] xl:grid-cols-[280px_minmax(0,1fr)_420px]">
-        <aside className="border-b border-zinc-800 xl:border-b-0 xl:border-r">
-          <div className="border-b border-zinc-800 p-4">
-            <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Signal Stack</p>
-            <h2 className="mt-1 text-base font-semibold text-zinc-100">Investigation Lanes</h2>
+      <div className="grid min-h-[calc(100vh-130px)] overflow-hidden rounded-md border border-border bg-card xl:grid-cols-[280px_minmax(0,1fr)_420px]">
+        <aside className="border-b border-border xl:border-b-0 xl:border-r">
+          <div className="border-b border-border p-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Signal Stack</p>
+            <h2 className="mt-1 text-base font-semibold text-foreground">Investigation Lanes</h2>
           </div>
           <div className="space-y-2 p-3">
             {lanes.map((lane) => (
@@ -185,58 +185,58 @@ export default function Findings() {
                 key={lane.lane}
                 type="button"
                 onClick={() => setActiveLane(lane.lane)}
-                className={cn("flex h-12 w-full items-center justify-between rounded border border-transparent px-3 text-left text-zinc-300 hover:border-zinc-800 hover:bg-zinc-900", activeLane === lane.lane && "border-blue-500/40 bg-blue-500/10 text-blue-200")}
+                className={cn("flex h-12 w-full items-center justify-between rounded border border-transparent px-3 text-left text-foreground hover:border-border hover:bg-muted", activeLane === lane.lane && "border-primary/40 bg-primary/10 text-primary")}
               >
                 <span className="flex items-center gap-3">
-                  {lane.lane === "Priority" ? <Siren className="h-4 w-4 text-red-400" /> : lane.lane === "Exposure" ? <ShieldOff className="h-4 w-4 text-orange-400" /> : lane.lane === "Audit" ? <ShieldCheck className="h-4 w-4 text-yellow-300" /> : lane.lane === "Resolved" ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <CircleDot className="h-4 w-4 text-blue-400" />}
+                  {lane.lane === "Priority" ? <Siren className="h-4 w-4 text-red-600 dark:text-red-400" /> : lane.lane === "Exposure" ? <ShieldOff className="h-4 w-4 text-orange-600 dark:text-orange-400" /> : lane.lane === "Audit" ? <ShieldCheck className="h-4 w-4 text-yellow-600 dark:text-yellow-300" /> : lane.lane === "Resolved" ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-green-400" /> : <CircleDot className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
                   {lane.lane}
                 </span>
-                <span className="rounded border border-zinc-800 bg-zinc-950 px-2 py-0.5 font-mono text-xs text-zinc-400">{lane.items.length}</span>
+                <span className="rounded border border-border bg-background px-2 py-0.5 font-mono text-xs text-muted-foreground">{lane.items.length}</span>
               </button>
             ))}
           </div>
-          <div className="border-t border-zinc-800 p-4">
-            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Type Facets</p>
+          <div className="border-t border-border p-4">
+            <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Type Facets</p>
             <div className="space-y-2">
               {Object.entries(byType).slice(0, 8).map(([type, count]) => (
-                <div key={type} className="flex items-center justify-between font-mono text-sm uppercase text-zinc-300">
+                <div key={type} className="flex items-center justify-between font-mono text-sm uppercase text-foreground">
                   <span>{formatFindingLabel(type)}</span>
-                  <span className="text-zinc-500">{count}</span>
+                  <span className="text-muted-foreground">{count}</span>
                 </div>
               ))}
             </div>
           </div>
         </aside>
 
-        <main className="min-w-0 border-b border-zinc-800 xl:border-b-0 xl:border-r">
-          <div className="grid gap-3 border-b border-zinc-800 p-3 lg:grid-cols-[minmax(0,1fr)_145px_132px]">
+        <main className="min-w-0 border-b border-border xl:border-b-0 xl:border-r">
+          <div className="grid gap-3 border-b border-border p-3 lg:grid-cols-[minmax(0,1fr)_145px_132px]">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600" />
-              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="rule, resource, CVE, fingerprint..." className="h-10 border-zinc-800 bg-zinc-950 pl-9 font-mono text-zinc-200 placeholder:text-zinc-600" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="rule, resource, CVE, fingerprint..." className="h-10 border-border bg-background pl-9 font-mono text-foreground placeholder:text-muted-foreground" />
             </div>
             <Select value={severity} onValueChange={setSeverity}>
-              <SelectTrigger className="h-10 border-zinc-800 bg-zinc-950 font-mono text-zinc-300"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 border-border bg-background font-mono text-foreground"><SelectValue /></SelectTrigger>
               <SelectContent>{severities.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={cloud} onValueChange={setCloud}>
-              <SelectTrigger className="h-10 border-zinc-800 bg-zinc-950 font-mono text-zinc-300"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 border-border bg-background font-mono text-foreground"><SelectValue /></SelectTrigger>
               <SelectContent>{clouds.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-3 border-b border-zinc-800 px-4 py-3 font-mono text-xs text-zinc-500">
+          <div className="flex items-center gap-3 border-b border-border px-4 py-3 font-mono text-xs text-muted-foreground">
             <span>{visibleQueue.length} matching</span>
             <span>·</span>
             <span>lane {activeLane.toLowerCase()}</span>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="ml-auto h-8 w-[150px] border-zinc-800 bg-zinc-950 font-mono text-xs text-zinc-300"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="ml-auto h-8 w-[150px] border-border bg-background font-mono text-xs text-foreground"><SelectValue /></SelectTrigger>
               <SelectContent>{statuses.map((item) => <SelectItem key={item} value={item}>{formatFindingLabel(item)}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="max-h-[calc(100vh-260px)] overflow-auto">
             {isLoading ? (
-              <div className="p-8 font-mono text-sm text-zinc-500">Loading normalized findings...</div>
+              <div className="p-8 font-mono text-sm text-muted-foreground">Loading normalized findings...</div>
             ) : visibleQueue.length === 0 ? (
-              <div className="p-8 text-sm text-zinc-500">No findings in this lane.</div>
+              <div className="p-8 text-sm text-muted-foreground">No findings in this lane.</div>
             ) : (
               visibleQueue.map((finding) => (
                 <FindingRow key={finding.id} finding={finding} selected={selectedFinding?.id === finding.id} onSelect={() => setSelectedFindingId(finding.id)} />
@@ -247,18 +247,18 @@ export default function Findings() {
 
         <section className="min-w-0">
           {!selectedFinding ? (
-            <div className="p-6 text-sm text-zinc-500">Select a finding to inspect evidence.</div>
+            <div className="p-6 text-sm text-muted-foreground">Select a finding to inspect evidence.</div>
           ) : (
             <div className="flex h-full flex-col">
-              <div className="border-b border-zinc-800 p-5">
+              <div className="border-b border-border p-5">
                 <div className="flex flex-wrap gap-2">
                   <SocBadge tone={severityTone(selectedFinding.severity)}>{selectedFinding.severity}</SocBadge>
                   <SocBadge tone={selectedFinding.status === "open" ? "orange" : "slate"}>{selectedFinding.status}</SocBadge>
-                  <span className="font-mono text-xs uppercase text-zinc-500">{formatFindingLabel(selectedFinding.findingType)}</span>
-                  {selectedFinding.confidence && <span className="font-mono text-xs uppercase text-zinc-500">{selectedFinding.confidence} conf.</span>}
+                  <span className="font-mono text-xs uppercase text-muted-foreground">{formatFindingLabel(selectedFinding.findingType)}</span>
+                  {selectedFinding.confidence && <span className="font-mono text-xs uppercase text-muted-foreground">{selectedFinding.confidence} conf.</span>}
                 </div>
-                <h2 className="mt-4 text-xl font-semibold text-zinc-100">{selectedFinding.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-400">{selectedFinding.description || "No description is attached to this finding."}</p>
+                <h2 className="mt-4 text-xl font-semibold text-foreground">{selectedFinding.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{selectedFinding.description || "No description is attached to this finding."}</p>
               </div>
               <div className="max-h-[calc(100vh-310px)] flex-1 overflow-auto p-5">
                 <div className="grid gap-5 sm:grid-cols-2">
@@ -276,21 +276,21 @@ export default function Findings() {
                   <DetailField label="Fingerprint">{selectedFinding.fingerprint}</DetailField>
                 </div>
                 <div className="mt-5">
-                  <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">Evidence</p>
-                  <pre className="max-h-64 overflow-auto rounded border border-zinc-800 bg-zinc-950 p-4 text-xs text-blue-100">
+                  <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Evidence</p>
+                  <pre className="max-h-64 overflow-auto rounded border border-border bg-muted/40 p-4 text-xs text-foreground">
                     {evidenceEntries.length ? JSON.stringify(evidence, null, 2) : "No structured evidence was stored for this finding."}
                   </pre>
                 </div>
-                <div className="mt-5 border-l-2 border-blue-500 px-4 text-sm leading-6 text-zinc-300">
+                <div className="mt-5 border-l-2 border-blue-500 px-4 text-sm leading-6 text-foreground">
                   {selectedFinding.remediation || "No remediation guidance is attached yet."}
                 </div>
               </div>
-              <div className="grid gap-2 border-t border-zinc-800 p-4 sm:grid-cols-2">
+              <div className="grid gap-2 border-t border-border p-4 sm:grid-cols-2">
                 <SocButton onClick={() => handleStatusChange("resolved")} disabled={updateStatus.isPending}><CheckCircle2 className="h-4 w-4" /> Resolve</SocButton>
                 <SocButton variant="ghost" onClick={() => handleStatusChange("accepted")} disabled={updateStatus.isPending}><Shield className="h-4 w-4" /> Accept Risk</SocButton>
                 <SocButton variant="ghost" onClick={() => handleStatusChange("false_positive")} disabled={updateStatus.isPending}><XCircle className="h-4 w-4" /> False Positive</SocButton>
                 <SocButton variant="ghost" onClick={() => handleStatusChange("ignored")} disabled={updateStatus.isPending}><EyeOff className="h-4 w-4" /> Ignore</SocButton>
-                <Button asChild variant="ghost" className="h-10 border border-zinc-800 bg-zinc-950 text-zinc-200 hover:bg-zinc-900 sm:col-span-2">
+                <Button asChild variant="ghost" className="h-10 border border-border bg-background text-foreground hover:bg-muted sm:col-span-2">
                   <a href={`/findings/${selectedFinding.id}`}><ExternalLink className="mr-2 h-4 w-4" /> Full Page</a>
                 </Button>
               </div>

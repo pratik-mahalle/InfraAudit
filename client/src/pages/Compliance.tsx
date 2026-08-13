@@ -129,10 +129,10 @@ export default function Compliance() {
         <SocPanel className="mb-4">
           <div className="flex items-center justify-between gap-4 p-4">
             <div className="flex items-center gap-3">
-              {assessmentJobIsActive || isFetchingAssessmentJob ? <Loader2 className="h-4 w-4 animate-spin text-blue-300" /> : assessmentJobStatus?.status === "completed" ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <AlertTriangle className="h-4 w-4 text-red-400" />}
+              {assessmentJobIsActive || isFetchingAssessmentJob ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : assessmentJobStatus?.status === "completed" ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-green-400" /> : <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />}
               <div>
-                <p className="text-sm font-medium text-zinc-100">Compliance assessment job #{assessmentJobId}</p>
-                <p className="font-mono text-xs text-zinc-500">{activeAssessmentJobStatus ?? "queued"}</p>
+                <p className="text-sm font-medium text-foreground">Compliance assessment job #{assessmentJobId}</p>
+                <p className="font-mono text-xs text-muted-foreground">{activeAssessmentJobStatus ?? "queued"}</p>
               </div>
             </div>
             <SocBadge tone={assessmentJobStatus?.status === "completed" ? "green" : "blue"}>{activeAssessmentJobStatus ?? "queued"}</SocBadge>
@@ -140,11 +140,11 @@ export default function Compliance() {
         </SocPanel>
       )}
 
-      <div className="grid min-h-[calc(100vh-130px)] overflow-hidden rounded-md border border-zinc-800 bg-[#151517] xl:grid-cols-[330px_minmax(0,1fr)_420px]">
-        <aside className="border-b border-zinc-800 xl:border-b-0 xl:border-r">
-          <div className="border-b border-zinc-800 p-4">
-            <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Frameworks</p>
-            <h2 className="mt-1 text-base font-semibold text-zinc-100">Audit Readiness</h2>
+      <div className="grid min-h-[calc(100vh-130px)] overflow-hidden rounded-md border border-border bg-card xl:grid-cols-[330px_minmax(0,1fr)_420px]">
+        <aside className="border-b border-border xl:border-b-0 xl:border-r">
+          <div className="border-b border-border p-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Frameworks</p>
+            <h2 className="mt-1 text-base font-semibold text-foreground">Audit Readiness</h2>
           </div>
           <div className="max-h-[calc(100vh-210px)] space-y-3 overflow-auto p-3">
             {frameworks.map((framework) => {
@@ -155,20 +155,20 @@ export default function Compliance() {
                   key={framework.id}
                   type="button"
                   onClick={() => setSelectedFrameworkId(framework.id)}
-                  className={cn("w-full rounded border border-zinc-800 bg-zinc-950/30 p-4 text-left hover:border-zinc-700", selectedFrameworkId === framework.id && "border-blue-500 bg-blue-500/10")}
+                  className={cn("w-full rounded border border-border bg-background p-4 text-left hover:border-border", selectedFrameworkId === framework.id && "border-blue-500 bg-blue-500/10")}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="truncate text-base font-semibold text-zinc-100">{framework.name}</h3>
-                      <p className="font-mono text-xs text-zinc-500">{framework.version || "current"} · {frameworkSummary?.totalControls ?? "?"} controls</p>
+                      <h3 className="truncate text-base font-semibold text-foreground">{framework.name}</h3>
+                      <p className="font-mono text-xs text-muted-foreground">{framework.version || "current"} · {frameworkSummary?.totalControls ?? "?"} controls</p>
                     </div>
                     {!framework.isEnabled && <SocBadge tone="slate">off</SocBadge>}
                   </div>
                   <div className="mt-4"><SocProgress value={percent} tone={percent >= 80 ? "green" : percent >= 60 ? "yellow" : "red"} /></div>
                   <div className="mt-3 flex justify-between font-mono text-xs">
-                    <span className="text-green-400">{frameworkSummary?.passedControls ?? 0}✓</span>
-                    <span className="text-red-400">{frameworkSummary?.failedControls ?? 0}×</span>
-                    <span className="text-zinc-500">{percent}%</span>
+                    <span className="text-emerald-600 dark:text-green-400">{frameworkSummary?.passedControls ?? 0}✓</span>
+                    <span className="text-red-600 dark:text-red-400">{frameworkSummary?.failedControls ?? 0}×</span>
+                    <span className="text-muted-foreground">{percent}%</span>
                   </div>
                 </button>
               );
@@ -176,12 +176,12 @@ export default function Compliance() {
           </div>
         </aside>
 
-        <main className="min-w-0 border-b border-zinc-800 xl:border-b-0 xl:border-r">
-          <div className="border-b border-zinc-800 p-5">
+        <main className="min-w-0 border-b border-border xl:border-b-0 xl:border-r">
+          <div className="border-b border-border p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-500">Selected Framework</p>
-                <h2 className="mt-1 text-xl font-semibold text-zinc-100">{selectedFramework?.name || "Select framework"}</h2>
+                <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">Selected Framework</p>
+                <h2 className="mt-1 text-xl font-semibold text-foreground">{selectedFramework?.name || "Select framework"}</h2>
               </div>
               <div className="flex flex-wrap gap-2">
                 <SocButton variant="ghost" onClick={() => downloadAssessment()}><Download className="h-4 w-4" /> Export Evidence</SocButton>
@@ -197,14 +197,14 @@ export default function Compliance() {
           </div>
           <div className="max-h-[calc(100vh-330px)] overflow-auto p-5">
             {controlsLoading ? (
-              <div className="font-mono text-sm text-zinc-500">Loading controls...</div>
+              <div className="font-mono text-sm text-muted-foreground">Loading controls...</div>
             ) : groupedControls.length === 0 ? (
-              <div className="text-sm text-zinc-500">No controls returned for this framework.</div>
+              <div className="text-sm text-muted-foreground">No controls returned for this framework.</div>
             ) : (
               <div className="space-y-4">
                 {groupedControls.map(([category, items]) => (
-                  <SocPanel key={category} title={category} actions={<span className="font-mono text-xs text-zinc-500">{items.filter((item) => failingIds.has(item.controlId)).length} failing · {items.length} total</span>}>
-                    <div className="divide-y divide-zinc-800">
+                  <SocPanel key={category} title={category} actions={<span className="font-mono text-xs text-muted-foreground">{items.filter((item) => failingIds.has(item.controlId)).length} failing · {items.length} total</span>}>
+                    <div className="divide-y divide-border">
                       {items.map((control) => {
                         const status = statusForControl(control, failingIds);
                         return (
@@ -212,13 +212,13 @@ export default function Compliance() {
                             key={control.id}
                             type="button"
                             onClick={() => setSelectedControlId(control.id)}
-                            className={cn("grid w-full grid-cols-[32px_86px_minmax(0,1fr)_104px_68px] items-center gap-3 px-4 py-3 text-left hover:bg-zinc-900/60", selectedControl?.id === control.id && "bg-zinc-800/80")}
+                            className={cn("grid w-full grid-cols-[32px_86px_minmax(0,1fr)_104px_68px] items-center gap-3 px-4 py-3 text-left hover:bg-muted/60", selectedControl?.id === control.id && "bg-primary/10")}
                           >
-                            {status === "passing" ? <CheckCircle2 className="h-4 w-4 text-green-400" /> : <XCircle className="h-4 w-4 text-red-400" />}
-                            <span className="font-mono text-sm text-zinc-500">{control.controlId}</span>
-                            <span className="truncate text-sm text-zinc-200">{control.title}</span>
+                            {status === "passing" ? <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-green-400" /> : <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />}
+                            <span className="font-mono text-sm text-muted-foreground">{control.controlId}</span>
+                            <span className="truncate text-sm text-foreground">{control.title}</span>
                             <SocBadge tone={severityTone(control.severity)}>{control.severity}</SocBadge>
-                            <span className="font-mono text-xs text-zinc-500">{failingIds.has(control.controlId) ? "fail" : "pass"}</span>
+                            <span className="font-mono text-xs text-muted-foreground">{failingIds.has(control.controlId) ? "fail" : "pass"}</span>
                           </button>
                         );
                       })}
@@ -233,64 +233,64 @@ export default function Compliance() {
         <section className="min-w-0">
           {selectedControl ? (
             <>
-              <div className="border-b border-zinc-800 p-5">
-                <p className="font-mono text-xs text-zinc-500">{selectedControl.controlId}</p>
-                <h2 className="mt-2 text-lg font-semibold text-zinc-100">{selectedControl.title}</h2>
+              <div className="border-b border-border p-5">
+                <p className="font-mono text-xs text-muted-foreground">{selectedControl.controlId}</p>
+                <h2 className="mt-2 text-lg font-semibold text-foreground">{selectedControl.title}</h2>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <SocBadge tone={severityTone(selectedControl.severity)}>{selectedControl.severity}</SocBadge>
                   <SocBadge tone={failingIds.has(selectedControl.controlId) ? "red" : "green"}>{failingIds.has(selectedControl.controlId) ? "failing" : "passing"}</SocBadge>
                 </div>
               </div>
               <div className="max-h-[calc(100vh-260px)] overflow-auto p-5">
-                <p className="text-sm leading-6 text-zinc-400">{selectedControl.description || "No description is available for this control."}</p>
+                <p className="text-sm leading-6 text-muted-foreground">{selectedControl.description || "No description is available for this control."}</p>
                 <div className="mt-6">
-                  <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">Mapped Resources</p>
-                  <p className="mt-2 font-mono text-sm text-zinc-200">{failingControls.find((item) => item.controlId === selectedControl.controlId)?.affectedCount ?? 0} resource(s) evaluated</p>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Mapped Resources</p>
+                  <p className="mt-2 font-mono text-sm text-foreground">{failingControls.find((item) => item.controlId === selectedControl.controlId)?.affectedCount ?? 0} resource(s) evaluated</p>
                 </div>
                 <div className="mt-6">
-                  <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">Evaluated Policy</p>
-                  <pre className="mt-2 max-h-32 overflow-auto rounded border border-zinc-800 bg-zinc-950 p-3 text-xs text-blue-100">package cis.{selectedControl.controlId.replace(/\./g, "_")}
+                  <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Evaluated Policy</p>
+                  <pre className="mt-2 max-h-32 overflow-auto rounded border border-border bg-muted/40 p-3 text-xs text-foreground">package cis.{selectedControl.controlId.replace(/\./g, "_")}
 default allow = false
 allow {"{ input.evidence.status == \"passed\" }"}</pre>
                 </div>
                 <div className="mt-6">
-                  <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-zinc-500">Evidence JSON</p>
-                  <pre className="mt-2 max-h-44 overflow-auto rounded border border-zinc-800 bg-zinc-950 p-3 text-xs text-blue-100">{JSON.stringify({
+                  <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Evidence JSON</p>
+                  <pre className="mt-2 max-h-44 overflow-auto rounded border border-border bg-muted/40 p-3 text-xs text-foreground">{JSON.stringify({
                     status: failingIds.has(selectedControl.controlId) ? "failing" : "passing",
                     controlId: selectedControl.controlId,
                     scanner: selectedFinding?.scannerType || selectedFinding?.sourceType || "OPA",
                     fingerprint: selectedFinding?.fingerprint,
                   }, null, 2)}</pre>
                 </div>
-                <div className="mt-6 border-l-2 border-blue-500 px-4 text-sm leading-6 text-zinc-300">
+                <div className="mt-6 border-l-2 border-blue-500 px-4 text-sm leading-6 text-foreground">
                   {selectedControl.remediation || failingControls.find((item) => item.controlId === selectedControl.controlId)?.remediation || "No remediation guidance is available for this control."}
                 </div>
-                <div className="mt-6 space-y-2 font-mono text-xs text-zinc-500">
+                <div className="mt-6 space-y-2 font-mono text-xs text-muted-foreground">
                   <div className="flex justify-between"><span>First seen</span><span>{compactDate(selectedFinding?.firstSeenAt)}</span></div>
                   <div className="flex justify-between"><span>Last seen</span><span>{compactDate(selectedFinding?.lastSeenAt)}</span></div>
                   <div className="flex justify-between"><span>Confidence</span><span>{selectedFinding?.confidence || "high"}</span></div>
                 </div>
               </div>
-              <div className="grid gap-2 border-t border-zinc-800 p-4 sm:grid-cols-2">
+              <div className="grid gap-2 border-t border-border p-4 sm:grid-cols-2">
                 <SocButton onClick={() => downloadAssessment()}><Download className="h-4 w-4" /> Export</SocButton>
                 <SocButton variant="ghost" onClick={() => selectedFinding && (window.location.href = `/findings/${selectedFinding.id}`)}>Open Finding</SocButton>
               </div>
             </>
           ) : (
-            <div className="p-6 text-sm text-zinc-500">Select a control to inspect audit evidence.</div>
+            <div className="p-6 text-sm text-muted-foreground">Select a control to inspect audit evidence.</div>
           )}
         </section>
       </div>
 
       {assessments.length > 0 && (
         <SocPanel className="mt-4" eyebrow="Assessment History" title="Recent evidence snapshots">
-          <div className="divide-y divide-zinc-800">
+          <div className="divide-y divide-border">
             {assessments.slice(0, 5).map((assessment) => (
-              <button key={assessment.id} type="button" onClick={() => downloadAssessment(assessment)} className="grid w-full gap-3 px-4 py-3 text-left hover:bg-zinc-900/60 sm:grid-cols-[minmax(0,1fr)_120px_120px_120px]">
-                <span className="font-medium text-zinc-100">{assessment.frameworkName}</span>
-                <span className="font-mono text-sm text-zinc-500">{assessment.status}</span>
-                <span className="font-mono text-sm text-zinc-300">{assessment.compliancePercent}%</span>
-                <span className="font-mono text-sm text-zinc-500">{compactDate(assessment.assessmentDate)}</span>
+              <button key={assessment.id} type="button" onClick={() => downloadAssessment(assessment)} className="grid w-full gap-3 px-4 py-3 text-left hover:bg-muted/60 sm:grid-cols-[minmax(0,1fr)_120px_120px_120px]">
+                <span className="font-medium text-foreground">{assessment.frameworkName}</span>
+                <span className="font-mono text-sm text-muted-foreground">{assessment.status}</span>
+                <span className="font-mono text-sm text-foreground">{assessment.compliancePercent}%</span>
+                <span className="font-mono text-sm text-muted-foreground">{compactDate(assessment.assessmentDate)}</span>
               </button>
             ))}
           </div>
