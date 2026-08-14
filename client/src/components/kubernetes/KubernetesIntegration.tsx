@@ -32,6 +32,7 @@ import { apiRequest, queryClient, unwrapResponse } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { EmptyPanel, MetricTile, ToneBadge } from "@/components/security-ops/ops-ui";
+import { KubernetesAgentConnectors } from "@/components/kubernetes/KubernetesAgentConnectors";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -265,14 +266,16 @@ export function KubernetesIntegration() {
     <div>
       <PageHeader
         title="Kubernetes Operations"
-        description="Inventory clusters, inspect workloads, and refresh live Kubernetes state."
+        description="Inventory public and private clusters, inspect workloads, and retain collection history."
         actions={
           <Button onClick={() => setIsAddingCluster(true)} className="gap-2">
             <Plus className="h-4 w-4" />
-            Add Cluster
+            Add Direct Cluster
           </Button>
         }
       />
+
+      <KubernetesAgentConnectors />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricTile icon={Server} label="Clusters" value={clusters.length} tone="blue" helper={`${clusters.filter((cluster) => cluster.status === "connected").length} connected`} />
