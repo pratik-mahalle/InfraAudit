@@ -367,8 +367,8 @@ export interface ComplianceEvidenceManifest {
 
 export interface ComplianceAssessmentDetail {
   assessment: ComplianceAssessment;
-  findings: AssessmentFinding[];
-  evidenceManifest?: ComplianceEvidenceManifest;
+  findings: AssessmentFinding[] | null;
+  evidenceManifest: ComplianceEvidenceManifest | null;
   evidenceVerified: boolean;
 }
 
