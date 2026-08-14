@@ -29,7 +29,7 @@ import { useResources } from "@/hooks/use-resources";
 import { useTriggerVulnerabilityScan, useVulnerabilities, useVulnerabilityScan, useVulnerabilityScans } from "@/hooks/use-vulnerabilities";
 import { cn, formatTimeAgo } from "@/lib/utils";
 import type { Alert, Drift, DriftScan, DriftScanDetail, Finding, FindingStatus, QueueJobStatus, Vulnerability, VulnerabilityScan, VulnerabilityScanDetail } from "@/lib/api";
-import type { ComplianceAssessment } from "@/types";
+import type { ComplianceAssessment, FrameworkCompliance } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { SocBadge, SocButton, SocPanel, SocProgress, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
 
@@ -657,16 +657,45 @@ function AssessmentHistoryTable({ assessments }: { assessments: ComplianceAssess
 
   return (
     <div className="overflow-auto">
-      <table className="w-full min-w-[820px] text-left">
-        <thead className="border-b border-border text-xs text-muted-foreground"><tr><th className="px-4 py-3 font-medium">Framework</th><th className="px-4 py-3 font-medium">Status</th><th className="px-4 py-3 font-medium">Readiness</th><th className="px-4 py-3 font-medium">Controls</th><th className="px-4 py-3 font-medium">Assessed</th></tr></thead>
+      <table className="w-full min-w-[980px] text-left">
+		<thead className="border-b border-border text-xs text-muted-foreground"><tr><th className="px-4 py-3 font-medium">Framework</th><th className="px-4 py-3 font-medium">State</th><th className="px-4 py-3 font-medium">Readiness</th><th className="px-4 py-3 font-medium">Coverage</th><th className="px-4 py-3 font-medium">Outcomes</th><th className="px-4 py-3 font-medium">Evidence gaps</th><th className="px-4 py-3 font-medium">Assessed</th></tr></thead>
         <tbody className="divide-y divide-border">
           {assessments.map((assessment) => (
             <tr key={assessment.id} className="hover:bg-muted/50">
               <td className="px-4 py-3"><p className="text-sm font-medium text-foreground">{assessment.frameworkName}</p><p className="mt-1 font-mono text-xs text-muted-foreground">{assessment.frameworkId}</p></td>
-              <td className="px-4 py-3"><SocBadge tone={assessment.status === "completed" ? "green" : assessment.status === "failed" ? "red" : "blue"}>{assessment.status}</SocBadge></td>
-              <td className="px-4 py-3 font-mono text-sm text-foreground">{Math.round(assessment.compliancePercent)}%</td>
-              <td className="px-4 py-3"><p className="font-mono text-sm text-foreground">{assessment.passedControls} pass · {assessment.failedControls} fail</p><p className="mt-1 text-xs text-muted-foreground">{assessment.notApplicableControls} not applicable · {assessment.controlsEvaluated ?? assessment.totalControls} evaluated</p></td>
+              <td className="px-4 py-3"><SocBadge tone={assessment.status === "failed" ? "red" : assessment.evaluationStatus === "complete" ? "green" : assessment.evaluationStatus === "unavailable" ? "red" : "yellow"}>{assessment.status === "completed" ? formatLabel(assessment.evaluationStatus ?? "not_assessed") : assessment.status}</SocBadge></td>
+              <td className="px-4 py-3 font-mono text-sm text-foreground">{(assessment.scoreAvailable ?? ((assessment.controlsEvaluated ?? assessment.passedControls + assessment.failedControls) > 0)) ? `${Math.round(assessment.compliancePercent)}%` : "Not scored"}</td>
+              <td className="px-4 py-3 font-mono text-sm text-foreground">{Math.round(assessment.coveragePercent ?? 0)}%</td>
+              <td className="px-4 py-3 font-mono text-sm text-foreground">{assessment.passedControls} pass · {assessment.failedControls} fail</td>
+              <td className="px-4 py-3 text-xs text-muted-foreground">{assessment.notEvaluatedControls ?? 0} unevaluated · {assessment.unsupportedControls ?? assessment.notApplicableControls} unsupported · {assessment.sourceUnavailableControls ?? 0} unavailable</td>
               <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{formatTimeAgo(assessment.assessmentDate)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function FrameworkCoverageTable({ frameworks }: { frameworks: FrameworkCompliance[] }) {
+  if (frameworks.length === 0) {
+    return <EmptyState title="No enabled compliance frameworks" description="Enable a framework before running an assessment." />;
+  }
+
+  return (
+    <div className="overflow-auto">
+      <table className="w-full min-w-[1020px] text-left">
+        <thead className="border-b border-border text-xs text-muted-foreground"><tr><th className="px-4 py-3 font-medium">Framework</th><th className="px-4 py-3 font-medium">State</th><th className="px-4 py-3 font-medium">Readiness</th><th className="px-4 py-3 font-medium">Coverage</th><th className="px-4 py-3 font-medium">Evaluated</th><th className="px-4 py-3 font-medium">Evidence gaps</th><th className="px-4 py-3 font-medium">Last assessment</th></tr></thead>
+        <tbody className="divide-y divide-border">
+          {frameworks.map((framework) => (
+            <tr key={framework.frameworkId} className="hover:bg-muted/50">
+              <td className="px-4 py-3"><p className="text-sm font-medium text-foreground">{framework.frameworkName}</p><p className="mt-1 font-mono text-xs text-muted-foreground">{framework.frameworkId}</p></td>
+              <td className="px-4 py-3"><SocBadge tone={framework.evaluationStatus === "complete" ? "green" : framework.evaluationStatus === "unavailable" ? "red" : "yellow"}>{formatLabel(framework.evaluationStatus ?? "not_assessed")}</SocBadge></td>
+              <td className="px-4 py-3 font-mono text-sm text-foreground">{(framework.scoreAvailable ?? ((framework.controlsEvaluated ?? framework.passedControls + framework.failedControls) > 0)) ? `${Math.round(framework.compliancePercent)}%` : "Not scored"}</td>
+              <td className="px-4 py-3"><p className="font-mono text-sm text-foreground">{Math.round(framework.coveragePercent ?? 0)}%</p><SocProgress value={framework.coveragePercent ?? 0} tone={(framework.coveragePercent ?? 0) === 100 ? "green" : "yellow"} /></td>
+              <td className="px-4 py-3 font-mono text-sm text-foreground">{framework.controlsEvaluated ?? framework.passedControls + framework.failedControls} / {framework.totalControls}</td>
+              <td className="px-4 py-3 text-xs text-muted-foreground">{framework.notEvaluatedControls ?? 0} unevaluated · {framework.unsupportedControls ?? framework.notApplicableControls} unsupported · {framework.sourceUnavailableControls ?? 0} unavailable</td>
+              <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{framework.lastAssessment ? formatTimeAgo(framework.lastAssessment) : "Never"}</td>
             </tr>
           ))}
         </tbody>
@@ -890,6 +919,10 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   const failedControls = complianceOverview?.failedControls ?? 0;
   const totalControls = complianceOverview?.totalControls ?? 0;
   const compliancePercent = complianceOverview?.compliancePercent ?? 0;
+  const complianceCoverage = complianceOverview?.coveragePercent ?? 0;
+  const complianceScoreAvailable = complianceOverview?.scoreAvailable ?? (((complianceOverview?.passedControls ?? 0) + failedControls) > 0);
+  const complianceEvaluated = complianceOverview?.controlsEvaluated ?? ((complianceOverview?.passedControls ?? 0) + failedControls);
+  const complianceGaps = (complianceOverview?.notEvaluatedControls ?? 0) + (complianceOverview?.unsupportedControls ?? complianceOverview?.notApplicableControls ?? 0) + (complianceOverview?.sourceUnavailableControls ?? 0);
   const postureSignals = useMemo(() => openSecuritySignals.filter((item) => {
     if (item.type !== "Alert") return true;
     const alert = item.raw as Alert;
@@ -1034,7 +1067,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     { view: "alerts" as const, label: "Alerts", value: openAlerts.length, total: alerts.length, icon: BellRing, tone: "yellow" as const, helper: `${alertClosure}% resolved` },
     { view: "drifts" as const, label: "Drifts", value: openDrifts.length, total: drifts.length, icon: GitCompareArrows, tone: "blue" as const, helper: `${driftClosure}% closed` },
     { view: "vulnerabilities" as const, label: "Vulnerabilities", value: openVulnerabilities.length, total: vulnerabilities.length, icon: Bug, tone: "red" as const, helper: `${vulnerabilityClosure}% fixed` },
-    { view: "compliance" as const, label: "Failed Controls", value: failedControls, total: totalControls, icon: Shield, tone: failedControls > 0 ? "red" as const : "green" as const, helper: totalControls ? `${compliancePercent}% passing` : "No controls" },
+    { view: "compliance" as const, label: "Failed Controls", value: failedControls, total: totalControls, icon: Shield, tone: failedControls > 0 ? "red" as const : complianceScoreAvailable ? "green" as const : "yellow" as const, helper: complianceScoreAvailable ? `${Math.round(compliancePercent)}% readiness · ${Math.round(complianceCoverage)}% coverage` : "Not assessed" },
   ];
 
   const renderScanStatus = () => (
@@ -1242,15 +1275,19 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
 
   const renderCompliance = () => (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <SocStat label="Readiness" value={`${compliancePercent}%`} tone={compliancePercent >= 80 ? "green" : compliancePercent >= 60 ? "yellow" : "red"} />
-        <SocStat label="Controls" value={totalControls} tone="blue" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <SocStat label="Readiness" value={complianceScoreAvailable ? `${Math.round(compliancePercent)}%` : "Not scored"} tone={!complianceScoreAvailable ? "slate" : compliancePercent >= 80 ? "green" : compliancePercent >= 60 ? "yellow" : "red"} helper="Evaluated controls only" />
+        <SocStat label="Coverage" value={`${Math.round(complianceCoverage)}%`} tone={complianceCoverage === 100 ? "green" : "yellow"} helper={`${complianceEvaluated} of ${totalControls} evaluated`} />
         <SocStat label="Passing" value={complianceOverview?.passedControls ?? 0} tone="green" />
         <SocStat label="Failing" value={failedControls} tone={failedControls > 0 ? "red" : "green"} />
-        <SocStat label="Not Applicable" value={complianceOverview?.notApplicableControls ?? 0} tone="slate" />
+        <SocStat label="Evidence gaps" value={complianceGaps} tone={complianceGaps > 0 ? "yellow" : "green"} />
+        <SocStat label="Unavailable" value={complianceOverview?.sourceUnavailableControls ?? 0} tone={(complianceOverview?.sourceUnavailableControls ?? 0) > 0 ? "red" : "slate"} />
       </div>
+      <SocPanel title="Framework coverage" actions={<SocBadge tone={complianceOverview?.evaluationStatus === "complete" ? "green" : complianceOverview?.evaluationStatus === "unavailable" ? "red" : "yellow"}>{formatLabel(complianceOverview?.evaluationStatus ?? "not_assessed")}</SocBadge>}>
+        <FrameworkCoverageTable frameworks={complianceOverview?.byFramework ?? []} />
+      </SocPanel>
       <SignalFilters search={search} setSearch={setSearch} severity={severity} setSeverity={setSeverity} status={status} setStatus={setStatus} provider={provider} setProvider={setProvider} providers={providerOptions} />
-      <SignalTable items={filteredSignals} selectedId={selectedItem?.id} onSelect={openSignalDetail} emptyTitle="No failing compliance controls" emptyDescription="The latest normalized compliance findings contain no failed controls matching these filters." />
+      <SignalTable items={filteredSignals} selectedId={selectedItem?.id} onSelect={openSignalDetail} emptyTitle={complianceScoreAvailable ? "No failing compliance controls" : "No evaluated compliance controls"} emptyDescription={!complianceScoreAvailable ? "Run an assessment with available provider evidence to calculate readiness." : complianceGaps > 0 ? `No failures were found in evaluated controls, but ${complianceGaps} controls still have evidence gaps.` : "All evaluated controls passed the latest complete assessment."} />
       <SocPanel title="Assessment history" actions={assessmentsLoading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <SocBadge tone="slate">{assessments.length}</SocBadge>}>
         <AssessmentHistoryTable assessments={assessments} />
       </SocPanel>

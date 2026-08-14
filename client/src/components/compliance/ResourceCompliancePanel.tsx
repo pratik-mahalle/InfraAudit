@@ -20,6 +20,12 @@ const statusBadge = (status: string) => {
       return <Badge className="bg-green-100 text-green-800">Passed</Badge>;
     case "failed":
       return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
+    case "not_evaluated":
+      return <Badge variant="secondary">Not evaluated</Badge>;
+    case "unsupported":
+      return <Badge variant="outline">Unsupported</Badge>;
+    case "source_unavailable":
+      return <Badge className="bg-amber-100 text-amber-800">Source unavailable</Badge>;
     default:
       return <Badge variant="secondary">Not Checked</Badge>;
   }
@@ -75,15 +81,17 @@ export function ResourceCompliancePanel({ resourceId }: ResourceCompliancePanelP
     );
   }
 
+  const scoreAvailable = status.scoreAvailable ?? ((status.controlsEvaluated ?? status.passedControls + status.failedControls) > 0);
+
   return (
     <div className="space-y-6">
       {/* Score summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-6 flex items-center gap-4">
             {overallIcon(status.overallStatus)}
             <div>
-              <p className="text-2xl font-bold">{status.score.toFixed(0)}%</p>
+              <p className="text-2xl font-bold">{scoreAvailable ? `${status.score.toFixed(0)}%` : "Not scored"}</p>
               <p className="text-sm text-muted-foreground capitalize">
                 {status.overallStatus.replace("_", " ")}
               </p>
@@ -92,8 +100,9 @@ export function ResourceCompliancePanel({ resourceId }: ResourceCompliancePanelP
         </Card>
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-2xl font-bold">{status.totalControls}</p>
-            <p className="text-sm text-muted-foreground">Total Controls</p>
+            <p className="text-2xl font-bold">{(status.coveragePercent ?? 0).toFixed(0)}%</p>
+            <p className="text-sm text-muted-foreground">Evidence coverage</p>
+            <p className="text-xs text-muted-foreground">{status.controlsEvaluated ?? status.passedControls + status.failedControls} of {status.totalControls} controls</p>
           </CardContent>
         </Card>
         <Card>
@@ -106,6 +115,12 @@ export function ResourceCompliancePanel({ resourceId }: ResourceCompliancePanelP
           <CardContent className="pt-6 text-center">
             <p className="text-2xl font-bold text-red-600">{status.failedControls}</p>
             <p className="text-sm text-muted-foreground">Failed</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <p className="text-2xl font-bold text-amber-600">{(status.notEvaluatedControls ?? 0) + (status.unsupportedControls ?? 0) + (status.sourceUnavailableControls ?? 0)}</p>
+            <p className="text-sm text-muted-foreground">Evidence gaps</p>
           </CardContent>
         </Card>
       </div>

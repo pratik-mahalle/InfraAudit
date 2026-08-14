@@ -290,7 +290,13 @@ export interface ComplianceAssessment {
   passedControls: number;
   failedControls: number;
   notApplicableControls: number;
+  notEvaluatedControls?: number;
+  unsupportedControls?: number;
+  sourceUnavailableControls?: number;
   compliancePercent: number;
+  coveragePercent?: number;
+  scoreAvailable?: boolean;
+  evaluationStatus?: 'complete' | 'partial' | 'unavailable' | 'not_assessed';
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   stage?: string;
   progressPercent?: number;
@@ -305,10 +311,14 @@ export interface AssessmentFinding {
   controlTitle: string;
   category: string;
   severity: string;
-  status: 'passed' | 'failed' | 'not_applicable';
+  status: 'passed' | 'failed' | 'not_applicable' | 'not_evaluated' | 'unsupported' | 'source_unavailable';
   affectedCount: number;
   affectedResources?: string[];
   remediation: string;
+  evidence?: string;
+  policyId?: string;
+  policySource?: string;
+  confidence?: string;
 }
 
 export interface FrameworkCompliance {
@@ -318,7 +328,14 @@ export interface FrameworkCompliance {
   passedControls: number;
   failedControls: number;
   notApplicableControls: number;
+  notEvaluatedControls?: number;
+  unsupportedControls?: number;
+  sourceUnavailableControls?: number;
+  controlsEvaluated?: number;
   compliancePercent: number;
+  coveragePercent?: number;
+  scoreAvailable?: boolean;
+  evaluationStatus?: 'complete' | 'partial' | 'unavailable' | 'not_assessed';
   lastAssessment?: string;
 }
 
@@ -327,7 +344,14 @@ export interface ComplianceOverview {
   passedControls: number;
   failedControls: number;
   notApplicableControls: number;
+  notEvaluatedControls?: number;
+  unsupportedControls?: number;
+  sourceUnavailableControls?: number;
+  controlsEvaluated?: number;
   compliancePercent: number;
+  coveragePercent?: number;
+  scoreAvailable?: boolean;
+  evaluationStatus?: 'complete' | 'partial' | 'unavailable' | 'not_assessed';
   byFramework: FrameworkCompliance[];
   bySeverity: Record<string, number>;
 }
@@ -336,7 +360,7 @@ export interface ResourceControlStatus {
   frameworkId: string;
   controlId: string;
   title: string;
-  status: 'passed' | 'failed' | 'not_checked';
+  status: 'passed' | 'failed' | 'not_checked' | 'not_evaluated' | 'unsupported' | 'source_unavailable';
   severity?: string;
   reason?: string;
   remediation?: string;
@@ -353,7 +377,13 @@ export interface ResourceComplianceStatus {
   totalControls: number;
   passedControls: number;
   failedControls: number;
+  notEvaluatedControls?: number;
+  unsupportedControls?: number;
+  sourceUnavailableControls?: number;
+  controlsEvaluated?: number;
   score: number;
+  coveragePercent?: number;
+  scoreAvailable?: boolean;
 }
 
 // Jobs & Automation
