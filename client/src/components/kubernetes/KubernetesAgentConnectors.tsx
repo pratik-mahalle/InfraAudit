@@ -398,7 +398,7 @@ export function KubernetesAgentConnectors() {
           if (!open) setCreatedConnector(null);
         }}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-h-[calc(100vh-2rem)] min-w-0 w-[calc(100vw-2rem)] max-w-2xl overflow-x-hidden overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Connect a Kubernetes agent</DialogTitle>
             <DialogDescription>The token is shown once. Store it in a Kubernetes Secret, then install the outbound agent.</DialogDescription>
@@ -430,8 +430,8 @@ export function KubernetesAgentConnectors() {
               </DialogFooter>
             </div>
           ) : (
-            <div className="space-y-5 py-2">
-              <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+            <div className="min-w-0 space-y-5 py-2">
+              <div className="max-w-full rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
                 <div className="flex items-center gap-2 text-sm font-medium text-emerald-900 dark:text-emerald-100">
                   <CheckCircle2 className="h-4 w-4" />
                   Connector ready
@@ -439,24 +439,24 @@ export function KubernetesAgentConnectors() {
                 <p className="mt-1 text-xs text-muted-foreground">Run both commands from a workstation with cluster-admin access.</p>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-medium">1. Create the connector Secret</p>
                   <Button variant="outline" size="sm" onClick={() => copy(secretCommand, 'Secret command')} className="gap-2">
                     <Copy className="h-3.5 w-3.5" /> Copy
                   </Button>
                 </div>
-                <pre className="max-h-36 overflow-auto rounded-md border bg-muted p-3 text-xs"><code>{secretCommand}</code></pre>
+                <pre className="max-h-36 max-w-full overflow-y-auto whitespace-pre-wrap break-all rounded-md border bg-muted p-3 text-xs"><code>{secretCommand}</code></pre>
               </div>
 
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-medium">2. Install the agent</p>
                   <Button variant="outline" size="sm" onClick={() => copy(helmCommand, 'Helm command')} className="gap-2">
                     <Copy className="h-3.5 w-3.5" /> Copy
                   </Button>
                 </div>
-                <pre className="overflow-auto rounded-md border bg-muted p-3 text-xs"><code>{helmCommand}</code></pre>
+                <pre className="max-w-full whitespace-pre-wrap break-all rounded-md border bg-muted p-3 text-xs"><code>{helmCommand}</code></pre>
               </div>
 
               <DialogFooter>
