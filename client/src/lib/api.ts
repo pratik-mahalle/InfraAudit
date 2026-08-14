@@ -494,8 +494,24 @@ export interface VulnerabilityScan {
   createdAt: string;
 }
 
+export interface VulnerabilityScanSource {
+  id: number;
+  provider: string;
+  source: string;
+  outcome: 'success' | 'success_empty' | 'partial' | 'permission_denied' | 'rate_limited' | 'not_configured' | 'failed';
+  durationMs: number;
+  findingsFetched: number;
+  findingsNormalized: number;
+  findingsReconciled: number;
+  errorCode?: string;
+  errorMessage?: string;
+  attemptedAt: string;
+  completedAt: string;
+}
+
 export interface VulnerabilityScanDetail extends VulnerabilityScan {
   findings: Vulnerability[];
+  sources: VulnerabilityScanSource[];
 }
 
 // Health Score

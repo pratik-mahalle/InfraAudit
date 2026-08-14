@@ -501,6 +501,7 @@ function ScanHistoryTable({ scans, onOpen }: { scans: VulnerabilityScan[]; onOpe
 
 function VulnerabilityScanDrawer({ detail, open, onOpenChange, loading, error }: { detail?: VulnerabilityScanDetail; open: boolean; onOpenChange: (open: boolean) => void; loading: boolean; error: unknown }) {
   const findings = detail?.findings ?? [];
+  const sources = detail?.sources ?? [];
   const metadata = metadataEntries(detail?.metadata);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -540,6 +541,34 @@ function VulnerabilityScanDrawer({ detail, open, onOpenChange, loading, error }:
                 </div>
               </section>
             )}
+            <SocPanel title="Source diagnostics" actions={<SocBadge tone="slate">{sources.length}</SocBadge>}>
+              {sources.length === 0 ? (
+                <div className="p-4 text-sm text-muted-foreground">No source diagnostics were recorded for this scan.</div>
+              ) : (
+                <div className="overflow-auto">
+                  <table className="w-full min-w-[760px] text-left">
+                    <thead className="border-b border-border text-xs text-muted-foreground">
+                      <tr><th className="px-4 py-3 font-medium">Source</th><th className="px-4 py-3 font-medium">Outcome</th><th className="px-4 py-3 font-medium">Fetched</th><th className="px-4 py-3 font-medium">Reconciled</th><th className="px-4 py-3 font-medium">Duration</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {sources.map((source) => (
+                        <tr key={source.id || `${source.provider}-${source.source}`}>
+                          <td className="px-4 py-3">
+                            <p className="text-sm font-medium text-foreground">{formatLabel(source.source)}</p>
+                            <p className="mt-1 font-mono text-xs text-muted-foreground">{formatLabel(source.provider)}</p>
+                            {source.errorMessage && <p className="mt-2 max-w-lg text-xs leading-5 text-muted-foreground">{source.errorMessage}</p>}
+                          </td>
+                          <td className="px-4 py-3"><SocBadge tone={source.outcome === "success" ? "green" : source.outcome === "success_empty" ? "blue" : source.outcome === "partial" || source.outcome === "rate_limited" ? "orange" : source.outcome === "not_configured" ? "slate" : "red"}>{formatLabel(source.outcome)}</SocBadge></td>
+                          <td className="px-4 py-3 font-mono text-sm text-foreground">{source.findingsFetched}</td>
+                          <td className="px-4 py-3 font-mono text-sm text-foreground">{source.findingsReconciled}</td>
+                          <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{source.durationMs < 1000 ? `${source.durationMs}ms` : `${(source.durationMs / 1000).toFixed(1)}s`}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </SocPanel>
             <SocPanel title="Captured findings" actions={<SocBadge tone="slate">{findings.length}</SocBadge>}>
               {findings.length === 0 ? (
                 <div className="p-4 text-sm text-muted-foreground">No findings were captured for this run.</div>
