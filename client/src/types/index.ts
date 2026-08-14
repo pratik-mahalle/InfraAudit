@@ -52,6 +52,7 @@ export interface GCPCredentials extends CloudCredentials {
   provider: CloudProvider.GCP;
   serviceAccountKey: string;
   projectId?: string;
+  billingDataset?: string;
 }
 
 export interface AzureCredentials extends CloudCredentials {
@@ -60,6 +61,7 @@ export interface AzureCredentials extends CloudCredentials {
   clientSecret: string;
   tenantId: string;
   subscriptionId: string;
+  location?: string;
 }
 
 export type AllCloudCredentials = AWSCredentials | GCPCredentials | AzureCredentials;

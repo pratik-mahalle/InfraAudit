@@ -43,10 +43,41 @@ const awsFormSchema = z.object({
   name: z.string().optional()
 });
 
+const gcpServiceAccountKeySchema = z.string()
+  .min(100, "Service account key JSON is required")
+  .superRefine((value, context) => {
+    try {
+      const key = JSON.parse(value) as Record<string, unknown>;
+      if (
+        key.type !== 'service_account'
+        || typeof key.project_id !== 'string'
+        || typeof key.client_email !== 'string'
+        || typeof key.private_key !== 'string'
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Use a complete GCP service account key JSON file",
+        });
+      }
+    } catch {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Service account key must be valid JSON",
+      });
+    }
+  });
+
 // GCP Form Schema
 const gcpFormSchema = z.object({
-  serviceAccountKey: z.string().min(100, "Service account key JSON is required"),
-  projectId: z.string().optional(),
+  serviceAccountKey: gcpServiceAccountKeySchema,
+  projectId: z.string().trim().refine(
+    (value) => !value || /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(value),
+    "Enter a valid GCP project ID",
+  ).optional(),
+  billingDataset: z.string().trim().refine(
+    (value) => !value || /^[a-z][a-z0-9-]{4,28}[a-z0-9]\.[A-Za-z0-9_]+\.[A-Za-z0-9_$]+$/.test(value),
+    "Use the format project.dataset.table",
+  ).optional(),
   name: z.string().optional()
 });
 
@@ -56,14 +87,22 @@ const azureFormSchema = z.object({
   clientSecret: z.string().min(10, "Client secret is required"),
   tenantId: z.string().min(10, "Tenant ID is required"),
   subscriptionId: z.string().min(10, "Subscription ID is required"),
+  location: z.string().trim().optional(),
   name: z.string().optional()
 });
+
+function projectIDFromServiceAccount(serviceAccountKey: string): string {
+  const key = JSON.parse(serviceAccountKey) as Record<string, unknown>;
+  return typeof key.project_id === 'string' ? key.project_id.trim() : '';
+}
 
 // Provider item interface — matches Go DTO ProviderDTO after camelCase conversion
 interface CloudProviderItem {
   provider: string;       // "aws" | "gcp" | "azure" (lowercase from backend)
   isConnected: boolean;
   lastSynced?: string;
+  status?: 'connected' | 'disconnected' | 'partial' | 'error';
+  message?: string;
 }
 
 // Kubernetes cluster type — matches KubernetesIntegration component
@@ -130,6 +169,7 @@ export function CloudProviderSetup({
     defaultValues: {
       serviceAccountKey: '',
       projectId: '',
+      billingDataset: '',
       name: 'GCP Account'
     }
   });
@@ -141,22 +181,18 @@ export function CloudProviderSetup({
       clientSecret: '',
       tenantId: '',
       subscriptionId: '',
+      location: '',
       name: 'Azure Account'
     }
   });
 
   // AWS connection mutation — transform camelCase form fields to Go backend snake_case DTO
   const awsConnectionMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof awsFormSchema>) => {
-      const body = {
-        provider: 'aws',
-        aws_access_key_id: data.accessKeyId,
-        aws_secret_access_key: data.secretAccessKey,
-        aws_region: data.region || 'us-east-1',
-      };
-      const res = await apiRequest('POST', '/api/v1/providers/aws/connect', body);
-      return await res.json();
-    },
+    mutationFn: (data: z.infer<typeof awsFormSchema>) => api.providers.connect('aws', {
+      accessKeyId: data.accessKeyId,
+      secretAccessKey: data.secretAccessKey,
+      region: data.region || 'us-east-1',
+    }),
     onSuccess: () => {
       toast({
         title: "AWS connected successfully",
@@ -177,16 +213,11 @@ export function CloudProviderSetup({
 
   // GCP connection mutation — transform camelCase form fields to Go backend snake_case DTO
   const gcpConnectionMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof gcpFormSchema>) => {
-      const body = {
-        provider: 'gcp',
-        gcp_project_id: data.projectId || '',
-        gcp_service_account_json: data.serviceAccountKey,
-        gcp_region: undefined,
-      };
-      const res = await apiRequest('POST', '/api/v1/providers/gcp/connect', body);
-      return await res.json();
-    },
+    mutationFn: (data: z.infer<typeof gcpFormSchema>) => api.providers.connect('gcp', {
+      projectId: data.projectId || projectIDFromServiceAccount(data.serviceAccountKey),
+      credentials: data.serviceAccountKey,
+      billingDataset: data.billingDataset || undefined,
+    }),
     onSuccess: () => {
       toast({
         title: "GCP connected successfully",
@@ -207,17 +238,13 @@ export function CloudProviderSetup({
 
   // Azure connection mutation — transform camelCase form fields to Go backend snake_case DTO
   const azureConnectionMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof azureFormSchema>) => {
-      const body = {
-        provider: 'azure',
-        azure_tenant_id: data.tenantId,
-        azure_client_id: data.clientId,
-        azure_client_secret: data.clientSecret,
-        azure_subscription_id: data.subscriptionId,
-      };
-      const res = await apiRequest('POST', '/api/v1/providers/azure/connect', body);
-      return await res.json();
-    },
+    mutationFn: (data: z.infer<typeof azureFormSchema>) => api.providers.connect('azure', {
+      tenantId: data.tenantId,
+      clientId: data.clientId,
+      clientSecret: data.clientSecret,
+      subscriptionId: data.subscriptionId,
+      location: data.location || undefined,
+    }),
     onSuccess: () => {
       toast({
         title: "Azure connected successfully",
@@ -467,7 +494,11 @@ export function CloudProviderSetup({
                   <div className="flex justify-between items-center">
                     {getProviderIcon(prov.provider.toUpperCase() as CloudProvider)}
                     <div className="flex items-center">
-                      {prov.isConnected ? (
+                      {prov.status === 'partial' ? (
+                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full flex items-center">
+                          <AlertTriangle className="h-3 w-3 mr-1" /> Partial
+                        </span>
+                      ) : prov.isConnected ? (
                         <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center">
                           <Check className="h-3 w-3 mr-1" /> Connected
                         </span>
@@ -480,7 +511,9 @@ export function CloudProviderSetup({
                   </div>
                   <CardTitle className="text-lg">{getProviderName(prov.provider.toUpperCase() as CloudProvider)}</CardTitle>
                   <CardDescription>
-                    {prov.lastSynced ? (
+                    {prov.message ? (
+                      <>{prov.message}</>
+                    ) : prov.lastSynced ? (
                       <>Last synced: {new Date(prov.lastSynced).toLocaleString()}</>
                     ) : (
                       <>Not yet synced</>
@@ -698,8 +731,23 @@ export function CloudProviderSetup({
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Form {...gcpForm}>
-                  <form onSubmit={gcpForm.handleSubmit(onSubmitGCP)} className="space-y-4">
+                <>
+                  <div className="mb-4">
+                    <a
+                      href="https://github.com/pratik-mahalle/infra-backend/blob/main/docs/gcp-inventory-permissions.md"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                    >
+                      <Download size={16} />
+                      View GCP IAM Setup
+                    </a>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Create a dedicated service account and grant only the documented viewer roles.
+                    </p>
+                  </div>
+                  <Form {...gcpForm}>
+                    <form onSubmit={gcpForm.handleSubmit(onSubmitGCP)} className="space-y-4">
                     <FormField
                       control={gcpForm.control}
                       name="serviceAccountKey"
@@ -732,6 +780,22 @@ export function CloudProviderSetup({
                           </FormControl>
                           <FormDescription>
                             Enter your GCP Project ID if not included in the service account key
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={gcpForm.control}
+                      name="billingDataset"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Billing Export Table (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="billing-project.dataset.gcp_billing_export_v1_XXXXXX" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Fully qualified BigQuery billing export table used for GCP cost synchronization
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -773,8 +837,9 @@ export function CloudProviderSetup({
                         </div>
                       )}
                     </div>
-                  </form>
-                </Form>
+                    </form>
+                  </Form>
+                </>
               )}
             </TabsContent>
 
@@ -789,8 +854,23 @@ export function CloudProviderSetup({
                   </AlertDescription>
                 </Alert>
               ) : (
-                <Form {...azureForm}>
-                  <form onSubmit={azureForm.handleSubmit(onSubmitAzure)} className="space-y-4">
+                <>
+                  <div className="mb-4">
+                    <a
+                      href="https://github.com/pratik-mahalle/infra-backend/blob/main/docs/azure-inventory-permissions.md"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                    >
+                      <Download size={16} />
+                      View Azure RBAC Setup
+                    </a>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Register a dedicated application and assign read-only roles at subscription scope.
+                    </p>
+                  </div>
+                  <Form {...azureForm}>
+                    <form onSubmit={azureForm.handleSubmit(onSubmitAzure)} className="space-y-4">
                     <FormField
                       control={azureForm.control}
                       name="clientId"
@@ -857,6 +937,22 @@ export function CloudProviderSetup({
                     />
                     <FormField
                       control={azureForm.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Default Location (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="eastus" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Used only when an Azure resource does not report its own location
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={azureForm.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
@@ -891,8 +987,9 @@ export function CloudProviderSetup({
                         </div>
                       )}
                     </div>
-                  </form>
-                </Form>
+                    </form>
+                  </Form>
+                </>
               )}
             </TabsContent>
             {/* Kubernetes Tab Content */}
@@ -1149,11 +1246,10 @@ export function CloudProviderSetup({
               </h3>
               <ul className="text-sm space-y-1 list-disc pl-5">
                 <li>Compute Viewer</li>
-                <li>Storage Object Viewer</li>
-                <li>Cloud SQL Viewer</li>
-                <li>Monitoring Viewer</li>
-                <li>Security Center Viewer</li>
-                <li>Billing Account Viewer</li>
+                <li>Storage Bucket Viewer</li>
+                <li>Cloud Asset Viewer</li>
+                <li>Security Center Findings Viewer</li>
+                <li>BigQuery Data Viewer + Job User (for billing export)</li>
               </ul>
             </div>
             <div>
@@ -1165,9 +1261,7 @@ export function CloudProviderSetup({
                 <li>Reader</li>
                 <li>Cost Management Reader</li>
                 <li>Security Reader</li>
-                <li>Monitor Reader</li>
-                <li>Storage Blob Data Reader</li>
-                <li>Key Vault Reader</li>
+                <li>Monitoring Reader</li>
               </ul>
             </div>
           </div>
