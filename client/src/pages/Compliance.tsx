@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Download, FileText, Loader2, Play, XCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useAssessments, useComplianceOverview, useFailingControls, useFrameworkControls, useFrameworks, useRunAssessment } from "@/hooks/use-compliance";
+import { useAssessment, useAssessments, useComplianceOverview, useFailingControls, useFrameworkControls, useFrameworks, useRunAssessment } from "@/hooks/use-compliance";
 import { useFindings } from "@/hooks/use-findings";
 import { isTerminalQueueState, useQueueJobStatus } from "@/hooks/use-queue-job";
 import { useToast } from "@/hooks/use-toast";
@@ -35,12 +35,14 @@ export default function Compliance() {
   const [selectedControlId, setSelectedControlId] = useState<string | null>(null);
   const [assessmentJobId, setAssessmentJobId] = useState<number | null>(null);
   const [notifiedAssessmentJobStatus, setNotifiedAssessmentJobStatus] = useState<string | null>(null);
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState("");
 
   const { data: overview } = useComplianceOverview();
   const { data: frameworks = [] } = useFrameworks();
   const { data: controls = [], isLoading: controlsLoading } = useFrameworkControls(selectedFrameworkId);
   const { data: failingControls = [] } = useFailingControls(selectedFrameworkId);
   const { data: assessments = [] } = useAssessments(selectedFrameworkId);
+  const { data: assessmentDetail, isLoading: assessmentDetailLoading, error: assessmentDetailError } = useAssessment(selectedAssessmentId);
   const { data: complianceFindingsResponse } = useFindings({ findingType: "compliance_violation", status: "open", page: 1, pageSize: 100 });
   const { mutate: runAssessment, isPending: assessmentRunning } = useRunAssessment();
   const { data: assessmentJobStatus, error: assessmentJobStatusError, isFetching: isFetchingAssessmentJob } = useQueueJobStatus(assessmentJobId);
@@ -50,6 +52,16 @@ export default function Compliance() {
       setSelectedFrameworkId((frameworks.find((framework) => framework.isEnabled) ?? frameworks[0]).id);
     }
   }, [frameworks, selectedFrameworkId]);
+
+  useEffect(() => {
+    if (assessments.length === 0) {
+      setSelectedAssessmentId("");
+      return;
+    }
+    if (!assessments.some((assessment) => assessment.id === selectedAssessmentId)) {
+      setSelectedAssessmentId((assessments.find((assessment) => assessment.status === "completed") ?? assessments[0]).id);
+    }
+  }, [assessments, selectedAssessmentId]);
 
   const selectedFramework = frameworks.find((framework) => framework.id === selectedFrameworkId);
   const failingIds = useMemo(() => new Set(failingControls.map((finding) => finding.controlId)), [failingControls]);
@@ -112,13 +124,31 @@ export default function Compliance() {
 
   const downloadAssessment = (assessment?: ComplianceAssessment) => {
     const rows = assessment
-      ? [["Framework", assessment.frameworkName], ["Assessment date", assessment.assessmentDate], ["Status", assessment.status], ["Compliance percent", assessment.compliancePercent]]
+      ? [["Framework", assessment.frameworkName], ["Framework version", assessment.frameworkVersion], ["Evaluation engine", assessment.evaluationEngineVersion], ["Evidence checksum", assessment.evidenceManifestChecksum], ["Assessment date", assessment.assessmentDate], ["Status", assessment.status], ["Compliance percent", assessment.compliancePercent]]
       : [["Framework", selectedFramework?.name || "All frameworks"], ["Compliance percent", compliancePercent], ["Passed controls", passingCount], ["Failed controls", failingCount], ["Total controls", totalControls]];
     const csv = rows.map((row) => row.map((value) => `"${String(value ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
     link.download = `infraudit-compliance-${assessment?.id || new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadEvidenceManifest = () => {
+    if (!assessmentDetail?.evidenceManifest) {
+      toast({ title: "No sealed evidence", description: "This assessment predates immutable evidence manifests.", variant: "destructive" });
+      return;
+    }
+    const payload = {
+      assessment: assessmentDetail.assessment,
+      evidenceVerified: assessmentDetail.evidenceVerified,
+      evidenceManifest: assessmentDetail.evidenceManifest,
+    };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `infraudit-compliance-evidence-${assessmentDetail.assessment.id}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -283,18 +313,79 @@ allow {"{ input.evidence.status == \"passed\" }"}</pre>
       </div>
 
       {assessments.length > 0 && (
-        <SocPanel className="mt-4" eyebrow="Assessment History" title="Recent evidence snapshots">
-          <div className="divide-y divide-border">
-            {assessments.slice(0, 5).map((assessment) => (
-              <button key={assessment.id} type="button" onClick={() => downloadAssessment(assessment)} className="grid w-full gap-3 px-4 py-3 text-left hover:bg-muted/60 sm:grid-cols-[minmax(0,1fr)_120px_120px_120px]">
-                <span className="font-medium text-foreground">{assessment.frameworkName}</span>
-                <span className="font-mono text-sm text-muted-foreground">{assessment.status}</span>
-                <span className="font-mono text-sm text-foreground">{assessment.compliancePercent}%</span>
-                <span className="font-mono text-sm text-muted-foreground">{compactDate(assessment.assessmentDate)}</span>
-              </button>
-            ))}
-          </div>
-        </SocPanel>
+        <>
+          <SocPanel className="mt-4" eyebrow="Assessment History" title="Recent evidence snapshots">
+            <div className="divide-y divide-border">
+              {assessments.slice(0, 5).map((assessment) => (
+                <button key={assessment.id} type="button" onClick={() => setSelectedAssessmentId(assessment.id)} className={cn("grid w-full gap-3 px-4 py-3 text-left hover:bg-muted/60 sm:grid-cols-[minmax(0,1fr)_120px_120px_120px]", selectedAssessmentId === assessment.id && "bg-primary/10")}>
+                  <span className="font-medium text-foreground">{assessment.frameworkName} <span className="font-mono text-xs text-muted-foreground">{assessment.frameworkVersion ? `v${assessment.frameworkVersion}` : "legacy"}</span></span>
+                  <span className="font-mono text-sm text-muted-foreground">{assessment.status}</span>
+                  <span className="font-mono text-sm text-foreground">{assessment.compliancePercent}%</span>
+                  <span className="font-mono text-sm text-muted-foreground">{compactDate(assessment.assessmentDate)}</span>
+                </button>
+              ))}
+            </div>
+          </SocPanel>
+
+          <SocPanel
+            className="mt-4"
+            eyebrow="Immutable Audit Record"
+            title={assessmentDetail?.assessment ? `${assessmentDetail.assessment.frameworkName} evidence` : "Assessment evidence"}
+            actions={<SocButton variant="ghost" onClick={downloadEvidenceManifest} disabled={!assessmentDetail?.evidenceManifest}><Download className="h-4 w-4" /> Export JSON</SocButton>}
+          >
+            {assessmentDetailLoading ? (
+              <div className="flex items-center gap-2 p-4 font-mono text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading sealed evidence...</div>
+            ) : assessmentDetailError ? (
+              <div className="p-4 text-sm text-red-600 dark:text-red-400">
+                Failed to load assessment evidence: {assessmentDetailError instanceof Error ? assessmentDetailError.message : "request failed"}
+              </div>
+            ) : assessmentDetail?.evidenceManifest ? (
+              <div className="space-y-5 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <SocBadge tone={assessmentDetail.evidenceVerified ? "green" : "red"}>{assessmentDetail.evidenceVerified ? "checksum verified" : "verification failed"}</SocBadge>
+                  <SocBadge tone="blue">schema v{assessmentDetail.evidenceManifest.schemaVersion}</SocBadge>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <SocStat label="Framework" value={`v${assessmentDetail.evidenceManifest.framework.version}`} />
+                  <SocStat label="Controls" value={assessmentDetail.evidenceManifest.controls?.length ?? 0} />
+                  <SocStat label="Mappings" value={assessmentDetail.evidenceManifest.mappings?.length ?? 0} />
+                  <SocStat label="Resources" value={assessmentDetail.evidenceManifest.scope.resourceCount} />
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded border border-border bg-muted/30 p-3">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Versioned evaluator</p>
+                    <p className="mt-2 font-mono text-sm text-foreground">{assessmentDetail.evidenceManifest.engineVersion}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Providers: {assessmentDetail.evidenceManifest.scope.providers?.join(", ") || "none"}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Sealed: {compactDate(assessmentDetail.evidenceManifest.createdAt)}</p>
+                  </div>
+                  <div className="rounded border border-border bg-muted/30 p-3">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Manifest SHA-256</p>
+                    <p className="mt-2 break-all font-mono text-xs text-foreground">{assessmentDetail.evidenceManifest.checksum}</p>
+                    <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Results SHA-256</p>
+                    <p className="mt-1 break-all font-mono text-xs text-foreground">{assessmentDetail.evidenceManifest.resultsChecksum}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Explicit exclusions</p>
+                  {(assessmentDetail.evidenceManifest.exclusions?.length ?? 0) > 0 ? (
+                    <div className="mt-2 divide-y divide-border rounded border border-border">
+                      {assessmentDetail.evidenceManifest.exclusions?.map((exclusion) => (
+                        <div key={`${exclusion.controlId}:${exclusion.status}`} className="grid gap-2 p-3 sm:grid-cols-[110px_150px_minmax(0,1fr)]">
+                          <span className="font-mono text-sm text-foreground">{exclusion.controlId}</span>
+                          <SocBadge tone="yellow">{exclusion.status}</SocBadge>
+                          <span className="text-sm text-muted-foreground">{exclusion.reason || "No evaluable policy or source evidence"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="mt-2 text-sm text-muted-foreground">No controls were excluded from evaluation.</p>}
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 text-sm text-muted-foreground">This historical assessment has no sealed evidence manifest.</div>
+            )}
+          </SocPanel>
+        </>
       )}
     </SocWorkspace>
   );
