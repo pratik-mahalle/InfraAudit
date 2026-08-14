@@ -441,11 +441,13 @@ export interface Provider {
   provider: string;
   isConnected: boolean;
   lastSynced?: string;
+  status?: 'connected' | 'disconnected' | 'partial' | 'error';
+  message?: string;
 }
 
 export interface ProviderSyncStatus extends Provider {
   resourceCount: number;
-  status: 'connected' | 'disconnected' | 'error';
+  status: 'connected' | 'disconnected' | 'partial' | 'error';
   message?: string;
 }
 
@@ -455,10 +457,12 @@ export interface ProviderCredentials {
   region?: string;
   projectId?: string;
   credentials?: string;
+  billingDataset?: string;
   tenantId?: string;
   clientId?: string;
   clientSecret?: string;
   subscriptionId?: string;
+  location?: string;
 }
 
 type ProviderWire = {
@@ -477,6 +481,8 @@ const normalizeProvider = (provider: ProviderWire): Provider => ({
   provider: provider.provider,
   isConnected: provider.is_connected ?? provider.isConnected ?? false,
   lastSynced: provider.last_synced ?? provider.lastSynced,
+  status: provider.status,
+  message: provider.message,
 });
 
 export interface Recommendation {
@@ -815,10 +821,12 @@ export const api = {
           aws_region: credentials.region,
           gcp_project_id: credentials.projectId,
           gcp_service_account_json: credentials.credentials,
+          gcp_billing_dataset: credentials.billingDataset,
           azure_tenant_id: credentials.tenantId,
           azure_client_id: credentials.clientId,
           azure_client_secret: credentials.clientSecret,
           azure_subscription_id: credentials.subscriptionId,
+          azure_location: credentials.location,
         },
       }),
 

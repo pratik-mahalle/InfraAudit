@@ -87,6 +87,7 @@ function compactTime(value?: string | null) {
 
 function providerTone(status?: string, connected?: boolean) {
   if (status === "error") return "red" as const;
+  if (status === "partial") return "orange" as const;
   if (connected) return "green" as const;
   return "slate" as const;
 }
@@ -111,7 +112,12 @@ export default function CloudProviders() {
         ? providerName.includes("kubernetes") || providerName.includes("k8s")
         : providerName === catalogItem.id;
     }).length;
-    const connected = Boolean(provider?.isConnected || status?.status === "connected" || (catalogItem.id === "kubernetes" && resourceCount > 0));
+    const connected = Boolean(
+      provider?.isConnected
+      || status?.status === "connected"
+      || status?.status === "partial"
+      || (catalogItem.id === "kubernetes" && resourceCount > 0),
+    );
 
     return {
       ...catalogItem,

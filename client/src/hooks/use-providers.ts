@@ -12,6 +12,7 @@ export function useProviderStatus() {
   return useQuery<ProviderSyncStatus[]>({
     queryKey: ['providers', 'status'],
     queryFn: () => api.providers.getStatus(),
+    refetchInterval: 15_000,
   });
 }
 
