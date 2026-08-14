@@ -54,6 +54,7 @@ export function useTriggerVulnerabilityScan() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vulnerabilities'] });
       queryClient.invalidateQueries({ queryKey: ['vulnerability-scans'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts'] });
     },
   });
 }

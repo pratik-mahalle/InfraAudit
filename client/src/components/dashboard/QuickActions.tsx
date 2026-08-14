@@ -50,7 +50,7 @@ export function QuickActions() {
   
   const runScanMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/drifts/detect");
+      const res = await apiRequest("POST", "/api/v1/drifts/detect");
       return res.json();
     },
     onSuccess: () => {
@@ -62,7 +62,7 @@ export function QuickActions() {
       // Invalidate relevant queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["drifts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/v1/costs/anomalies"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
       queryClient.invalidateQueries({ queryKey: ["resources"] });
     },
     onError: () => {

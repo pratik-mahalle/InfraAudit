@@ -191,10 +191,34 @@ export interface DriftSummary {
 
 export interface DriftDetectionResponse {
   message: string;
+  scanId?: number;
   jobId?: number;
   jobKind?: string;
   queue?: string;
   duplicate?: boolean;
+}
+
+export interface DriftScan {
+  id: number;
+  queueJobId?: number;
+  trigger: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  stage: string;
+  progressPercent: number;
+  resourcesEvaluated: number;
+  baselinesCreated: number;
+  driftsDetected: number;
+  driftsCreated: number;
+  policyViolations: number;
+  errorMessage?: string;
+  startedAt?: string;
+  completedAt?: string;
+  createdAt: string;
+}
+
+export interface DriftScanDetail {
+  scan: DriftScan;
+  findings: Drift[];
 }
 
 export interface VulnerabilityScanResponse {
@@ -293,8 +317,14 @@ export interface Alert {
   title: string;
   message: string;
   resourceId?: number;
-  status: 'open' | 'acknowledged' | 'resolved';
+  resource?: string;
+  status: 'open' | 'acknowledged' | 'in_progress' | 'resolved' | 'closed';
+  sourceType?: string;
+  sourceScope?: string;
+  sourceId?: string;
+  resolvedAt?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface AlertSummary {
@@ -570,6 +600,11 @@ export const api = {
 
     getSummary: () => request<DriftSummary>('/api/v1/drifts/summary'),
 
+    listScans: (page = 1, pageSize = 20) =>
+      request<PaginatedResponse<DriftScan>>(`/api/v1/drifts/scans?page=${page}&page_size=${pageSize}`),
+
+    getScan: (id: number) => request<DriftScanDetail>(`/api/v1/drifts/scans/${id}`),
+
     detect: () => request<DriftDetectionResponse>('/api/v1/drifts/detect', { method: 'POST' }),
 
     update: (id: number, data: Partial<Drift>) =>
@@ -610,20 +645,20 @@ export const api = {
       if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString());
 
       const query = searchParams.toString();
-      return request<PaginatedResponse<Alert>>(`/api/alerts${query ? `?${query}` : ''}`);
+      return request<PaginatedResponse<Alert>>(`/api/v1/alerts${query ? `?${query}` : ''}`);
     },
 
-    get: (id: number) => request<Alert>(`/api/alerts/${id}`),
+    get: (id: number) => request<Alert>(`/api/v1/alerts/${id}`),
 
-    getSummary: () => request<AlertSummary>('/api/alerts/summary'),
+    getSummary: () => request<AlertSummary>('/api/v1/alerts/summary'),
 
     create: (data: Partial<Alert>) =>
-      request<{ id: number }>('/api/alerts', { method: 'POST', body: data }),
+      request<{ id: number }>('/api/v1/alerts', { method: 'POST', body: data }),
 
     update: (id: number, data: Partial<Alert>) =>
-      request(`/api/alerts/${id}`, { method: 'PUT', body: data }),
+      request(`/api/v1/alerts/${id}`, { method: 'PUT', body: data }),
 
-    delete: (id: number) => request(`/api/alerts/${id}`, { method: 'DELETE' }),
+    delete: (id: number) => request(`/api/v1/alerts/${id}`, { method: 'DELETE' }),
   },
 
   // ============================================
