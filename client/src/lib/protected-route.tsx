@@ -6,6 +6,8 @@ import { Permission } from "@/lib/permissions";
 import { Loader2, Clock, LogOut } from "lucide-react";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { DesktopRequiredScreen } from "@/components/layout/DesktopRequiredScreen";
+import { useDesktopViewport } from "@/hooks/use-desktop-viewport";
 
 interface ProtectedRouteProps {
   path: string;
@@ -51,6 +53,7 @@ function ProtectedRouteContent({
   const { user, isLoading, needsSignup, pendingApproval } = useAuth();
   const { hasPermission } = usePermission();
   const { toast } = useToast();
+  const isDesktopViewport = useDesktopViewport();
 
   const isUnauthorized = !isLoading && user && !hasPermission(permission);
 
@@ -78,6 +81,10 @@ function ProtectedRouteContent({
 
   if (!user) {
     return <Redirect to="/auth" />;
+  }
+
+  if (!isDesktopViewport) {
+    return <DesktopRequiredScreen />;
   }
 
   if (pendingApproval) {
