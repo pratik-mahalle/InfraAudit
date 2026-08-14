@@ -324,7 +324,7 @@ export interface ComplianceEvidenceManifest {
   };
   engineVersion: string;
   scope: {
-    providers: string[];
+    providers: string[] | null;
     resourceCount: number;
   };
   controls: Array<{
@@ -333,7 +333,7 @@ export interface ComplianceEvidenceManifest {
     title: string;
     category: string;
     severity: string;
-  }>;
+  }> | null;
   mappings: Array<{
     id: string;
     controlId: string;
@@ -346,20 +346,20 @@ export interface ComplianceEvidenceManifest {
     version: number;
     checksum: string;
     effectiveAt: string;
-  }>;
+  }> | null;
   resources: Array<{
     resourceId: string;
     provider: string;
     resourceType: string;
     observedAt: string;
     configurationSha256: string;
-  }>;
+  }> | null;
   exclusions: Array<{
     controlId: string;
     status: string;
     reason: string;
-  }>;
-  controlResults: AssessmentFinding[];
+  }> | null;
+  controlResults: AssessmentFinding[] | null;
   resultsChecksum: string;
   createdAt: string;
   checksum: string;
