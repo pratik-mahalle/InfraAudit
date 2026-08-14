@@ -76,6 +76,69 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export type KubernetesConnectorStatus = 'pending' | 'connected' | 'disconnected' | 'revoked';
+export type KubernetesInventoryStatus = 'applied' | 'partial' | 'superseded';
+
+export interface KubernetesConnector {
+  id: number;
+  name: string;
+  tokenPrefix: string;
+  status: KubernetesConnectorStatus;
+  clusterUid?: string;
+  kubernetesVersion?: string;
+  agentVersion?: string;
+  lastSeenAt?: string;
+  lastInventoryAt?: string;
+  lastSnapshotId?: string;
+  inventoryStatus?: KubernetesInventoryStatus;
+  resourceCount: number;
+  revokedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KubernetesInventoryResource {
+  uid: string;
+  apiVersion: string;
+  kind: string;
+  namespace?: string;
+  name: string;
+  status: string;
+  configuration?: Record<string, unknown>;
+}
+
+export interface KubernetesCollectionError {
+  resource: string;
+  message: string;
+}
+
+export interface KubernetesInventorySnapshot {
+  id: string;
+  connectorId: number;
+  clusterUid: string;
+  kubernetesVersion?: string;
+  agentVersion?: string;
+  collectedAt: string;
+  receivedAt: string;
+  status: KubernetesInventoryStatus;
+  complete: boolean;
+  resourceCount: number;
+  resources?: KubernetesInventoryResource[];
+  errors?: KubernetesCollectionError[];
+}
+
+export interface KubernetesInventorySnapshotPage {
+  items: KubernetesInventorySnapshot[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CreateKubernetesConnectorResponse {
+  connector: KubernetesConnector;
+  token: string;
+}
+
 export type AIProviderName = 'claude' | 'gemini' | 'openai';
 
 export interface AIConfigEntry {
@@ -879,6 +942,26 @@ export const api = {
 
     listServices: (clusterId: string) =>
       request(`/api/kubernetes/clusters/${clusterId}/services`),
+
+    listConnectors: () =>
+      request<KubernetesConnector[]>('/api/v1/kubernetes/connectors'),
+
+    createConnector: (name: string) =>
+      request<CreateKubernetesConnectorResponse>('/api/v1/kubernetes/connectors', {
+        method: 'POST',
+        body: { name },
+      }),
+
+    revokeConnector: (id: number) =>
+      request(`/api/v1/kubernetes/connectors/${id}`, { method: 'DELETE' }),
+
+    listInventorySnapshots: (connectorId: number, limit = 20, offset = 0) =>
+      request<KubernetesInventorySnapshotPage>(`/api/v1/kubernetes/connectors/${connectorId}/snapshots`, {
+        params: { limit, offset },
+      }),
+
+    getInventorySnapshot: (connectorId: number, snapshotId: string) =>
+      request<KubernetesInventorySnapshot>(`/api/v1/kubernetes/connectors/${connectorId}/snapshots/${snapshotId}`),
   },
 
   // ============================================
