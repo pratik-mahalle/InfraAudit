@@ -287,6 +287,9 @@ export interface ComplianceAssessment {
   queueJobId?: number;
   frameworkId: string;
   frameworkName: string;
+  frameworkVersion: string;
+  evaluationEngineVersion: string;
+  evidenceManifestChecksum?: string;
   assessmentDate: string;
   totalControls: number;
   passedControls: number;
@@ -306,6 +309,67 @@ export interface ComplianceAssessment {
   findingsReconciled?: number;
   errorMessage?: string;
   findings?: string; // JSON string in backend, parsed in frontend usage
+}
+
+export interface ComplianceEvidenceManifest {
+  schemaVersion: number;
+  assessmentId: string;
+  organizationId: number;
+  actorProfileId: number;
+  framework: {
+    id: string;
+    name: string;
+    version: string;
+    provider?: string;
+  };
+  engineVersion: string;
+  scope: {
+    providers: string[];
+    resourceCount: number;
+  };
+  controls: Array<{
+    id: string;
+    controlId: string;
+    title: string;
+    category: string;
+    severity: string;
+  }>;
+  mappings: Array<{
+    id: string;
+    controlId: string;
+    controlRecordId: string;
+    securityRuleType?: string;
+    resourceType?: string;
+    provider?: string;
+    mappingConfidence?: string;
+    checkQuery?: string;
+    version: number;
+    checksum: string;
+    effectiveAt: string;
+  }>;
+  resources: Array<{
+    resourceId: string;
+    provider: string;
+    resourceType: string;
+    observedAt: string;
+    configurationSha256: string;
+  }>;
+  exclusions: Array<{
+    controlId: string;
+    status: string;
+    reason: string;
+  }>;
+  controlResults: AssessmentFinding[];
+  resultsChecksum: string;
+  createdAt: string;
+  checksum: string;
+}
+
+export interface ComplianceAssessmentDetail {
+  assessment: ComplianceAssessment;
+  findings: AssessmentFinding[];
+  evidenceManifest?: ComplianceEvidenceManifest;
+  evidenceVerified: boolean;
 }
 
 export interface AssessmentFinding {

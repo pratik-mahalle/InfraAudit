@@ -1,7 +1,7 @@
 import {
   CostOverview, CostTrend, CostForecast, CostAnomaly, CostOptimization,
   AIForecastResult, ROIData,
-  ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, AssessmentFinding,
+  ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, ComplianceAssessmentDetail, AssessmentFinding,
   ResourceComplianceStatus,
   ScheduledJob, JobExecution, RemediationAction, NotificationPreference,
   Webhook
@@ -1134,7 +1134,7 @@ export const api = {
       );
     },
 
-    getAssessment: (id: string) => request<ComplianceAssessment>(`/api/v1/compliance/assessments/${id}`),
+    getAssessment: (id: string) => request<ComplianceAssessmentDetail>(`/api/v1/compliance/assessments/${id}`),
 
     exportAssessment: (id: string) => request(`/api/v1/compliance/assessments/${id}/export`),
 
