@@ -197,7 +197,7 @@ const Documentation = () => {
                       Amazon Web Services
                     </h4>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Connect using IAM credentials or cross-account IAM role
+                      Set up a read-only cross-account IAM role without access keys
                     </p>
                     <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/cloud-providers')}>
                       View AWS Connection Guide
@@ -239,7 +239,7 @@ const Documentation = () => {
                   <li>Read-only access to resource inventory and configurations</li>
                   <li>Access to billing and cost data</li>
                   <li>Permissions to read logs and monitoring metrics</li>
-                  <li>Optional: permissions to apply recommended changes (for automated remediation)</li>
+                  <li>Remediation permissions are excluded from the provider read identity</li>
                 </ul>
                 <div className="mt-8 p-4 rounded-lg border bg-card">
                   <h4 className="font-medium mb-2">Self-Hosting</h4>

@@ -35,14 +35,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { SiAmazon, SiGooglecloud } from 'react-icons/si';
 
-// AWS Form Schema
-const awsFormSchema = z.object({
-  accessKeyId: z.string().min(10, "Access key ID is required"),
-  secretAccessKey: z.string().min(10, "Secret access key is required"),
-  region: z.string().optional(),
-  name: z.string().optional()
-});
-
 const gcpServiceAccountKeySchema = z.string()
   .min(100, "Service account key JSON is required")
   .superRefine((value, context) => {
@@ -153,17 +145,7 @@ export function CloudProviderSetup({
     queryFn: () => api.providers.list(),
   });
 
-  // Form handlers for each provider
-  const awsForm = useForm<z.infer<typeof awsFormSchema>>({
-    resolver: zodResolver(awsFormSchema),
-    defaultValues: {
-      accessKeyId: '',
-      secretAccessKey: '',
-      region: 'us-east-1',
-      name: 'AWS Account'
-    }
-  });
-
+  // Form handlers for providers that still require submitted credentials.
   const gcpForm = useForm<z.infer<typeof gcpFormSchema>>({
     resolver: zodResolver(gcpFormSchema),
     defaultValues: {
@@ -186,29 +168,29 @@ export function CloudProviderSetup({
     }
   });
 
-  // AWS connection mutation — transform camelCase form fields to Go backend snake_case DTO
-  const awsConnectionMutation = useMutation({
-    mutationFn: (data: z.infer<typeof awsFormSchema>) => api.providers.connect('aws', {
-      accessKeyId: data.accessKeyId,
-      secretAccessKey: data.secretAccessKey,
-      region: data.region || 'us-east-1',
-    }),
-    onSuccess: () => {
+  const awsRoleTemplateMutation = useMutation({
+    mutationFn: () => api.providers.downloadAWSRoleTemplate(),
+    onSuccess: ({ blob, filename }) => {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
       toast({
-        title: "AWS connected successfully",
-        description: "Your AWS account has been connected and resources are being synced.",
-        variant: "default",
+        title: 'AWS role template downloaded',
+        description: 'Review and deploy it in the AWS account you want InfraAudit to monitor.',
       });
-      awsForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['providers'] });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
-        title: "Failed to connect AWS account",
-        description: error.message || "Please check your credentials and try again.",
-        variant: "destructive",
+        title: 'Could not download AWS role template',
+        description: error.message || 'Please try again.',
+        variant: 'destructive',
       });
-    }
+    },
   });
 
   // GCP connection mutation — transform camelCase form fields to Go backend snake_case DTO
@@ -397,10 +379,6 @@ export function CloudProviderSetup({
     }
   };
 
-  const onSubmitAWS = (data: z.infer<typeof awsFormSchema>) => {
-    awsConnectionMutation.mutate(data);
-  };
-
   const onSubmitGCP = (data: z.infer<typeof gcpFormSchema>) => {
     gcpConnectionMutation.mutate(data);
   };
@@ -445,7 +423,6 @@ export function CloudProviderSetup({
   const isAwsConnected = providers.some(p => p.provider === 'aws' && p.isConnected);
   const isGcpConnected = providers.some(p => p.provider === 'gcp' && p.isConnected);
   const isAzureConnected = providers.some(p => p.provider === 'azure' && p.isConnected);
-  const awsSubmitLabel = isAwsConnected && allowConnectedProviderUpdate ? 'Update AWS Account' : 'Connect AWS Account';
   const gcpSubmitLabel = isGcpConnected && allowConnectedProviderUpdate ? 'Update GCP Account' : 'Connect GCP Account';
   const azureSubmitLabel = isAzureConnected && allowConnectedProviderUpdate ? 'Update Azure Account' : 'Connect Azure Account';
 
@@ -559,9 +536,9 @@ export function CloudProviderSetup({
       {/* Connect new providers form */}
       <Card>
         <CardHeader>
-          <CardTitle>Connect a Cloud Provider</CardTitle>
+          <CardTitle>Set Up a Cloud Provider</CardTitle>
           <CardDescription>
-            Add your cloud provider API credentials to start monitoring your infrastructure
+            Use a least-privilege cloud identity to start monitoring your infrastructure
           </CardDescription>
         </CardHeader>
         <div className="px-6 mb-4">
@@ -569,14 +546,14 @@ export function CloudProviderSetup({
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800">Security Notice</AlertTitle>
             <AlertDescription className="text-amber-700">
-              Your credentials are securely encrypted before storage. For maximum security, we recommend using dedicated IAM users with read-only permissions for InfraAudit.
+              AWS setup uses a cross-account role and never asks for access keys. Secrets required by other providers are encrypted before storage.
             </AlertDescription>
           </Alert>
         </div>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-4 mb-4">
-              <TabsTrigger value="aws" disabled={isAwsConnected && !allowConnectedProviderUpdate}>
+              <TabsTrigger value="aws">
                 <div className="flex items-center">
                   <SiAmazon className="h-4 w-4 mr-2 text-orange-500" />
                   AWS
@@ -602,122 +579,87 @@ export function CloudProviderSetup({
               </TabsTrigger>
             </TabsList>
 
-            {/* AWS Form */}
-            <TabsContent value="aws">
-              {isAwsConnected && !allowConnectedProviderUpdate ? (
+            {/* AWS role onboarding */}
+            <TabsContent value="aws" className="space-y-4">
+              {isAwsConnected && (
                 <Alert>
                   <Check className="h-4 w-4" />
-                  <AlertTitle>AWS Already Connected</AlertTitle>
+                  <AlertTitle>AWS connection already exists</AlertTitle>
                   <AlertDescription>
-                    You have already connected an AWS account. If you need to change credentials, please disconnect the existing account first.
+                    Downloading and deploying this role template prepares the safer role-based migration. It does not change the current connection.
                   </AlertDescription>
                 </Alert>
-              ) : (
-                <>
-                <div className="mb-4">
+              )}
+
+              <div className="rounded-md border bg-muted/30 p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-2">
+                    <div className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                      No long-lived AWS keys
+                    </div>
+                    <h3 className="text-lg font-semibold">Create the InfraAudit read-only role</h3>
+                    <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+                      The protected template is unique to your organization. It trusts only the exact InfraAudit backend and worker roles and requires your organization-specific external ID for every future session.
+                    </p>
+                  </div>
                   <a
                     href="https://github.com/pratik-mahalle/infra-backend/blob/main/docs/aws-inventory-permissions.md"
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                    className="inline-flex shrink-0 items-center gap-2 text-sm font-medium text-primary hover:underline"
                   >
-                    <Download size={16} />
-                    View AWS IAM Policy
+                    Review permission catalog
                   </a>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Apply the documented read-only policy to the dedicated InfraAudit IAM identity.
-                  </p>
                 </div>
-                <Form {...awsForm}>
-                  <form onSubmit={awsForm.handleSubmit(onSubmitAWS)} className="space-y-4">
-                    <FormField
-                      control={awsForm.control}
-                      name="accessKeyId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Access Key ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="AWS Access Key ID" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Enter your AWS IAM Access Key ID. Your IAM user needs read-only permissions for EC2, S3, RDS, IAM, and Cost Explorer services.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={awsForm.control}
-                      name="secretAccessKey"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Secret Access Key</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="AWS Secret Access Key" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Enter your AWS IAM Secret Access Key. We recommend creating a dedicated IAM user with read-only access for InfraAudit.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={awsForm.control}
-                      name="region"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Region</FormLabel>
-                          <FormControl>
-                            <Input placeholder="us-east-1" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Enter your primary AWS region (e.g., us-east-1)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={awsForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Account Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="My AWS Account" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Give this AWS account a friendly name
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="space-y-2">
-                      <Button 
-                        type="submit" 
-                        className="flex items-center w-full"
-                        disabled={awsConnectionMutation.isPending}
-                      >
-                        {awsConnectionMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <CloudCog className="h-4 w-4 mr-2" />
-                        )}
-                        {awsConnectionMutation.isPending ? 'Validating Credentials...' : awsSubmitLabel}
-                      </Button>
-                      {awsConnectionMutation.isError && (
-                        <div className="text-sm text-red-500 flex items-center">
-                          <AlertTriangle className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span>Connection failed. Please check your credentials and permissions.</span>
-                        </div>
-                      )}
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                {[
+                  ['1', 'Download and review', 'An owner or administrator downloads the organization-bound JSON template.'],
+                  ['2', 'Deploy in AWS', 'An AWS operator creates the CloudFormation stack and chooses the optional read policies.'],
+                  ['3', 'Keep the RoleArn', 'Save the stack output for role activation when the connection step becomes available.'],
+                ].map(([step, title, description]) => (
+                  <div key={step} className="rounded-md border p-4">
+                    <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                      {step}
                     </div>
-                  </form>
-                </Form>
-                </>
-              )}
+                    <h4 className="font-medium">{title}</h4>
+                    <p className="mt-1 text-sm leading-5 text-muted-foreground">{description}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-md border p-4 text-sm">
+                <p className="font-medium">Template permissions</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+                  <li>Required read-only inventory and local security checks</li>
+                  <li>Optional Cost Explorer read access, enabled by default</li>
+                  <li>Optional Security Hub and Inspector read access, disabled by default</li>
+                  <li>No remediation actions, IAM users, or access keys</li>
+                </ul>
+              </div>
+
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Role activation is a separate step</AlertTitle>
+                <AlertDescription>
+                  Deploying this template does not mark AWS connected or start a scan yet. Keep the RoleArn output; the short-lived STS connection flow is the next onboarding stage.
+                </AlertDescription>
+              </Alert>
+
+              <Button
+                type="button"
+                className="flex w-full items-center"
+                disabled={awsRoleTemplateMutation.isPending}
+                onClick={() => awsRoleTemplateMutation.mutate()}
+              >
+                {awsRoleTemplateMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                {awsRoleTemplateMutation.isPending ? 'Preparing protected template...' : 'Download CloudFormation role template'}
+              </Button>
             </TabsContent>
 
             {/* GCP Form */}
@@ -1209,7 +1151,7 @@ export function CloudProviderSetup({
         </CardContent>
       </Card>
 
-      {/* Credential permissions info */}
+      {/* Cloud identity permissions info */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -1225,18 +1167,15 @@ export function CloudProviderSetup({
             <div>
               <h3 className="font-medium flex items-center mb-2">
                 <SiAmazon className="h-4 w-4 mr-2 text-orange-500" />
-                AWS IAM Permissions
+                AWS read role
               </h3>
               <ul className="text-sm space-y-1 list-disc pl-5">
-                <li>EC2:DescribeInstances</li>
-                <li>EC2:DescribeVpcs / FlowLogs / SecurityGroups</li>
-                <li>EC2:DescribeVolumes</li>
-                <li>S3:ListAllMyBuckets</li>
-                <li>S3:GetBucketTagging</li>
-                <li>RDS:DescribeDBInstances</li>
-                <li>IAM:ListUsers / ListMFADevices / ListRoles</li>
-                <li>CostExplorer:GetCostAndUsage</li>
-                <li><em>Read-only policy recommended</em></li>
+                <li>Inventory read policy required</li>
+                <li>Cost Explorer read optional</li>
+                <li>Security Hub and Inspector reads optional</li>
+                <li>Exact role trust plus external ID</li>
+                <li>No long-lived access keys</li>
+                <li>No remediation permissions</li>
               </ul>
             </div>
             <div>

@@ -63,7 +63,7 @@ This table records current query behavior. The accepted ownership ADR still defi
 | `/signup` | Public | **working** | Creates the Supabase user and continues organization onboarding/approval behavior. |
 | `/invite/:token` | Public/Auth on accept | **working** | Reads the public invitation and accepts it through the backend. |
 | `/` | Public | **partial** | Marketing page renders and navigation works, but “real-time,” multi-cloud, automation, and trial claims exceed the completed surfaces in this catalog. |
-| `/documentation` | Public | **partial** | Static overview contains stale repository links, IAM-user/role wording, and claims for incomplete automation, compliance, and prediction behavior. |
+| `/documentation` | Public | **partial** | Static overview contains stale repository links and claims for incomplete automation, compliance, and prediction behavior. AWS setup now points only to the cross-account role flow. |
 | `/guide` | Public | **partial** | Navigable static guide, but it presents provider, alert, optimization, and trial behavior without the coverage/failure boundaries in the golden AWS journey. |
 | `/guide/` | Public | **deprecated** | Duplicate alias for `/guide`. |
 | `/guides` | Public | **deprecated** | Duplicate alias for `/guide`. |
@@ -93,7 +93,7 @@ This table records current query behavior. The accepted ownership ADR still defi
 | `/resources` | Auth | **working** | Real paginated/filterable inventory with loading, error, and empty states. Coverage depends on provider sync status. |
 | `/settings` | Settings | **partial** | Profile, team, API key, AI, notification, and webhook integrations are mixed; timezone/language are browser-local, some panels rely on optional delivery services, and owner-only admin content shares this route. |
 | `/profile` | Auth | **working** | Displays resolved profile and provider summary. |
-| `/cloud-providers` | Providers | **partial** | Real validation/sync exists, but AWS/GCP/Azure collect long-lived secrets; AWS still uses static keys instead of the golden cross-account role. |
+| `/cloud-providers` | Providers | **partial** | AWS now downloads the protected organization-bound role template and no longer collects new access keys. Role activation/validation remains IA-404; GCP and Azure still collect long-lived secrets. |
 | `/kubernetes` | Providers | **partial** | Direct kubeconfig and connector inventory paths are real; direct access has reachability/secret constraints and Helm drift is a backend placeholder. |
 | `/architecture-playground` | Auth | **partial** | Local diagram editing works, but save calls unregistered `POST /api/architecture`. |
 | `/subscription/success` | Billing | **placeholder** | Calls unregistered `GET /api/subscriptions/plans`; no Stripe completion verification exists. |
@@ -143,8 +143,8 @@ Notation such as `GET|POST /path` represents both explicitly registered method/p
 
 | Endpoint registration(s) | Access | Classification | Evidence and limitation |
 | --- | --- | --- | --- |
-| `GET /api/v1/providers/aws/iam-template` | Public | **deprecated** | Generates a public CloudFormation template that creates an IAM user and access key. It conflicts with the approved role/external-ID golden journey and should be removed after IA-403. |
-| `GET /api/v1/providers/`; `GET /api/v1/providers/status`; `POST /api/v1/providers/{provider}/connect`; `POST /api/v1/providers/{provider}/sync`; `DELETE /api/v1/providers/{provider}` | Org view reads; Providers writes | **partial** | Real AWS/GCP/Azure validation, inventory, partial coverage, and status persistence. Credentials are long-lived secrets, first auto-sync is API-goroutine based, and disconnect removes current resources. |
+| `POST /api/v1/providers/aws/role-template` | Providers | **working** | Downloads one organization-bound read-only CloudFormation role template with exact workload principals and external-ID trust. It creates no IAM user or access key; role activation remains IA-404. |
+| `GET /api/v1/providers/`; `GET /api/v1/providers/status`; `POST /api/v1/providers/{provider}/connect`; `POST /api/v1/providers/{provider}/sync`; `DELETE /api/v1/providers/{provider}` | Org view reads; Providers writes | **partial** | Real AWS/GCP/Azure validation, inventory, partial coverage, and status persistence. The legacy AWS connect contract and GCP/Azure still accept long-lived secrets, first auto-sync is API-goroutine based, and disconnect removes current resources. |
 | `GET /api/v1/resources/`; `GET /api/v1/resources/{id}` | Org view | **working** | Organization-scoped resource inventory reads. |
 | `POST /api/v1/resources/`; `PUT|DELETE /api/v1/resources/{id}` | Org view | **partial** | Real CRUD, but any viewer can mutate provider-derived inventory. |
 | `POST /api/v1/resources/analyze` | Org view | **partial** | Real AI gateway with generic rule fallback; response is not durable evidence. |

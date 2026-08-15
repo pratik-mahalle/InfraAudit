@@ -53,9 +53,9 @@ const providerCatalog = [
 
 const providerRequirements: Record<string, string[]> = {
   aws: [
-    "Dedicated IAM user or role for InfraAudit",
-    "Documented read-only inventory policy applied",
-    "Primary AWS region for inventory collection",
+    "InfraAudit organization owner or administrator access",
+    "AWS permission to deploy an IAM role with CloudFormation",
+    "Save the stack RoleArn output for the activation step",
   ],
   gcp: [
     "Service account key JSON",
@@ -162,7 +162,7 @@ export default function CloudProviders() {
             <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Provider Connections</p>
             <h2 className="mt-2 text-xl font-semibold text-foreground">Manage cloud accounts and inventory sync</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Connect read-only provider credentials, review sync health, and confirm which cloud inventories are feeding InfraAudit.
+              Set up least-privilege provider identities, review sync health, and confirm which cloud inventories are feeding InfraAudit.
             </p>
           </div>
           <Button onClick={() => handleAddProvider()} className="gap-2 self-start lg:self-center">
@@ -339,7 +339,7 @@ export default function CloudProviders() {
               </div>
 
               <div className="rounded-md border border-border bg-background p-4 text-sm leading-6 text-muted-foreground">
-                Credentials are submitted to the InfraAudit backend over TLS. Use a dedicated read-only identity for each cloud account.
+                Use a dedicated read-only identity for each cloud account. AWS uses a cross-account role and does not require long-lived access keys.
               </div>
             </div>
           </SocPanel>
@@ -348,9 +348,9 @@ export default function CloudProviders() {
         <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
           <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Connect or update {selectedProvider?.label || "provider"} credentials</DialogTitle>
+              <DialogTitle>Set up or update {selectedProvider?.label || "provider"}</DialogTitle>
               <DialogDescription>
-                Choose the provider tab and submit read-only credentials for inventory and security scanning.
+                Choose the provider tab and follow its least-privilege onboarding flow.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 rounded-lg border border-border bg-muted/30 p-4 md:grid-cols-[minmax(0,1fr)_220px]">
