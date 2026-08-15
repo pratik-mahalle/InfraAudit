@@ -84,7 +84,7 @@ const Documentation = () => {
                       <h3 className="font-medium">Cost Optimization</h3>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Identify cost-saving opportunities with AI-powered recommendations
+                      Identify cost-saving opportunities with provider-native and evidence-backed recommendations
                     </p>
                   </div>
                   

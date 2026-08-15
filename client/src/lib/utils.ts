@@ -5,15 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number): string {
-  // Convert cents to dollars for display
-  const dollars = amount / 100;
+export function formatCurrency(amount: number, currency = 'USD'): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(dollars);
+  }).format(amount);
 }
 
 export function formatPercentage(value: number): string {

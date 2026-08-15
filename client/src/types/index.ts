@@ -318,6 +318,15 @@ export interface CostOptimization {
   status: 'new' | 'acknowledged' | 'planned' | 'applied' | 'verified' | 'dismissed' | 'expired';
   details?: Record<string, unknown>;
   source: string;
+  providerSource?: string;
+  accountId?: string;
+  region?: string;
+  actionType?: string;
+  restartNeeded?: boolean;
+  rollbackPossible?: boolean;
+  currency: string;
+  recommendationLookbackDays?: number;
+  includedInTotal: boolean;
   confidence: number;
   savingsLow: number;
   savingsHigh: number;
@@ -342,9 +351,63 @@ export interface OptimizationEvidence {
 export interface OptimizationCoverage {
   provider: string;
   source: string;
-  status: 'available' | 'unavailable' | 'not_connected' | 'not_supported';
+  status: 'available' | 'partial' | 'stale' | 'not_enrolled' | 'missing_permission' | 'unavailable' | 'not_connected' | 'not_supported';
   findings: number;
+  deduplicatedSavings: number;
+  currency: string;
+  stale: boolean;
+  missingPermissions?: string[];
+  errorCategory?: string;
   message: string;
+}
+
+export interface OptimizationSourceResult extends OptimizationCoverage {
+  id: string;
+  runId: string;
+  organizationId: number;
+  startedAt: string;
+  completedAt: string;
+}
+
+export interface OptimizationAnalysisRun {
+  id: string;
+  organizationId: number;
+  actorProfileId: number;
+  trigger: 'manual' | 'scheduled' | string;
+  provider: string;
+  status: 'running' | 'completed' | 'partial' | 'failed';
+  findings: number;
+  deduplicatedSavings: number;
+  currency: string;
+  sourceCoverage: OptimizationSourceResult[];
+  missingPermissions?: string[];
+  errorCategory?: string;
+  message: string;
+  startedAt: string;
+  completedAt?: string;
+}
+
+export interface OptimizationAnalysisStatus {
+  provider: string;
+  latestRun?: OptimizationAnalysisRun;
+  lastSuccessfulAnalysis?: string;
+  isStale: boolean;
+  evaluatedFindings: number;
+  authoritativeSavings: number;
+  currency: string;
+  missingPermissions?: string[];
+  nextScheduledRun?: string;
+}
+
+export interface CostOptimizationFilters {
+  status?: string;
+  provider?: string;
+  accountId?: string;
+  region?: string;
+  source?: string;
+  action?: string;
+  limit?: number;
+  offset?: number;
 }
 
 export interface OptimizationAnalysis {
@@ -352,6 +415,7 @@ export interface OptimizationAnalysis {
   generated: number;
   expired: number;
   coverage: OptimizationCoverage[];
+  run?: OptimizationAnalysisRun;
 }
 
 export interface CostOptimizationPage {

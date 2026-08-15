@@ -1,5 +1,5 @@
 import {
-  CostOverview, CostTrend, CostForecast, CostAnomalyPage, CostOptimizationPage, CostSyncSummary, OptimizationAnalysis,
+  CostOverview, CostTrend, CostForecast, CostAnomalyPage, CostOptimizationPage, CostSyncSummary, OptimizationAnalysis, OptimizationAnalysisStatus, CostOptimizationFilters,
   AIForecastResult, ROIData,
   ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, ComplianceAssessmentDetail, AssessmentFinding,
   ResourceComplianceStatus,
@@ -1104,13 +1104,21 @@ export const api = {
         method: 'PATCH', body: { status, notes },
       }),
 
-    listOptimizations: (status?: string, limit?: number, offset?: number) => {
+    listOptimizations: (filters: CostOptimizationFilters = {}) => {
       const params = new URLSearchParams();
-      if (status) params.set('status', status);
-      if (limit) params.set('limit', limit.toString());
-      if (offset) params.set('offset', offset.toString());
+      if (filters.status) params.set('status', filters.status);
+      if (filters.provider) params.set('provider', filters.provider);
+      if (filters.accountId) params.set('account_id', filters.accountId);
+      if (filters.region) params.set('region', filters.region);
+      if (filters.source) params.set('source', filters.source);
+      if (filters.action) params.set('action', filters.action);
+      if (filters.limit) params.set('limit', filters.limit.toString());
+      if (filters.offset) params.set('offset', filters.offset.toString());
       return request<CostOptimizationPage>(`/api/v1/costs/optimizations?${params.toString()}`);
     },
+
+    getOptimizationAnalysisStatus: (provider = 'aws') =>
+      request<OptimizationAnalysisStatus>(`/api/v1/costs/optimizations/analysis-status?provider=${encodeURIComponent(provider)}`),
 
     generateOptimizations: (provider?: string) => {
       const params = new URLSearchParams();

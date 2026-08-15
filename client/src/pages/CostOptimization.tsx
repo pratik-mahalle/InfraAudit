@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { CostTrendChart } from "@/components/dashboard/CostTrendChart";
 import { CostProviderBreakdown } from "@/components/cost/CostProviderBreakdown";
 import { CostOptimizationsList } from "@/components/cost/CostOptimizationsList";
+import { OptimizationAnalysisHealth } from "@/components/cost/OptimizationAnalysisHealth";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -59,13 +60,15 @@ import {
   useGenerateCostOptimizations,
   useUpdateCostOptimization,
   useUpdateCostAnomaly,
+  useCostOptimizationAnalysisStatus,
 } from "@/hooks/use-costs";
-import { CostOptimization as CostOptimizationRecord, CostSyncSummary, OptimizationCoverage } from "@/types";
+import { CostOptimization as CostOptimizationRecord, CostOptimizationFilters, CostSyncSummary } from "@/types";
 
 export default function CostOptimization() {
   const [timeframeFilter, setTimeframeFilter] = useState<"7d" | "30d" | "90d">("30d");
   const [lastSync, setLastSync] = useState<CostSyncSummary | null>(null);
-  const [optimizationCoverage, setOptimizationCoverage] = useState<OptimizationCoverage[]>([]);
+  const [optimizationPage, setOptimizationPage] = useState(0);
+  const [optimizationFilters, setOptimizationFilters] = useState<CostOptimizationFilters>({ provider: "aws" });
   const { toast } = useToast();
   const { hasPermission } = usePermission();
   const canManageProviders = hasPermission("manage_providers");
@@ -75,7 +78,13 @@ export default function CostOptimization() {
   const overviewQuery = useCostOverview();
   const trendsQuery = useCostTrends("", timeframeFilter);
   const anomaliesQuery = useCostAnomalies();
-  const optimizationsQuery = useCostOptimizations();
+  const optimizationPageSize = 10;
+  const optimizationsQuery = useCostOptimizations({
+    ...optimizationFilters,
+    limit: optimizationPageSize,
+    offset: optimizationPage * optimizationPageSize,
+  });
+  const analysisStatusQuery = useCostOptimizationAnalysisStatus("aws");
   const { data: overview, isLoading: isLoadingOverview } = overviewQuery;
   const { data: trends } = trendsQuery;
   const anomalies = anomaliesQuery.data?.anomalies ?? [];
@@ -140,12 +149,13 @@ export default function CostOptimization() {
   };
 
   const handleGenerateOptimizations = () => {
-    generateOptimizations(undefined, {
+    generateOptimizations("aws", {
       onSuccess: (result) => {
-        setOptimizationCoverage(result.coverage);
         toast({
           title: "Recommendation analysis complete",
-          description: result.generated > 0
+          description: result.run?.status === "partial"
+            ? "Analysis completed with source gaps. Review the persistent source health details."
+            : result.generated > 0
             ? `${result.generated} savings recommendation${result.generated === 1 ? "" : "s"} generated.`
             : "The analysis did not find a supported savings recommendation in the current data.",
         });
@@ -187,7 +197,10 @@ export default function CostOptimization() {
   const currentSpend = overview?.monthlyCost || 0;
   const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
   const projectedSpend = overview?.dataStatus?.hasData ? (overview.dailyCost || 0) * daysInMonth : 0;
-  const potentialSavings = overview?.potentialSavings || 0;
+  const potentialSavings = analysisStatusQuery.data?.latestRun
+    ? analysisStatusQuery.data.authoritativeSavings
+    : (overview?.potentialSavings || 0);
+  const savingsCurrency = analysisStatusQuery.data?.currency || overview?.currency || "USD";
   const projectionChange = currentSpend > 0 ? ((projectedSpend - currentSpend) / currentSpend) * 100 : 0;
 
   const spendChange = overview?.trend?.changePercent || 0;
@@ -207,7 +220,7 @@ export default function CostOptimization() {
         ["Summary"],
         ["Current Month Spend", formatCurrency(currentSpend)],
         ["Projected Spend", formatCurrency(projectedSpend)],
-        ["Potential Savings", formatCurrency(potentialSavings)],
+        ["Potential Savings", formatCurrency(potentialSavings, savingsCurrency)],
         ["Spend Change %", `${spendChange}%`],
         ["Cost Anomalies", String(overview?.anomalyCount || 0)],
         [],
@@ -375,6 +388,13 @@ export default function CostOptimization() {
         </Card>
       )}
 
+      <OptimizationAnalysisHealth
+        status={analysisStatusQuery.data}
+        isLoading={analysisStatusQuery.isLoading}
+        isError={analysisStatusQuery.isError}
+        onRetry={() => analysisStatusQuery.refetch()}
+      />
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
@@ -423,7 +443,7 @@ export default function CostOptimization() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Potential Savings</p>
-                <p className="text-2xl font-bold">{formatCurrency(potentialSavings)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(potentialSavings, savingsCurrency)}</p>
               </div>
             </div>
             <div>
@@ -475,7 +495,15 @@ export default function CostOptimization() {
             isGenerating={isGenerating}
             updatingId={updateOptimization.variables?.id}
             canGenerate={canScan}
-            coverage={optimizationCoverage}
+            analysisStatus={analysisStatusQuery.data}
+            filters={optimizationFilters}
+            page={optimizationPage}
+            pageSize={optimizationPageSize}
+            onFiltersChange={(filters) => {
+              setOptimizationFilters(filters);
+              setOptimizationPage(0);
+            }}
+            onPageChange={setOptimizationPage}
             onGenerate={handleGenerateOptimizations}
             onUpdate={handleUpdateOptimization}
             onRetry={() => optimizationsQuery.refetch()}

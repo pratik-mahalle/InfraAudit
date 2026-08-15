@@ -8,11 +8,13 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CostOptimization, OptimizationCoverage } from "@/types";
+import { CostOptimization, CostOptimizationFilters, OptimizationAnalysisStatus } from "@/types";
 import { formatCurrency } from "@/lib/utils";
-import { AlertCircle, CheckCircle, Clock, Lightbulb, Sparkles, ShieldCheck } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Lightbulb, Search, ShieldCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type WorkflowStatus = 'acknowledged' | 'planned' | 'applied' | 'verified' | 'dismissed';
 
@@ -24,7 +26,12 @@ interface CostOptimizationsListProps {
     isGenerating?: boolean;
     updatingId?: string;
     canGenerate?: boolean;
-    coverage?: OptimizationCoverage[];
+    analysisStatus?: OptimizationAnalysisStatus;
+    filters: CostOptimizationFilters;
+    page: number;
+    pageSize: number;
+    onFiltersChange: (filters: CostOptimizationFilters) => void;
+    onPageChange: (page: number) => void;
     onGenerate?: () => void;
     onUpdate?: (optimization: CostOptimization, status: WorkflowStatus, notes?: string) => void;
     onRetry?: () => void;
@@ -63,12 +70,26 @@ export function CostOptimizationsList({
     isGenerating = false,
     updatingId,
     canGenerate = true,
-    coverage = [],
+    analysisStatus,
+    filters,
+    page,
+    pageSize,
+    onFiltersChange,
+    onPageChange,
     onGenerate,
     onUpdate,
     onRetry,
 }: CostOptimizationsListProps) {
     const [notesById, setNotesById] = useState<Record<string, string>>({});
+    const sourceOptions = Array.from(new Set([
+        ...(analysisStatus?.latestRun?.sourceCoverage?.map(source => source.source) ?? []),
+        ...optimizations.map(optimization => optimization.source),
+    ].filter(Boolean)));
+    const actionOptions = Array.from(new Set([
+        ...(filters.action ? [filters.action] : []),
+        ...optimizations.map(optimization => optimization.actionType).filter((value): value is string => Boolean(value)),
+    ]));
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
     if (isLoading) {
         return (
@@ -102,24 +123,42 @@ export function CostOptimizationsList({
                     </div>
                     {canGenerate && onGenerate && (
                         <Button variant="outline" size="sm" onClick={onGenerate} disabled={isGenerating}>
-                            <Sparkles className={`h-4 w-4 mr-2 ${isGenerating ? "animate-pulse" : ""}`} />
+                            <Search className={`h-4 w-4 mr-2 ${isGenerating ? "animate-pulse" : ""}`} />
                             {isGenerating ? "Analyzing evidence..." : "Analyze savings"}
                         </Button>
                     )}
                 </div>
             </CardHeader>
             <CardContent>
-                {coverage.length > 0 && (
-                    <div className="grid gap-2 md:grid-cols-2 mb-5" aria-label="Optimization analysis coverage">
-                        {coverage.map(item => (
-                            <div key={`${item.provider}-${item.source}`} className="rounded-md border bg-muted/20 p-3 text-sm">
-                                <div className="flex items-center justify-between gap-2 mb-1">
-                                    <span className="font-medium">{item.provider.toUpperCase()} · {item.source.replace(/_/g, ' ')}</span>
-                                    <Badge variant={item.status === 'available' ? 'outline' : 'secondary'}>{item.status.replace(/_/g, ' ')}</Badge>
-                                </div>
-                                <p className="text-muted-foreground">{item.message}</p>
-                            </div>
-                        ))}
+                <div className="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="Recommendation filters">
+                    <Input
+                        value={filters.accountId ?? ""}
+                        onChange={(event) => onFiltersChange({ ...filters, accountId: event.target.value || undefined })}
+                        placeholder="AWS account ID"
+                        aria-label="Filter by AWS account ID"
+                    />
+                    <Input
+                        value={filters.region ?? ""}
+                        onChange={(event) => onFiltersChange({ ...filters, region: event.target.value || undefined })}
+                        placeholder="Region (for example us-east-1)"
+                        aria-label="Filter by region"
+                    />
+                    <Select value={filters.source || "all"} onValueChange={(value) => onFiltersChange({ ...filters, source: value === "all" ? undefined : value })}>
+                        <SelectTrigger aria-label="Filter by recommendation source"><SelectValue placeholder="All sources" /></SelectTrigger>
+                        <SelectContent><SelectItem value="all">All sources</SelectItem>{sourceOptions.map(source => <SelectItem key={source} value={source}>{source.replace(/_/g, " ")}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={filters.action || "all"} onValueChange={(value) => onFiltersChange({ ...filters, action: value === "all" ? undefined : value })}>
+                        <SelectTrigger aria-label="Filter by recommendation action"><SelectValue placeholder="All actions" /></SelectTrigger>
+                        <SelectContent><SelectItem value="all">All actions</SelectItem>{actionOptions.map(action => <SelectItem key={action} value={action}>{action.replace(/([a-z])([A-Z])/g, "$1 $2")}</SelectItem>)}</SelectContent>
+                    </Select>
+                    {(filters.accountId || filters.region || filters.source || filters.action) && (
+                        <Button className="md:col-span-2 xl:col-span-4 xl:w-fit" variant="ghost" size="sm" onClick={() => onFiltersChange({ provider: filters.provider || "aws" })}>Clear recommendation filters</Button>
+                    )}
+                </div>
+
+                {analysisStatus?.isStale && (
+                    <div className="mb-5 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-900 dark:text-amber-200">
+                        These are the last successful AWS Cost Optimization Hub findings. They are retained as stale until AWS source access recovers.
                     </div>
                 )}
 
@@ -144,8 +183,8 @@ export function CostOptimizationsList({
                                         <div className="text-right">
                                             {opt.estimatedSavings > 0 ? (
                                                 <>
-                                                    <div className="text-green-600 font-bold">{formatCurrency(opt.estimatedSavings)}/mo expected</div>
-                                                    <div className="text-xs text-muted-foreground">range {formatCurrency(opt.savingsLow)}–{formatCurrency(opt.savingsHigh)}</div>
+                                                    <div className="text-green-600 font-bold">{formatCurrency(opt.estimatedSavings, opt.currency || "USD")}/mo expected</div>
+                                                    <div className="text-xs text-muted-foreground">range {formatCurrency(opt.savingsLow, opt.currency || "USD")}–{formatCurrency(opt.savingsHigh, opt.currency || "USD")}</div>
                                                 </>
                                             ) : <div className="text-sm text-muted-foreground">Savings awaiting attribution</div>}
                                         </div>
@@ -154,6 +193,7 @@ export function CostOptimizationsList({
                                     <div className="flex flex-wrap gap-2 mb-3">
                                         <Badge variant="outline">{opt.resourceType || "Cloud resource"}</Badge>
                                         <Badge variant="outline">{opt.optimizationType.replace(/_/g, " ")}</Badge>
+                                        {!opt.includedInTotal && <Badge variant="secondary">Scenario · excluded from headline</Badge>}
                                         <Badge variant="outline" className="gap-1"><ShieldCheck className="h-3 w-3" />{Math.round(opt.confidence * 100)}% confidence</Badge>
                                     </div>
                                     <p className="text-sm text-muted-foreground mb-4">{opt.description}</p>
@@ -182,7 +222,7 @@ export function CostOptimizationsList({
                                     )}
 
                                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-                                        {opt.currentCost > 0 && <span>Current cost: {formatCurrency(opt.currentCost)}/mo</span>}
+                                        {opt.currentCost > 0 && <span>Current cost: {formatCurrency(opt.currentCost, opt.currency || "USD")}/mo</span>}
                                         {opt.estimatedSavings > 0 && <span>Savings: {opt.savingsPercent.toFixed(1)}%</span>}
                                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {opt.implementation || "Review"} effort</span>
                                         <span className="flex items-center gap-1">
@@ -190,7 +230,12 @@ export function CostOptimizationsList({
                                             {statusLabel[opt.status]}
                                         </span>
                                         <span>Source: {opt.source.replace(/_/g, ' ')}</span>
-                                        {opt.realizedSavings !== undefined && <span className="text-green-700">Measured: {formatCurrency(opt.realizedSavings)}/mo</span>}
+                                        {opt.accountId && <span>Account: {opt.accountId}</span>}
+                                        {opt.region && <span>Region: {opt.region}</span>}
+                                        {opt.actionType && <span>Action: {opt.actionType.replace(/([a-z])([A-Z])/g, "$1 $2")}</span>}
+                                        {opt.restartNeeded !== undefined && <span>Restart: {opt.restartNeeded ? "required" : "not required"}</span>}
+                                        {opt.rollbackPossible !== undefined && <span>Rollback: {opt.rollbackPossible ? "supported" : "not indicated"}</span>}
+                                        {opt.realizedSavings !== undefined && <span className="text-green-700">Measured: {formatCurrency(opt.realizedSavings, opt.currency || "USD")}/mo</span>}
                                     </div>
 
                                     {onUpdate && actions.length > 0 && (
@@ -228,10 +273,20 @@ export function CostOptimizationsList({
                         <p className="text-sm mb-4">Sync inventory and billing data, then analyze provider evidence for savings opportunities.</p>
                         {canGenerate && onGenerate && (
                             <Button variant="outline" onClick={onGenerate} disabled={isGenerating}>
-                                <Sparkles className={`h-4 w-4 mr-2 ${isGenerating ? "animate-pulse" : ""}`} />
+                                <Search className={`h-4 w-4 mr-2 ${isGenerating ? "animate-pulse" : ""}`} />
                                 {isGenerating ? "Analyzing evidence..." : "Analyze savings"}
                             </Button>
                         )}
+                    </div>
+                )}
+
+                {!isError && total > 0 && (
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+                        <p className="text-sm text-muted-foreground">Page {page + 1} of {pageCount} · {total} recommendations</p>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" disabled={page === 0} onClick={() => onPageChange(Math.max(0, page - 1))}>Previous</Button>
+                            <Button variant="outline" size="sm" disabled={page + 1 >= pageCount} onClick={() => onPageChange(page + 1)}>Next</Button>
+                        </div>
                     </div>
                 )}
             </CardContent>

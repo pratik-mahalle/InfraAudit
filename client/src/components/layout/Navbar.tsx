@@ -57,7 +57,7 @@ const PRODUCTS: ProductItem[] = [
   { icon: Activity,     label: "Drift Detection",    desc: "IaC baseline comparison & auto-remediation",  href: "/auth", color: "text-amber-600 bg-amber-50" },
   { icon: BarChart3,    label: "Vulnerability Scan", desc: "CVE scanning via Trivy + NVD",                href: "/auth", color: "text-orange-600 bg-orange-50" },
   { icon: Cloud,        label: "Compliance",         desc: "CIS, SOC 2, NIST 800-53, PCI-DSS",           href: "/auth", color: "text-blue-600 bg-blue-50" },
-  { icon: TrendingDown, label: "Cost Optimizer",     desc: "AI-powered savings recommendations",          href: "/auth", color: "text-emerald-600 bg-emerald-50" },
+  { icon: TrendingDown, label: "Cost Optimizer",     desc: "Provider-native savings evidence",             href: "/auth", color: "text-emerald-600 bg-emerald-50" },
   { icon: Bell,         label: "Alerts & Reports",   desc: "Slack, webhooks, and weekly digests",         href: "/auth", color: "text-violet-600 bg-violet-50" },
 ];
 

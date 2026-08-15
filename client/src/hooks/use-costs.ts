@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import type { CostOptimizationFilters } from '@/types';
 
 export function useCostOverview() {
     return useQuery({
@@ -37,10 +38,17 @@ export function useCostAnomalies(status = 'open', limit = 10, offset = 0) {
     });
 }
 
-export function useCostOptimizations(status = '', limit = 50, offset = 0) {
+export function useCostOptimizations(filters: CostOptimizationFilters = {}) {
     return useQuery({
-        queryKey: ['/api/v1/costs/optimizations', status, limit, offset],
-        queryFn: () => api.costs.listOptimizations(status, limit, offset),
+        queryKey: ['/api/v1/costs/optimizations', filters],
+        queryFn: () => api.costs.listOptimizations(filters),
+    });
+}
+
+export function useCostOptimizationAnalysisStatus(provider = 'aws') {
+    return useQuery({
+        queryKey: ['/api/v1/costs/optimizations/analysis-status', provider],
+        queryFn: () => api.costs.getOptimizationAnalysisStatus(provider),
     });
 }
 
@@ -93,6 +101,7 @@ export function useGenerateCostOptimizations() {
         mutationFn: (provider?: string) => api.costs.generateOptimizations(provider),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/optimizations'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/optimizations/analysis-status'] });
             queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
         },
     });
