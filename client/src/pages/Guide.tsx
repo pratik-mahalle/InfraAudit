@@ -103,7 +103,7 @@ export default function Guide() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="border rounded-lg p-4 bg-card">
                   <h4 className="font-medium flex items-center gap-2"><CloudIcon className="h-4 w-4 text-primary" /> AWS</h4>
-                  <p className="text-sm text-muted-foreground mb-3">Connect using IAM role or access keys</p>
+                  <p className="text-sm text-muted-foreground mb-3">Set up a read-only cross-account IAM role</p>
                   <Button asChild variant="outline" size="sm" className="w-full"><a href="/cloud-providers">Open setup</a></Button>
                 </div>
                 <div className="border rounded-lg p-4 bg-card">
@@ -202,4 +202,3 @@ export default function Guide() {
     </div>
   );
 }
-

@@ -6,7 +6,7 @@ import {
   ScheduledJob, JobExecution, RemediationAction, NotificationPreference,
   Webhook
 } from '@/types';
-import { unwrapResponse } from '@/lib/queryClient';
+import { apiRequest, unwrapResponse } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -465,6 +465,18 @@ export interface ProviderCredentials {
   location?: string;
 }
 
+export interface DownloadedFile {
+  blob: Blob;
+  filename: string;
+}
+
+function downloadFilename(response: Response, fallback: string): string {
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  const candidate = match?.[1]?.split(/[\\/]/).pop()?.trim();
+  return candidate?.replace(/[^A-Za-z0-9._-]/g, '_') || fallback;
+}
+
 type ProviderWire = {
   provider: string;
   is_connected?: boolean;
@@ -810,6 +822,14 @@ export const api = {
         status: provider.status ?? 'disconnected',
         message: provider.message,
       }));
+    },
+
+    downloadAWSRoleTemplate: async (): Promise<DownloadedFile> => {
+      const response = await apiRequest('POST', '/api/v1/providers/aws/role-template');
+      return {
+        blob: await response.blob(),
+        filename: downloadFilename(response, 'infraudit-aws-read-role.json'),
+      };
     },
 
     connect: (provider: string, credentials: ProviderCredentials) =>

@@ -197,7 +197,7 @@ const Documentation = () => {
                       Amazon Web Services
                     </h4>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Connect using IAM credentials or cross-account IAM role
+                      Set up a read-only cross-account IAM role without access keys
                     </p>
                     <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/cloud-providers')}>
                       View AWS Connection Guide
