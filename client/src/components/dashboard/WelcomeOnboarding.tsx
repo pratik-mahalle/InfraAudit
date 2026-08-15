@@ -57,7 +57,7 @@ export function WelcomeOnboarding({ onCloudIntegrationClick }: WelcomeOnboarding
                 </div>
                 <h3 className="font-medium">Get Insights</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Receive AI-powered insights and optimization recommendations
+                  Receive evidence-backed insights and provider-native optimization recommendations
                 </p>
               </div>
             </div>
@@ -134,7 +134,7 @@ export function WelcomeOnboarding({ onCloudIntegrationClick }: WelcomeOnboarding
               <div>
                 <h3 className="font-medium mb-1">Cost Optimization</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Identify cost saving opportunities with AI-powered recommendations. Find unused resources, right-size instances, and optimize reserved capacity.
+                  Identify cost-saving opportunities with provider-native recommendations and deterministic inventory evidence. Review unused resources, right-size instances, and evaluate commitment scenarios.
                 </p>
               </div>
             </div>

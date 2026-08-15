@@ -677,7 +677,7 @@ export function CloudProviderSetup({
                 <p className="font-medium">Template permissions</p>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
                   <li>Required read-only inventory and local security checks</li>
-                  <li>Optional Cost Explorer read access, enabled by default</li>
+                  <li>Optional Cost Explorer cost and rightsizing read access, enabled by default</li>
                   <li>Optional Security Hub and Inspector read access, disabled by default</li>
                   <li>No remediation actions, IAM users, or access keys</li>
                 </ul>
@@ -1248,7 +1248,7 @@ export function CloudProviderSetup({
               </h3>
               <ul className="text-sm space-y-1 list-disc pl-5">
                 <li>Inventory read policy required</li>
-                <li>Cost Explorer read optional</li>
+                <li>Cost Explorer costs and rightsizing read optional</li>
                 <li>Security Hub and Inspector reads optional</li>
                 <li>Exact role trust plus external ID</li>
                 <li>No long-lived access keys</li>

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { CostOverview, CostTrend, CostAnomaly, CostForecast, CostOptimization, AIForecastResult, ROIData } from '@/types';
+import type { CostOptimizationFilters } from '@/types';
 
 export function useCostOverview() {
     return useQuery({
@@ -38,10 +38,29 @@ export function useCostAnomalies(status = 'open', limit = 10, offset = 0) {
     });
 }
 
-export function useCostOptimizations(status = 'open', limit = 10, offset = 0) {
+export function useCostOptimizations(filters: CostOptimizationFilters = {}) {
     return useQuery({
-        queryKey: ['/api/v1/costs/optimizations', status, limit, offset],
-        queryFn: () => api.costs.listOptimizations(status, limit, offset),
+        queryKey: ['/api/v1/costs/optimizations', filters],
+        queryFn: () => api.costs.listOptimizations(filters),
+    });
+}
+
+export function useCostOptimizationAnalysisStatus(provider = 'aws') {
+    return useQuery({
+        queryKey: ['/api/v1/costs/optimizations/analysis-status', provider],
+        queryFn: () => api.costs.getOptimizationAnalysisStatus(provider),
+    });
+}
+
+export function useUpdateCostAnomaly() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, status, notes }: { id: string | number; status: 'open' | 'reviewed' | 'resolved'; notes?: string }) =>
+            api.costs.updateAnomaly(id, status, notes),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/anomalies'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
+        },
     });
 }
 
@@ -70,6 +89,36 @@ export function useDetectAnomalies() {
         mutationFn: (provider?: string) => api.costs.detectAnomalies(provider),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/anomalies'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
+        },
+    });
+}
+
+export function useGenerateCostOptimizations() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (provider?: string) => api.costs.generateOptimizations(provider),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/optimizations'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/optimizations/analysis-status'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
+        },
+    });
+}
+
+export function useUpdateCostOptimization() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, status, notes }: {
+            id: string;
+            status: 'acknowledged' | 'planned' | 'applied' | 'verified' | 'dismissed';
+            notes?: string;
+        }) => api.costs.updateOptimization(id, status, notes),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/optimizations'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/roi'] });
         },
     });
 }

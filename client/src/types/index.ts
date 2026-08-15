@@ -103,7 +103,19 @@ export interface CostAnomaly {
   previousCost?: number; // legacy
   currentCost?: number; // legacy
   detectedAt: string;
-  status: 'open' | 'investigated' | 'resolved';
+  status: 'open' | 'reviewed' | 'resolved';
+  notes?: string;
+  baselineMethod?: string;
+  details?: {
+    medianAbsoluteDeviation?: number;
+    robustZScore?: number;
+    absoluteImpact?: number;
+  };
+}
+
+export interface CostAnomalyPage {
+  anomalies: CostAnomaly[];
+  total: number;
 }
 
 export interface Alert {
@@ -192,6 +204,41 @@ export interface CostOverview {
   trend?: CostTrend;
   anomalyCount: number;
   potentialSavings: number;
+  dataStatus: CostDataStatus;
+}
+
+export interface CostDataStatus {
+  hasData: boolean;
+  recordCount: number;
+  aggregateRecords: number;
+  resourceRecords: number;
+  firstCostDate?: string;
+  lastCostDate?: string;
+  lastUpdatedAt?: string;
+}
+
+export type CostSyncProviderStatus =
+  | 'synced'
+  | 'no_data'
+  | 'not_connected'
+  | 'not_configured'
+  | 'failed';
+
+export interface CostSyncResult {
+  provider: string;
+  status: CostSyncProviderStatus;
+  recordsFetched: number;
+  recordsStored: number;
+  aggregateRecords: number;
+  resourceRecords: number;
+  message: string;
+}
+
+export interface CostSyncSummary {
+  status: 'completed' | 'partial' | 'failed' | 'action_required';
+  results: CostSyncResult[];
+  recordsFetched: number;
+  recordsStored: number;
 }
 
 export interface CostTrend {
@@ -222,6 +269,15 @@ export interface CostForecast {
   endDate: string;
   dataPoints: ForecastPoint[];
   historical: { date: string; cost: number }[];
+  accuracy?: ForecastAccuracy;
+}
+
+export interface ForecastAccuracy {
+  method: string;
+  samples: number;
+  meanAbsoluteError: number;
+  meanAbsolutePercentError: number;
+  candidates: Record<string, number>;
 }
 
 export interface AIForecastResult {
@@ -250,14 +306,121 @@ export interface ROIData {
 export interface CostOptimization {
   id: string;
   provider: string;
-  resourceId: string;
+  resourceId?: string;
   resourceType: string;
   optimizationType: string;
+  title: string;
   description: string;
+  currentCost: number;
   estimatedSavings: number;
+  savingsPercent: number;
+  implementation: 'easy' | 'moderate' | 'complex' | string;
+  status: 'new' | 'acknowledged' | 'planned' | 'applied' | 'verified' | 'dismissed' | 'expired';
+  details?: Record<string, unknown>;
+  source: string;
+  providerSource?: string;
+  accountId?: string;
+  region?: string;
+  actionType?: string;
+  restartNeeded?: boolean;
+  rollbackPossible?: boolean;
+  currency: string;
+  recommendationLookbackDays?: number;
+  includedInTotal: boolean;
   confidence: number;
-  status: 'open' | 'applied' | 'dismissed';
-  detectedAt: string;
+  savingsLow: number;
+  savingsHigh: number;
+  evidence?: OptimizationEvidence[];
+  assumptions?: string[];
+  notes?: string;
+  realizedSavings?: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  appliedAt?: string;
+  verifiedAt?: string;
+}
+
+export interface OptimizationEvidence {
+  metric: string;
+  observed: unknown;
+  threshold?: unknown;
+  unit?: string;
+  source: string;
+}
+
+export interface OptimizationCoverage {
+  provider: string;
+  source: string;
+  status: 'available' | 'partial' | 'stale' | 'not_enrolled' | 'missing_permission' | 'unavailable' | 'not_connected' | 'not_supported';
+  findings: number;
+  deduplicatedSavings: number;
+  currency: string;
+  stale: boolean;
+  missingPermissions?: string[];
+  errorCategory?: string;
+  message: string;
+}
+
+export interface OptimizationSourceResult extends OptimizationCoverage {
+  id: string;
+  runId: string;
+  organizationId: number;
+  startedAt: string;
+  completedAt: string;
+}
+
+export interface OptimizationAnalysisRun {
+  id: string;
+  organizationId: number;
+  actorProfileId: number;
+  trigger: 'manual' | 'scheduled' | string;
+  provider: string;
+  status: 'running' | 'completed' | 'partial' | 'failed';
+  findings: number;
+  deduplicatedSavings: number;
+  currency: string;
+  sourceCoverage: OptimizationSourceResult[];
+  missingPermissions?: string[];
+  errorCategory?: string;
+  message: string;
+  startedAt: string;
+  completedAt?: string;
+}
+
+export interface OptimizationAnalysisStatus {
+  provider: string;
+  latestRun?: OptimizationAnalysisRun;
+  lastSuccessfulAnalysis?: string;
+  isStale: boolean;
+  evaluatedFindings: number;
+  authoritativeSavings: number;
+  currency: string;
+  missingPermissions?: string[];
+  nextScheduledRun?: string;
+}
+
+export interface CostOptimizationFilters {
+  status?: string;
+  provider?: string;
+  accountId?: string;
+  region?: string;
+  source?: string;
+  action?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface OptimizationAnalysis {
+  message: string;
+  generated: number;
+  expired: number;
+  coverage: OptimizationCoverage[];
+  run?: OptimizationAnalysisRun;
+}
+
+export interface CostOptimizationPage {
+  optimizations: CostOptimization[];
+  total: number;
 }
 
 // Compliance

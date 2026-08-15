@@ -1,5 +1,5 @@
 import {
-  CostOverview, CostTrend, CostForecast, CostAnomaly, CostOptimization,
+  CostOverview, CostTrend, CostForecast, CostAnomalyPage, CostOptimizationPage, CostSyncSummary, OptimizationAnalysis, OptimizationAnalysisStatus, CostOptimizationFilters,
   AIForecastResult, ROIData,
   ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, ComplianceAssessmentDetail, AssessmentFinding,
   ResourceComplianceStatus,
@@ -1079,7 +1079,7 @@ export const api = {
       const params = new URLSearchParams();
       if (provider) params.set('provider', provider);
       const qs = params.toString();
-      return request(`/api/v1/costs/sync${qs ? `?${qs}` : ''}`, { method: 'POST' });
+      return request<CostSyncSummary>(`/api/v1/costs/sync${qs ? `?${qs}` : ''}`, { method: 'POST' });
     },
 
     getSavings: () => request<{ potentialSavings: number }>('/api/v1/costs/savings'),
@@ -1089,20 +1089,48 @@ export const api = {
       if (status) params.set('status', status);
       if (limit) params.set('limit', limit.toString());
       if (offset) params.set('offset', offset.toString());
-      return request<CostAnomaly[]>(`/api/v1/costs/anomalies?${params.toString()}`);
+      return request<CostAnomalyPage>(`/api/v1/costs/anomalies?${params.toString()}`);
     },
 
     detectAnomalies: (provider?: string) => {
-      return request('/api/v1/costs/anomalies/detect', { method: 'POST', body: { provider } });
+      const params = new URLSearchParams();
+      if (provider) params.set('provider', provider);
+      const qs = params.toString();
+      return request<{ message: string; detected: number }>(`/api/v1/costs/anomalies/detect${qs ? `?${qs}` : ''}`, { method: 'POST' });
     },
 
-    listOptimizations: (status?: string, limit?: number, offset?: number) => {
+    updateAnomaly: (id: string | number, status: 'open' | 'reviewed' | 'resolved', notes?: string) =>
+      request<{ status: string }>(`/api/v1/costs/anomalies/${id}`, {
+        method: 'PATCH', body: { status, notes },
+      }),
+
+    listOptimizations: (filters: CostOptimizationFilters = {}) => {
       const params = new URLSearchParams();
-      if (status) params.set('status', status);
-      if (limit) params.set('limit', limit.toString());
-      if (offset) params.set('offset', offset.toString());
-      return request<CostOptimization[]>(`/api/v1/costs/optimizations?${params.toString()}`);
+      if (filters.status) params.set('status', filters.status);
+      if (filters.provider) params.set('provider', filters.provider);
+      if (filters.accountId) params.set('account_id', filters.accountId);
+      if (filters.region) params.set('region', filters.region);
+      if (filters.source) params.set('source', filters.source);
+      if (filters.action) params.set('action', filters.action);
+      if (filters.limit) params.set('limit', filters.limit.toString());
+      if (filters.offset) params.set('offset', filters.offset.toString());
+      return request<CostOptimizationPage>(`/api/v1/costs/optimizations?${params.toString()}`);
     },
+
+    getOptimizationAnalysisStatus: (provider = 'aws') =>
+      request<OptimizationAnalysisStatus>(`/api/v1/costs/optimizations/analysis-status?provider=${encodeURIComponent(provider)}`),
+
+    generateOptimizations: (provider?: string) => {
+      const params = new URLSearchParams();
+      if (provider) params.set('provider', provider);
+      const qs = params.toString();
+      return request<OptimizationAnalysis>(`/api/v1/costs/optimizations/generate${qs ? `?${qs}` : ''}`, { method: 'POST' });
+    },
+
+    updateOptimization: (id: string, status: 'acknowledged' | 'planned' | 'applied' | 'verified' | 'dismissed', notes?: string) =>
+      request<{ status: string }>(`/api/v1/costs/optimizations/${id}`, {
+        method: 'PATCH', body: { status, notes },
+      }),
   },
 
   // ============================================
