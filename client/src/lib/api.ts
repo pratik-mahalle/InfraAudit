@@ -1,5 +1,5 @@
 import {
-  CostOverview, CostTrend, CostForecast, CostAnomaly, CostOptimization,
+  CostOverview, CostTrend, CostForecast, CostAnomalyPage, CostOptimizationPage, CostSyncSummary,
   AIForecastResult, ROIData,
   ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, ComplianceAssessmentDetail, AssessmentFinding,
   ResourceComplianceStatus,
@@ -1079,7 +1079,7 @@ export const api = {
       const params = new URLSearchParams();
       if (provider) params.set('provider', provider);
       const qs = params.toString();
-      return request(`/api/v1/costs/sync${qs ? `?${qs}` : ''}`, { method: 'POST' });
+      return request<CostSyncSummary>(`/api/v1/costs/sync${qs ? `?${qs}` : ''}`, { method: 'POST' });
     },
 
     getSavings: () => request<{ potentialSavings: number }>('/api/v1/costs/savings'),
@@ -1089,11 +1089,14 @@ export const api = {
       if (status) params.set('status', status);
       if (limit) params.set('limit', limit.toString());
       if (offset) params.set('offset', offset.toString());
-      return request<CostAnomaly[]>(`/api/v1/costs/anomalies?${params.toString()}`);
+      return request<CostAnomalyPage>(`/api/v1/costs/anomalies?${params.toString()}`);
     },
 
     detectAnomalies: (provider?: string) => {
-      return request('/api/v1/costs/anomalies/detect', { method: 'POST', body: { provider } });
+      const params = new URLSearchParams();
+      if (provider) params.set('provider', provider);
+      const qs = params.toString();
+      return request<{ message: string; detected: number }>(`/api/v1/costs/anomalies/detect${qs ? `?${qs}` : ''}`, { method: 'POST' });
     },
 
     listOptimizations: (status?: string, limit?: number, offset?: number) => {
@@ -1101,7 +1104,14 @@ export const api = {
       if (status) params.set('status', status);
       if (limit) params.set('limit', limit.toString());
       if (offset) params.set('offset', offset.toString());
-      return request<CostOptimization[]>(`/api/v1/costs/optimizations?${params.toString()}`);
+      return request<CostOptimizationPage>(`/api/v1/costs/optimizations?${params.toString()}`);
+    },
+
+    generateOptimizations: (provider?: string) => {
+      const params = new URLSearchParams();
+      if (provider) params.set('provider', provider);
+      const qs = params.toString();
+      return request<{ message: string; generated: number }>(`/api/v1/costs/optimizations/generate${qs ? `?${qs}` : ''}`, { method: 'POST' });
     },
   },
 

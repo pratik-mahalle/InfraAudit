@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { CostOverview, CostTrend, CostAnomaly, CostForecast, CostOptimization, AIForecastResult, ROIData } from '@/types';
 
 export function useCostOverview() {
     return useQuery({
@@ -38,7 +37,7 @@ export function useCostAnomalies(status = 'open', limit = 10, offset = 0) {
     });
 }
 
-export function useCostOptimizations(status = 'open', limit = 10, offset = 0) {
+export function useCostOptimizations(status = 'pending', limit = 10, offset = 0) {
     return useQuery({
         queryKey: ['/api/v1/costs/optimizations', status, limit, offset],
         queryFn: () => api.costs.listOptimizations(status, limit, offset),
@@ -70,6 +69,19 @@ export function useDetectAnomalies() {
         mutationFn: (provider?: string) => api.costs.detectAnomalies(provider),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/anomalies'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
+        },
+    });
+}
+
+export function useGenerateCostOptimizations() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (provider?: string) => api.costs.generateOptimizations(provider),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/optimizations'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
         },
     });
 }

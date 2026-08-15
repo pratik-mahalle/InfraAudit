@@ -105,7 +105,8 @@ export default function CostPrediction() {
   const { data: overview, isLoading: overviewLoading } = useCostOverview();
   const { data: forecast, isLoading: forecastLoading } = useCostForecast("", timeframe, model);
   const { data: trends } = useCostTrends();
-  const { data: anomalies } = useCostAnomalies("open", 5, 0);
+  const { data: anomalyPage } = useCostAnomalies("open", 5, 0);
+  const anomalies = anomalyPage?.anomalies ?? [];
   const syncMutation = useSyncCosts();
   const aiMutation = useAIForecast();
   const {

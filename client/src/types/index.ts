@@ -103,7 +103,13 @@ export interface CostAnomaly {
   previousCost?: number; // legacy
   currentCost?: number; // legacy
   detectedAt: string;
-  status: 'open' | 'investigated' | 'resolved';
+  status: 'open' | 'reviewed' | 'resolved';
+  notes?: string;
+}
+
+export interface CostAnomalyPage {
+  anomalies: CostAnomaly[];
+  total: number;
 }
 
 export interface Alert {
@@ -192,6 +198,37 @@ export interface CostOverview {
   trend?: CostTrend;
   anomalyCount: number;
   potentialSavings: number;
+  dataStatus: CostDataStatus;
+}
+
+export interface CostDataStatus {
+  hasData: boolean;
+  recordCount: number;
+  firstCostDate?: string;
+  lastCostDate?: string;
+  lastUpdatedAt?: string;
+}
+
+export type CostSyncProviderStatus =
+  | 'synced'
+  | 'no_data'
+  | 'not_connected'
+  | 'not_configured'
+  | 'failed';
+
+export interface CostSyncResult {
+  provider: string;
+  status: CostSyncProviderStatus;
+  recordsFetched: number;
+  recordsStored: number;
+  message: string;
+}
+
+export interface CostSyncSummary {
+  status: 'completed' | 'partial' | 'failed' | 'action_required';
+  results: CostSyncResult[];
+  recordsFetched: number;
+  recordsStored: number;
 }
 
 export interface CostTrend {
@@ -250,14 +287,22 @@ export interface ROIData {
 export interface CostOptimization {
   id: string;
   provider: string;
-  resourceId: string;
+  resourceId?: string;
   resourceType: string;
   optimizationType: string;
+  title: string;
   description: string;
+  currentCost: number;
   estimatedSavings: number;
-  confidence: number;
-  status: 'open' | 'applied' | 'dismissed';
-  detectedAt: string;
+  savingsPercent: number;
+  implementation: 'easy' | 'moderate' | 'complex' | string;
+  status: 'pending' | 'applied' | 'dismissed';
+  details?: Record<string, unknown>;
+}
+
+export interface CostOptimizationPage {
+  optimizations: CostOptimization[];
+  total: number;
 }
 
 // Compliance

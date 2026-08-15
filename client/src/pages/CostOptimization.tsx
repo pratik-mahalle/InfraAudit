@@ -1,12 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { CostTrendChart } from "@/components/dashboard/CostTrendChart";
 import { CostProviderBreakdown } from "@/components/cost/CostProviderBreakdown";
 import { CostOptimizationsList } from "@/components/cost/CostOptimizationsList";
-import { CloudIcon } from "lucide-react";
-import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -43,64 +40,112 @@ import {
   TrendingDown,
   AlertCircle,
   Download,
-  TrendingUp,
   RefreshCw,
-  CheckCircle2
+  AlertTriangle,
+  Database,
+  Info,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { formatCurrency, formatTimeAgo } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/hooks/use-permission";
 import {
   useCostOverview,
   useCostAnomalies,
   useCostOptimizations,
   useSyncCosts,
-  useCostTrends
+  useCostTrends,
+  useDetectAnomalies,
+  useGenerateCostOptimizations,
 } from "@/hooks/use-costs";
-import { ChartTimeframe } from "@/types";
+import { CostSyncSummary } from "@/types";
 
 export default function CostOptimization() {
   const [timeframeFilter, setTimeframeFilter] = useState<"7d" | "30d" | "90d">("30d");
+  const [lastSync, setLastSync] = useState<CostSyncSummary | null>(null);
   const { toast } = useToast();
+  const { hasPermission } = usePermission();
+  const canManageProviders = hasPermission("manage_providers");
+  const canScan = hasPermission("scan");
 
   // Fetch real data from backend
-  const { data: overview, isLoading: isLoadingOverview } = useCostOverview();
-  const { data: trends } = useCostTrends();
-  const { data: anomalies, isLoading: isLoadingAnomalies } = useCostAnomalies();
-  const { data: optimizations, isLoading: isLoadingOptimizations } = useCostOptimizations();
+  const overviewQuery = useCostOverview();
+  const trendsQuery = useCostTrends("", timeframeFilter);
+  const anomaliesQuery = useCostAnomalies();
+  const optimizationsQuery = useCostOptimizations();
+  const { data: overview, isLoading: isLoadingOverview } = overviewQuery;
+  const { data: trends } = trendsQuery;
+  const anomalies = anomaliesQuery.data?.anomalies ?? [];
+  const optimizations = optimizationsQuery.data?.optimizations ?? [];
+  const optimizationTotal = optimizationsQuery.data?.total ?? optimizations.length;
   const { mutate: syncCosts, isPending: isSyncing } = useSyncCosts();
-  const queryClient = useQueryClient();
-  const { mutate: detectAnomalies, isPending: isDetecting } = useMutation({
-    mutationFn: () => api.anomalies.detect(),
-    onSuccess: () => {
-      toast({
-        title: "Anomaly Scan Complete",
-        description: "Cost anomalies have been re-evaluated using statistical analysis.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/anomalies"] });
-    },
-    onError: () => {
-      toast({
-        title: "Scan Failed",
-        description: "Failed to run anomaly detection.",
-        variant: "destructive",
-      });
-    },
+  const { mutate: detectAnomalies, isPending: isDetecting } = useDetectAnomalies();
+  const { mutate: generateOptimizations, isPending: isGenerating } = useGenerateCostOptimizations();
+
+  const filteredAnomalies = anomalies.filter((anomaly) => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - Number(timeframeFilter.replace("d", "")));
+    return new Date(anomaly.detectedAt) >= cutoff;
   });
+
+  const handleDetectAnomalies = () => {
+    detectAnomalies(undefined, {
+      onSuccess: (result) => {
+        toast({
+          title: "Anomaly scan complete",
+          description: result.detected > 0
+            ? `${result.detected} unusual cost pattern${result.detected === 1 ? "" : "s"} detected.`
+            : "No unusual cost patterns were detected in the available history.",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Scan failed",
+          description: error instanceof Error ? error.message : "Failed to run anomaly detection.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  const handleGenerateOptimizations = () => {
+    generateOptimizations(undefined, {
+      onSuccess: (result) => {
+        toast({
+          title: "Recommendation analysis complete",
+          description: result.generated > 0
+            ? `${result.generated} savings recommendation${result.generated === 1 ? "" : "s"} generated.`
+            : "The analysis did not find a supported savings recommendation in the current data.",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Analysis unavailable",
+          description: error instanceof Error ? error.message : "Failed to generate cost recommendations.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
 
   // Handle actions
   const handleSync = () => {
     syncCosts(undefined, {
-      onSuccess: () => {
+      onSuccess: (result) => {
+        setLastSync(result);
+        const failed = result.status === "failed" || result.status === "partial";
         toast({
-          title: "Synchronization Started",
-          description: "Fetching latest cost data from cloud providers.",
+          title: result.status === "completed" ? "Cost sync complete" : "Cost sync needs attention",
+          description: result.status === "completed"
+            ? `${result.recordsStored} cost records were imported or refreshed.`
+            : result.results.map((item) => `${item.provider.toUpperCase()}: ${item.message}`).join(" "),
+          variant: failed ? "destructive" : undefined,
         });
       },
-      onError: () => {
+      onError: (error) => {
         toast({
-          title: "Synchronization Failed",
-          description: "Failed to start cost synchronization.",
+          title: "Synchronization failed",
+          description: error instanceof Error ? error.message : "Failed to synchronize cost data.",
           variant: "destructive",
         });
       }
@@ -108,10 +153,18 @@ export default function CostOptimization() {
   };
 
   const currentSpend = overview?.monthlyCost || 0;
-  const projectedSpend = 0;
+  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+  const projectedSpend = overview?.dataStatus?.hasData ? (overview.dailyCost || 0) * daysInMonth : 0;
   const potentialSavings = overview?.potentialSavings || 0;
+  const projectionChange = currentSpend > 0 ? ((projectedSpend - currentSpend) / currentSpend) * 100 : 0;
 
   const spendChange = overview?.trend?.changePercent || 0;
+
+  /*
+    The API returns provider-level outcomes because a multi-cloud sync can be
+    partially successful. Keep those diagnostics visible after the toast.
+  */
+  const syncDiagnostics = lastSync?.results ?? [];
 
   // Export report as CSV
   const handleExportReport = () => {
@@ -136,17 +189,25 @@ export default function CostOptimization() {
         }
       }
 
-      if (optimizations && optimizations.length > 0) {
+      if (optimizations.length > 0) {
         rows.push([], ["Optimization Recommendations"], ["ID", "Title", "Estimated Savings", "Status"]);
-        for (const opt of optimizations as any[]) {
-          rows.push([String(opt.id), opt.title || opt.description || '', formatCurrency(opt.estimatedSavings || 0), opt.status || '']);
+        for (const opt of optimizations) {
+          rows.push([opt.id, opt.title, formatCurrency(opt.estimatedSavings), opt.status]);
         }
       }
 
-      if (anomalies && anomalies.length > 0) {
+      if (filteredAnomalies.length > 0) {
         rows.push([], ["Cost Anomalies"], ["Service", "Provider", "Severity", "Expected", "Actual", "Deviation", "Status"]);
-        for (const a of anomalies as any[]) {
-          rows.push([a.serviceName || '', a.provider || '', a.severity || '', formatCurrency(a.expectedCost || 0), formatCurrency(a.actualCost || 0), formatCurrency(a.deviation || 0), a.status || '']);
+        for (const anomaly of filteredAnomalies) {
+          rows.push([
+            anomaly.serviceName || '',
+            anomaly.provider || '',
+            anomaly.severity,
+            formatCurrency(anomaly.expectedCost),
+            formatCurrency(anomaly.actualCost),
+            `${anomaly.deviation.toFixed(1)}%`,
+            anomaly.status,
+          ]);
         }
       }
 
@@ -162,12 +223,12 @@ export default function CostOptimization() {
       URL.revokeObjectURL(url);
 
       toast({
-        title: "Report Exported",
+        title: "Report exported",
         description: "Cost optimization report has been downloaded as CSV.",
       });
     } catch (err) {
       toast({
-        title: "Export Failed",
+        title: "Export failed",
         description: "Unable to generate the report. Please try again.",
         variant: "destructive",
       });
@@ -180,25 +241,29 @@ export default function CostOptimization() {
         title="Cost Optimization"
         description="Monitor and optimize cloud spending across your infrastructure"
         actions={
-          <div className="flex space-x-2">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2"
-              onClick={handleSync}
-              disabled={isSyncing}
-            >
-              <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
-              {isSyncing ? "Syncing..." : "Sync Costs"}
-            </Button>
-            <Button
-              variant="outline"
-              className="flex items-center gap-2"
-              onClick={() => detectAnomalies()}
-              disabled={isDetecting}
-            >
-              <AlertCircle className={`h-4 w-4 ${isDetecting ? "animate-pulse" : ""}`} />
-              {isDetecting ? "Scanning..." : "Scan Anomalies"}
-            </Button>
+          <div className="flex flex-wrap gap-2">
+            {canManageProviders && (
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={handleSync}
+                disabled={isSyncing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+                {isSyncing ? "Syncing..." : "Sync Costs"}
+              </Button>
+            )}
+            {canScan && (
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={handleDetectAnomalies}
+                disabled={isDetecting || !overview?.dataStatus?.hasData}
+              >
+                <AlertCircle className={`h-4 w-4 ${isDetecting ? "animate-pulse" : ""}`} />
+                {isDetecting ? "Scanning..." : "Scan Anomalies"}
+              </Button>
+            )}
             <Button className="flex items-center gap-2" onClick={handleExportReport}>
               <Download className="h-4 w-4" />
               Export Report
@@ -206,6 +271,73 @@ export default function CostOptimization() {
           </div>
         }
       />
+
+      {overviewQuery.isError && (
+        <Card className="mb-6 border-destructive/40">
+          <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
+              <div>
+                <p className="font-medium">Cost data could not be loaded.</p>
+                <p className="text-sm text-muted-foreground">
+                  {overviewQuery.error instanceof Error ? overviewQuery.error.message : "The cost API is unavailable."}
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" onClick={() => overviewQuery.refetch()}>Retry</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isLoadingOverview && !overviewQuery.isError && !overview?.dataStatus?.hasData && (
+        <Card className="mb-6 border-amber-500/40 bg-amber-500/5">
+          <CardContent className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div className="flex gap-4">
+              <Database className="h-7 w-7 text-amber-600 mt-0.5" />
+              <div>
+                <p className="font-semibold">No cloud costs have been imported yet.</p>
+                <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+                  Connect a provider with billing-read access, then run Cost Sync. For AWS, the read role must allow
+                  <code className="mx-1 rounded bg-muted px-1.5 py-0.5">ce:GetCostAndUsage</code>.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {canManageProviders && <Button asChild variant="outline"><Link href="/cloud-providers">Cloud providers</Link></Button>}
+              {canManageProviders && <Button onClick={handleSync} disabled={isSyncing}>{isSyncing ? "Syncing..." : "Sync costs now"}</Button>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {overview?.dataStatus?.hasData && (
+        <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+          <Info className="h-4 w-4" />
+          Billing data through {overview.dataStatus.lastCostDate ? new Date(`${overview.dataStatus.lastCostDate}T00:00:00`).toLocaleDateString() : "an unknown date"}
+          {overview.dataStatus.lastUpdatedAt && ` · refreshed ${new Date(overview.dataStatus.lastUpdatedAt).toLocaleString()}`}
+          {` · ${overview.dataStatus.recordCount} records`}
+        </div>
+      )}
+
+      {syncDiagnostics.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Latest cost sync</CardTitle>
+            <CardDescription>Provider results from the most recent import attempt</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-3">
+            {syncDiagnostics.map((result) => (
+              <div key={result.provider} className="rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="font-medium uppercase">{result.provider}</span>
+                  <Badge variant={result.status === "failed" ? "destructive" : "outline"}>{result.status.replace(/_/g, " ")}</Badge>
+                </div>
+                <p className="text-sm text-muted-foreground">{result.message}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -259,7 +391,7 @@ export default function CostOptimization() {
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-400">{optimizations?.length || 0} recommendations</p>
+              <p className="text-sm text-gray-400">{optimizationTotal} recommendations</p>
             </div>
           </CardContent>
         </Card>
@@ -272,11 +404,11 @@ export default function CostOptimization() {
             currentSpend={currentSpend}
             projectedSpend={projectedSpend}
             potentialSavings={potentialSavings}
-            optimizationCount={optimizations?.length || 0}
+            optimizationCount={optimizationTotal}
             spendChange={spendChange}
-            projectionChange={10}
+            projectionChange={projectionChange}
             isLoading={isLoadingOverview}
-            trendDataPoints={(trends as any)?.dataPoints}
+            trendDataPoints={trends?.dataPoints}
           />
         </div>
 
@@ -300,10 +432,14 @@ export default function CostOptimization() {
         {/* Optimizations Tab */}
         <TabsContent value="optimizations" className="space-y-6 mt-6">
           <CostOptimizationsList
-            optimizations={optimizations || []}
-            isLoading={isLoadingOptimizations}
-            onApply={(id) => toast({ title: "Applying fix...", description: `Applied fix for ${id}` })}
-            onDismiss={(id) => toast({ title: "Dismissed", description: `Dismissed recommendation ${id}` })}
+            optimizations={optimizations}
+            total={optimizationTotal}
+            isLoading={optimizationsQuery.isLoading}
+            isError={optimizationsQuery.isError}
+            isGenerating={isGenerating}
+            canGenerate={canScan && Boolean(overview?.dataStatus?.hasData)}
+            onGenerate={handleGenerateOptimizations}
+            onRetry={() => optimizationsQuery.refetch()}
           />
         </TabsContent>
 
@@ -343,19 +479,27 @@ export default function CostOptimization() {
                     <TableHead>Expected</TableHead>
                     <TableHead>Actual</TableHead>
                     <TableHead>Detected</TableHead>
-                    <TableHead>status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoadingAnomalies ? (
+                  {anomaliesQuery.isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="h-24 text-center">
+                      <TableCell colSpan={8} className="h-24 text-center">
                         Loading cost anomalies...
                       </TableCell>
                     </TableRow>
-                  ) : anomalies && anomalies.length > 0 ? (
-                    anomalies.map((anomaly) => (
+                  ) : anomaliesQuery.isError ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center">
+                        <div className="space-y-3">
+                          <p>Cost anomalies could not be loaded.</p>
+                          <Button variant="outline" size="sm" onClick={() => anomaliesQuery.refetch()}>Retry</Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredAnomalies.length > 0 ? (
+                    filteredAnomalies.map((anomaly) => (
                       <TableRow key={anomaly.id}>
                         <TableCell className="font-medium">
                           <div className="flex flex-col">
@@ -372,7 +516,7 @@ export default function CostOptimization() {
                         <TableCell className="text-danger">
                           <div className="flex items-center">
                             <ArrowUpRight className="h-4 w-4 mr-1" />
-                            {formatCurrency(anomaly.deviation)}
+                            {anomaly.deviation.toFixed(1)}%
                           </div>
                         </TableCell>
                         <TableCell>{formatCurrency(anomaly.expectedCost)}</TableCell>
@@ -384,22 +528,12 @@ export default function CostOptimization() {
                             {anomaly.status}
                           </span>
                         </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 text-primary hover:text-primary/80"
-                            disabled={anomaly.status !== "open"}
-                          >
-                            Investigate
-                          </Button>
-                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={9} className="h-24 text-center">
-                        No cost anomalies detected.
+                      <TableCell colSpan={8} className="h-24 text-center">
+                        No cost anomalies detected in this timeframe.
                       </TableCell>
                     </TableRow>
                   )}
