@@ -68,6 +68,20 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   return unwrapResponse<T>(json);
 }
 
+function normalizeCostSyncSummary(summary: Partial<CostSyncSummary> | null | undefined): CostSyncSummary {
+  const validStatuses: CostSyncSummary['status'][] = ['completed', 'partial', 'failed', 'action_required'];
+  const status = validStatuses.includes(summary?.status as CostSyncSummary['status'])
+    ? summary!.status as CostSyncSummary['status']
+    : 'action_required';
+
+  return {
+    status,
+    results: Array.isArray(summary?.results) ? summary.results : [],
+    recordsFetched: typeof summary?.recordsFetched === 'number' ? summary.recordsFetched : 0,
+    recordsStored: typeof summary?.recordsStored === 'number' ? summary.recordsStored : 0,
+  };
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   page: number;
@@ -1075,11 +1089,15 @@ export const api = {
     getAIForecast: () => request<AIForecastResult>('/api/v1/costs/forecast/ai', { method: 'POST' }),
     getROI: () => request<ROIData>('/api/v1/costs/roi'),
 
-    sync: (provider?: string) => {
+    sync: async (provider?: string) => {
       const params = new URLSearchParams();
       if (provider) params.set('provider', provider);
       const qs = params.toString();
-      return request<CostSyncSummary>(`/api/v1/costs/sync${qs ? `?${qs}` : ''}`, { method: 'POST' });
+      const summary = await request<Partial<CostSyncSummary>>(
+        `/api/v1/costs/sync${qs ? `?${qs}` : ''}`,
+        { method: 'POST' },
+      );
+      return normalizeCostSyncSummary(summary);
     },
 
     getSavings: () => request<{ potentialSavings: number }>('/api/v1/costs/savings'),
