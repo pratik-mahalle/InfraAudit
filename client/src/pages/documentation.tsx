@@ -165,7 +165,7 @@ const Documentation = () => {
                 
                 <h3 className="text-lg font-medium">Cost Management</h3>
                 <ul className="list-disc pl-6 space-y-1 text-foreground dark:text-foreground">
-                  <li>AI-powered cost optimization recommendations</li>
+                  <li>Evidence-backed cost optimization recommendations</li>
                   <li>Resource right-sizing suggestions</li>
                   <li>Idle and underutilized resource identification</li>
                   <li>Cost anomaly detection with root cause analysis</li>
@@ -280,7 +280,7 @@ docker compose up -d</code></pre>
               </CardHeader>
               <CardContent className="space-y-6">
                 <p className="text-foreground dark:text-foreground">
-                  InfrAudit's AI-powered cost optimization engine analyzes your resource usage patterns and identifies opportunities to reduce cloud spending without impacting performance.
+                  InfrAudit combines provider-native recommendations with deterministic inventory and billing analysis. Each savings opportunity includes its source, supporting evidence, confidence, and an auditable workflow from discovery through verification.
                 </p>
               </CardContent>
             </Card>

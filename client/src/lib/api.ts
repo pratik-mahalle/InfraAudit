@@ -1,5 +1,5 @@
 import {
-  CostOverview, CostTrend, CostForecast, CostAnomalyPage, CostOptimizationPage, CostSyncSummary,
+  CostOverview, CostTrend, CostForecast, CostAnomalyPage, CostOptimizationPage, CostSyncSummary, OptimizationAnalysis,
   AIForecastResult, ROIData,
   ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, ComplianceAssessmentDetail, AssessmentFinding,
   ResourceComplianceStatus,
@@ -1099,6 +1099,11 @@ export const api = {
       return request<{ message: string; detected: number }>(`/api/v1/costs/anomalies/detect${qs ? `?${qs}` : ''}`, { method: 'POST' });
     },
 
+    updateAnomaly: (id: string | number, status: 'open' | 'reviewed' | 'resolved', notes?: string) =>
+      request<{ status: string }>(`/api/v1/costs/anomalies/${id}`, {
+        method: 'PATCH', body: { status, notes },
+      }),
+
     listOptimizations: (status?: string, limit?: number, offset?: number) => {
       const params = new URLSearchParams();
       if (status) params.set('status', status);
@@ -1111,8 +1116,13 @@ export const api = {
       const params = new URLSearchParams();
       if (provider) params.set('provider', provider);
       const qs = params.toString();
-      return request<{ message: string; generated: number }>(`/api/v1/costs/optimizations/generate${qs ? `?${qs}` : ''}`, { method: 'POST' });
+      return request<OptimizationAnalysis>(`/api/v1/costs/optimizations/generate${qs ? `?${qs}` : ''}`, { method: 'POST' });
     },
+
+    updateOptimization: (id: string, status: 'acknowledged' | 'planned' | 'applied' | 'verified' | 'dismissed', notes?: string) =>
+      request<{ status: string }>(`/api/v1/costs/optimizations/${id}`, {
+        method: 'PATCH', body: { status, notes },
+      }),
   },
 
   // ============================================

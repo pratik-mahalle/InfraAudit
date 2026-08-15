@@ -57,12 +57,15 @@ import {
   useCostTrends,
   useDetectAnomalies,
   useGenerateCostOptimizations,
+  useUpdateCostOptimization,
+  useUpdateCostAnomaly,
 } from "@/hooks/use-costs";
-import { CostSyncSummary } from "@/types";
+import { CostOptimization as CostOptimizationRecord, CostSyncSummary, OptimizationCoverage } from "@/types";
 
 export default function CostOptimization() {
   const [timeframeFilter, setTimeframeFilter] = useState<"7d" | "30d" | "90d">("30d");
   const [lastSync, setLastSync] = useState<CostSyncSummary | null>(null);
+  const [optimizationCoverage, setOptimizationCoverage] = useState<OptimizationCoverage[]>([]);
   const { toast } = useToast();
   const { hasPermission } = usePermission();
   const canManageProviders = hasPermission("manage_providers");
@@ -81,6 +84,8 @@ export default function CostOptimization() {
   const { mutate: syncCosts, isPending: isSyncing } = useSyncCosts();
   const { mutate: detectAnomalies, isPending: isDetecting } = useDetectAnomalies();
   const { mutate: generateOptimizations, isPending: isGenerating } = useGenerateCostOptimizations();
+  const updateOptimization = useUpdateCostOptimization();
+  const updateAnomaly = useUpdateCostAnomaly();
 
   const filteredAnomalies = anomalies.filter((anomaly) => {
     const cutoff = new Date();
@@ -108,9 +113,36 @@ export default function CostOptimization() {
     });
   };
 
+  const handleUpdateOptimization = (
+    optimization: CostOptimizationRecord,
+    status: 'acknowledged' | 'planned' | 'applied' | 'verified' | 'dismissed',
+    notes?: string,
+  ) => {
+    updateOptimization.mutate({ id: optimization.id, status, notes }, {
+      onSuccess: () => toast({ title: "Recommendation updated", description: `${optimization.title} is now ${status}.` }),
+      onError: (error) => toast({
+        title: "Update failed",
+        description: error instanceof Error ? error.message : "Could not update the recommendation workflow.",
+        variant: "destructive",
+      }),
+    });
+  };
+
+  const handleUpdateAnomaly = (id: string | number, status: 'reviewed' | 'resolved') => {
+    updateAnomaly.mutate({ id, status }, {
+      onSuccess: () => toast({ title: "Anomaly updated", description: `The anomaly is now ${status}.` }),
+      onError: (error) => toast({
+        title: "Update failed",
+        description: error instanceof Error ? error.message : "Could not update the anomaly.",
+        variant: "destructive",
+      }),
+    });
+  };
+
   const handleGenerateOptimizations = () => {
     generateOptimizations(undefined, {
       onSuccess: (result) => {
+        setOptimizationCoverage(result.coverage);
         toast({
           title: "Recommendation analysis complete",
           description: result.generated > 0
@@ -316,6 +348,7 @@ export default function CostOptimization() {
           Billing data through {overview.dataStatus.lastCostDate ? new Date(`${overview.dataStatus.lastCostDate}T00:00:00`).toLocaleDateString() : "an unknown date"}
           {overview.dataStatus.lastUpdatedAt && ` · refreshed ${new Date(overview.dataStatus.lastUpdatedAt).toLocaleString()}`}
           {` · ${overview.dataStatus.recordCount} records`}
+          {` (${overview.dataStatus.aggregateRecords ?? overview.dataStatus.recordCount} aggregate · ${overview.dataStatus.resourceRecords ?? 0} resource-attributed)`}
         </div>
       )}
 
@@ -333,6 +366,9 @@ export default function CostOptimization() {
                   <Badge variant={result.status === "failed" ? "destructive" : "outline"}>{result.status.replace(/_/g, " ")}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{result.message}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {result.aggregateRecords ?? result.recordsStored} aggregate · {result.resourceRecords ?? 0} resource-attributed
+                </p>
               </div>
             ))}
           </CardContent>
@@ -437,8 +473,11 @@ export default function CostOptimization() {
             isLoading={optimizationsQuery.isLoading}
             isError={optimizationsQuery.isError}
             isGenerating={isGenerating}
-            canGenerate={canScan && Boolean(overview?.dataStatus?.hasData)}
+            updatingId={updateOptimization.variables?.id}
+            canGenerate={canScan}
+            coverage={optimizationCoverage}
             onGenerate={handleGenerateOptimizations}
+            onUpdate={handleUpdateOptimization}
             onRetry={() => optimizationsQuery.refetch()}
           />
         </TabsContent>
@@ -480,18 +519,19 @@ export default function CostOptimization() {
                     <TableHead>Actual</TableHead>
                     <TableHead>Detected</TableHead>
                     <TableHead>Status</TableHead>
+                    {canScan && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {anomaliesQuery.isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center">
+                      <TableCell colSpan={canScan ? 9 : 8} className="h-24 text-center">
                         Loading cost anomalies...
                       </TableCell>
                     </TableRow>
                   ) : anomaliesQuery.isError ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center">
+                      <TableCell colSpan={canScan ? 9 : 8} className="h-24 text-center">
                         <div className="space-y-3">
                           <p>Cost anomalies could not be loaded.</p>
                           <Button variant="outline" size="sm" onClick={() => anomaliesQuery.refetch()}>Retry</Button>
@@ -528,11 +568,23 @@ export default function CostOptimization() {
                             {anomaly.status}
                           </span>
                         </TableCell>
+                        {canScan && (
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              {anomaly.status === 'open' && (
+                                <Button variant="outline" size="sm" onClick={() => handleUpdateAnomaly(anomaly.id, 'reviewed')} disabled={updateAnomaly.isPending}>Review</Button>
+                              )}
+                              {anomaly.status !== 'resolved' && (
+                                <Button variant="outline" size="sm" onClick={() => handleUpdateAnomaly(anomaly.id, 'resolved')} disabled={updateAnomaly.isPending}>Resolve</Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center">
+                      <TableCell colSpan={canScan ? 9 : 8} className="h-24 text-center">
                         No cost anomalies detected in this timeframe.
                       </TableCell>
                     </TableRow>

@@ -37,10 +37,22 @@ export function useCostAnomalies(status = 'open', limit = 10, offset = 0) {
     });
 }
 
-export function useCostOptimizations(status = 'pending', limit = 10, offset = 0) {
+export function useCostOptimizations(status = '', limit = 50, offset = 0) {
     return useQuery({
         queryKey: ['/api/v1/costs/optimizations', status, limit, offset],
         queryFn: () => api.costs.listOptimizations(status, limit, offset),
+    });
+}
+
+export function useUpdateCostAnomaly() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, status, notes }: { id: string | number; status: 'open' | 'reviewed' | 'resolved'; notes?: string }) =>
+            api.costs.updateAnomaly(id, status, notes),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/anomalies'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
+        },
     });
 }
 
@@ -82,6 +94,22 @@ export function useGenerateCostOptimizations() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/optimizations'] });
             queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
+        },
+    });
+}
+
+export function useUpdateCostOptimization() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, status, notes }: {
+            id: string;
+            status: 'acknowledged' | 'planned' | 'applied' | 'verified' | 'dismissed';
+            notes?: string;
+        }) => api.costs.updateOptimization(id, status, notes),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/optimizations'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/roi'] });
         },
     });
 }

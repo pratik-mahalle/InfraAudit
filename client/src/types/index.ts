@@ -105,6 +105,12 @@ export interface CostAnomaly {
   detectedAt: string;
   status: 'open' | 'reviewed' | 'resolved';
   notes?: string;
+  baselineMethod?: string;
+  details?: {
+    medianAbsoluteDeviation?: number;
+    robustZScore?: number;
+    absoluteImpact?: number;
+  };
 }
 
 export interface CostAnomalyPage {
@@ -204,6 +210,8 @@ export interface CostOverview {
 export interface CostDataStatus {
   hasData: boolean;
   recordCount: number;
+  aggregateRecords: number;
+  resourceRecords: number;
   firstCostDate?: string;
   lastCostDate?: string;
   lastUpdatedAt?: string;
@@ -221,6 +229,8 @@ export interface CostSyncResult {
   status: CostSyncProviderStatus;
   recordsFetched: number;
   recordsStored: number;
+  aggregateRecords: number;
+  resourceRecords: number;
   message: string;
 }
 
@@ -259,6 +269,15 @@ export interface CostForecast {
   endDate: string;
   dataPoints: ForecastPoint[];
   historical: { date: string; cost: number }[];
+  accuracy?: ForecastAccuracy;
+}
+
+export interface ForecastAccuracy {
+  method: string;
+  samples: number;
+  meanAbsoluteError: number;
+  meanAbsolutePercentError: number;
+  candidates: Record<string, number>;
 }
 
 export interface AIForecastResult {
@@ -296,8 +315,43 @@ export interface CostOptimization {
   estimatedSavings: number;
   savingsPercent: number;
   implementation: 'easy' | 'moderate' | 'complex' | string;
-  status: 'pending' | 'applied' | 'dismissed';
+  status: 'new' | 'acknowledged' | 'planned' | 'applied' | 'verified' | 'dismissed' | 'expired';
   details?: Record<string, unknown>;
+  source: string;
+  confidence: number;
+  savingsLow: number;
+  savingsHigh: number;
+  evidence?: OptimizationEvidence[];
+  assumptions?: string[];
+  notes?: string;
+  realizedSavings?: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  appliedAt?: string;
+  verifiedAt?: string;
+}
+
+export interface OptimizationEvidence {
+  metric: string;
+  observed: unknown;
+  threshold?: unknown;
+  unit?: string;
+  source: string;
+}
+
+export interface OptimizationCoverage {
+  provider: string;
+  source: string;
+  status: 'available' | 'unavailable' | 'not_connected' | 'not_supported';
+  findings: number;
+  message: string;
+}
+
+export interface OptimizationAnalysis {
+  message: string;
+  generated: number;
+  expired: number;
+  coverage: OptimizationCoverage[];
 }
 
 export interface CostOptimizationPage {

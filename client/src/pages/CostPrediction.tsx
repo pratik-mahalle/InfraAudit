@@ -48,7 +48,7 @@ import {
   Legend,
 } from "recharts";
 
-type ForecastModel = "linear" | "ma" | "wma";
+type ForecastModel = "auto" | "linear" | "ma" | "wma";
 
 function StatCard({
   icon: Icon,
@@ -86,6 +86,7 @@ function StatCard({
 }
 
 const MODEL_OPTIONS: { value: ForecastModel; label: string; desc: string }[] = [
+  { value: "auto", label: "Best fit", desc: "Backtests every model and selects the lowest-error result" },
   { value: "linear", label: "Linear", desc: "Best for steady growth trends" },
   { value: "ma", label: "Moving Avg", desc: "Smooths out cost spikes" },
   { value: "wma", label: "Weighted MA", desc: "Prioritizes recent data" },
@@ -98,7 +99,7 @@ const TIMEFRAMES = [
 ];
 
 export default function CostPrediction() {
-  const [model, setModel] = useState<ForecastModel>("linear");
+  const [model, setModel] = useState<ForecastModel>("auto");
   const [timeframe, setTimeframe] = useState(30);
   const [aiEnabled, setAIEnabled] = useState(false);
 
@@ -226,7 +227,7 @@ export default function CostPrediction() {
             icon={Target}
             label={`${timeframe}-Day Forecast`}
             value={forecast ? `$${forecast.forecastedCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "$—"}
-            sub={`Model: ${model.toUpperCase()}`}
+            sub={`Selected model: ${(forecast?.model ?? model).toUpperCase()}`}
             color="from-violet-500 to-violet-600"
             loading={forecastLoading}
           />
@@ -234,7 +235,9 @@ export default function CostPrediction() {
             icon={BarChart3}
             label="Confidence"
             value={forecast ? `${Math.round((forecast.confidenceLevel ?? 0) * 100)}%` : "—"}
-            sub={forecast?.historical?.length ? `Based on ${forecast.historical.length} days of data` : "No history yet"}
+            sub={forecast?.accuracy
+              ? `Backtest MAE $${forecast.accuracy.meanAbsoluteError.toFixed(2)} across ${forecast.accuracy.samples} days`
+              : forecast?.historical?.length ? `Based on ${forecast.historical.length} days of data` : "No history yet"}
             color={
               (forecast?.confidenceLevel ?? 0) >= 0.7 ? "from-green-500 to-green-600" :
               (forecast?.confidenceLevel ?? 0) >= 0.4 ? "from-yellow-500 to-yellow-600" :
@@ -312,6 +315,21 @@ export default function CostPrediction() {
                 <p className="text-sm text-yellow-700 dark:text-yellow-300">
                   Limited historical data — forecast accuracy may be low. Import billing data or run more scans to improve predictions.
                 </p>
+              </div>
+            )}
+
+            {!forecastLoading && forecast?.accuracy && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium">Backtested model selection</p>
+                  <p className="text-xs text-muted-foreground">
+                    {forecast.accuracy.method.toUpperCase()} had the lowest held-out error over {forecast.accuracy.samples} observations.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Badge variant="outline">MAE ${forecast.accuracy.meanAbsoluteError.toFixed(2)}</Badge>
+                  <Badge variant="outline">MAPE {forecast.accuracy.meanAbsolutePercentError.toFixed(1)}%</Badge>
+                </div>
               </div>
             )}
 
