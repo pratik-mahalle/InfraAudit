@@ -43,8 +43,7 @@ export interface CloudCredentials {
 
 export interface AWSCredentials extends CloudCredentials {
   provider: CloudProvider.AWS;
-  accessKeyId: string;
-  secretAccessKey: string;
+  roleArn: string;
   region?: string;
 }
 

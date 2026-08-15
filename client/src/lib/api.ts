@@ -452,8 +452,7 @@ export interface ProviderSyncStatus extends Provider {
 }
 
 export interface ProviderCredentials {
-  accessKeyId?: string;
-  secretAccessKey?: string;
+  roleArn?: string;
   region?: string;
   projectId?: string;
   credentials?: string;
@@ -836,8 +835,7 @@ export const api = {
       request(`/api/v1/providers/${provider}/connect`, {
         method: 'POST',
         body: {
-          aws_access_key_id: credentials.accessKeyId,
-          aws_secret_access_key: credentials.secretAccessKey,
+          aws_role_arn: credentials.roleArn,
           aws_region: credentials.region,
           gcp_project_id: credentials.projectId,
           gcp_service_account_json: credentials.credentials,
