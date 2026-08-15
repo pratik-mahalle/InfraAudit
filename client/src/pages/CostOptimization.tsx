@@ -176,11 +176,14 @@ export default function CostOptimization() {
       onSuccess: (result) => {
         setLastSync(result);
         const failed = result.status === "failed" || result.status === "partial";
+        const diagnosticMessage = result.results
+          .map((item) => `${item.provider.toUpperCase()}: ${item.message}`)
+          .join(" ");
         toast({
           title: result.status === "completed" ? "Cost sync complete" : "Cost sync needs attention",
           description: result.status === "completed"
             ? `${result.recordsStored} cost records were imported or refreshed.`
-            : result.results.map((item) => `${item.provider.toUpperCase()}: ${item.message}`).join(" "),
+            : diagnosticMessage || "Cost synchronization was accepted, but provider diagnostics are not available yet.",
           variant: failed ? "destructive" : undefined,
         });
       },
