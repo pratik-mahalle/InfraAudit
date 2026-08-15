@@ -120,7 +120,7 @@ export default function Guide() {
               <Alert>
                 <AlertTitle className="flex items-center gap-2"><Shield className="h-4 w-4" /> Least‑privilege</AlertTitle>
                 <AlertDescription>
-                  We only request read‑only permissions by default. You can enable write scopes later for automated remediation.
+                  Provider monitoring is read‑only. Any future automated remediation uses a separate opt‑in identity and approval flow.
                 </AlertDescription>
               </Alert>
             </CardContent>
