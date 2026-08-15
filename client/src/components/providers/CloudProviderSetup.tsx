@@ -59,6 +59,17 @@ const gcpServiceAccountKeySchema = z.string()
     }
   });
 
+const awsRoleFormSchema = z.object({
+  roleArn: z.string().trim().regex(
+    /^arn:aws(?:-[a-z0-9]+)*:iam::[0-9]{12}:role\/[A-Za-z0-9+=,.@_-]+(?:\/[A-Za-z0-9+=,.@_-]+)*$/,
+    "Enter the exact IAM RoleArn from the CloudFormation stack output",
+  ),
+  region: z.string().trim().regex(
+    /^[a-z]{2}(?:-[a-z0-9]+)+-[0-9]+$/,
+    "Enter a valid AWS region such as us-east-1",
+  ),
+});
+
 // GCP Form Schema
 const gcpFormSchema = z.object({
   serviceAccountKey: gcpServiceAccountKeySchema,
@@ -145,7 +156,15 @@ export function CloudProviderSetup({
     queryFn: () => api.providers.list(),
   });
 
-  // Form handlers for providers that still require submitted credentials.
+  // Form handlers for provider connection inputs.
+  const awsRoleForm = useForm<z.infer<typeof awsRoleFormSchema>>({
+    resolver: zodResolver(awsRoleFormSchema),
+    defaultValues: {
+      roleArn: '',
+      region: 'us-east-1',
+    },
+  });
+
   const gcpForm = useForm<z.infer<typeof gcpFormSchema>>({
     resolver: zodResolver(gcpFormSchema),
     defaultValues: {
@@ -188,6 +207,27 @@ export function CloudProviderSetup({
       toast({
         title: 'Could not download AWS role template',
         description: error.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const awsRoleConnectionMutation = useMutation({
+    mutationFn: (data: z.infer<typeof awsRoleFormSchema>) => api.providers.connect('aws', {
+      roleArn: data.roleArn.trim(),
+      region: data.region.trim(),
+    }),
+    onSuccess: () => {
+      toast({
+        title: isAwsConnected ? 'AWS role updated' : 'AWS connected successfully',
+        description: 'InfraAudit validated a short-lived STS session and started the first inventory sync.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['providers'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Could not activate AWS role',
+        description: error.message || 'Confirm the stack RoleArn and trust policy, then try again.',
         variant: 'destructive',
       });
     },
@@ -381,6 +421,10 @@ export function CloudProviderSetup({
 
   const onSubmitGCP = (data: z.infer<typeof gcpFormSchema>) => {
     gcpConnectionMutation.mutate(data);
+  };
+
+  const onSubmitAWSRole = (data: z.infer<typeof awsRoleFormSchema>) => {
+    awsRoleConnectionMutation.mutate(data);
   };
 
   const onSubmitAzure = (data: z.infer<typeof azureFormSchema>) => {
@@ -586,7 +630,7 @@ export function CloudProviderSetup({
                   <Check className="h-4 w-4" />
                   <AlertTitle>AWS connection already exists</AlertTitle>
                   <AlertDescription>
-                    Downloading and deploying this role template prepares the safer role-based migration. It does not change the current connection.
+                    Submit a newly deployed RoleArn below to validate and replace the current role connection.
                   </AlertDescription>
                 </Alert>
               )}
@@ -617,7 +661,7 @@ export function CloudProviderSetup({
                 {[
                   ['1', 'Download and review', 'An owner or administrator downloads the organization-bound JSON template.'],
                   ['2', 'Deploy in AWS', 'An AWS operator creates the CloudFormation stack and chooses the optional read policies.'],
-                  ['3', 'Keep the RoleArn', 'Save the stack output for role activation when the connection step becomes available.'],
+                  ['3', 'Activate the RoleArn', 'Paste the exact stack output below. InfraAudit validates it with a short-lived STS session.'],
                 ].map(([step, title, description]) => (
                   <div key={step} className="rounded-md border p-4">
                     <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
@@ -639,14 +683,6 @@ export function CloudProviderSetup({
                 </ul>
               </div>
 
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Role activation is a separate step</AlertTitle>
-                <AlertDescription>
-                  Deploying this template does not mark AWS connected or start a scan yet. Keep the RoleArn output; the short-lived STS connection flow is the next onboarding stage.
-                </AlertDescription>
-              </Alert>
-
               <Button
                 type="button"
                 className="flex w-full items-center"
@@ -660,6 +696,47 @@ export function CloudProviderSetup({
                 )}
                 {awsRoleTemplateMutation.isPending ? 'Preparing protected template...' : 'Download CloudFormation role template'}
               </Button>
+
+              <Form {...awsRoleForm}>
+                <form onSubmit={awsRoleForm.handleSubmit(onSubmitAWSRole)} className="space-y-4 rounded-md border p-4">
+                  <div>
+                    <h4 className="font-medium">Activate the deployed role</h4>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      InfraAudit exchanges its workload identity for expiring STS credentials. The external ID stays server-managed.
+                    </p>
+                  </div>
+                  <FormField
+                    control={awsRoleForm.control}
+                    name="roleArn"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CloudFormation RoleArn</FormLabel>
+                        <FormControl>
+                          <Input autoComplete="off" placeholder="arn:aws:iam::123456789012:role/InfraAuditReadOnlyRole" {...field} />
+                        </FormControl>
+                        <FormDescription>Paste the exact RoleArn stack output; wildcards, users, and account-root ARNs are rejected.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={awsRoleForm.control}
+                    name="region"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Home region</FormLabel>
+                        <FormControl><Input placeholder="us-east-1" {...field} /></FormControl>
+                        <FormDescription>Used as the initial region; inventory discovery can scan additional enabled regions.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" className="w-full" disabled={awsRoleConnectionMutation.isPending}>
+                    {awsRoleConnectionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                    {awsRoleConnectionMutation.isPending ? 'Validating short-lived session...' : (isAwsConnected ? 'Validate and update AWS role' : 'Validate and connect AWS role')}
+                  </Button>
+                </form>
+              </Form>
             </TabsContent>
 
             {/* GCP Form */}
