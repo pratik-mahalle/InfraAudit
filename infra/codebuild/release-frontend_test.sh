@@ -3,19 +3,31 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 release_script="${script_dir}/release-frontend.sh"
+authorization_script="${script_dir}/authorize-frontend-release.sh"
 
 bash -n "${release_script}"
+bash -n "${authorization_script}"
 
 if env \
-  AWS_ACCOUNT_ID=007761758041 \
-  AWS_REGION=us-east-1 \
-  ECR_REPOSITORY=infraudit-production-frontend \
-  CODEBUILD_RESOLVED_SOURCE_VERSION=0123456789012345678901234567890123456789 \
-  VITE_SUPABASE_URL=https://example.supabase.co \
-  VITE_SUPABASE_ANON_KEY=public-test-value \
-  "${release_script}" >/dev/null 2>&1; then
-  echo "Release script accepted a build that was not authorized from main." >&2
+  -u CODEBUILD_WEBHOOK_EVENT \
+  -u CODEBUILD_WEBHOOK_HEAD_REF \
+  -u CODEBUILD_SOURCE_VERSION \
+  -u ALLOW_MANUAL_PRODUCTION_DEPLOY \
+  "${authorization_script}" >/dev/null 2>&1; then
+  echo "Release authorization accepted a build without a trusted main trigger." >&2
   exit 1
 fi
+
+env \
+  CODEBUILD_WEBHOOK_EVENT=PUSH \
+  CODEBUILD_WEBHOOK_HEAD_REF=refs/heads/main \
+  "${authorization_script}" >/dev/null
+
+env \
+  -u CODEBUILD_WEBHOOK_EVENT \
+  -u CODEBUILD_WEBHOOK_HEAD_REF \
+  ALLOW_MANUAL_PRODUCTION_DEPLOY=true \
+  CODEBUILD_SOURCE_VERSION=refs/heads/main \
+  "${authorization_script}" >/dev/null
 
 echo "Frontend release authorization tests passed."
