@@ -12,7 +12,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  AWS_ACCOUNT_ID: "425062444291"
+  AWS_ACCOUNT_ID: "007761758041"
   ECR_REPOSITORY: infraudit-production-frontend
   ECS_CLUSTER: infraudit-production
   ECS_SERVICE: frontend
@@ -59,7 +59,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: arn:aws:iam::425062444291:role/infraudit-production-github-frontend
+          role-to-assume: arn:aws:iam::007761758041:role/infraudit-production-github-frontend
           aws-region: ${{ env.AWS_REGION }}
           allowed-account-ids: ${{ env.AWS_ACCOUNT_ID }}
 
