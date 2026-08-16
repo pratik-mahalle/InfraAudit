@@ -1,0 +1,26 @@
+version: 0.2
+
+env:
+  shell: bash
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - node --version
+      - npm --version
+      - docker version
+      - aws --version
+
+  pre_build:
+    commands:
+      - ./infra/codebuild/validate-frontend.sh main
+
+  build:
+    commands:
+      - ./infra/codebuild/release-frontend.sh
+
+cache:
+  paths:
+    - /root/.npm/**/*
