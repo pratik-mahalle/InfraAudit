@@ -6,7 +6,7 @@ import {
     Legend
 } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 
 // Register Chart.js components
@@ -15,9 +15,10 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 interface CostProviderBreakdownProps {
     data: Record<string, number>;
     totalCost: number;
+    currency?: string;
 }
 
-export function CostProviderBreakdown({ data, totalCost }: CostProviderBreakdownProps) {
+export function CostProviderBreakdown({ data, totalCost, currency = "USD" }: CostProviderBreakdownProps) {
     const providers = Object.keys(data);
     const costs = Object.values(data);
     const colors = [
@@ -52,7 +53,7 @@ export function CostProviderBreakdown({ data, totalCost }: CostProviderBreakdown
                         const label = context.label || '';
                         const value = context.raw || 0;
                         const percentage = totalCost > 0 ? Math.round((value / totalCost) * 100) : 0;
-                        return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                        return `${label}: ${formatCurrency(value, currency)} (${percentage}%)`;
                     },
                 },
             },
@@ -64,6 +65,7 @@ export function CostProviderBreakdown({ data, totalCost }: CostProviderBreakdown
         <Card className="h-full">
             <CardHeader>
                 <CardTitle className="text-lg font-semibold">Cost by Provider</CardTitle>
+                <CardDescription>Imported actual spend split by cloud; forecasts and savings are excluded.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="h-[250px] w-full relative">
@@ -72,12 +74,12 @@ export function CostProviderBreakdown({ data, totalCost }: CostProviderBreakdown
                             <Doughnut data={chartData} options={options} />
                             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
                                 <p className="text-xs text-muted-foreground">Total</p>
-                                <p className="text-xl font-bold">{formatCurrency(totalCost)}</p>
+                                <p className="text-xl font-bold">{formatCurrency(totalCost, currency)}</p>
                             </div>
                         </>
                     ) : (
                         <div className="h-full flex items-center justify-center text-muted-foreground">
-                            No data available
+                            No provider billing data available
                         </div>
                     )}
                 </div>

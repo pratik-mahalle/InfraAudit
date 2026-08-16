@@ -1099,8 +1099,11 @@ export const api = {
       return request<CostExplorerResult>(`/api/v1/costs/explorer?${params.toString()}`);
     },
 
-    listMonitors: (limit = 25, offset = 0) =>
-      request<CostMonitorPage>(`/api/v1/costs/monitors?limit=${limit}&offset=${offset}`),
+    listMonitors: (limit = 25, offset = 0, enabledOnly = false) => {
+      const params = new URLSearchParams({ limit: limit.toString(), offset: offset.toString() });
+      if (enabledOnly) params.set('enabled', 'true');
+      return request<CostMonitorPage>(`/api/v1/costs/monitors?${params.toString()}`);
+    },
 
     getMonitor: (id: string) => request<CostMonitor>(`/api/v1/costs/monitors/${id}`),
 

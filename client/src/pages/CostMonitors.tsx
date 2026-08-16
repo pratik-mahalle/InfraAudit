@@ -36,14 +36,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-
-const monitorTypes: { value: CostMonitorType; label: string; description: string }[] = [
-  { value: "monthly_budget", label: "Monthly budget", description: "Current month actual spend" },
-  { value: "daily_spend", label: "Daily spend", description: "Latest available billing day" },
-  { value: "rolling_spend", label: "Rolling spend", description: "Spend over a configurable day window" },
-  { value: "monthly_forecast", label: "Monthly forecast", description: "Evidence-backed run-rate projection" },
-  { value: "month_over_month", label: "Period change", description: "Percent change against an equal prior period" },
-];
+import { costMonitorStatusStyle, costMonitorTypes, formatCostMonitorMetric } from "@/components/cost/cost-monitor-utils";
 
 const emptyMonitor: CostMonitorInput = {
   name: "",
@@ -57,15 +50,6 @@ const emptyMonitor: CostMonitorInput = {
   rollingDays: 7,
   currency: "USD",
   enabled: true,
-};
-
-const statusStyle: Record<CostMonitorStatus, string> = {
-  pending: "border-slate-300 bg-slate-50 text-slate-700",
-  healthy: "border-emerald-300 bg-emerald-50 text-emerald-700",
-  warning: "border-amber-300 bg-amber-50 text-amber-700",
-  critical: "border-red-300 bg-red-50 text-red-700",
-  stale: "border-orange-300 bg-orange-50 text-orange-700",
-  error: "border-red-300 bg-red-50 text-red-700",
 };
 
 function monitorInput(monitor: CostMonitor): CostMonitorInput {
@@ -84,22 +68,13 @@ function monitorInput(monitor: CostMonitor): CostMonitorInput {
   };
 }
 
-function metric(value: number, monitor: Pick<CostMonitor, "monitorType" | "currency">) {
-  if (monitor.monitorType === "month_over_month") return `${value.toFixed(1)}%`;
-  try {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: monitor.currency }).format(value);
-  } catch {
-    return `${monitor.currency} ${value.toFixed(2)}`;
-  }
-}
-
 export default function CostMonitors() {
   const { hasPermission } = usePermission();
   const canManage = hasPermission("manage_billing");
   const [createOpen, setCreateOpen] = useState(false);
   const [historyMonitor, setHistoryMonitor] = useState<CostMonitor | null>(null);
   const [draft, setDraft] = useState<CostMonitorInput>({ ...emptyMonitor });
-  const monitorsQuery = useCostMonitors();
+  const monitorsQuery = useCostMonitors(100);
   const accountsQuery = useCostAccounts();
   const createMutation = useCreateCostMonitor();
   const updateMutation = useUpdateCostMonitor();
@@ -184,13 +159,13 @@ export default function CostMonitors() {
               <div key={monitor.id} className="rounded-lg border p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{monitor.name}</p><Badge variant="outline" className={cn("capitalize", statusStyle[monitor.status])}>{monitor.status}</Badge><Badge variant="outline" className="uppercase">{monitor.provider}</Badge>{monitor.cloudAccountId && <Badge variant="secondary" className="font-mono">{monitor.cloudAccountId}</Badge>}</div>
-                    <p className="text-sm text-muted-foreground">{monitorTypes.find((type) => type.value === monitor.monitorType)?.label} · threshold {metric(monitor.threshold, monitor)} · warning at {monitor.warningPercent}%</p>
+                    <div className="flex flex-wrap items-center gap-2"><p className="font-semibold">{monitor.name}</p><Badge variant="outline" className={cn("capitalize", costMonitorStatusStyle[monitor.status])}>{monitor.status}</Badge><Badge variant="outline" className="uppercase">{monitor.provider}</Badge>{monitor.cloudAccountId && <Badge variant="secondary" className="font-mono">{monitor.cloudAccountId}</Badge>}</div>
+                    <p className="text-sm text-muted-foreground">{costMonitorTypes.find((type) => type.value === monitor.monitorType)?.label} · threshold {formatCostMonitorMetric(monitor.threshold, monitor)} · warning at {monitor.warningPercent}%</p>
                     <p className="text-xs text-muted-foreground">{monitor.serviceName ? `Service: ${monitor.serviceName} · ` : ""}{monitor.region ? `Region: ${monitor.region} · ` : ""}{monitor.lastEvaluatedAt ? `Evaluated ${format(parseISO(monitor.lastEvaluatedAt), "PPp")}` : "Not evaluated"}{monitor.nextEvaluationAt ? ` · next ${format(parseISO(monitor.nextEvaluationAt), "PPp")}` : ""}</p>
                     {monitor.lastError && <p className="text-xs text-orange-600">{monitor.lastError}</p>}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="mr-2 text-right"><p className="text-xs text-muted-foreground">Latest value</p><p className="font-semibold">{metric(monitor.latestValue, monitor)}</p></div>
+                    <div className="mr-2 text-right"><p className="text-xs text-muted-foreground">Latest value</p><p className="font-semibold">{formatCostMonitorMetric(monitor.latestValue, monitor)}</p></div>
                     <Button variant="outline" size="sm" onClick={() => setHistoryMonitor(monitor)}><History className="mr-2 h-4 w-4" /> History</Button>
                     {canManage && <Button variant="outline" size="sm" onClick={() => evaluate(monitor)} disabled={!monitor.enabled || evaluateMutation.isPending}><Play className="mr-2 h-4 w-4" /> Evaluate</Button>}
                     {canManage && <Switch checked={monitor.enabled} onCheckedChange={(enabled) => toggleEnabled(monitor, enabled)} aria-label={`${monitor.enabled ? "Disable" : "Enable"} ${monitor.name}`} />}
@@ -210,7 +185,7 @@ export default function CostMonitors() {
             <div className="space-y-2 sm:col-span-2"><Label htmlFor="monitor-name">Name</Label><Input id="monitor-name" value={draft.name} placeholder="AWS monthly production budget" onChange={(event) => setDraft((value) => ({ ...value, name: event.target.value }))} /></div>
             <div className="space-y-2"><Label>Provider</Label><Select value={draft.provider} onValueChange={(provider: "aws" | "gcp" | "azure") => setDraft((value) => ({ ...value, provider, cloudAccountId: "" }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="aws">AWS</SelectItem><SelectItem value="gcp">GCP</SelectItem><SelectItem value="azure">Azure</SelectItem></SelectContent></Select></div>
             <div className="space-y-2"><Label>Cloud account</Label><Select value={draft.cloudAccountId || "all"} onValueChange={(account) => setDraft((value) => ({ ...value, cloudAccountId: account === "all" ? "" : account }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All {draft.provider.toUpperCase()} accounts</SelectItem>{matchingAccounts.map((account) => <SelectItem key={account.cloudAccountId} value={account.cloudAccountId}>{account.cloudAccountId} · {account.connected ? "connected" : "historical"}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-2 sm:col-span-2"><Label>Monitor type</Label><Select value={draft.monitorType} onValueChange={(monitorType: CostMonitorType) => setDraft((value) => ({ ...value, monitorType }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{monitorTypes.map((type) => <SelectItem key={type.value} value={type.value}>{type.label} — {type.description}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2 sm:col-span-2"><Label>Monitor type</Label><Select value={draft.monitorType} onValueChange={(monitorType: CostMonitorType) => setDraft((value) => ({ ...value, monitorType }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{costMonitorTypes.map((type) => <SelectItem key={type.value} value={type.value}>{type.label} — {type.description}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label htmlFor="monitor-threshold">Threshold {draft.monitorType === "month_over_month" ? "(%)" : `(${draft.currency})`}</Label><Input id="monitor-threshold" type="number" min="0" step="0.01" value={draft.threshold} onChange={(event) => setDraft((value) => ({ ...value, threshold: Number(event.target.value) }))} /></div>
             <div className="space-y-2"><Label htmlFor="monitor-warning">Warning at (%)</Label><Input id="monitor-warning" type="number" min="1" max="100" value={draft.warningPercent} onChange={(event) => setDraft((value) => ({ ...value, warningPercent: Number(event.target.value) }))} /></div>
             {draft.monitorType === "rolling_spend" && <div className="space-y-2"><Label htmlFor="monitor-days">Rolling days</Label><Input id="monitor-days" type="number" min="1" max="90" value={draft.rollingDays} onChange={(event) => setDraft((value) => ({ ...value, rollingDays: Number(event.target.value) }))} /></div>}
@@ -226,7 +201,7 @@ export default function CostMonitors() {
           <DialogHeader><DialogTitle>{historyMonitor?.name} history</DialogTitle><DialogDescription>Immutable evaluation evidence for threshold decisions.</DialogDescription></DialogHeader>
           {historyQuery.isLoading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div> : (
             <div className="rounded-md border"><Table><TableHeader><TableRow><TableHead>Evaluated</TableHead><TableHead>Status</TableHead><TableHead>Value</TableHead><TableHead>Threshold</TableHead><TableHead>Evidence</TableHead></TableRow></TableHeader><TableBody>
-              {(historyQuery.data?.evaluations ?? []).map((evaluation) => <TableRow key={evaluation.id}><TableCell className="whitespace-nowrap">{format(parseISO(evaluation.evaluatedAt), "PPp")}</TableCell><TableCell><Badge variant="outline" className={statusStyle[evaluation.status]}>{evaluation.status}</Badge></TableCell><TableCell>{historyMonitor ? metric(evaluation.value, historyMonitor) : evaluation.value}</TableCell><TableCell>{historyMonitor ? metric(evaluation.threshold, historyMonitor) : evaluation.threshold}</TableCell><TableCell><details><summary className="cursor-pointer text-sm text-primary">View evidence</summary><pre className="mt-2 max-w-md overflow-auto rounded bg-muted p-2 text-xs">{JSON.stringify(evaluation.evidence, null, 2)}</pre></details></TableCell></TableRow>)}
+              {(historyQuery.data?.evaluations ?? []).map((evaluation) => <TableRow key={evaluation.id}><TableCell className="whitespace-nowrap">{format(parseISO(evaluation.evaluatedAt), "PPp")}</TableCell><TableCell><Badge variant="outline" className={costMonitorStatusStyle[evaluation.status]}>{evaluation.status}</Badge></TableCell><TableCell>{historyMonitor ? formatCostMonitorMetric(evaluation.value, historyMonitor) : evaluation.value}</TableCell><TableCell>{historyMonitor ? formatCostMonitorMetric(evaluation.threshold, historyMonitor) : evaluation.threshold}</TableCell><TableCell><details><summary className="cursor-pointer text-sm text-primary">View evidence</summary><pre className="mt-2 max-w-md overflow-auto rounded bg-muted p-2 text-xs">{JSON.stringify(evaluation.evidence, null, 2)}</pre></details></TableCell></TableRow>)}
               {!historyQuery.data?.evaluations.length && <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No evaluations recorded.</TableCell></TableRow>}
             </TableBody></Table></div>
           )}
