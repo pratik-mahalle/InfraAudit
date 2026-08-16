@@ -1,6 +1,7 @@
 import {
   CostOverview, CostTrend, CostForecast, CostAnomalyPage, CostOptimizationPage, CostSyncSummary, OptimizationAnalysis, OptimizationAnalysisStatus, CostOptimizationFilters,
   CostAccount, CostExplorerFilters, CostExplorerResult, CostMonitor, CostMonitorInput, CostMonitorPage, CostMonitorEvaluation, CostMonitorEvaluationPage,
+  CostNotificationChannel, CostNotificationChannelInput, CostNotificationChannelType, CostMonitorIncidentPage, CostMonitorIncidentHistory, CostMonitorIncident,
   AIForecastResult, ROIData,
   ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, ComplianceAssessmentDetail, AssessmentFinding,
   ResourceComplianceStatus,
@@ -1121,6 +1122,39 @@ export const api = {
 
     listMonitorEvaluations: (id: string, limit = 25, offset = 0) =>
       request<CostMonitorEvaluationPage>(`/api/v1/costs/monitors/${id}/evaluations?limit=${limit}&offset=${offset}`),
+
+    listMonitorNotificationChannels: () =>
+      request<{ channels: CostNotificationChannel[] }>('/api/v1/costs/monitor-notifications/channels'),
+
+    updateMonitorNotificationChannel: (channel: CostNotificationChannelType, input: CostNotificationChannelInput) =>
+      request<CostNotificationChannel>(`/api/v1/costs/monitor-notifications/channels/${channel}`, {
+        method: 'PUT',
+        body: { enabled: input.enabled, webhook_url: input.webhookUrl, recipients: input.recipients },
+      }),
+
+    testMonitorNotificationChannel: (channel: CostNotificationChannelType, input: Omit<CostNotificationChannelInput, 'enabled'> = {}) =>
+      request<{ message: string }>(`/api/v1/costs/monitor-notifications/channels/${channel}/test`, {
+        method: 'POST',
+        body: { webhook_url: input.webhookUrl, recipients: input.recipients },
+      }),
+
+    listMonitorIncidents: (filters: { monitorId?: string; status?: string; limit?: number; offset?: number } = {}) => {
+      const params = new URLSearchParams();
+      if (filters.monitorId) params.set('monitor_id', filters.monitorId);
+      if (filters.status) params.set('status', filters.status);
+      params.set('limit', String(filters.limit ?? 25));
+      params.set('offset', String(filters.offset ?? 0));
+      return request<CostMonitorIncidentPage>(`/api/v1/costs/monitor-notifications/incidents?${params.toString()}`);
+    },
+
+    getMonitorIncidentHistory: (id: string) =>
+      request<CostMonitorIncidentHistory>(`/api/v1/costs/monitor-notifications/incidents/${id}/history`),
+
+    acknowledgeMonitorIncident: (id: string, note = '') =>
+      request<CostMonitorIncident>(`/api/v1/costs/monitor-notifications/incidents/${id}/acknowledge`, { method: 'POST', body: { note } }),
+
+    escalateMonitorIncident: (id: string, note = '') =>
+      request<CostMonitorIncident>(`/api/v1/costs/monitor-notifications/incidents/${id}/escalate`, { method: 'POST', body: { note } }),
 
     getByProvider: (provider: string, period?: string) => {
       const params = new URLSearchParams();

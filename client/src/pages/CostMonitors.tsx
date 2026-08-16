@@ -37,6 +37,8 @@ import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { costMonitorStatusStyle, costMonitorTypes, formatCostMonitorMetric } from "@/components/cost/cost-monitor-utils";
+import { CostMonitorIncidents } from "@/components/cost/CostMonitorIncidents";
+import { CostNotificationChannels } from "@/components/cost/CostNotificationChannels";
 
 const emptyMonitor: CostMonitorInput = {
   name: "",
@@ -144,9 +146,13 @@ export default function CostMonitors() {
 
         <Alert>
           <BellRing className="h-4 w-4" />
-          <AlertTitle>Alerts use your existing notification settings</AlertTitle>
-          <AlertDescription>A new warning or critical transition creates an in-app cost alert and flows to configured Slack or email channels. Repeated unchanged evaluations are not re-alerted.</AlertDescription>
+          <AlertTitle>Transition-aware alerts without notification noise</AlertTitle>
+          <AlertDescription>A warning opens one incident, critical severity escalates it, and a healthy evaluation resolves it. Repeated unchanged evaluations do not send duplicate Slack or email messages.</AlertDescription>
         </Alert>
+
+        <CostNotificationChannels />
+
+        <CostMonitorIncidents />
 
         {monitorsQuery.isError && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Cost monitors could not be loaded</AlertTitle><AlertDescription>{monitorsQuery.error instanceof Error ? monitorsQuery.error.message : "Try again."}</AlertDescription></Alert>}
 

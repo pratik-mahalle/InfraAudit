@@ -363,6 +363,81 @@ export interface CostMonitorEvaluationPage {
   total: number;
 }
 
+export type CostNotificationChannelType = 'slack' | 'email';
+
+export interface CostNotificationChannel {
+  channel: CostNotificationChannelType;
+  enabled: boolean;
+  configured: boolean;
+  deliveryReady: boolean;
+  issue?: string;
+  destinationHint?: string;
+  updatedAt?: string;
+}
+
+export interface CostNotificationChannelInput {
+  enabled: boolean;
+  webhookUrl?: string;
+  recipients?: string[];
+}
+
+export interface CostMonitorIncident {
+  id: string;
+  monitorId?: string;
+  monitorName: string;
+  provider: string;
+  cloudAccountId?: string;
+  status: 'open' | 'acknowledged' | 'resolved';
+  severity: 'warning' | 'critical';
+  currentValue: number;
+  threshold: number;
+  currency: string;
+  escalationLevel: number;
+  openedBy: number;
+  acknowledgedBy?: number;
+  resolvedBy?: number;
+  openedAt: string;
+  acknowledgedAt?: string;
+  lastEscalatedAt?: string;
+  resolvedAt?: string;
+  updatedAt: string;
+}
+
+export interface CostMonitorIncidentEvent {
+  id: string;
+  incidentId: string;
+  actorProfileId?: number;
+  eventType: 'opened' | 'acknowledged' | 'escalated' | 'resolved' | 'delivery_skipped';
+  note?: string;
+  createdAt: string;
+}
+
+export interface CostMonitorNotificationDelivery {
+  id: string;
+  incidentId: string;
+  channel: CostNotificationChannelType;
+  trigger: 'opened' | 'escalated' | 'resolved' | 'test';
+  status: 'pending' | 'sent' | 'failed';
+  destinationHint?: string;
+  errorCategory?: string;
+  errorMessage?: string;
+  attemptedAt: string;
+  sentAt?: string;
+}
+
+export interface CostMonitorIncidentPage {
+  incidents: CostMonitorIncident[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface CostMonitorIncidentHistory {
+  incident: CostMonitorIncident;
+  events: CostMonitorIncidentEvent[];
+  deliveries: CostMonitorNotificationDelivery[];
+}
+
 export interface ForecastPoint {
   date: string;
   cost: number;

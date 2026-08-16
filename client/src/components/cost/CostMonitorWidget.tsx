@@ -3,6 +3,7 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { Link } from "wouter";
 import { AlertCircle, ArrowRight, BellRing, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
 import { useCostMonitors } from "@/hooks/use-costs";
+import { useCostNotificationChannels } from "@/hooks/use-cost-notifications";
 import type { CostMonitor, CostMonitorStatus } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ function scopeDescription(provider?: string, accountId?: string) {
 
 export function CostMonitorWidget({ provider, accountId, layout = "compact", className }: CostMonitorWidgetProps) {
   const monitorsQuery = useCostMonitors(100, 0, true);
+  const channelsQuery = useCostNotificationChannels();
   const monitors = useMemo(() => {
     const scoped = (monitorsQuery.data?.monitors ?? []).filter((monitor) => {
       if (provider && monitor.provider !== provider) return false;
@@ -61,6 +63,7 @@ export function CostMonitorWidget({ provider, accountId, layout = "compact", cla
     .map((monitor) => monitor.nextEvaluationAt)
     .filter((value): value is string => Boolean(value))
     .sort()[0];
+  const activeChannels = (channelsQuery.data?.channels ?? []).filter((channel) => channel.enabled && channel.deliveryReady).length;
 
   return (
     <Card className={cn("overflow-hidden", className, attention.length > 0 && "border-amber-500/40")}>
@@ -70,7 +73,9 @@ export function CostMonitorWidget({ provider, accountId, layout = "compact", cla
             <CardTitle className="flex items-center gap-2 text-base">
               <BellRing className="h-4 w-4 text-primary" /> Cost guardrails
             </CardTitle>
-            <CardDescription className="mt-1">{scopeDescription(provider, accountId)} · evaluated after scheduled cost imports</CardDescription>
+            <CardDescription className="mt-1">
+              {scopeDescription(provider, accountId)} · evaluated after scheduled cost imports · {channelsQuery.isError ? "delivery health unavailable" : `${activeChannels} delivery channel${activeChannels === 1 ? "" : "s"} active`}
+            </CardDescription>
           </div>
           <Button asChild variant="outline" size="sm">
             <Link href="/cost-monitors">Manage monitors <ArrowRight className="ml-2 h-3.5 w-3.5" /></Link>
