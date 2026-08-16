@@ -8,6 +8,7 @@ import {
   ScheduledJob, JobExecution, RemediationAction, NotificationPreference,
   Webhook
 } from '@/types';
+import type { CustomDashboard, CustomDashboardInput } from '@/types';
 import { apiRequest, unwrapResponse } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 
@@ -33,6 +34,15 @@ function costMonitorRequest(input: CostMonitorInput) {
     rolling_days: input.rollingDays,
     currency: input.currency,
     enabled: input.enabled,
+  };
+}
+
+function dashboardRequest(input: CustomDashboardInput) {
+  return {
+    name: input.name,
+    description: input.description,
+    is_default: input.isDefault,
+    widgets: input.widgets,
   };
 }
 
@@ -1240,6 +1250,20 @@ export const api = {
       request<{ status: string }>(`/api/v1/costs/optimizations/${id}`, {
         method: 'PATCH', body: { status, notes },
       }),
+  },
+
+  dashboards: {
+    list: () => request<{ dashboards: CustomDashboard[] }>('/api/v1/dashboards'),
+    get: (id: string) => request<CustomDashboard>(`/api/v1/dashboards/${id}`),
+    create: (input: CustomDashboardInput) => request<CustomDashboard>('/api/v1/dashboards', {
+      method: 'POST',
+      body: dashboardRequest(input),
+    }),
+    update: (id: string, input: CustomDashboardInput) => request<CustomDashboard>(`/api/v1/dashboards/${id}`, {
+      method: 'PUT',
+      body: dashboardRequest(input),
+    }),
+    delete: (id: string) => request<{ status: string }>(`/api/v1/dashboards/${id}`, { method: 'DELETE' }),
   },
 
   // ============================================

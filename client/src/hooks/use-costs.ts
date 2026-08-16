@@ -16,10 +16,11 @@ export function useCostAccounts() {
     });
 }
 
-export function useCostExplorer(filters: CostExplorerFilters) {
+export function useCostExplorer(filters: CostExplorerFilters, enabled = true) {
     return useQuery({
         queryKey: ['/api/v1/costs/explorer', filters],
         queryFn: () => api.costs.getExplorer(filters),
+        enabled,
     });
 }
 
