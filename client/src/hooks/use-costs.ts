@@ -23,10 +23,10 @@ export function useCostExplorer(filters: CostExplorerFilters) {
     });
 }
 
-export function useCostMonitors(limit = 25, offset = 0) {
+export function useCostMonitors(limit = 25, offset = 0, enabledOnly = false) {
     return useQuery({
-        queryKey: ['/api/v1/costs/monitors', limit, offset],
-        queryFn: () => api.costs.listMonitors(limit, offset),
+        queryKey: ['/api/v1/costs/monitors', limit, offset, enabledOnly],
+        queryFn: () => api.costs.listMonitors(limit, offset, enabledOnly),
     });
 }
 

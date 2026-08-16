@@ -6,12 +6,25 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  const absoluteAmount = Math.abs(amount);
+  const maximumFractionDigits = absoluteAmount > 0 && absoluteAmount < 1
+    ? 4
+    : absoluteAmount < 100
+      ? 2
+      : 0;
+  if (currency === 'MIX') {
+    return `${new Intl.NumberFormat('en-US', { maximumFractionDigits }).format(amount)} mixed currency`;
+  }
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits,
+    }).format(amount);
+  } catch {
+    return `${currency} ${new Intl.NumberFormat('en-US', { maximumFractionDigits }).format(amount)}`;
+  }
 }
 
 export function formatPercentage(value: number): string {

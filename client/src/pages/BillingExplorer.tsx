@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { format, parseISO, subDays } from "date-fns";
+import { differenceInCalendarDays, format, parseISO, subDays } from "date-fns";
 import {
   AlertCircle,
   ArrowDownRight,
@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Database,
   Download,
+  Info,
   Loader2,
   RefreshCw,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CostMonitorWidget } from "@/components/cost/CostMonitorWidget";
 
 const PAGE_SIZE = 20;
 
@@ -53,6 +55,9 @@ export default function BillingExplorer() {
   const accountsQuery = useCostAccounts();
   const accounts = accountsQuery.data?.accounts ?? [];
   const visibleAccounts = accounts.filter((account) => provider === "all" || account.provider === provider);
+  const selectedAccountProvider = accountId === "all"
+    ? undefined
+    : accounts.find((account) => account.cloudAccountId === accountId)?.provider;
   const filters: CostExplorerFilters = {
     provider: provider === "all" ? undefined : provider,
     accountId: accountId === "all" ? undefined : accountId,
@@ -68,6 +73,9 @@ export default function BillingExplorer() {
   const explorerQuery = useCostExplorer(filters);
   const result = explorerQuery.data;
   const totalPages = Math.max(1, Math.ceil((result?.totalBreakdownRows ?? 0) / PAGE_SIZE));
+  const selectedDayDifference = differenceInCalendarDays(parseISO(endDate), parseISO(startDate));
+  const selectedDays = Number.isFinite(selectedDayDifference) ? Math.max(1, selectedDayDifference + 1) : 1;
+  const averageDailyCost = (result?.totalCost ?? 0) / selectedDays;
   const isStale = result?.latestCostDate
     ? Date.now() - parseISO(result.latestCostDate).getTime() > 72 * 60 * 60 * 1000
     : false;
@@ -100,7 +108,7 @@ export default function BillingExplorer() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Billing Explorer</h1>
-            <p className="text-muted-foreground">Account-scoped, evidence-backed cloud cost history by time and billing dimension.</p>
+            <p className="text-muted-foreground">Investigate imported provider charges by account, date, service, region, or resource.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => explorerQuery.refetch()} disabled={explorerQuery.isFetching}>
@@ -111,6 +119,14 @@ export default function BillingExplorer() {
             </Button>
           </div>
         </div>
+
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>How to read this view</AlertTitle>
+          <AlertDescription>
+            Selected-period and comparison totals come from stored provider billing evidence. The previous period is the immediately preceding window of equal length; forecasts and optimization savings are intentionally excluded from these actual-cost totals.
+          </AlertDescription>
+        </Alert>
 
         <Card>
           <CardHeader>
@@ -193,11 +209,18 @@ export default function BillingExplorer() {
           <Alert><AlertCircle className="h-4 w-4" /><AlertTitle>Imported history is stale</AlertTitle><AlertDescription>The latest cost date is {result?.latestCostDate ? format(parseISO(result.latestCostDate), "PPP") : "unknown"}. Sync costs before making a current-period decision.</AlertDescription></Alert>
         )}
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Card><CardHeader className="pb-2"><CardDescription>Selected period</CardDescription><CardTitle>{explorerQuery.isLoading ? "—" : money(result?.totalCost ?? 0, result?.currency)}</CardTitle></CardHeader><CardContent className="text-xs text-muted-foreground">{startDate} through {endDate}</CardContent></Card>
           <Card><CardHeader className="pb-2"><CardDescription>Previous equal period</CardDescription><CardTitle>{explorerQuery.isLoading ? "—" : money(result?.previousTotalCost ?? 0, result?.currency)}</CardTitle></CardHeader><CardContent className="text-xs text-muted-foreground">Comparable window immediately before selection</CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardDescription>Period change</CardDescription><CardTitle className="flex items-center gap-2">{(result?.changePercent ?? 0) >= 0 ? <ArrowUpRight className="h-5 w-5 text-red-500" /> : <ArrowDownRight className="h-5 w-5 text-emerald-500" />}{explorerQuery.isLoading ? "—" : `${Math.abs(result?.changePercent ?? 0).toFixed(1)}%`}</CardTitle></CardHeader><CardContent className="text-xs text-muted-foreground">Cost basis: {result?.costBasis ?? "unknown"}{result?.isEstimated ? " · provider estimated" : ""}</CardContent></Card>
+          <Card><CardHeader className="pb-2"><CardDescription>Period change</CardDescription><CardTitle className="flex items-center gap-2">{(result?.changePercent ?? 0) > 0 ? <ArrowUpRight className="h-5 w-5 text-red-500" /> : (result?.changePercent ?? 0) < 0 ? <ArrowDownRight className="h-5 w-5 text-emerald-500" /> : null}{explorerQuery.isLoading ? "—" : `${Math.abs(result?.changePercent ?? 0).toFixed(1)}%`}</CardTitle></CardHeader><CardContent className="text-xs text-muted-foreground">Cost basis: {result?.costBasis ?? "unknown"}{result?.isEstimated ? " · provider estimated" : " · provider actual"}</CardContent></Card>
+          <Card><CardHeader className="pb-2"><CardDescription>Average per selected day</CardDescription><CardTitle>{explorerQuery.isLoading ? "—" : money(averageDailyCost, result?.currency)}</CardTitle></CardHeader><CardContent className="text-xs text-muted-foreground">Selected total divided by {selectedDays} calendar day{selectedDays === 1 ? "" : "s"}</CardContent></Card>
         </div>
+
+        <CostMonitorWidget
+          layout="wide"
+          provider={provider === "all" ? selectedAccountProvider : provider}
+          accountId={accountId === "all" ? undefined : accountId}
+        />
 
         <Card>
           <CardHeader><CardTitle className="text-base flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Cost over time</CardTitle><CardDescription>{result?.lastUpdatedAt ? `Imported ${format(parseISO(result.lastUpdatedAt), "PPp")}` : "No import timestamp available"}</CardDescription></CardHeader>

@@ -16,6 +16,7 @@ import {
 import { SecurityDrift, Alert, Recommendation, CostTrend, ComplianceOverview } from "@/types";
 import api, { Finding, FindingSummary, HealthScore, Provider, Resource as ApiResource } from "@/lib/api";
 import { formatResourceType } from "@/lib/resource-display";
+import { CostMonitorWidget } from "@/components/cost/CostMonitorWidget";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1011,6 +1012,8 @@ export default function Dashboard() {
             onViewAll={() => navigate("/drift-detection")}
           />
         </div>
+
+        <CostMonitorWidget layout="wide" className="mb-[var(--ia-gap)]" />
 
         {/* ── Compliance + Findings + Savings ── */}
         <div className="grid grid-cols-1 xl:grid-cols-3" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>

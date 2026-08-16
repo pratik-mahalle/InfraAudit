@@ -5,6 +5,7 @@ import { CostTrendChart } from "@/components/dashboard/CostTrendChart";
 import { CostProviderBreakdown } from "@/components/cost/CostProviderBreakdown";
 import { CostOptimizationsList } from "@/components/cost/CostOptimizationsList";
 import { OptimizationAnalysisHealth } from "@/components/cost/OptimizationAnalysisHealth";
+import { CostMonitorWidget } from "@/components/cost/CostMonitorWidget";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -43,8 +44,11 @@ import {
   Download,
   RefreshCw,
   AlertTriangle,
+  BellRing,
+  CalendarClock,
   Database,
   Info,
+  ReceiptText,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { formatCurrency } from "@/lib/utils";
@@ -62,10 +66,11 @@ import {
   useUpdateCostAnomaly,
   useCostOptimizationAnalysisStatus,
 } from "@/hooks/use-costs";
-import { CostOptimization as CostOptimizationRecord, CostOptimizationFilters, CostSyncSummary } from "@/types";
+import { ChartTimeframe, CostOptimization as CostOptimizationRecord, CostOptimizationFilters, CostSyncSummary } from "@/types";
 
 export default function CostOptimization() {
-  const [timeframeFilter, setTimeframeFilter] = useState<"7d" | "30d" | "90d">("30d");
+  const [trendTimeframe, setTrendTimeframe] = useState<ChartTimeframe>("30d");
+  const [anomalyTimeframe, setAnomalyTimeframe] = useState<ChartTimeframe>("30d");
   const [lastSync, setLastSync] = useState<CostSyncSummary | null>(null);
   const [optimizationPage, setOptimizationPage] = useState(0);
   const [optimizationFilters, setOptimizationFilters] = useState<CostOptimizationFilters>({ provider: "aws" });
@@ -76,7 +81,7 @@ export default function CostOptimization() {
 
   // Fetch real data from backend
   const overviewQuery = useCostOverview();
-  const trendsQuery = useCostTrends("", timeframeFilter);
+  const trendsQuery = useCostTrends("", trendTimeframe);
   const anomaliesQuery = useCostAnomalies();
   const optimizationPageSize = 10;
   const optimizationsQuery = useCostOptimizations({
@@ -98,7 +103,7 @@ export default function CostOptimization() {
 
   const filteredAnomalies = anomalies.filter((anomaly) => {
     const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - Number(timeframeFilter.replace("d", "")));
+    cutoff.setDate(cutoff.getDate() - Number(anomalyTimeframe.replace("d", "")));
     return new Date(anomaly.detectedAt) >= cutoff;
   });
 
@@ -204,9 +209,13 @@ export default function CostOptimization() {
     ? analysisStatusQuery.data.authoritativeSavings
     : (overview?.potentialSavings || 0);
   const savingsCurrency = analysisStatusQuery.data?.currency || overview?.currency || "USD";
-  const projectionChange = currentSpend > 0 ? ((projectedSpend - currentSpend) / currentSpend) * 100 : 0;
+  const costCurrency = overview?.currency || "USD";
 
   const spendChange = overview?.trend?.changePercent || 0;
+  const lastCostDate = overview?.dataStatus?.lastCostDate ? new Date(`${overview.dataStatus.lastCostDate}T00:00:00`) : undefined;
+  const costDataIsStale = lastCostDate ? Date.now() - lastCostDate.getTime() > 72 * 60 * 60 * 1000 : false;
+  const attributedRecords = overview?.dataStatus?.resourceRecords ?? 0;
+  const aggregateRecords = overview?.dataStatus?.aggregateRecords ?? overview?.dataStatus?.recordCount ?? 0;
 
   /*
     The API returns provider-level outcomes because a multi-cloud sync can be
@@ -218,12 +227,12 @@ export default function CostOptimization() {
   const handleExportReport = () => {
     try {
       const rows: string[][] = [
-        ["Cost Optimization Report", `Generated ${new Date().toLocaleString()}`],
+        ["Cost Analysis Report", `Generated ${new Date().toLocaleString()}`],
         [],
         ["Summary"],
-        ["Current Month Spend", formatCurrency(currentSpend)],
-        ["Projected Spend", formatCurrency(projectedSpend)],
-        ["Potential Savings", formatCurrency(potentialSavings, savingsCurrency)],
+        ["Current Month Spend", formatCurrency(currentSpend, costCurrency)],
+        ["Simple Run-rate Projected Month End", formatCurrency(projectedSpend, costCurrency)],
+        ["Authoritative Monthly Savings", formatCurrency(potentialSavings, savingsCurrency)],
         ["Spend Change %", `${spendChange}%`],
         ["Cost Anomalies", String(overview?.anomalyCount || 0)],
         [],
@@ -233,14 +242,14 @@ export default function CostOptimization() {
 
       if (overview?.topServices) {
         for (const svc of overview.topServices) {
-          rows.push([svc.serviceName, svc.provider || '', formatCurrency(svc.cost), `${svc.percentage?.toFixed(1)}%`]);
+          rows.push([svc.serviceName, svc.provider || '', formatCurrency(svc.cost, costCurrency), `${svc.percentage?.toFixed(1)}%`]);
         }
       }
 
       if (optimizations.length > 0) {
         rows.push([], ["Optimization Recommendations"], ["ID", "Title", "Estimated Savings", "Status"]);
         for (const opt of optimizations) {
-          rows.push([opt.id, opt.title, formatCurrency(opt.estimatedSavings), opt.status]);
+          rows.push([opt.id, opt.title, formatCurrency(opt.estimatedSavings, opt.currency || savingsCurrency), opt.status]);
         }
       }
 
@@ -251,8 +260,8 @@ export default function CostOptimization() {
             anomaly.serviceName || '',
             anomaly.provider || '',
             anomaly.severity,
-            formatCurrency(anomaly.expectedCost),
-            formatCurrency(anomaly.actualCost),
+            formatCurrency(anomaly.expectedCost, costCurrency),
+            formatCurrency(anomaly.actualCost, costCurrency),
             `${anomaly.deviation.toFixed(1)}%`,
             anomaly.status,
           ]);
@@ -286,10 +295,12 @@ export default function CostOptimization() {
   return (
     <DashboardLayout>
       <PageHeader
-        title="Cost Optimization"
-        description="Monitor and optimize cloud spending across your infrastructure"
+        title="Cost Analysis"
+        description="Understand actual spend, guardrails, anomalies, and evidence-backed savings without mixing their totals."
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline"><Link href="/billing-explorer"><ReceiptText className="mr-2 h-4 w-4" />Billing Explorer</Link></Button>
+            <Button asChild variant="outline"><Link href="/cost-monitors"><BellRing className="mr-2 h-4 w-4" />Cost monitors</Link></Button>
             {canManageProviders && (
               <Button
                 variant="outline"
@@ -319,6 +330,18 @@ export default function CostOptimization() {
           </div>
         }
       />
+
+      <Card className="mb-6 bg-muted/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">What this page answers</CardTitle>
+          <CardDescription>Each section uses a different evidence set, so actual spend, alerts, forecasts, and savings are labelled separately.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-lg border bg-background p-3"><p className="flex items-center gap-2 text-sm font-semibold"><DollarSign className="h-4 w-4 text-blue-600" />What did we spend?</p><p className="mt-1 text-xs text-muted-foreground">Imported provider billing records, trends, and service/provider breakdowns.</p></div>
+          <div className="rounded-lg border bg-background p-3"><p className="flex items-center gap-2 text-sm font-semibold"><BellRing className="h-4 w-4 text-amber-600" />Are we inside guardrails?</p><p className="mt-1 text-xs text-muted-foreground">Persistent thresholds and anomaly signals evaluated from stored cost history.</p></div>
+          <div className="rounded-lg border bg-background p-3"><p className="flex items-center gap-2 text-sm font-semibold"><TrendingDown className="h-4 w-4 text-emerald-600" />What can we save?</p><p className="mt-1 text-xs text-muted-foreground">Deduplicated provider-native recommendations included in the authoritative savings total.</p></div>
+        </CardContent>
+      </Card>
 
       {overviewQuery.isError && (
         <Card className="mb-6 border-destructive/40">
@@ -359,13 +382,20 @@ export default function CostOptimization() {
       )}
 
       {overview?.dataStatus?.hasData && (
-        <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-          <Info className="h-4 w-4" />
-          Billing data through {overview.dataStatus.lastCostDate ? new Date(`${overview.dataStatus.lastCostDate}T00:00:00`).toLocaleDateString() : "an unknown date"}
-          {overview.dataStatus.lastUpdatedAt && ` · refreshed ${new Date(overview.dataStatus.lastUpdatedAt).toLocaleString()}`}
-          {` · ${overview.dataStatus.recordCount} records`}
-          {` (${overview.dataStatus.aggregateRecords ?? overview.dataStatus.recordCount} aggregate · ${overview.dataStatus.resourceRecords ?? 0} resource-attributed)`}
-        </div>
+        <Card className={`mb-6 ${costDataIsStale ? "border-amber-500/40" : "border-emerald-500/30"}`}>
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><CardTitle className="flex items-center gap-2 text-base"><Info className="h-4 w-4" />Billing evidence coverage</CardTitle><CardDescription className="mt-1">The dates and record types currently supporting charts, breakdowns, anomalies, and monitor evaluations.</CardDescription></div>
+              <Badge variant={costDataIsStale ? "secondary" : "outline"}>{costDataIsStale ? "stale — sync recommended" : "current"}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Billing window</p><p className="mt-1 text-sm font-semibold">{overview.dataStatus.firstCostDate ? new Date(`${overview.dataStatus.firstCostDate}T00:00:00`).toLocaleDateString() : "Unknown"} – {lastCostDate?.toLocaleDateString() ?? "Unknown"}</p></div>
+            <div className="rounded-lg border p-3"><p className="flex items-center gap-1 text-xs text-muted-foreground"><CalendarClock className="h-3.5 w-3.5" />Last imported</p><p className="mt-1 text-sm font-semibold">{overview.dataStatus.lastUpdatedAt ? new Date(overview.dataStatus.lastUpdatedAt).toLocaleString() : "Unknown"}</p></div>
+            <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Aggregate evidence</p><p className="mt-1 text-xl font-semibold">{aggregateRecords.toLocaleString()}</p><p className="text-xs text-muted-foreground">provider/service totals</p></div>
+            <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Resource-attributed evidence</p><p className="mt-1 text-xl font-semibold">{attributedRecords.toLocaleString()}</p><p className="text-xs text-muted-foreground">used only in resource drill-downs</p></div>
+          </CardContent>
+        </Card>
       )}
 
       {syncDiagnostics.length > 0 && (
@@ -398,74 +428,22 @@ export default function CostOptimization() {
         onRetry={() => analysisStatusQuery.refetch()}
       />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-danger bg-opacity-10 p-3 rounded-full">
-                <DollarSign className="h-6 w-6 text-danger" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Current Month Spend</p>
-                <div className="flex items-end gap-2">
-                  <p className="text-2xl font-bold">{formatCurrency(currentSpend)}</p>
-                  {isLoadingOverview && <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>}
-                </div>
-              </div>
-            </div>
-            <div className={`${spendChange >= 0 ? 'text-danger' : 'text-green-500'} flex items-center`}>
-              {spendChange >= 0 ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
-              <span>{Math.abs(spendChange)}%</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-warning bg-opacity-10 p-3 rounded-full">
-                <AlertCircle className="h-6 w-6 text-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Cost Anomalies</p>
-                <p className="text-2xl font-bold">{overview?.anomalyCount || 0}</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400">Last 30 days</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-secondary bg-opacity-10 p-3 rounded-full">
-                <TrendingDown className="h-6 w-6 text-secondary" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Potential Savings</p>
-                <p className="text-2xl font-bold">{formatCurrency(potentialSavings, savingsCurrency)}</p>
-              </div>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400">{optimizationTotal} recommendations</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card><CardHeader className="pb-2"><CardDescription>Current month actual</CardDescription><CardTitle>{isLoadingOverview ? "—" : formatCurrency(currentSpend, costCurrency)}</CardTitle></CardHeader><CardContent><p className={`flex items-center text-xs ${spendChange > 0 ? "text-red-600" : spendChange < 0 ? "text-emerald-600" : "text-muted-foreground"}`}>{spendChange > 0 ? <ArrowUpRight className="mr-1 h-3.5 w-3.5" /> : spendChange < 0 ? <TrendingDown className="mr-1 h-3.5 w-3.5" /> : null}{spendChange === 0 ? "No change" : `${Math.abs(spendChange).toFixed(1)}%`} vs previous comparable period</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Projected month end</CardDescription><CardTitle>{isLoadingOverview || projectedSpend <= 0 ? "Not available" : formatCurrency(projectedSpend, costCurrency)}</CardTitle></CardHeader><CardContent><p className="text-xs text-muted-foreground">Simple run-rate: month-to-date daily average × {daysInMonth} days; not a provider invoice.</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Open anomaly signals</CardDescription><CardTitle>{overview?.anomalyCount ?? 0}</CardTitle></CardHeader><CardContent><p className="text-xs text-muted-foreground">Unexpected patterns detected from imported history; not threshold monitors.</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Authoritative monthly savings</CardDescription><CardTitle>{formatCurrency(potentialSavings, savingsCurrency)}</CardTitle></CardHeader><CardContent><p className="text-xs text-muted-foreground">{optimizationTotal} recommendation{optimizationTotal === 1 ? "" : "s"}; only items included in the deduplicated total.</p></CardContent></Card>
       </div>
+
+      <CostMonitorWidget layout="wide" className="mb-6" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Cost Trend Chart */}
         <div className="lg:col-span-2">
           <CostTrendChart
-            currentSpend={currentSpend}
-            projectedSpend={projectedSpend}
-            potentialSavings={potentialSavings}
-            optimizationCount={optimizationTotal}
-            spendChange={spendChange}
-            projectionChange={projectionChange}
+            timeframe={trendTimeframe}
+            onTimeframeChange={setTrendTimeframe}
+            currency={costCurrency}
             isLoading={isLoadingOverview}
             trendDataPoints={trends?.dataPoints}
           />
@@ -476,6 +454,7 @@ export default function CostOptimization() {
           <CostProviderBreakdown
             data={overview?.byProvider || {}}
             totalCost={overview?.totalCost || 0}
+            currency={costCurrency}
           />
         </div>
       </div>
@@ -525,8 +504,8 @@ export default function CostOptimization() {
             <CardContent>
               <div className="flex justify-end mb-4">
                 <Select
-                  value={timeframeFilter}
-                  onValueChange={(v) => setTimeframeFilter(v as any)}
+                  value={anomalyTimeframe}
+                  onValueChange={(value) => setAnomalyTimeframe(value as ChartTimeframe)}
                 >
                   <SelectTrigger className="w-[160px]">
                     <SelectValue placeholder="Last 30 days" />
@@ -590,8 +569,8 @@ export default function CostOptimization() {
                             {anomaly.deviation.toFixed(1)}%
                           </div>
                         </TableCell>
-                        <TableCell>{formatCurrency(anomaly.expectedCost)}</TableCell>
-                        <TableCell>{formatCurrency(anomaly.actualCost)}</TableCell>
+                        <TableCell>{formatCurrency(anomaly.expectedCost, costCurrency)}</TableCell>
+                        <TableCell>{formatCurrency(anomaly.actualCost, costCurrency)}</TableCell>
                         <TableCell>{new Date(anomaly.detectedAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 text-xs font-medium rounded-full bg-opacity-10 ${anomaly.status === "open" ? "bg-warning text-warning" : "bg-green-500 text-green-700"
@@ -650,7 +629,7 @@ export default function CostOptimization() {
                     <TableRow key={i}>
                       <TableCell className="font-medium">{service.serviceName}</TableCell>
                       <TableCell>{service.provider}</TableCell>
-                      <TableCell>{formatCurrency(service.cost)}</TableCell>
+                      <TableCell>{formatCurrency(service.cost, costCurrency)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-2 bg-secondary/20 rounded-full overflow-hidden">
