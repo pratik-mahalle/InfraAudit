@@ -1,10 +1,9 @@
-name: Frontend
+name: Frontend (manual fallback)
 
+# Automatic pull-request validation and main deployments run in AWS CodeBuild.
+# Keep this workflow dispatch-only as an emergency fallback while GitHub-hosted
+# runner capacity is unavailable.
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -38,7 +37,6 @@ jobs:
       - run: bash deploy/deploy-frontend_test.sh
 
   deploy:
-    if: github.event_name != 'pull_request'
     needs: validate
     runs-on: ubuntu-latest
     concurrency:

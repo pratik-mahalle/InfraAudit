@@ -1,0 +1,317 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Temporary InfraAudit frontend CodeBuild CI/CD while GitHub-hosted runners are unavailable.
+
+Parameters:
+  GitHubConnectionArn:
+    Type: String
+    Description: Existing AVAILABLE AWS CodeConnections GitHub connection ARN.
+  GitHubRepository:
+    Type: String
+    Default: https://github.com/pratik-mahalle/InfraAudit.git
+  FrontendBuildSecretName:
+    Type: String
+    Default: infraudit/production/frontend-build
+  FrontendBuildSecretArn:
+    Type: String
+  ExpiresOn:
+    Type: String
+    Default: "2026-09-03"
+  EcrRepository:
+    Type: String
+    Default: infraudit-production-frontend
+  EcsCluster:
+    Type: String
+    Default: infraudit-production
+  EcsService:
+    Type: String
+    Default: frontend
+  EcsExecutionRoleName:
+    Type: String
+    Default: infraudit-production-ecs-execution
+  EcsTaskRoleName:
+    Type: String
+    Default: infraudit-production-frontend-task
+  ApplicationHealthUrl:
+    Type: String
+    Default: https://infraudit.com/
+
+Resources:
+  PullRequestLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/codebuild/infraudit-production-frontend-pr-validation
+      RetentionInDays: 30
+      Tags:
+        - Key: Purpose
+          Value: Temporary frontend CI/CD
+        - Key: ExpiresOn
+          Value: !Ref ExpiresOn
+
+  MainDeployLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/codebuild/infraudit-production-frontend-main-deploy
+      RetentionInDays: 30
+      Tags:
+        - Key: Purpose
+          Value: Temporary frontend CI/CD
+        - Key: ExpiresOn
+          Value: !Ref ExpiresOn
+
+  PullRequestRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: infraudit-production-frontend-pr-validation
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: frontend-pr-validation
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: WriteBuildLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "${PullRequestLogGroup.Arn}:*"
+              - Sid: UseGitHubConnection
+                Effect: Allow
+                Action:
+                  - codeconnections:GetConnection
+                  - codeconnections:GetConnectionToken
+                  - codeconnections:UseConnection
+                Resource: !Ref GitHubConnectionArn
+              - Sid: ReadFrontendBuildConfiguration
+                Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref FrontendBuildSecretArn
+      Tags:
+        - Key: Purpose
+          Value: Temporary frontend CI/CD
+        - Key: ExpiresOn
+          Value: !Ref ExpiresOn
+
+  MainDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: infraudit-production-frontend-main-deploy
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: frontend-main-deploy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: WriteBuildLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "${MainDeployLogGroup.Arn}:*"
+              - Sid: UseGitHubConnection
+                Effect: Allow
+                Action:
+                  - codeconnections:GetConnection
+                  - codeconnections:GetConnectionToken
+                  - codeconnections:UseConnection
+                Resource: !Ref GitHubConnectionArn
+              - Sid: ReadFrontendBuildConfiguration
+                Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref FrontendBuildSecretArn
+              - Sid: AuthenticateToEcr
+                Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: "*"
+              - Sid: PushFrontendImage
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:CompleteLayerUpload
+                  - ecr:DescribeImages
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: !Sub "arn:${AWS::Partition}:ecr:${AWS::Region}:${AWS::AccountId}:repository/${EcrRepository}"
+              - Sid: DeployFrontendService
+                Effect: Allow
+                Action:
+                  - ecs:DescribeServices
+                  - ecs:UpdateService
+                Resource: !Sub "arn:${AWS::Partition}:ecs:${AWS::Region}:${AWS::AccountId}:service/${EcsCluster}/${EcsService}"
+              - Sid: RegisterAndVerifyFrontendTask
+                Effect: Allow
+                Action:
+                  - ecs:DescribeTaskDefinition
+                  - ecs:RegisterTaskDefinition
+                Resource: "*"
+              - Sid: PassFrontendTaskRoles
+                Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${EcsExecutionRoleName}"
+                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${EcsTaskRoleName}"
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: ecs-tasks.amazonaws.com
+      Tags:
+        - Key: Purpose
+          Value: Temporary frontend CI/CD
+        - Key: ExpiresOn
+          Value: !Ref ExpiresOn
+
+  PullRequestProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: infraudit-production-frontend-pr-validation
+      Description: !Sub "Temporary InfraAudit frontend PR validation until ${ExpiresOn}"
+      ServiceRole: !GetAtt PullRequestRole.Arn
+      TimeoutInMinutes: 30
+      QueuedTimeoutInMinutes: 30
+      ConcurrentBuildLimit: 1
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Cache:
+        Type: LOCAL
+        Modes:
+          - LOCAL_CUSTOM_CACHE
+      Environment:
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/standard:8.0
+        Type: LINUX_CONTAINER
+        ImagePullCredentialsType: CODEBUILD
+        PrivilegedMode: false
+        EnvironmentVariables:
+          - Name: VITE_API_BASE_URL
+            Type: PLAINTEXT
+            Value: ""
+          - Name: VITE_OAUTH_BACKEND_BASE
+            Type: PLAINTEXT
+            Value: ""
+          - Name: VITE_SUPABASE_URL
+            Type: SECRETS_MANAGER
+            Value: !Sub "${FrontendBuildSecretName}:VITE_SUPABASE_URL"
+          - Name: VITE_SUPABASE_ANON_KEY
+            Type: SECRETS_MANAGER
+            Value: !Sub "${FrontendBuildSecretName}:VITE_SUPABASE_ANON_KEY"
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Ref PullRequestLogGroup
+          StreamName: pull-request
+        S3Logs:
+          Status: DISABLED
+      Source:
+        Type: GITHUB
+        Location: !Ref GitHubRepository
+        BuildSpec: buildspec.codebuild-pr.yml
+        GitCloneDepth: 1
+        ReportBuildStatus: true
+        Auth:
+          Type: CODECONNECTIONS
+          Resource: !Ref GitHubConnectionArn
+        BuildStatusConfig:
+          Context: InfraAudit CodeBuild / frontend PR validation
+      SourceVersion: refs/heads/main
+      Tags:
+        - Key: Purpose
+          Value: Temporary frontend CI/CD
+        - Key: ExpiresOn
+          Value: !Ref ExpiresOn
+
+  MainDeployProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: infraudit-production-frontend-main-deploy
+      Description: !Sub "Temporary InfraAudit frontend production deploy until ${ExpiresOn}"
+      ServiceRole: !GetAtt MainDeployRole.Arn
+      TimeoutInMinutes: 60
+      QueuedTimeoutInMinutes: 30
+      ConcurrentBuildLimit: 1
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Cache:
+        Type: LOCAL
+        Modes:
+          - LOCAL_DOCKER_LAYER_CACHE
+          - LOCAL_CUSTOM_CACHE
+      Environment:
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/standard:8.0
+        Type: LINUX_CONTAINER
+        ImagePullCredentialsType: CODEBUILD
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: AWS_ACCOUNT_ID
+            Type: PLAINTEXT
+            Value: !Ref AWS::AccountId
+          - Name: AWS_REGION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Region
+          - Name: ECR_REPOSITORY
+            Type: PLAINTEXT
+            Value: !Ref EcrRepository
+          - Name: ECS_CLUSTER
+            Type: PLAINTEXT
+            Value: !Ref EcsCluster
+          - Name: ECS_SERVICE
+            Type: PLAINTEXT
+            Value: !Ref EcsService
+          - Name: APPLICATION_HEALTH_URL
+            Type: PLAINTEXT
+            Value: !Ref ApplicationHealthUrl
+          - Name: VITE_API_BASE_URL
+            Type: PLAINTEXT
+            Value: ""
+          - Name: VITE_OAUTH_BACKEND_BASE
+            Type: PLAINTEXT
+            Value: ""
+          - Name: VITE_SUPABASE_URL
+            Type: SECRETS_MANAGER
+            Value: !Sub "${FrontendBuildSecretName}:VITE_SUPABASE_URL"
+          - Name: VITE_SUPABASE_ANON_KEY
+            Type: SECRETS_MANAGER
+            Value: !Sub "${FrontendBuildSecretName}:VITE_SUPABASE_ANON_KEY"
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Ref MainDeployLogGroup
+          StreamName: main
+        S3Logs:
+          Status: DISABLED
+      Source:
+        Type: GITHUB
+        Location: !Ref GitHubRepository
+        BuildSpec: buildspec.codebuild-deploy.yml
+        GitCloneDepth: 1
+        ReportBuildStatus: true
+        Auth:
+          Type: CODECONNECTIONS
+          Resource: !Ref GitHubConnectionArn
+        BuildStatusConfig:
+          Context: InfraAudit CodeBuild / frontend production deploy
+      SourceVersion: refs/heads/main
+      Tags:
+        - Key: Purpose
+          Value: Temporary frontend CI/CD
+        - Key: ExpiresOn
+          Value: !Ref ExpiresOn
+
+Outputs:
+  PullRequestProjectName:
+    Value: !Ref PullRequestProject
+  MainDeployProjectName:
+    Value: !Ref MainDeployProject
