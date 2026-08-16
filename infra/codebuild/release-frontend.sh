@@ -5,19 +5,10 @@ aws_region="${AWS_REGION:-us-east-1}"
 aws_account_id="${AWS_ACCOUNT_ID:?AWS_ACCOUNT_ID is required}"
 ecr_repository="${ECR_REPOSITORY:?ECR_REPOSITORY is required}"
 source_revision="${CODEBUILD_RESOLVED_SOURCE_VERSION:-}"
-webhook_event="${CODEBUILD_WEBHOOK_EVENT:-}"
-webhook_head_ref="${CODEBUILD_WEBHOOK_HEAD_REF:-}"
 application_health_url="${APPLICATION_HEALTH_URL:-https://infraudit.com/}"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [[ "${webhook_event}" == "PUSH" && "${webhook_head_ref}" == "refs/heads/main" ]]; then
-  echo "Authorized production frontend release from a push to main."
-elif [[ "${ALLOW_MANUAL_PRODUCTION_DEPLOY:-false}" == "true" && "${CODEBUILD_SOURCE_VERSION:-}" == "refs/heads/main" ]]; then
-  echo "Authorized explicitly requested manual frontend release from main."
-else
-  echo "Refusing frontend production release outside a push to refs/heads/main." >&2
-  echo "For a deliberate manual main rebuild, set ALLOW_MANUAL_PRODUCTION_DEPLOY=true for that build." >&2
-  exit 1
-fi
+"${script_dir}/authorize-frontend-release.sh"
 
 if [[ ! "${source_revision}" =~ ^[0-9a-f]{40}$ ]]; then
   echo "Refusing to release without an exact 40-character Git commit SHA." >&2
