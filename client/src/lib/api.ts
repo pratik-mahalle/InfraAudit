@@ -1,5 +1,6 @@
 import {
   CostOverview, CostTrend, CostForecast, CostAnomalyPage, CostOptimizationPage, CostSyncSummary, OptimizationAnalysis, OptimizationAnalysisStatus, CostOptimizationFilters,
+  CostAccount, CostExplorerFilters, CostExplorerResult, CostMonitor, CostMonitorInput, CostMonitorPage, CostMonitorEvaluation, CostMonitorEvaluationPage,
   AIForecastResult, ROIData,
   ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, ComplianceAssessmentDetail, AssessmentFinding,
   ResourceComplianceStatus,
@@ -17,6 +18,22 @@ type RequestOptions = {
   headers?: Record<string, string>;
   params?: Record<string, string | number | undefined>;
 };
+
+function costMonitorRequest(input: CostMonitorInput) {
+  return {
+    name: input.name,
+    provider: input.provider,
+    cloud_account_id: input.cloudAccountId,
+    service_name: input.serviceName,
+    region: input.region,
+    monitor_type: input.monitorType,
+    threshold: input.threshold,
+    warning_percent: input.warningPercent,
+    rolling_days: input.rollingDays,
+    currency: input.currency,
+    enabled: input.enabled,
+  };
+}
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {}, params } = options;
@@ -1064,6 +1081,43 @@ export const api = {
   // ============================================
   costs: {
     getOverview: () => request<CostOverview>('/api/v1/costs'),
+
+    listAccounts: () => request<{ accounts: CostAccount[] }>('/api/v1/costs/accounts'),
+
+    getExplorer: (filters: CostExplorerFilters) => {
+      const params = new URLSearchParams();
+      if (filters.provider) params.set('provider', filters.provider);
+      if (filters.accountId) params.set('account_id', filters.accountId);
+      if (filters.service) params.set('service', filters.service);
+      if (filters.region) params.set('region', filters.region);
+      params.set('start_date', filters.startDate);
+      params.set('end_date', filters.endDate);
+      params.set('granularity', filters.granularity);
+      params.set('group_by', filters.groupBy);
+      if (filters.limit) params.set('limit', filters.limit.toString());
+      if (filters.offset) params.set('offset', filters.offset.toString());
+      return request<CostExplorerResult>(`/api/v1/costs/explorer?${params.toString()}`);
+    },
+
+    listMonitors: (limit = 25, offset = 0) =>
+      request<CostMonitorPage>(`/api/v1/costs/monitors?limit=${limit}&offset=${offset}`),
+
+    getMonitor: (id: string) => request<CostMonitor>(`/api/v1/costs/monitors/${id}`),
+
+    createMonitor: (input: CostMonitorInput) =>
+      request<CostMonitor>('/api/v1/costs/monitors', { method: 'POST', body: costMonitorRequest(input) }),
+
+    updateMonitor: (id: string, input: CostMonitorInput) =>
+      request<CostMonitor>(`/api/v1/costs/monitors/${id}`, { method: 'PUT', body: costMonitorRequest(input) }),
+
+    deleteMonitor: (id: string) =>
+      request<{ status: string }>(`/api/v1/costs/monitors/${id}`, { method: 'DELETE' }),
+
+    evaluateMonitor: (id: string) =>
+      request<CostMonitorEvaluation>(`/api/v1/costs/monitors/${id}/evaluate`, { method: 'POST' }),
+
+    listMonitorEvaluations: (id: string, limit = 25, offset = 0) =>
+      request<CostMonitorEvaluationPage>(`/api/v1/costs/monitors/${id}/evaluations?limit=${limit}&offset=${offset}`),
 
     getByProvider: (provider: string, period?: string) => {
       const params = new URLSearchParams();

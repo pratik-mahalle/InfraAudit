@@ -250,6 +250,119 @@ export interface CostTrend {
   dataPoints: { date: string; cost: number }[];
 }
 
+export interface CostAccount {
+  provider: 'aws' | 'gcp' | 'azure';
+  cloudAccountId: string;
+  connected: boolean;
+  recordCount: number;
+  currency: string;
+  firstCostDate?: string;
+  lastCostDate?: string;
+  lastUpdatedAt?: string;
+}
+
+export interface CostExplorerFilters {
+  provider?: string;
+  accountId?: string;
+  service?: string;
+  region?: string;
+  startDate: string;
+  endDate: string;
+  granularity: 'daily' | 'monthly';
+  groupBy: 'service' | 'region' | 'resource';
+  limit?: number;
+  offset?: number;
+}
+
+export interface CostExplorerSeriesPoint {
+  period: string;
+  cost: number;
+}
+
+export interface CostExplorerBreakdown {
+  key: string;
+  provider: string;
+  cloudAccountId: string;
+  cost: number;
+  currency: string;
+}
+
+export interface CostExplorerResult {
+  totalCost: number;
+  previousTotalCost: number;
+  changePercent: number;
+  currency: string;
+  costBasis: string;
+  startDate: string;
+  endDate: string;
+  granularity: 'daily' | 'monthly';
+  groupBy: 'service' | 'region' | 'resource';
+  isEstimated: boolean;
+  latestCostDate?: string;
+  lastUpdatedAt?: string;
+  series: CostExplorerSeriesPoint[];
+  breakdown: CostExplorerBreakdown[];
+  totalBreakdownRows: number;
+  limit: number;
+  offset: number;
+}
+
+export type CostMonitorType = 'monthly_budget' | 'daily_spend' | 'rolling_spend' | 'monthly_forecast' | 'month_over_month';
+export type CostMonitorStatus = 'pending' | 'healthy' | 'warning' | 'critical' | 'stale' | 'error';
+
+export interface CostMonitorInput {
+  name: string;
+  provider: 'aws' | 'gcp' | 'azure';
+  cloudAccountId?: string;
+  serviceName?: string;
+  region?: string;
+  monitorType: CostMonitorType;
+  threshold: number;
+  warningPercent: number;
+  rollingDays: number;
+  currency: string;
+  enabled?: boolean;
+}
+
+export interface CostMonitor extends CostMonitorInput {
+  id: string;
+  userId: number;
+  organizationId: number;
+  enabled: boolean;
+  status: CostMonitorStatus;
+  latestValue: number;
+  comparisonValue: number;
+  lastEvaluatedAt?: string;
+  nextEvaluationAt?: string;
+  lastError?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CostMonitorEvaluation {
+  id: string;
+  monitorId: string;
+  status: Exclude<CostMonitorStatus, 'pending'>;
+  value: number;
+  threshold: number;
+  comparisonValue: number;
+  periodStart: string;
+  periodEnd: string;
+  latestCostDate?: string;
+  evidence: Record<string, unknown>;
+  evaluatedAt: string;
+}
+
+export interface CostMonitorPage {
+  monitors: CostMonitor[];
+  total: number;
+}
+
+export interface CostMonitorEvaluationPage {
+  evaluations: CostMonitorEvaluation[];
+  total: number;
+}
+
 export interface ForecastPoint {
   date: string;
   cost: number;

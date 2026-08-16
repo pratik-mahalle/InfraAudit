@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Server, AlertTriangle, Eye, BarChart3, TrendingUp,
   DollarSign, Calculator, Shield, FileCheck, Lock, Cloud, Cpu, FileCode,
   Blocks, Zap, Target, Sparkles, FileText, CreditCard, User, Settings,
-  Search, HelpCircle, Fingerprint,
+  Search, HelpCircle, Fingerprint, BellRing, ReceiptText,
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -19,6 +19,8 @@ const navItems = [
   { label: "Alerts", href: "/alerts", icon: AlertTriangle, group: "Monitor" },
   { label: "Drift Detection", href: "/drift-detection", icon: Eye, group: "Monitor" },
   { label: "Cost Analysis", href: "/cost", icon: BarChart3, group: "Cost" },
+  { label: "Billing Explorer", href: "/billing-explorer", icon: ReceiptText, group: "Cost" },
+  { label: "Cost Monitor", href: "/cost-monitors", icon: BellRing, group: "Cost" },
   { label: "Predictions", href: "/cost-prediction", icon: TrendingUp, group: "Cost" },
   { label: "Billing Import", href: "/billing-import", icon: DollarSign, group: "Cost" },
   { label: "ROI Calculator", href: "/roi-calculator", icon: Calculator, group: "Cost" },

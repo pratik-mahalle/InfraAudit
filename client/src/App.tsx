@@ -40,6 +40,8 @@ import Recommendations from "@/pages/Recommendations";
 import DriftDetectionPage from "@/pages/DriftDetection";
 import FindingDetail from "@/pages/FindingDetail";
 import BillingImport from "@/pages/BillingImport";
+import BillingExplorer from "@/pages/BillingExplorer";
+import CostMonitors from "@/pages/CostMonitors";
 import IaCManagement from "@/pages/IaCManagement";
 import Alerts from "@/pages/Alerts";
 import Reports from "@/pages/Reports";
@@ -59,6 +61,8 @@ const PROTECTED_ROUTES = [
   "/findings",
   "/cost",
   "/cost-prediction",
+  "/billing-explorer",
+  "/cost-monitors",
   "/resources",
   "/settings",
   "/profile",
@@ -137,6 +141,12 @@ function Router() {
             </ProtectedRoute>
             <ProtectedRoute path="/cost">
               <WithTrialCheck><CostOptimization /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/billing-explorer">
+              <WithTrialCheck><BillingExplorer /></WithTrialCheck>
+            </ProtectedRoute>
+            <ProtectedRoute path="/cost-monitors">
+              <WithTrialCheck><CostMonitors /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/cost-prediction">
               <WithTrialCheck><CostPrediction /></WithTrialCheck>

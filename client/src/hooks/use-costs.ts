@@ -1,11 +1,75 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { CostOptimizationFilters } from '@/types';
+import type { CostExplorerFilters, CostMonitorInput, CostOptimizationFilters } from '@/types';
 
 export function useCostOverview() {
     return useQuery({
         queryKey: ['/api/v1/costs'],
         queryFn: () => api.costs.getOverview(),
+    });
+}
+
+export function useCostAccounts() {
+    return useQuery({
+        queryKey: ['/api/v1/costs/accounts'],
+        queryFn: () => api.costs.listAccounts(),
+    });
+}
+
+export function useCostExplorer(filters: CostExplorerFilters) {
+    return useQuery({
+        queryKey: ['/api/v1/costs/explorer', filters],
+        queryFn: () => api.costs.getExplorer(filters),
+    });
+}
+
+export function useCostMonitors(limit = 25, offset = 0) {
+    return useQuery({
+        queryKey: ['/api/v1/costs/monitors', limit, offset],
+        queryFn: () => api.costs.listMonitors(limit, offset),
+    });
+}
+
+export function useCostMonitorEvaluations(id?: string, limit = 25, offset = 0) {
+    return useQuery({
+        queryKey: ['/api/v1/costs/monitors/evaluations', id, limit, offset],
+        queryFn: () => api.costs.listMonitorEvaluations(id!, limit, offset),
+        enabled: !!id,
+    });
+}
+
+export function useCreateCostMonitor() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (input: CostMonitorInput) => api.costs.createMonitor(input),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/monitors'] }),
+    });
+}
+
+export function useUpdateCostMonitor() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, input }: { id: string; input: CostMonitorInput }) => api.costs.updateMonitor(id, input),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/monitors'] }),
+    });
+}
+
+export function useDeleteCostMonitor() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => api.costs.deleteMonitor(id),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/monitors'] }),
+    });
+}
+
+export function useEvaluateCostMonitor() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => api.costs.evaluateMonitor(id),
+        onSuccess: (_data, id) => {
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/monitors'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/v1/costs/monitors/evaluations', id] });
+        },
     });
 }
 
