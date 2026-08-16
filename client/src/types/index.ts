@@ -307,6 +307,55 @@ export interface CostExplorerResult {
   offset: number;
 }
 
+export type DashboardWidgetType =
+  | 'kpis'
+  | 'inventory'
+  | 'cost_explorer'
+  | 'drift_feed'
+  | 'cost_monitors'
+  | 'compliance'
+  | 'findings'
+  | 'savings'
+  | 'drift_table';
+
+export type DashboardWidgetWidth = 'full' | 'half' | 'third';
+export type CostChartType = 'area' | 'line' | 'bar';
+
+export interface DashboardWidget {
+  id: string;
+  type: DashboardWidgetType;
+  title?: string;
+  position: number;
+  width: DashboardWidgetWidth;
+  visible: boolean;
+  config?: {
+    chartType?: CostChartType;
+    timeframe?: '7d' | '30d' | '90d' | 'current_month';
+    groupBy?: 'service' | 'region' | 'resource';
+    provider?: 'all' | 'aws' | 'gcp' | 'azure';
+    accountId?: string;
+  };
+}
+
+export interface CustomDashboard {
+  id: string;
+  name: string;
+  description?: string;
+  isDefault: boolean;
+  widgets: DashboardWidget[];
+  createdBy: number;
+  updatedBy: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomDashboardInput {
+  name: string;
+  description?: string;
+  isDefault: boolean;
+  widgets: DashboardWidget[];
+}
+
 export type CostMonitorType = 'monthly_budget' | 'daily_spend' | 'rolling_spend' | 'monthly_forecast' | 'month_over_month';
 export type CostMonitorStatus = 'pending' | 'healthy' | 'warning' | 'critical' | 'stale' | 'error';
 

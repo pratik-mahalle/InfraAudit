@@ -1,45 +1,53 @@
 import { toast as sonnerToast } from "sonner";
 
-interface ToastOptions {
+export interface ToastOptions {
   title?: string;
   description?: string;
-  variant?: "default" | "destructive";
+  variant?: "default" | "destructive" | "success" | "warning" | "info";
   duration?: number;
-  action?: any;
-  [key: string]: any;
+  action?: { label: string; onClick: () => void };
 }
 
-function toast(opts: ToastOptions) {
-  const id = String(Date.now());
+let toastSequence = 0;
 
-  if (opts.variant === "destructive") {
-    sonnerToast.error(opts.title || "Error", {
-      id,
-      description: opts.description,
-      duration: opts.duration,
-    });
-  } else {
-    sonnerToast(opts.title || "", {
-      id,
-      description: opts.description,
-      duration: opts.duration,
-    });
-  }
+function toast(opts: ToastOptions) {
+  const id = `${Date.now()}-${toastSequence++}`;
+  showToast(id, opts);
 
   return {
     id,
     dismiss: () => sonnerToast.dismiss(id),
     update: (newOpts: Partial<ToastOptions>) => {
-      const variant = newOpts.variant ?? opts.variant;
-      const title = newOpts.title || opts.title || "";
-      const description = newOpts.description || opts.description;
-      if (variant === "destructive") {
-        sonnerToast.error(title, { id, description });
-      } else {
-        sonnerToast(title, { id, description });
-      }
+      opts = { ...opts, ...newOpts };
+      showToast(id, opts);
     },
   };
+}
+
+function showToast(id: string, opts: ToastOptions) {
+  const title = opts.title || (opts.variant === "destructive" ? "Something went wrong" : "Notification");
+  const options = {
+    id,
+    description: opts.description,
+    duration: opts.duration,
+    action: opts.action,
+  };
+  switch (opts.variant) {
+    case "destructive":
+      sonnerToast.error(title, options);
+      break;
+    case "success":
+      sonnerToast.success(title, options);
+      break;
+    case "warning":
+      sonnerToast.warning(title, options);
+      break;
+    case "info":
+      sonnerToast.info(title, options);
+      break;
+    default:
+      sonnerToast(title, options);
+  }
 }
 
 function useToast() {

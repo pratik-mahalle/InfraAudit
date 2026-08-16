@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -7,16 +7,24 @@ import { DashboardLayout } from "@/layouts/DashboardLayout";
 import "@/components/dashboard/dashboard.css";
 
 import {
-  Shield, DollarSign, TrendingUp, Server, Bell, AlertTriangle,
+  Shield, DollarSign, Server, Bell, AlertTriangle,
   RefreshCw, FileText, Zap, CheckCircle2, CloudIcon, Plus,
   Loader2, ArrowRight, ChevronDown, Filter, X, Check,
   Network,
   MapPin, Layers3, Fingerprint,
 } from "lucide-react";
-import { SecurityDrift, Alert, Recommendation, CostTrend, ComplianceOverview } from "@/types";
+import { SecurityDrift, Alert, Recommendation, ComplianceOverview } from "@/types";
 import api, { Finding, FindingSummary, HealthScore, Provider, Resource as ApiResource } from "@/lib/api";
 import { formatResourceType } from "@/lib/resource-display";
 import { CostMonitorWidget } from "@/components/cost/CostMonitorWidget";
+import { DashboardCostExplorerWidget } from "@/components/dashboard/DashboardCostExplorerWidget";
+import { DashboardCustomizer } from "@/components/dashboard/DashboardCustomizer";
+import { cloneDashboardWidgets, dashboardWidgetsForTemplate, widgetLabel, type DashboardTemplate } from "@/components/dashboard/dashboard-config";
+import { useCreateDashboard, useDashboards, useDeleteDashboard, useUpdateDashboard } from "@/hooks/use-dashboards";
+import { usePermission } from "@/hooks/use-permission";
+import type { CustomDashboard, DashboardWidget } from "@/types";
+
+const EMPTY_DASHBOARDS: CustomDashboard[] = [];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -142,72 +150,6 @@ function KpiCard({ k }: { k: KpiDef }) {
         </>
       )}
       {k.spark && <Spark data={k.spark} color={tc || "var(--ia-ink-faint)"} />}
-    </div>
-  );
-}
-
-// ─── Cost Trend Chart ─────────────────────────────────────────────────────────
-
-function CostTrendCard({ costData }: { costData?: CostTrend }) {
-  const data = costData?.dataPoints.map((point) => point.cost) ?? [];
-
-  if (data.length < 2) {
-    return (
-      <div className="ia-card" style={{ display: "flex", flexDirection: "column" }}>
-        <div className="ia-card-head">
-          <div className="ia-card-title"><TrendingUp size={15} /> Cost Trend <span className="ia-eyebrow">last 30 days</span></div>
-        </div>
-        <div style={{ padding: "48px 18px", textAlign: "center", color: "var(--ia-ink-faint)", fontSize: 13 }}>
-          No cloud cost history has been imported yet.
-        </div>
-      </div>
-    );
-  }
-
-  const mtd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
-    .format(costData?.currentCost ?? 0);
-
-  const W = 640, H = 200, padL = 8, padR = 8, padT = 14, padB = 22;
-  const min = Math.min(...data) * 0.94, max = Math.max(...data) * 1.04, rng = max - min || 1;
-  const x = (i: number) => padL + (i / (data.length - 1)) * (W - padL - padR);
-  const y = (v: number) => padT + (1 - (v - min) / rng) * (H - padT - padB);
-  const line = data.map((d: number, i: number) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(d).toFixed(1)).join(" ");
-  const area = line + ` L${x(data.length-1)} ${H-padB} L${padL} ${H-padB} Z`;
-  const labels = ["30d ago", "20d", "10d", "Today"];
-
-  return (
-    <div className="ia-card" style={{ display: "flex", flexDirection: "column" }}>
-      <div className="ia-card-head">
-        <div className="ia-card-title">
-          <TrendingUp size={15} /> Cost Trend <span className="ia-eyebrow">last 30 days</span>
-        </div>
-      </div>
-      <div className="ia-card-pad" style={{ flex: 1 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6 }}>
-          <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums", color: "var(--ia-ink)" }}>{mtd}</div>
-          <span className={`ia-delta ${(costData?.changePercent ?? 0) > 0 ? "ia-delta-up" : "ia-delta-down"}`}>
-            {(costData?.changePercent ?? 0) > 0 ? "↑" : "↓"}{Math.abs(costData?.changePercent ?? 0).toFixed(1)}% vs previous period
-          </span>
-        </div>
-        <svg viewBox={`0 0 ${W} ${H}`} width="100%" preserveAspectRatio="none" style={{ display: "block" }}>
-          <defs>
-            <linearGradient id="ia-ctg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--ia-brand)" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="var(--ia-brand)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          {[0.25, 0.5, 0.75].map((g) => (
-            <line key={g} x1={padL} x2={W-padR}
-              y1={padT+(H-padT-padB)*g} y2={padT+(H-padT-padB)*g}
-              stroke="var(--ia-border)" strokeDasharray="3 4" />
-          ))}
-          <path d={area} fill="url(#ia-ctg)" />
-          <path d={line} fill="none" stroke="var(--ia-brand)" strokeWidth="2.2" strokeLinejoin="round" />
-        </svg>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--ia-ink-faint)", marginTop: 2 }}>
-          {labels.map(l => <span key={l}>{l}</span>)}
-        </div>
-      </div>
     </div>
   );
 }
@@ -722,6 +664,94 @@ export default function Dashboard() {
   const [isScanning, setIsScanning] = useState(false);
   const [sel, setSel] = useState<SecurityDrift | null>(null);
   const { toast } = useToast();
+  const { hasPermission } = usePermission();
+  const canManageDashboards = hasPermission("manage_settings");
+  const dashboardsQuery = useDashboards();
+  const createDashboard = useCreateDashboard();
+  const updateDashboard = useUpdateDashboard();
+  const deleteDashboard = useDeleteDashboard();
+  const dashboards = dashboardsQuery.data?.dashboards ?? EMPTY_DASHBOARDS;
+  const [activeDashboardId, setActiveDashboardId] = useState("builtin");
+  const [editingDashboard, setEditingDashboard] = useState(false);
+  const [draftWidgets, setDraftWidgets] = useState<DashboardWidget[]>(dashboardWidgetsForTemplate());
+
+  useEffect(() => {
+    if (dashboards.length === 0) {
+      setActiveDashboardId("builtin");
+      return;
+    }
+    if (!dashboards.some((dashboard) => dashboard.id === activeDashboardId)) {
+      setActiveDashboardId((dashboards.find((dashboard) => dashboard.isDefault) ?? dashboards[0]).id);
+    }
+  }, [activeDashboardId, dashboards]);
+
+  const activeDashboard = dashboards.find((dashboard) => dashboard.id === activeDashboardId);
+  const persistedWidgets = activeDashboard?.widgets?.length ? activeDashboard.widgets : dashboardWidgetsForTemplate();
+  const displayWidgets = useMemo(
+    () => cloneDashboardWidgets(editingDashboard ? draftWidgets : persistedWidgets)
+      .filter((widget) => widget.visible)
+      .sort((a, b) => a.position - b.position),
+    [draftWidgets, editingDashboard, persistedWidgets],
+  );
+
+  const startEditingDashboard = () => {
+    setDraftWidgets(cloneDashboardWidgets(persistedWidgets));
+    setEditingDashboard(true);
+  };
+
+  const saveDashboard = () => {
+    const input = {
+      name: activeDashboard?.name ?? "Cloud Governance Overview",
+      description: activeDashboard?.description ?? "Security, compliance, inventory, and actual cloud cost evidence.",
+      isDefault: activeDashboard?.isDefault ?? dashboards.length === 0,
+      widgets: cloneDashboardWidgets(draftWidgets),
+    };
+    if (activeDashboard) {
+      updateDashboard.mutate({ id: activeDashboard.id, input }, {
+        onSuccess: () => {
+          setEditingDashboard(false);
+          toast({ title: "Dashboard layout saved", description: "The organization dashboard now uses this widget order and chart configuration.", variant: "success" });
+        },
+        onError: (error) => toast({ title: "Dashboard could not be saved", description: error instanceof Error ? error.message : "Try again.", variant: "destructive" }),
+      });
+      return;
+    }
+    createDashboard.mutate(input, {
+      onSuccess: (created) => {
+        setActiveDashboardId(created.id);
+        setEditingDashboard(false);
+        toast({ title: "Dashboard layout saved", description: "Your built-in overview is now a durable organization dashboard.", variant: "success" });
+      },
+      onError: (error) => toast({ title: "Dashboard could not be saved", description: error instanceof Error ? error.message : "Try again.", variant: "destructive" }),
+    });
+  };
+
+  const createNewDashboard = ({ name, description, template }: { name: string; description: string; template: DashboardTemplate }) => {
+    createDashboard.mutate({
+      name,
+      description,
+      isDefault: dashboards.length === 0,
+      widgets: dashboardWidgetsForTemplate(template),
+    }, {
+      onSuccess: (created) => {
+        setActiveDashboardId(created.id);
+        toast({ title: "Dashboard created", description: `${created.name} is ready to customize.`, variant: "success", action: { label: "Edit now", onClick: () => { setDraftWidgets(cloneDashboardWidgets(created.widgets)); setEditingDashboard(true); } } });
+      },
+      onError: (error) => toast({ title: "Dashboard could not be created", description: error instanceof Error ? error.message : "Try again.", variant: "destructive" }),
+    });
+  };
+
+  const removeDashboard = () => {
+    if (!activeDashboard || !window.confirm(`Delete “${activeDashboard.name}”? Billing and security evidence will not be deleted.`)) return;
+    deleteDashboard.mutate(activeDashboard.id, {
+      onSuccess: () => {
+        setEditingDashboard(false);
+        setActiveDashboardId("builtin");
+        toast({ title: "Dashboard deleted", description: "Only the saved layout was removed; source evidence is unchanged.", variant: "warning" });
+      },
+      onError: (error) => toast({ title: "Dashboard could not be deleted", description: error instanceof Error ? error.message : "Try again.", variant: "destructive" }),
+    });
+  };
 
   // ── Queries ─────────────────────────────────────────────────────────────────
   const {
@@ -788,12 +818,6 @@ export default function Dashboard() {
   });
   const { data: healthScore, error: healthScoreError } = useQuery<HealthScore>({
     queryKey: ["/api/v1/health-score"],
-    enabled: hasConnected,
-    staleTime: 30_000,
-  });
-  const { data: costTrend } = useQuery<CostTrend>({
-    queryKey: ["/api/v1/costs/trends", "", "monthly"],
-    queryFn: () => api.costs.getTrends(undefined, "monthly"),
     enabled: hasConnected,
     staleTime: 30_000,
   });
@@ -961,6 +985,35 @@ export default function Dashboard() {
       ? resourcesError
       : driftsError ?? alertsError ?? healthScoreError ?? complianceError ?? null;
 
+  const updateDraftWidget = (nextWidget: DashboardWidget) => {
+    setDraftWidgets((widgets) => widgets.map((widget) => widget.id === nextWidget.id ? nextWidget : widget));
+  };
+
+  const renderDashboardWidget = (widget: DashboardWidget) => {
+    switch (widget.type) {
+      case "kpis":
+        return <div className="ia-kpi-row">{kpis.map((kpi) => <KpiCard key={kpi.id} k={kpi} />)}</div>;
+      case "inventory":
+        return <InventoryOverview resources={resources} onOpenResources={() => navigate("/resources")} />;
+      case "cost_explorer":
+        return <DashboardCostExplorerWidget widget={widget} editing={editingDashboard} onChange={updateDraftWidget} />;
+      case "drift_feed":
+        return <DriftFeedCard drifts={activeDrifts} onPick={setSel} onViewAll={() => navigate("/drift-detection")} />;
+      case "cost_monitors":
+        return <CostMonitorWidget layout="wide" />;
+      case "compliance":
+        return <ComplianceCard frameworks={complianceFrameworks} onJump={() => navigate("/security?view=compliance")} />;
+      case "findings":
+        return <FindingsRiskCard summary={findingSummary} findings={dashboardFindings} onJump={() => navigate("/security?view=findings")} />;
+      case "savings":
+        return <SavingsCard recommendations={recommendations} />;
+      case "drift_table":
+        return <DriftTable drifts={activeDrifts} selId={sel?.id} onPick={setSel} />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="infra-dash">
@@ -974,16 +1027,37 @@ export default function Dashboard() {
             <span><strong>Live dashboard data could not be loaded.</strong> {dashboardError instanceof Error ? dashboardError.message : "Please retry after the backend is available."}</span>
           </div>
         )}
+        {dashboardsQuery.isError && (
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-amber-400/60 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+            <span><strong>Saved dashboards could not be loaded.</strong> The built-in overview remains available.</span>
+            <button className="ia-btn-ghost" onClick={() => dashboardsQuery.refetch()}>Retry</button>
+          </div>
+        )}
         {/* ── Page header ── */}
         <div className="ia-page-head">
           <div>
-            <h1 className="ia-page-title">Cloud Governance Overview</h1>
+            <h1 className="ia-page-title">{activeDashboard?.name ?? "Cloud Governance Overview"}</h1>
             <div className="ia-page-sub">
-              Security drift, compliance &amp; cost across {connectedProviders.length + (k8sClusters.length > 0 ? 1 : 0)} clouds
-              · {totalResources} resources monitored
+              {activeDashboard?.description || <>Security drift, compliance &amp; cost across {connectedProviders.length + (k8sClusters.length > 0 ? 1 : 0)} clouds · {totalResources} resources monitored</>}
             </div>
           </div>
           <div className="ia-head-controls">
+            <DashboardCustomizer
+              dashboards={dashboards}
+              activeId={activeDashboardId}
+              canManage={canManageDashboards}
+              editing={editingDashboard}
+              draftWidgets={draftWidgets}
+              saving={createDashboard.isPending || updateDashboard.isPending}
+              deleting={deleteDashboard.isPending}
+              onSelect={(id) => { setActiveDashboardId(id); setEditingDashboard(false); }}
+              onStartEdit={startEditingDashboard}
+              onCancelEdit={() => setEditingDashboard(false)}
+              onSave={saveDashboard}
+              onDelete={removeDashboard}
+              onDraftWidgetsChange={setDraftWidgets}
+              onCreate={createNewDashboard}
+            />
             <button className="ia-btn-ghost" onClick={() => scanMutation.mutate()} disabled={isScanning}>
               <RefreshCw size={13} style={isScanning ? { animation: "spin 1s linear infinite" } : {}} />
               {isScanning ? "Syncing…" : "Sync & scan"}
@@ -994,40 +1068,23 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── KPI row ── */}
-        <div style={{ marginBottom: "var(--ia-gap)" }}>
-          <div className="ia-kpi-row">
-            {kpis.map(k => <KpiCard key={k.id} k={k} />)}
+        {editingDashboard && (
+          <div className="mb-4 rounded-lg border border-blue-400/60 bg-blue-50 px-4 py-3 text-sm text-blue-950 dark:bg-blue-950/30 dark:text-blue-100">
+            <strong>Editing layout.</strong> Use the side panel to show, size, reorder, and configure widgets, then save the organization view.
           </div>
+        )}
+
+        <div className="grid grid-cols-12" style={{ gap: "var(--ia-gap)" }}>
+          {displayWidgets.map((widget) => (
+            <section
+              key={widget.id}
+              className={`${widget.width === "full" ? "col-span-12" : widget.width === "half" ? "col-span-12 xl:col-span-6" : "col-span-12 md:col-span-6 xl:col-span-4"} ${editingDashboard ? "rounded-xl ring-2 ring-blue-400/40 ring-offset-2 ring-offset-background" : ""}`}
+              aria-label={widgetLabel(widget.type)}
+            >
+              {renderDashboardWidget(widget)}
+            </section>
+          ))}
         </div>
-
-        <InventoryOverview resources={resources} onOpenResources={() => navigate("/resources")} />
-
-        {/* ── Cost trend + Live drift feed ── */}
-        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
-          <CostTrendCard costData={costTrend} />
-          <DriftFeedCard
-            drifts={activeDrifts}
-            onPick={setSel}
-            onViewAll={() => navigate("/drift-detection")}
-          />
-        </div>
-
-        <CostMonitorWidget layout="wide" className="mb-[var(--ia-gap)]" />
-
-        {/* ── Compliance + Findings + Savings ── */}
-        <div className="grid grid-cols-1 xl:grid-cols-3" style={{ gap: "var(--ia-gap)", marginBottom: "var(--ia-gap)" }}>
-          <ComplianceCard frameworks={complianceFrameworks} onJump={() => navigate("/security?view=compliance")} />
-          <FindingsRiskCard summary={findingSummary} findings={dashboardFindings} onJump={() => navigate("/security?view=findings")} />
-          <SavingsCard recommendations={recommendations} />
-        </div>
-
-        {/* ── Findings table ── */}
-        <DriftTable
-          drifts={activeDrifts}
-          selId={sel?.id}
-          onPick={setSel}
-        />
 
         {/* ── Remediation drawer ── */}
         <RemediationDrawer

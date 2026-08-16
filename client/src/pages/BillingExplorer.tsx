@@ -1,20 +1,24 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { differenceInCalendarDays, format, parseISO, subDays } from "date-fns";
+import { useLocation } from "wouter";
 import {
   AlertCircle,
+  AreaChart as AreaChartIcon,
   ArrowDownRight,
   ArrowUpRight,
+  BarChart3,
   CalendarDays,
+  ChevronRight,
   Database,
   Download,
   Info,
+  LineChart as LineChartIcon,
   Loader2,
   RefreshCw,
 } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { useCostAccounts, useCostExplorer } from "@/hooks/use-costs";
-import type { CostExplorerFilters } from "@/types";
+import type { CostChartType, CostExplorerBreakdown, CostExplorerFilters } from "@/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +28,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CostMonitorWidget } from "@/components/cost/CostMonitorWidget";
+import { CostExplorerVisualization, formatCostMoney, type CostVisualizationMode } from "@/components/cost/CostExplorerVisualization";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const PAGE_SIZE = 20;
 
@@ -41,6 +48,7 @@ function csvCell(value: unknown) {
 }
 
 export default function BillingExplorer() {
+  const [, navigate] = useLocation();
   const today = format(new Date(), "yyyy-MM-dd");
   const [provider, setProvider] = useState("aws");
   const [accountId, setAccountId] = useState("all");
@@ -51,6 +59,9 @@ export default function BillingExplorer() {
   const [service, setService] = useState("");
   const [region, setRegion] = useState("");
   const [page, setPage] = useState(0);
+  const [chartType, setChartType] = useState<CostChartType>("area");
+  const [visualizationMode, setVisualizationMode] = useState<CostVisualizationMode>("trend");
+  const [selectedBreakdown, setSelectedBreakdown] = useState<CostExplorerBreakdown | null>(null);
 
   const accountsQuery = useCostAccounts();
   const accounts = accountsQuery.data?.accounts ?? [];
@@ -72,6 +83,21 @@ export default function BillingExplorer() {
   };
   const explorerQuery = useCostExplorer(filters);
   const result = explorerQuery.data;
+  const detailGroupBy: CostExplorerFilters["groupBy"] = groupBy === "service" ? "region" : "service";
+  const detailFilters: CostExplorerFilters = {
+    provider: selectedBreakdown?.provider,
+    accountId: selectedBreakdown?.cloudAccountId,
+    service: groupBy === "service" ? selectedBreakdown?.key : service.trim() || undefined,
+    region: groupBy === "region" ? selectedBreakdown?.key : region.trim() || undefined,
+    startDate,
+    endDate,
+    granularity,
+    groupBy: detailGroupBy,
+    limit: 10,
+    offset: 0,
+  };
+  const detailQuery = useCostExplorer(detailFilters, Boolean(selectedBreakdown) && groupBy !== "resource");
+  const detail = detailQuery.data;
   const totalPages = Math.max(1, Math.ceil((result?.totalBreakdownRows ?? 0) / PAGE_SIZE));
   const selectedDayDifference = differenceInCalendarDays(parseISO(endDate), parseISO(startDate));
   const selectedDays = Number.isFinite(selectedDayDifference) ? Math.max(1, selectedDayDifference + 1) : 1;
@@ -79,11 +105,6 @@ export default function BillingExplorer() {
   const isStale = result?.latestCostDate
     ? Date.now() - parseISO(result.latestCostDate).getTime() > 72 * 60 * 60 * 1000
     : false;
-
-  const chartData = useMemo(() => (result?.series ?? []).map((point) => ({
-    period: format(parseISO(point.period), granularity === "monthly" ? "MMM yyyy" : "MMM d"),
-    cost: point.cost,
-  })), [result?.series, granularity]);
 
   const exportCSV = () => {
     if (!result) return;
@@ -223,10 +244,40 @@ export default function BillingExplorer() {
         />
 
         <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><CalendarDays className="h-4 w-4" /> Cost over time</CardTitle><CardDescription>{result?.lastUpdatedAt ? `Imported ${format(parseISO(result.lastUpdatedAt), "PPp")}` : "No import timestamp available"}</CardDescription></CardHeader>
-          <CardContent className="h-72">
-            {explorerQuery.isLoading ? <div className="flex h-full items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> : chartData.length === 0 ? <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No cost history matches this scope.</div> : (
-              <ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData}><defs><linearGradient id="costFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="period" tick={{ fontSize: 12 }}/><YAxis tick={{ fontSize: 12 }} width={70}/><Tooltip formatter={(value: number) => money(value, result?.currency)}/><Area type="monotone" dataKey="cost" stroke="#3b82f6" fill="url(#costFill)" strokeWidth={2}/></AreaChart></ResponsiveContainer>
+          <CardHeader className="gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base"><CalendarDays className="h-4 w-4" /> Cost visualization</CardTitle>
+              <CardDescription>{result?.lastUpdatedAt ? `Imported ${format(parseISO(result.lastUpdatedAt), "PPp")}` : "No import timestamp available"}</CardDescription>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Tabs value={visualizationMode} onValueChange={(value) => setVisualizationMode(value as CostVisualizationMode)}>
+                <TabsList className="h-9"><TabsTrigger value="trend">Over time</TabsTrigger><TabsTrigger value="breakdown">Top {groupBy}</TabsTrigger></TabsList>
+              </Tabs>
+              {visualizationMode === "trend" && (
+                <div className="flex rounded-md border bg-muted/40 p-0.5" aria-label="Chart type">
+                  {([
+                    ["area", AreaChartIcon, "Area"],
+                    ["line", LineChartIcon, "Line"],
+                    ["bar", BarChart3, "Bars"],
+                  ] as const).map(([value, Icon, label]) => (
+                    <Button key={value} type="button" size="sm" variant={chartType === value ? "secondary" : "ghost"} className="h-8 px-2.5" onClick={() => setChartType(value)} aria-pressed={chartType === value} title={`${label} chart`}>
+                      <Icon className="h-4 w-4" /><span className="sr-only">{label} chart</span>
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {explorerQuery.isLoading ? <div className="flex h-72 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div> : (
+              <CostExplorerVisualization
+                series={result?.series ?? []}
+                breakdown={result?.breakdown ?? []}
+                currency={result?.currency}
+                granularity={granularity}
+                chartType={chartType}
+                mode={visualizationMode}
+              />
             )}
           </CardContent>
         </Card>
@@ -236,7 +287,27 @@ export default function BillingExplorer() {
           <CardContent>
             <div className="rounded-md border">
               <Table><TableHeader><TableRow><TableHead className="capitalize">{groupBy}</TableHead><TableHead>Provider</TableHead><TableHead>Cloud account</TableHead><TableHead className="text-right">Cost</TableHead></TableRow></TableHeader><TableBody>
-                {(result?.breakdown ?? []).map((item) => <TableRow key={`${item.provider}:${item.cloudAccountId}:${item.key}`}><TableCell className="font-medium">{item.key}</TableCell><TableCell><Badge variant="outline" className="uppercase">{item.provider}</Badge></TableCell><TableCell className="font-mono text-xs">{item.cloudAccountId}</TableCell><TableCell className="text-right font-medium">{money(item.cost, item.currency)}</TableCell></TableRow>)}
+                {(result?.breakdown ?? []).map((item) => (
+                  <TableRow
+                    key={`${item.provider}:${item.cloudAccountId}:${item.key}`}
+                    className={groupBy === "resource" ? "" : "cursor-pointer hover:bg-muted/60"}
+                    tabIndex={groupBy === "resource" ? undefined : 0}
+                    role={groupBy === "resource" ? undefined : "button"}
+                    aria-label={groupBy === "resource" ? undefined : `Open details for ${item.key}`}
+                    onClick={() => groupBy !== "resource" && setSelectedBreakdown(item)}
+                    onKeyDown={(event) => {
+                      if (groupBy !== "resource" && (event.key === "Enter" || event.key === " ")) {
+                        event.preventDefault();
+                        setSelectedBreakdown(item);
+                      }
+                    }}
+                  >
+                    <TableCell className="font-medium"><span className="flex items-center justify-between gap-2">{item.key}{groupBy !== "resource" && <ChevronRight className="h-4 w-4 text-muted-foreground" />}</span></TableCell>
+                    <TableCell><Badge variant="outline" className="uppercase">{item.provider}</Badge></TableCell>
+                    <TableCell className="font-mono text-xs">{item.cloudAccountId}</TableCell>
+                    <TableCell className="text-right font-medium">{money(item.cost, item.currency)}</TableCell>
+                  </TableRow>
+                ))}
                 {!explorerQuery.isLoading && !result?.breakdown.length && <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No detailed billing rows found.</TableCell></TableRow>}
               </TableBody></Table>
             </div>
@@ -244,6 +315,56 @@ export default function BillingExplorer() {
           </CardContent>
         </Card>
       </div>
+
+      <Sheet open={Boolean(selectedBreakdown)} onOpenChange={(open) => !open && setSelectedBreakdown(null)}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+          <SheetHeader className="pr-8">
+            <div className="flex items-center gap-2"><Badge variant="outline" className="uppercase">{selectedBreakdown?.provider}</Badge><span className="text-xs text-muted-foreground">{selectedBreakdown?.cloudAccountId}</span></div>
+            <SheetTitle>{selectedBreakdown?.key}</SheetTitle>
+            <SheetDescription>
+              {groupBy === "service" ? "Service" : "Region"} evidence for {startDate} through {endDate}, compared with the immediately preceding equal period.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-6">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Card><CardHeader className="p-4 pb-2"><CardDescription>Selected cost</CardDescription><CardTitle className="text-xl">{formatCostMoney(detail?.totalCost ?? selectedBreakdown?.cost ?? 0, detail?.currency ?? selectedBreakdown?.currency)}</CardTitle></CardHeader></Card>
+              <Card><CardHeader className="p-4 pb-2"><CardDescription>Previous period</CardDescription><CardTitle className="text-xl">{detailQuery.isFetching ? "—" : formatCostMoney(detail?.previousTotalCost ?? 0, detail?.currency ?? selectedBreakdown?.currency)}</CardTitle></CardHeader></Card>
+              <Card><CardHeader className="p-4 pb-2"><CardDescription>Period change</CardDescription><CardTitle className="text-xl">{detailQuery.isFetching ? "—" : `${detail?.changePercent && detail.changePercent > 0 ? "+" : ""}${(detail?.changePercent ?? 0).toFixed(1)}%`}</CardTitle></CardHeader></Card>
+            </div>
+
+            <div>
+              <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-semibold">Cost over time</h3><span className="text-xs text-muted-foreground">{detail?.costBasis ?? result?.costBasis ?? "provider evidence"}</span></div>
+              {detailQuery.isFetching ? <div className="flex h-56 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div> : (
+                <CostExplorerVisualization series={detail?.series ?? []} currency={detail?.currency ?? selectedBreakdown?.currency} granularity={granularity} chartType="area" height={224} />
+              )}
+            </div>
+
+            <div>
+              <h3 className="mb-3 text-sm font-semibold capitalize">Cost by {detailGroupBy}</h3>
+              <CostExplorerVisualization series={[]} breakdown={detail?.breakdown ?? []} currency={detail?.currency ?? selectedBreakdown?.currency} granularity={granularity} chartType="bar" mode="breakdown" height={Math.max(180, Math.min(320, (detail?.breakdown.length ?? 0) * 38))} />
+            </div>
+
+            <Alert>
+              <Database className="h-4 w-4" />
+              <AlertTitle>Evidence and freshness</AlertTitle>
+              <AlertDescription>
+                Values are read from stored provider billing evidence. Latest covered cost date: {detail?.latestCostDate ? format(parseISO(detail.latestCostDate), "PPP") : "not available"}. Forecasts and savings estimates are not included.
+              </AlertDescription>
+            </Alert>
+
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => {
+                if (groupBy === "service") setService(selectedBreakdown?.key ?? "");
+                if (groupBy === "region") setRegion(selectedBreakdown?.key ?? "");
+                setPage(0);
+                setSelectedBreakdown(null);
+              }}>Apply as explorer filter</Button>
+              <Button variant="outline" onClick={() => navigate("/cost-monitors")}>View cost monitors</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 }
