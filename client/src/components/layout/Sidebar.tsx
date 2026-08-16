@@ -28,6 +28,8 @@ import {
     Blocks,
     Scale,
     Fingerprint,
+    BellRing,
+    ReceiptText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
@@ -74,6 +76,8 @@ const navGroups: NavGroup[] = [
         label: "Cost",
         items: [
             { label: "Cost Analysis", href: "/cost", icon: BarChart3 },
+            { label: "Billing Explorer", href: "/billing-explorer", icon: ReceiptText },
+            { label: "Cost Monitor", href: "/cost-monitors", icon: BellRing },
             { label: "Predictions", href: "/cost-prediction", icon: TrendingUp },
             { label: "Billing Import", href: "/billing-import", icon: DollarSign },
             { label: "ROI Calculator", href: "/roi-calculator", icon: Calculator },
