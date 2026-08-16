@@ -16,6 +16,7 @@ env:
   ECR_REPOSITORY: infraudit-production-frontend
   ECS_CLUSTER: infraudit-production
   ECS_SERVICE: frontend
+  APPLICATION_HEALTH_URL: http://infraudit-production-571152482.us-east-1.elb.amazonaws.com/
 
 jobs:
   validate:
@@ -34,6 +35,7 @@ jobs:
           VITE_OAUTH_BACKEND_BASE: ""
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+      - run: bash deploy/deploy-frontend_test.sh
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -88,16 +90,19 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Deploy frontend to Amazon ECS
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
         run: |
-          aws ecs update-service \
-            --cluster "$ECS_CLUSTER" \
-            --service "$ECS_SERVICE" \
-            --force-new-deployment \
-            --region "$AWS_REGION"
-          aws ecs wait services-stable \
-            --cluster "$ECS_CLUSTER" \
-            --services "$ECS_SERVICE" \
-            --region "$AWS_REGION"
+          image_digest="$(aws ecr describe-images \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-ids "imageTag=$GITHUB_SHA" \
+            --region "$AWS_REGION" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text)"
+          ./deploy/deploy-frontend.sh "$REGISTRY/$ECR_REPOSITORY@$image_digest"
 
       - name: Verify production frontend
-        run: curl --fail --show-error --silent --retry 10 --retry-delay 5 --retry-all-errors https://infraudit.com/ --output /dev/null
+        run: >-
+          curl --fail --show-error --silent --location
+          --retry 10 --retry-delay 5 --retry-all-errors
+          "$APPLICATION_HEALTH_URL" --output /dev/null
