@@ -1,7 +1,7 @@
 import {
   CostOverview, CostTrend, CostForecast, CostAnomalyPage, CostOptimizationPage, CostSyncSummary, OptimizationAnalysis, OptimizationAnalysisStatus, CostOptimizationFilters,
   CostAccount, CostExplorerFilters, CostExplorerResult, CostMonitor, CostMonitorInput, CostMonitorPage, CostMonitorEvaluation, CostMonitorEvaluationPage,
-  CostNotificationChannel, CostNotificationChannelInput, CostNotificationChannelType, CostMonitorIncidentPage, CostMonitorIncidentHistory, CostMonitorIncident,
+  CostNotificationChannel, CostNotificationChannelInput, CostNotificationChannelType, CostNotificationEscalationPolicy, CostMonitorIncidentPage, CostMonitorIncidentHistory, CostMonitorIncident,
   AIForecastResult, ROIData,
   ComplianceOverview, ComplianceFramework, ComplianceControl, ComplianceAssessment, ComplianceAssessmentDetail, AssessmentFinding,
   ResourceComplianceStatus,
@@ -1139,13 +1139,27 @@ export const api = {
     updateMonitorNotificationChannel: (channel: CostNotificationChannelType, input: CostNotificationChannelInput) =>
       request<CostNotificationChannel>(`/api/v1/costs/monitor-notifications/channels/${channel}`, {
         method: 'PUT',
-        body: { enabled: input.enabled, webhook_url: input.webhookUrl, recipients: input.recipients },
+        body: { enabled: input.enabled, webhook_url: input.webhookUrl, signing_secret: input.signingSecret, recipients: input.recipients },
       }),
 
     testMonitorNotificationChannel: (channel: CostNotificationChannelType, input: Omit<CostNotificationChannelInput, 'enabled'> = {}) =>
       request<{ message: string }>(`/api/v1/costs/monitor-notifications/channels/${channel}/test`, {
         method: 'POST',
-        body: { webhook_url: input.webhookUrl, recipients: input.recipients },
+        body: { webhook_url: input.webhookUrl, signing_secret: input.signingSecret, recipients: input.recipients },
+      }),
+
+    getMonitorNotificationEscalationPolicy: () =>
+      request<CostNotificationEscalationPolicy>('/api/v1/costs/monitor-notifications/policy'),
+
+    updateMonitorNotificationEscalationPolicy: (input: CostNotificationEscalationPolicy) =>
+      request<CostNotificationEscalationPolicy>('/api/v1/costs/monitor-notifications/policy', {
+        method: 'PUT',
+        body: {
+          enabled: input.enabled,
+          escalate_after_hours: input.escalateAfterHours,
+          repeat_every_hours: input.repeatEveryHours,
+          max_escalation_level: input.maxEscalationLevel,
+        },
       }),
 
     listMonitorIncidents: (filters: { monitorId?: string; status?: string; limit?: number; offset?: number } = {}) => {

@@ -3,7 +3,7 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { Link } from "wouter";
 import { AlertCircle, ArrowRight, BellRing, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
 import { useCostMonitors } from "@/hooks/use-costs";
-import { useCostNotificationChannels } from "@/hooks/use-cost-notifications";
+import { useCostMonitorIncidents, useCostNotificationChannels } from "@/hooks/use-cost-notifications";
 import type { CostMonitor, CostMonitorStatus } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ function scopeDescription(provider?: string, accountId?: string) {
 export function CostMonitorWidget({ provider, accountId, layout = "compact", className }: CostMonitorWidgetProps) {
   const monitorsQuery = useCostMonitors(100, 0, true);
   const channelsQuery = useCostNotificationChannels();
+  const incidentsQuery = useCostMonitorIncidents({ limit: 20 });
   const monitors = useMemo(() => {
     const scoped = (monitorsQuery.data?.monitors ?? []).filter((monitor) => {
       if (provider && monitor.provider !== provider) return false;
@@ -64,6 +65,13 @@ export function CostMonitorWidget({ provider, accountId, layout = "compact", cla
     .filter((value): value is string => Boolean(value))
     .sort()[0];
   const activeChannels = (channelsQuery.data?.channels ?? []).filter((channel) => channel.enabled && channel.deliveryReady).length;
+  const activeIncidents = (incidentsQuery.data?.incidents ?? []).filter((incident) => {
+    if (incident.status === "resolved") return false;
+    if (provider && incident.provider !== provider) return false;
+    if (accountId && incident.cloudAccountId && incident.cloudAccountId !== accountId) return false;
+    return true;
+  });
+  const latestIncident = activeIncidents[0];
 
   return (
     <Card className={cn("overflow-hidden", className, attention.length > 0 && "border-amber-500/40")}>
@@ -104,11 +112,19 @@ export function CostMonitorWidget({ provider, accountId, layout = "compact", cla
           </div>
         ) : (
           <>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Enabled in scope</p><p className="mt-1 text-xl font-semibold">{monitors.length}</p></div>
-              <div className={cn("rounded-lg border p-3", attention.length > 0 && "border-amber-500/40 bg-amber-500/5")}><p className="text-xs text-muted-foreground">Needs attention</p><p className="mt-1 flex items-center gap-2 text-xl font-semibold">{attention.length > 0 ? <AlertCircle className="h-5 w-5 text-amber-600" /> : <CheckCircle2 className="h-5 w-5 text-emerald-600" />}{attention.length}</p></div>
+              <div className={cn("rounded-lg border p-3", activeIncidents.length > 0 && "border-red-500/40 bg-red-500/5")}><p className="text-xs text-muted-foreground">Active breaches</p><p className="mt-1 flex items-center gap-2 text-xl font-semibold">{activeIncidents.length > 0 ? <AlertCircle className="h-5 w-5 text-red-600" /> : <CheckCircle2 className="h-5 w-5 text-emerald-600" />}{activeIncidents.length}</p><p className="mt-1 text-xs text-muted-foreground">{attention.length} monitors need attention</p></div>
+              <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Delivery channels</p><p className="mt-1 text-xl font-semibold">{channelsQuery.isError ? "—" : activeChannels}</p><p className="mt-1 text-xs text-muted-foreground">Slack, email, or webhook</p></div>
               <div className="rounded-lg border p-3"><p className="flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="h-3.5 w-3.5" />Next evaluation</p><p className="mt-1 text-sm font-semibold">{relativeTime(nextEvaluation)}</p><p className="mt-1 text-xs text-muted-foreground">{healthy} healthy</p></div>
             </div>
+
+            {latestIncident && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-500/30 bg-red-500/5 p-3">
+                <div><p className="text-sm font-semibold">{latestIncident.monitorName}</p><p className="text-xs text-muted-foreground"><span className="capitalize">{latestIncident.severity}</span> breach · escalation level {latestIncident.escalationLevel} · {latestIncident.status === "acknowledged" ? "acknowledged" : "awaiting acknowledgement"}</p></div>
+                <Button asChild variant="outline" size="sm"><Link href="/cost-monitors">Open incident <ArrowRight className="ml-2 h-3.5 w-3.5" /></Link></Button>
+              </div>
+            )}
 
             <div className={cn("grid gap-3", layout === "wide" && "lg:grid-cols-3")}>
               {visibleMonitors.map((monitor) => <MonitorSnapshot key={monitor.id} monitor={monitor} />)}
