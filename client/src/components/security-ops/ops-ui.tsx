@@ -1,10 +1,10 @@
 import React from "react";
 import { LucideIcon, Search } from "lucide-react";
+import { Dropdown } from "primereact/dropdown";
+import { InputText } from "primereact/inputtext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 type Tone = "red" | "orange" | "amber" | "blue" | "emerald" | "slate" | "violet";
@@ -123,26 +123,15 @@ export function FilterToolbar({
     <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row">
       <div className="relative min-w-0 flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <InputText
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder={searchPlaceholder}
-          className="pl-9"
+          className="w-full pl-9"
         />
       </div>
       {filters.map((filter) => (
-        <Select key={filter.placeholder} value={filter.value} onValueChange={filter.onChange}>
-          <SelectTrigger className={cn("w-full sm:w-[150px]", filter.widthClassName)}>
-            <SelectValue placeholder={filter.placeholder} />
-          </SelectTrigger>
-          <SelectContent>
-            {filter.options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Dropdown key={filter.placeholder} value={filter.value} onChange={(event) => filter.onChange(event.value)} options={filter.options} placeholder={filter.placeholder} className={cn("w-full sm:w-[150px]", filter.widthClassName)} />
       ))}
     </div>
   );
