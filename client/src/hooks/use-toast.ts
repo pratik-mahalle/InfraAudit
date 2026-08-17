@@ -1,5 +1,3 @@
-import { toast as sonnerToast } from "sonner";
-
 export interface ToastOptions {
   title?: string;
   description?: string;
@@ -9,54 +7,29 @@ export interface ToastOptions {
 }
 
 let toastSequence = 0;
+type ToastEvent = { type: "show" | "update" | "dismiss"; id?: string; options?: ToastOptions };
+const listeners = new Set<(event: ToastEvent) => void>();
+export function subscribeToasts(listener: (event: ToastEvent) => void) { listeners.add(listener); return () => { listeners.delete(listener); }; }
+function emit(event: ToastEvent) { listeners.forEach((listener) => listener(event)); }
 
 function toast(opts: ToastOptions) {
   const id = `${Date.now()}-${toastSequence++}`;
-  showToast(id, opts);
+  emit({ type: "show", id, options: opts });
 
   return {
     id,
-    dismiss: () => sonnerToast.dismiss(id),
+    dismiss: () => emit({ type: "dismiss", id }),
     update: (newOpts: Partial<ToastOptions>) => {
       opts = { ...opts, ...newOpts };
-      showToast(id, opts);
+      emit({ type: "update", id, options: opts });
     },
   };
-}
-
-function showToast(id: string, opts: ToastOptions) {
-  const title = opts.title || (opts.variant === "destructive" ? "Something went wrong" : "Notification");
-  const options = {
-    id,
-    description: opts.description,
-    duration: opts.duration,
-    action: opts.action,
-  };
-  switch (opts.variant) {
-    case "destructive":
-      sonnerToast.error(title, options);
-      break;
-    case "success":
-      sonnerToast.success(title, options);
-      break;
-    case "warning":
-      sonnerToast.warning(title, options);
-      break;
-    case "info":
-      sonnerToast.info(title, options);
-      break;
-    default:
-      sonnerToast(title, options);
-  }
 }
 
 function useToast() {
   return {
     toast,
-    dismiss: (id?: string) => {
-      if (id) sonnerToast.dismiss(id);
-      else sonnerToast.dismiss();
-    },
+    dismiss: (id?: string) => emit({ type: "dismiss", id }),
     toasts: [],
   };
 }

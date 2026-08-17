@@ -4,8 +4,8 @@ import { AreaChart, BarChart3, ExternalLink, LineChart, Loader2, PieChart, Trend
 import { useLocation } from "wouter";
 import { useCostExplorer } from "@/hooks/use-costs";
 import type { CostBreakdownChartType, CostChartType, CostVisualizationMode, DashboardWidget } from "@/types";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "primereact/button";
+import { Dropdown } from "primereact/dropdown";
 import { CostExplorerVisualization, formatCostMoney } from "@/components/cost/CostExplorerVisualization";
 
 interface DashboardCostExplorerWidgetProps {
@@ -47,13 +47,13 @@ export function DashboardCostExplorerWidget({ widget, editing, onChange }: Dashb
     <div className="ia-card h-full" style={{ display: "flex", flexDirection: "column" }}>
       <div className="ia-card-head flex-wrap">
         <div className="ia-card-title"><TrendingUp size={15} /> {widget.title || "Cost Explorer"} <span className="ia-eyebrow">actual spend</span></div>
-        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => navigate("/billing-explorer")}>Explore <ExternalLink className="ml-1 h-3 w-3" /></Button>
+        <Button text size="small" className="h-7 px-2 text-xs" onClick={() => navigate("/billing-explorer")}>Explore <ExternalLink className="ml-1 h-3 w-3" /></Button>
       </div>
       {editing && (
         <div className="grid gap-2 border-b p-3 sm:grid-cols-3">
-          <Select value={config.timeframe ?? "30d"} onValueChange={(value) => updateConfig({ timeframe: value as NonNullable<typeof config.timeframe> })}><SelectTrigger className="h-8"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="7d">Last 7 days</SelectItem><SelectItem value="30d">Last 30 days</SelectItem><SelectItem value="90d">Last 90 days</SelectItem><SelectItem value="current_month">Current month</SelectItem></SelectContent></Select>
-          <Select value={config.groupBy ?? "service"} onValueChange={(value) => updateConfig({ groupBy: value as NonNullable<typeof config.groupBy> })}><SelectTrigger className="h-8"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="service">By service</SelectItem><SelectItem value="region">By region</SelectItem><SelectItem value="resource">By resource</SelectItem></SelectContent></Select>
-          <Select value={config.provider ?? "all"} onValueChange={(value) => updateConfig({ provider: value as NonNullable<typeof config.provider> })}><SelectTrigger className="h-8"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All providers</SelectItem><SelectItem value="aws">AWS</SelectItem><SelectItem value="gcp">GCP</SelectItem><SelectItem value="azure">Azure</SelectItem></SelectContent></Select>
+          <Dropdown value={config.timeframe ?? "30d"} onChange={(event) => updateConfig({ timeframe: event.value as NonNullable<typeof config.timeframe> })} options={[{ label: "Last 7 days", value: "7d" }, { label: "Last 30 days", value: "30d" }, { label: "Last 90 days", value: "90d" }, { label: "Current month", value: "current_month" }]} className="w-full" />
+          <Dropdown value={config.groupBy ?? "service"} onChange={(event) => updateConfig({ groupBy: event.value as NonNullable<typeof config.groupBy> })} options={[{ label: "By service", value: "service" }, { label: "By region", value: "region" }, { label: "By resource", value: "resource" }]} className="w-full" />
+          <Dropdown value={config.provider ?? "all"} onChange={(event) => updateConfig({ provider: event.value as NonNullable<typeof config.provider> })} options={[{ label: "All providers", value: "all" }, { label: "AWS", value: "aws" }, { label: "GCP", value: "gcp" }, { label: "Azure", value: "azure" }]} className="w-full" />
         </div>
       )}
       <div className="ia-card-pad flex-1">
@@ -62,19 +62,19 @@ export function DashboardCostExplorerWidget({ widget, editing, onChange }: Dashb
           <div className="flex flex-wrap justify-end gap-2">
             <div className="flex rounded-md border bg-muted/40 p-0.5">
               {(["trend", "breakdown"] as const).map((value) => (
-                <Button key={value} variant={runtimeMode === value ? "secondary" : "ghost"} size="sm" className="h-7 px-2 text-[11px] capitalize" onClick={() => { setRuntimeMode(value); if (editing) updateConfig({ visualizationMode: value }); }}>{value}</Button>
+                  <Button key={value} severity={runtimeMode === value ? "secondary" : "contrast"} text={runtimeMode !== value} size="small" className="h-7 px-2 text-[11px] capitalize" onClick={() => { setRuntimeMode(value); if (editing) updateConfig({ visualizationMode: value }); }}>{value}</Button>
               ))}
             </div>
             <div className="flex rounded-md border bg-muted/40 p-0.5">
               {runtimeMode === "trend" ? ([[
                 "area", AreaChart, "Area",
               ], ["line", LineChart, "Line"], ["bar", BarChart3, "Bars"]] as const).map(([value, Icon, label]) => (
-                <Button key={value} variant={runtimeChartType === value ? "secondary" : "ghost"} size="sm" className="h-7 px-2" onClick={() => { setRuntimeChartType(value); if (editing) updateConfig({ chartType: value }); }} title={`${label} chart`}><Icon className="h-3.5 w-3.5" /><span className="sr-only">{label}</span></Button>
+                <Button key={value} severity={runtimeChartType === value ? "secondary" : "contrast"} text={runtimeChartType !== value} size="small" className="h-7 px-2" onClick={() => { setRuntimeChartType(value); if (editing) updateConfig({ chartType: value }); }} title={`${label} chart`}><Icon className="h-3.5 w-3.5" /><span className="sr-only">{label}</span></Button>
               )) : ([
                 ["bar", BarChart3, "Horizontal bars"],
                 ["donut", PieChart, "Donut"],
               ] as const).map(([value, Icon, label]) => (
-                <Button key={value} variant={runtimeBreakdownChartType === value ? "secondary" : "ghost"} size="sm" className="h-7 px-2" onClick={() => { setRuntimeBreakdownChartType(value); if (editing) updateConfig({ breakdownChartType: value }); }} title={`${label} chart`}><Icon className="h-3.5 w-3.5" /><span className="sr-only">{label}</span></Button>
+                <Button key={value} severity={runtimeBreakdownChartType === value ? "secondary" : "contrast"} text={runtimeBreakdownChartType !== value} size="small" className="h-7 px-2" onClick={() => { setRuntimeBreakdownChartType(value); if (editing) updateConfig({ breakdownChartType: value }); }} title={`${label} chart`}><Icon className="h-3.5 w-3.5" /><span className="sr-only">{label}</span></Button>
               ))}
             </div>
           </div>

@@ -2,14 +2,19 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, GripVertical, LayoutDashboard, Pencil, Plus, Save, Star, Trash2 } from "lucide-react";
 import type { CustomDashboard, DashboardWidget, DashboardWidgetWidth } from "@/types";
 import { useCostAccounts } from "@/hooks/use-costs";
+import { Button as PButton } from "primereact/button";
+import { Dropdown } from "primereact/dropdown";
+import { InputText } from "primereact/inputtext";
+import { InputTextarea } from "primereact/inputtextarea";
+import { FloatLabel } from "primereact/floatlabel";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog } from "primereact/dialog";
 import { DASHBOARD_WIDGET_CATALOG, type DashboardTemplate, widgetLabel } from "./dashboard-config";
 
 interface DashboardCustomizerProps {
@@ -101,27 +106,18 @@ export function DashboardCustomizer({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={activeId} onValueChange={onSelect}>
-          <SelectTrigger className="h-9 min-w-[220px] bg-background"><LayoutDashboard className="mr-2 h-4 w-4" /><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {dashboards.length === 0 && <SelectItem value="builtin">Cloud Governance Overview</SelectItem>}
-            {dashboards.map((dashboard) => <SelectItem key={dashboard.id} value={dashboard.id}>{dashboard.name}{dashboard.isDefault ? " · default" : ""}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        {canManage && <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-2 h-4 w-4" /> Create dashboard</Button>}
-        {canManage && <Button variant="outline" size="sm" onClick={onStartEdit}><Pencil className="mr-2 h-4 w-4" /> Edit dashboard</Button>}
+        <Dropdown value={activeId} onChange={(event) => onSelect(event.value)} options={dashboards.map((dashboard) => ({ label: `${dashboard.name}${dashboard.isDefault ? " · default" : ""}`, value: dashboard.id }))} placeholder="Cloud Governance Overview" className="min-w-[220px]" />
+        {canManage && <PButton outlined size="small" onClick={() => setCreateOpen(true)}><Plus className="mr-2 h-4 w-4" /> Create dashboard</PButton>}
+        {canManage && <PButton outlined size="small" onClick={onStartEdit}><Pencil className="mr-2 h-4 w-4" /> Edit dashboard</PButton>}
       </div>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Create dashboard</DialogTitle><DialogDescription>Start from a curated layout, then tune widgets and cost charts for your organization.</DialogDescription></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2"><Label htmlFor="dashboard-name">Name</Label><Input id="dashboard-name" value={name} maxLength={80} onChange={(event) => setName(event.target.value)} placeholder="FinOps operating view" autoFocus /></div>
-            <div className="space-y-2"><Label htmlFor="dashboard-description">Description</Label><Textarea id="dashboard-description" value={description} maxLength={280} onChange={(event) => setDescription(event.target.value)} placeholder="What decisions should this dashboard support?" /></div>
-            <div className="space-y-2"><Label>Template</Label><Select value={template} onValueChange={(value) => setTemplate(value as DashboardTemplate)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="balanced">Balanced governance</SelectItem><SelectItem value="cost">Cost control</SelectItem></SelectContent></Select></div>
-          </div>
-          <DialogFooter><Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button><Button onClick={submitCreate} disabled={!name.trim() || saving}>Create dashboard</Button></DialogFooter>
-        </DialogContent>
+      <Dialog visible={createOpen} onHide={() => setCreateOpen(false)} header="Create dashboard" modal className="w-[min(92vw,36rem)]" footer={<div className="flex justify-end gap-2"><PButton text onClick={() => setCreateOpen(false)}>Cancel</PButton><PButton onClick={submitCreate} disabled={!name.trim() || saving}>Create dashboard</PButton></div>}>
+        <p className="mb-5 text-sm text-muted-foreground">Start from a curated layout, then tune widgets and cost charts for your organization.</p>
+        <div className="flex flex-col gap-5 py-2">
+          <FloatLabel><InputText id="dashboard-name" value={name} maxLength={80} onChange={(event) => setName(event.target.value)} className="w-full" autoFocus /><label htmlFor="dashboard-name">Name</label></FloatLabel>
+          <FloatLabel><InputTextarea id="dashboard-description" value={description} maxLength={280} onChange={(event) => setDescription(event.target.value)} className="w-full" rows={3} /><label htmlFor="dashboard-description">Description</label></FloatLabel>
+          <FloatLabel><Dropdown inputId="dashboard-template" value={template} onChange={(event) => setTemplate(event.value as DashboardTemplate)} options={[{ label: "Balanced governance", value: "balanced" }, { label: "Cost control", value: "cost" }]} className="w-full" /><label htmlFor="dashboard-template">Template</label></FloatLabel>
+        </div>
       </Dialog>
 
       <Sheet open={editing} onOpenChange={(open) => !open && onCancelEdit()}>
