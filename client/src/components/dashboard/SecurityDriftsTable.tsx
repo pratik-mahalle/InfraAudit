@@ -1,12 +1,6 @@
 import React, { useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable } from "primereact/datatable";
+import { Column } from "primereact/column";
 import {
   Card,
   CardContent,
@@ -52,63 +46,13 @@ export function SecurityDriftsTable({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[180px]">Resource</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Detected</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell><Skeleton className="h-5 w-[160px]" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-[120px]" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-[80px]" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-[80px]" /></TableCell>
-                  </TableRow>
-                ))
-              ) : drifts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    No security drifts detected.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                drifts.map((drift) => (
-                  <TableRow key={drift.id}>
-                    <TableCell className="font-medium">{drift.id}</TableCell>
-                    <TableCell className="text-sm text-gray-500 dark:text-gray-400">{drift.driftType}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 text-xs font-medium ${getSeverityBgColor(drift.severity)} ${getSeverityColor(drift.severity)} rounded-full`}>
-                        {drift.severity.charAt(0).toUpperCase() + drift.severity.slice(1)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-500 dark:text-gray-400">
-                      {formatTimeAgo(drift.detectedAt)}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-primary hover:text-primary/80"
-                        onClick={() => handleRemediateClick(drift.id)}
-                      >
-                        Remediate
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        <DataTable value={drifts} loading={isLoading} emptyMessage="No security drifts detected." stripedRows size="small" responsiveLayout="scroll">
+          <Column field="id" header="Resource" body={(drift: SecurityDrift) => <span className="font-medium">{drift.id}</span>} />
+          <Column field="driftType" header="Type" />
+          <Column field="severity" header="Severity" body={(drift: SecurityDrift) => <span className={`rounded-full px-2 py-1 text-xs font-medium ${getSeverityBgColor(drift.severity)} ${getSeverityColor(drift.severity)}`}>{drift.severity.charAt(0).toUpperCase() + drift.severity.slice(1)}</span>} />
+          <Column field="detectedAt" header="Detected" body={(drift: SecurityDrift) => formatTimeAgo(drift.detectedAt)} />
+          <Column header="Status" body={(drift: SecurityDrift) => <Button variant="ghost" size="sm" onClick={() => handleRemediateClick(drift.id)}>Remediate</Button>} />
+        </DataTable>
         <div className="mt-3 flex justify-center">
           <a href="/security" className="text-primary text-sm font-medium hover:underline">
             View all security drifts
