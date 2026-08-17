@@ -699,11 +699,11 @@ export default function Dashboard() {
     setEditingDashboard(true);
   };
 
-  const saveDashboard = () => {
+  const saveDashboard = (metadata: { name: string; description: string; isDefault: boolean }) => {
     const input = {
-      name: activeDashboard?.name ?? "Cloud Governance Overview",
-      description: activeDashboard?.description ?? "Security, compliance, inventory, and actual cloud cost evidence.",
-      isDefault: activeDashboard?.isDefault ?? dashboards.length === 0,
+      name: metadata.name,
+      description: metadata.description,
+      isDefault: metadata.isDefault,
       widgets: cloneDashboardWidgets(draftWidgets),
     };
     if (activeDashboard) {

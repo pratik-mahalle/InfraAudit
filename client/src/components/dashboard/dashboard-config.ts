@@ -32,6 +32,8 @@ export function dashboardWidgetsForTemplate(template: DashboardTemplate = "balan
     visible: enabledTypes.includes(item.type),
     config: item.type === "cost_explorer" ? {
       chartType: "area",
+      visualizationMode: "trend",
+      breakdownChartType: "bar",
       timeframe: "30d",
       groupBy: "service",
       provider: "all",

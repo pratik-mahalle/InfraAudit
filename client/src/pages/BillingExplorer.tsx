@@ -14,11 +14,12 @@ import {
   Info,
   LineChart as LineChartIcon,
   Loader2,
+  PieChart as PieChartIcon,
   RefreshCw,
 } from "lucide-react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { useCostAccounts, useCostExplorer } from "@/hooks/use-costs";
-import type { CostChartType, CostExplorerBreakdown, CostExplorerFilters } from "@/types";
+import type { CostBreakdownChartType, CostChartType, CostExplorerBreakdown, CostExplorerFilters } from "@/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export default function BillingExplorer() {
   const [region, setRegion] = useState("");
   const [page, setPage] = useState(0);
   const [chartType, setChartType] = useState<CostChartType>("area");
+  const [breakdownChartType, setBreakdownChartType] = useState<CostBreakdownChartType>("bar");
   const [visualizationMode, setVisualizationMode] = useState<CostVisualizationMode>("trend");
   const [selectedBreakdown, setSelectedBreakdown] = useState<CostExplorerBreakdown | null>(null);
 
@@ -266,6 +268,17 @@ export default function BillingExplorer() {
                   ))}
                 </div>
               )}
+              {visualizationMode === "breakdown" && (
+                <div className="flex rounded-md border bg-muted/40 p-0.5" aria-label="Breakdown chart type">
+                  {([[
+                    "bar", BarChart3, "Horizontal bars",
+                  ], ["donut", PieChartIcon, "Donut"]] as const).map(([value, Icon, label]) => (
+                    <Button key={value} type="button" size="sm" variant={breakdownChartType === value ? "secondary" : "ghost"} className="h-8 px-2.5" onClick={() => setBreakdownChartType(value)} aria-pressed={breakdownChartType === value} title={`${label} chart`}>
+                      <Icon className="h-4 w-4" /><span className="sr-only">{label} chart</span>
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent>
@@ -277,6 +290,7 @@ export default function BillingExplorer() {
                 granularity={granularity}
                 chartType={chartType}
                 mode={visualizationMode}
+                breakdownChartType={breakdownChartType}
               />
             )}
           </CardContent>

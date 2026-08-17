@@ -320,6 +320,8 @@ export type DashboardWidgetType =
 
 export type DashboardWidgetWidth = 'full' | 'half' | 'third';
 export type CostChartType = 'area' | 'line' | 'bar';
+export type CostVisualizationMode = 'trend' | 'breakdown';
+export type CostBreakdownChartType = 'bar' | 'donut';
 
 export interface DashboardWidget {
   id: string;
@@ -330,6 +332,8 @@ export interface DashboardWidget {
   visible: boolean;
   config?: {
     chartType?: CostChartType;
+    visualizationMode?: CostVisualizationMode;
+    breakdownChartType?: CostBreakdownChartType;
     timeframe?: '7d' | '30d' | '90d' | 'current_month';
     groupBy?: 'service' | 'region' | 'resource';
     provider?: 'all' | 'aws' | 'gcp' | 'azure';

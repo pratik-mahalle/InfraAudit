@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { format, startOfMonth, subDays } from "date-fns";
-import { AreaChart, BarChart3, ExternalLink, LineChart, Loader2, TrendingUp } from "lucide-react";
+import { AreaChart, BarChart3, ExternalLink, LineChart, Loader2, PieChart, TrendingUp } from "lucide-react";
 import { useLocation } from "wouter";
 import { useCostExplorer } from "@/hooks/use-costs";
-import type { CostChartType, DashboardWidget } from "@/types";
+import type { CostBreakdownChartType, CostChartType, CostVisualizationMode, DashboardWidget } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CostExplorerVisualization, formatCostMoney } from "@/components/cost/CostExplorerVisualization";
@@ -18,7 +18,11 @@ export function DashboardCostExplorerWidget({ widget, editing, onChange }: Dashb
   const [, navigate] = useLocation();
   const config = widget.config ?? {};
   const [runtimeChartType, setRuntimeChartType] = useState<CostChartType>(config.chartType ?? "area");
+  const [runtimeMode, setRuntimeMode] = useState<CostVisualizationMode>(config.visualizationMode ?? "trend");
+  const [runtimeBreakdownChartType, setRuntimeBreakdownChartType] = useState<CostBreakdownChartType>(config.breakdownChartType ?? "bar");
   useEffect(() => setRuntimeChartType(config.chartType ?? "area"), [config.chartType]);
+  useEffect(() => setRuntimeMode(config.visualizationMode ?? "trend"), [config.visualizationMode]);
+  useEffect(() => setRuntimeBreakdownChartType(config.breakdownChartType ?? "bar"), [config.breakdownChartType]);
   const timeframe = config.timeframe ?? "30d";
   const today = new Date();
   const start = timeframe === "current_month" ? startOfMonth(today) : subDays(today, timeframe === "7d" ? 6 : timeframe === "90d" ? 89 : 29);
@@ -55,16 +59,28 @@ export function DashboardCostExplorerWidget({ widget, editing, onChange }: Dashb
       <div className="ia-card-pad flex-1">
         <div className="mb-2 flex flex-wrap items-end justify-between gap-3">
           <div><div className="text-[11px] text-muted-foreground">Visible period total</div><div className="text-2xl font-bold tabular-nums">{query.isLoading ? "—" : formatCostMoney(result?.totalCost ?? 0, result?.currency)}</div></div>
-          <div className="flex rounded-md border bg-muted/40 p-0.5">
-            {([[
-              "area", AreaChart, "Area",
-            ], ["line", LineChart, "Line"], ["bar", BarChart3, "Bars"]] as const).map(([value, Icon, label]) => (
-              <Button key={value} variant={runtimeChartType === value ? "secondary" : "ghost"} size="sm" className="h-7 px-2" onClick={() => { setRuntimeChartType(value); if (editing) updateConfig({ chartType: value }); }} title={`${label} chart`}><Icon className="h-3.5 w-3.5" /><span className="sr-only">{label}</span></Button>
-            ))}
+          <div className="flex flex-wrap justify-end gap-2">
+            <div className="flex rounded-md border bg-muted/40 p-0.5">
+              {(["trend", "breakdown"] as const).map((value) => (
+                <Button key={value} variant={runtimeMode === value ? "secondary" : "ghost"} size="sm" className="h-7 px-2 text-[11px] capitalize" onClick={() => { setRuntimeMode(value); if (editing) updateConfig({ visualizationMode: value }); }}>{value}</Button>
+              ))}
+            </div>
+            <div className="flex rounded-md border bg-muted/40 p-0.5">
+              {runtimeMode === "trend" ? ([[
+                "area", AreaChart, "Area",
+              ], ["line", LineChart, "Line"], ["bar", BarChart3, "Bars"]] as const).map(([value, Icon, label]) => (
+                <Button key={value} variant={runtimeChartType === value ? "secondary" : "ghost"} size="sm" className="h-7 px-2" onClick={() => { setRuntimeChartType(value); if (editing) updateConfig({ chartType: value }); }} title={`${label} chart`}><Icon className="h-3.5 w-3.5" /><span className="sr-only">{label}</span></Button>
+              )) : ([
+                ["bar", BarChart3, "Horizontal bars"],
+                ["donut", PieChart, "Donut"],
+              ] as const).map(([value, Icon, label]) => (
+                <Button key={value} variant={runtimeBreakdownChartType === value ? "secondary" : "ghost"} size="sm" className="h-7 px-2" onClick={() => { setRuntimeBreakdownChartType(value); if (editing) updateConfig({ breakdownChartType: value }); }} title={`${label} chart`}><Icon className="h-3.5 w-3.5" /><span className="sr-only">{label}</span></Button>
+              ))}
+            </div>
           </div>
         </div>
         {query.isLoading ? <div className="flex h-[210px] items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div> : (
-          <CostExplorerVisualization series={result?.series ?? []} breakdown={result?.breakdown ?? []} currency={result?.currency} granularity="daily" chartType={runtimeChartType} height={210} />
+          <CostExplorerVisualization series={result?.series ?? []} breakdown={result?.breakdown ?? []} currency={result?.currency} granularity="daily" chartType={runtimeChartType} mode={runtimeMode} breakdownChartType={runtimeBreakdownChartType} height={210} />
         )}
         <div className="mt-2 flex justify-between text-[11px] text-muted-foreground"><span>{result?.totalBreakdownRows ?? 0} {config.groupBy ?? "service"} dimensions</span><span>{result?.latestCostDate ? `through ${result.latestCostDate}` : "awaiting cost evidence"}</span></div>
       </div>
