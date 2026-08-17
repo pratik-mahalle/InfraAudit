@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { AlertCircle, CheckCircle2, KeyRound, Loader2, Mail, MessageSquare, Send, ShieldCheck } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3, KeyRound, Loader2, Mail, MessageSquare, Send, ShieldCheck, Webhook } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,10 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/hooks/use-permission";
 import {
   useCostNotificationChannels,
+  useCostNotificationEscalationPolicy,
   useTestCostNotificationChannel,
   useUpdateCostNotificationChannel,
+  useUpdateCostNotificationEscalationPolicy,
 } from "@/hooks/use-cost-notifications";
 import type { CostNotificationChannelType } from "@/types";
 
@@ -28,11 +30,17 @@ export function CostNotificationChannels() {
   const channelsQuery = useCostNotificationChannels();
   const updateChannel = useUpdateCostNotificationChannel();
   const testChannel = useTestCostNotificationChannel();
+  const policyQuery = useCostNotificationEscalationPolicy();
+  const updatePolicy = useUpdateCostNotificationEscalationPolicy();
   const channels = channelsQuery.data?.channels ?? [];
   const slack = channels.find((channel) => channel.channel === "slack");
   const email = channels.find((channel) => channel.channel === "email");
+  const webhook = channels.find((channel) => channel.channel === "webhook");
   const [slackWebhook, setSlackWebhook] = useState("");
   const [emailRecipients, setEmailRecipients] = useState("");
+  const [webhookURL, setWebhookURL] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
+  const [policyDraft, setPolicyDraft] = useState<Partial<{ escalateAfterHours: number; repeatEveryHours: number; maxEscalationLevel: number }>>({});
 
   const enabledCount = useMemo(() => channels.filter((channel) => channel.enabled && channel.deliveryReady).length, [channels]);
   const reportError = (error: unknown) => toast({
@@ -70,14 +78,29 @@ export function CostNotificationChannels() {
     });
   };
 
+  const saveWebhook = () => {
+    if (!webhook?.configured && (!webhookURL.trim() || !webhookSecret.trim())) {
+      reportError(new Error("Enter an HTTPS endpoint and a signing secret of at least 32 characters."));
+      return;
+    }
+    updateChannel.mutate({ channel: "webhook", input: { enabled: true, webhookUrl: webhookURL.trim() || undefined, signingSecret: webhookSecret.trim() || undefined } }, {
+      onSuccess: () => {
+        setWebhookURL("");
+        setWebhookSecret("");
+        toast({ title: "Signed webhook enabled", description: "InfraAudit will sign every breach event and record each delivery attempt." });
+      },
+      onError: reportError,
+    });
+  };
+
   const toggleChannel = (channel: CostNotificationChannelType, enabled: boolean) => {
-    const current = channel === "slack" ? slack : email;
+    const current = channel === "slack" ? slack : channel === "email" ? email : webhook;
     if (enabled && !current?.configured) {
-      reportError(new Error(`Configure ${channel === "slack" ? "a Slack webhook" : "email recipients"} before enabling delivery.`));
+      reportError(new Error(`Configure ${channel === "slack" ? "a Slack webhook" : channel === "email" ? "email recipients" : "a signed webhook"} before enabling delivery.`));
       return;
     }
     updateChannel.mutate({ channel, input: { enabled } }, {
-      onSuccess: () => toast({ title: `${channel === "slack" ? "Slack" : "Email"} ${enabled ? "enabled" : "paused"}` }),
+      onSuccess: () => toast({ title: `${channel === "slack" ? "Slack" : channel === "email" ? "Email" : "Webhook"} ${enabled ? "enabled" : "paused"}` }),
       onError: reportError,
     });
   };
@@ -85,12 +108,29 @@ export function CostNotificationChannels() {
   const sendTest = (channel: CostNotificationChannelType) => {
     const input = channel === "slack"
       ? { webhookUrl: slackWebhook.trim() || undefined }
-      : { recipients: recipientsFromInput(emailRecipients).length > 0 ? recipientsFromInput(emailRecipients) : undefined };
+      : channel === "email"
+        ? { recipients: recipientsFromInput(emailRecipients).length > 0 ? recipientsFromInput(emailRecipients) : undefined }
+        : { webhookUrl: webhookURL.trim() || undefined, signingSecret: webhookSecret.trim() || undefined };
     testChannel.mutate({ channel, input }, {
       onSuccess: () => toast({ title: "Test delivered", description: `InfraAudit confirmed the ${channel} provider accepted the test.` }),
       onError: reportError,
     });
   };
+
+  const escalationPolicy = {
+    enabled: policyQuery.data?.enabled ?? false,
+    escalateAfterHours: policyDraft.escalateAfterHours ?? policyQuery.data?.escalateAfterHours ?? 24,
+    repeatEveryHours: policyDraft.repeatEveryHours ?? policyQuery.data?.repeatEveryHours ?? 24,
+    maxEscalationLevel: policyDraft.maxEscalationLevel ?? policyQuery.data?.maxEscalationLevel ?? 3,
+  };
+
+  const saveEscalationPolicy = (enabled = escalationPolicy.enabled) => updatePolicy.mutate({ ...escalationPolicy, enabled }, {
+    onSuccess: () => {
+      setPolicyDraft({});
+      toast({ title: enabled ? "Automatic escalation enabled" : "Automatic escalation paused", description: enabled ? "Unacknowledged incidents will escalate after scheduled monitor evaluation." : "Manual escalation remains available." });
+    },
+    onError: reportError,
+  });
 
   if (channelsQuery.isLoading) {
     return <Card><CardHeader><Skeleton className="h-5 w-56" /><Skeleton className="h-4 w-96 max-w-full" /></CardHeader><CardContent className="grid gap-4 lg:grid-cols-2"><Skeleton className="h-52" /><Skeleton className="h-52" /></CardContent></Card>;
@@ -102,7 +142,7 @@ export function CostNotificationChannels() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-base"><Send className="h-4 w-4" />Breach delivery channels</CardTitle>
-            <CardDescription className="mt-1">Organization-wide Slack and email routing for new warnings, critical escalations, and recovery events.</CardDescription>
+            <CardDescription className="mt-1">Organization-wide Slack, email, and signed-webhook routing for new warnings, escalations, and recovery events.</CardDescription>
           </div>
           <Badge variant={enabledCount > 0 ? "outline" : "secondary"}>{enabledCount} active channel{enabledCount === 1 ? "" : "s"}</Badge>
         </div>
@@ -114,9 +154,9 @@ export function CostNotificationChannels() {
         <Alert>
           <ShieldCheck className="h-4 w-4" />
           <AlertTitle>Secrets remain server-side</AlertTitle>
-          <AlertDescription>Slack webhook and recipient configuration are encrypted at rest. Saved destinations are never returned to the browser or written to delivery history.</AlertDescription>
+          <AlertDescription>Slack URLs, email recipients, generic webhook URLs, and signing secrets are encrypted at rest. Saved secrets are never returned to the browser or written to delivery history.</AlertDescription>
         </Alert>
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 xl:grid-cols-3">
           <ChannelCard
             icon={<MessageSquare className="h-5 w-5 text-violet-600" />}
             title="Slack"
@@ -157,6 +197,48 @@ export function CostNotificationChannels() {
             </div>
             {canManage && <div className="flex flex-wrap gap-2"><Button size="sm" onClick={saveEmail} disabled={updateChannel.isPending}>{updateChannel.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save and enable</Button><Button size="sm" variant="outline" onClick={() => sendTest("email")} disabled={testChannel.isPending || (!email?.configured && recipientsFromInput(emailRecipients).length === 0)}>Send test</Button></div>}
           </ChannelCard>
+
+          <ChannelCard
+            icon={<Webhook className="h-5 w-5 text-emerald-600" />}
+            title="Signed webhook"
+            description="HMAC-signed JSON events for your incident tooling."
+            configured={Boolean(webhook?.configured)}
+            deliveryReady={Boolean(webhook?.deliveryReady)}
+            issue={webhook?.issue}
+            enabled={Boolean(webhook?.enabled)}
+            hint={webhook?.destinationHint}
+            canManage={canManage}
+            busy={updateChannel.isPending || testChannel.isPending}
+            onToggle={(enabled) => toggleChannel("webhook", enabled)}
+          >
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="cost-webhook-url">HTTPS endpoint</Label>
+                <Input id="cost-webhook-url" type="url" autoComplete="off" placeholder={webhook?.configured ? "Stored securely — enter only to replace" : "https://events.example.com/infraudit"} value={webhookURL} onChange={(event) => setWebhookURL(event.target.value)} disabled={!canManage} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cost-webhook-secret">Signing secret</Label>
+                <Input id="cost-webhook-secret" type="password" autoComplete="new-password" placeholder={webhook?.configured ? "Stored securely — enter only to replace" : "At least 32 characters"} value={webhookSecret} onChange={(event) => setWebhookSecret(event.target.value)} disabled={!canManage} />
+                <p className="text-xs text-muted-foreground">Verify <code>X-InfraAudit-Signature</code> using HMAC-SHA256 over timestamp + body.</p>
+              </div>
+            </div>
+            {canManage && <div className="flex flex-wrap gap-2"><Button size="sm" onClick={saveWebhook} disabled={updateChannel.isPending}>{updateChannel.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save and enable</Button><Button size="sm" variant="outline" onClick={() => sendTest("webhook")} disabled={testChannel.isPending || (!webhook?.configured && (!webhookURL.trim() || !webhookSecret.trim()))}>Send test</Button></div>}
+          </ChannelCard>
+        </div>
+
+        <div className="space-y-4 rounded-lg border p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-3"><div className="rounded-md bg-muted p-2"><Clock3 className="h-5 w-5 text-amber-600" /></div><div><p className="font-semibold">Unacknowledged escalation</p><p className="text-xs text-muted-foreground">Escalate open incidents after the next scheduled cost-monitor evaluation. Acknowledgement pauses the policy; recovery resolves it.</p></div></div>
+            <Switch checked={escalationPolicy.enabled} onCheckedChange={(enabled) => saveEscalationPolicy(enabled)} disabled={!canManage || updatePolicy.isPending || policyQuery.isLoading} aria-label="Enable automatic cost incident escalation" />
+          </div>
+          {policyQuery.isError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Escalation policy unavailable</AlertTitle><AlertDescription><Button variant="link" className="h-auto p-0" onClick={() => policyQuery.refetch()}>Retry</Button></AlertDescription></Alert> : (
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2"><Label htmlFor="escalate-after">First escalation after</Label><div className="flex items-center gap-2"><Input id="escalate-after" type="number" min={1} max={168} value={escalationPolicy.escalateAfterHours} onChange={(event) => setPolicyDraft((current) => ({ ...current, escalateAfterHours: Number(event.target.value) }))} disabled={!canManage} /><span className="text-sm text-muted-foreground">hours</span></div></div>
+              <div className="space-y-2"><Label htmlFor="repeat-escalation">Repeat every</Label><div className="flex items-center gap-2"><Input id="repeat-escalation" type="number" min={1} max={168} value={escalationPolicy.repeatEveryHours} onChange={(event) => setPolicyDraft((current) => ({ ...current, repeatEveryHours: Number(event.target.value) }))} disabled={!canManage} /><span className="text-sm text-muted-foreground">hours</span></div></div>
+              <div className="space-y-2"><Label htmlFor="max-escalations">Maximum level</Label><Input id="max-escalations" type="number" min={1} max={10} value={escalationPolicy.maxEscalationLevel} onChange={(event) => setPolicyDraft((current) => ({ ...current, maxEscalationLevel: Number(event.target.value) }))} disabled={!canManage} /></div>
+            </div>
+          )}
+          {canManage && <div className="flex items-center justify-between gap-3"><p className="text-xs text-muted-foreground">Transient network, rate-limit, and 5xx failures are retried three times; every attempt remains visible in incident history.</p><Button size="sm" variant="outline" onClick={() => saveEscalationPolicy()} disabled={updatePolicy.isPending || policyQuery.isLoading}>{updatePolicy.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save policy</Button></div>}
         </div>
       </CardContent>
     </Card>

@@ -412,7 +412,7 @@ export interface CostMonitorEvaluationPage {
   total: number;
 }
 
-export type CostNotificationChannelType = 'slack' | 'email';
+export type CostNotificationChannelType = 'slack' | 'email' | 'webhook';
 
 export interface CostNotificationChannel {
   channel: CostNotificationChannelType;
@@ -427,7 +427,16 @@ export interface CostNotificationChannel {
 export interface CostNotificationChannelInput {
   enabled: boolean;
   webhookUrl?: string;
+  signingSecret?: string;
   recipients?: string[];
+}
+
+export interface CostNotificationEscalationPolicy {
+  enabled: boolean;
+  escalateAfterHours: number;
+  repeatEveryHours: number;
+  maxEscalationLevel: number;
+  updatedAt?: string;
 }
 
 export interface CostMonitorIncident {
@@ -470,6 +479,9 @@ export interface CostMonitorNotificationDelivery {
   destinationHint?: string;
   errorCategory?: string;
   errorMessage?: string;
+  attemptNumber: number;
+  maxAttempts: number;
+  retryable: boolean;
   attemptedAt: string;
   sentAt?: string;
 }

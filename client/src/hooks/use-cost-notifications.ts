@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import type { CostNotificationChannelInput, CostNotificationChannelType } from '@/types';
+import type { CostNotificationChannelInput, CostNotificationChannelType, CostNotificationEscalationPolicy } from '@/types';
 
 const channelsKey = ['/api/v1/costs/monitor-notifications/channels'] as const;
 const incidentsKey = ['/api/v1/costs/monitor-notifications/incidents'] as const;
+const policyKey = ['/api/v1/costs/monitor-notifications/policy'] as const;
 
 export function useCostNotificationChannels() {
   return useQuery({
@@ -25,6 +26,21 @@ export function useTestCostNotificationChannel() {
   return useMutation({
     mutationFn: ({ channel, input }: { channel: CostNotificationChannelType; input?: Omit<CostNotificationChannelInput, 'enabled'> }) =>
       api.costs.testMonitorNotificationChannel(channel, input),
+  });
+}
+
+export function useCostNotificationEscalationPolicy() {
+  return useQuery({
+    queryKey: policyKey,
+    queryFn: () => api.costs.getMonitorNotificationEscalationPolicy(),
+  });
+}
+
+export function useUpdateCostNotificationEscalationPolicy() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CostNotificationEscalationPolicy) => api.costs.updateMonitorNotificationEscalationPolicy(input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: policyKey }),
   });
 }
 
