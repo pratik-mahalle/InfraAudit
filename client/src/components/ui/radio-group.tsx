@@ -1,42 +1,9 @@
 import * as React from "react"
-import * as RadioGroupPrimitive from "@radix-ui/react-radio-group"
-import { Circle } from "lucide-react"
-
+import { RadioButton } from "primereact/radiobutton"
 import { cn } from "@/lib/utils"
-
-const RadioGroup = React.forwardRef<
-  React.ElementRef<typeof RadioGroupPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
->(({ className, ...props }, ref) => {
-  return (
-    <RadioGroupPrimitive.Root
-      className={cn("grid gap-2", className)}
-      {...props}
-      ref={ref}
-    />
-  )
-})
-RadioGroup.displayName = RadioGroupPrimitive.Root.displayName
-
-const RadioGroupItem = React.forwardRef<
-  React.ElementRef<typeof RadioGroupPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
->(({ className, ...props }, ref) => {
-  return (
-    <RadioGroupPrimitive.Item
-      ref={ref}
-      className={cn(
-        "aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
-      {...props}
-    >
-      <RadioGroupPrimitive.Indicator className="flex items-center justify-center">
-        <Circle className="h-2.5 w-2.5 fill-current text-current" />
-      </RadioGroupPrimitive.Indicator>
-    </RadioGroupPrimitive.Item>
-  )
-})
-RadioGroupItem.displayName = RadioGroupPrimitive.Item.displayName
-
+const RadioContext = React.createContext<{ value?: string; onValueChange?: (value: string) => void }>({})
+const RadioGroup = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { value?: string; defaultValue?: string; onValueChange?: (value: string) => void }>(({ className, value, defaultValue, onValueChange, children, ...props }, ref) => { const [internal, setInternal] = React.useState(defaultValue); return <RadioContext.Provider value={{ value: value ?? internal, onValueChange: (next) => { setInternal(next); onValueChange?.(next) } }}><div ref={ref} className={cn("grid gap-2", className)} {...props}>{children}</div></RadioContext.Provider> })
+RadioGroup.displayName = "RadioGroup"
+const RadioGroupItem = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement> & { value: string }>(({ className, value, disabled, id, ...props }, ref) => { const context = React.useContext(RadioContext); return <RadioButton ref={ref as any} inputId={id} value={value} checked={context.value === value} onChange={() => context.onValueChange?.(value)} disabled={disabled} className={cn(className)} {...(props as any)} /> })
+RadioGroupItem.displayName = "RadioGroupItem"
 export { RadioGroup, RadioGroupItem }
