@@ -170,7 +170,7 @@ export function DetailRow({
   return (
     <div className="grid gap-1">
       <dt className="text-xs font-medium uppercase text-muted-foreground">{label}</dt>
-      <dd className="text-sm text-foreground">{children}</dd>
+      <dd className="break-words text-sm text-foreground [overflow-wrap:anywhere]">{children}</dd>
     </div>
   );
 }

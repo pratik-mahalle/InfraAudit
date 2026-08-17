@@ -272,8 +272,8 @@ export default function Alerts() {
                       <ToneBadge value={selectedAlert.status} />
                       <ToneBadge value={selectedAlert.type} tone="blue" />
                     </div>
-                    <h2 className="text-lg font-semibold">{selectedAlert.title}</h2>
-                    <p className="mt-2 text-sm text-muted-foreground">{selectedAlert.message}</p>
+                    <h2 className="break-words text-lg font-semibold [overflow-wrap:anywhere]">{selectedAlert.title}</h2>
+                    <p className="mt-2 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">{selectedAlert.message}</p>
                   </div>
                   <Separator />
                   <dl className="grid gap-4">

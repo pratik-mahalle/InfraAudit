@@ -52,7 +52,7 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
 
       <main
         className={cn(
-          "min-h-screen bg-background transition-[margin] duration-300",
+          "min-h-screen min-w-0 bg-background transition-[margin] duration-300",
           !hideSidebar && (sidebarCollapsed ? "md:ml-14" : "md:ml-56")
         )}
       >
@@ -98,7 +98,7 @@ export function DashboardLayout({ children, hideSidebar = false }: DashboardLayo
           <ThemeToggle />
         </header>
 
-        <div className="px-4 py-5 md:px-6 md:py-6 lg:px-8">
+        <div className="min-w-0 px-4 py-5 md:px-6 md:py-6 lg:px-8">
           {children}
         </div>
       </main>
