@@ -6,16 +6,21 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import type { CostChartType, CostExplorerBreakdown, CostExplorerSeriesPoint } from "@/types";
+import type { CostBreakdownChartType, CostChartType, CostExplorerBreakdown, CostExplorerSeriesPoint, CostVisualizationMode } from "@/types";
 
-export type CostVisualizationMode = "trend" | "breakdown";
+export type { CostVisualizationMode } from "@/types";
+
+const BREAKDOWN_COLORS = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#f97316", "#ec4899", "#6366f1", "#84cc16", "#14b8a6"];
 
 interface CostExplorerVisualizationProps {
   series: CostExplorerSeriesPoint[];
@@ -24,6 +29,7 @@ interface CostExplorerVisualizationProps {
   granularity: "daily" | "monthly";
   chartType: CostChartType;
   mode?: CostVisualizationMode;
+  breakdownChartType?: CostBreakdownChartType;
   height?: number;
   emptyMessage?: string;
 }
@@ -48,6 +54,7 @@ export function CostExplorerVisualization({
   granularity,
   chartType,
   mode = "trend",
+  breakdownChartType = "bar",
   height = 288,
   emptyMessage = "No cost history matches this scope.",
 }: CostExplorerVisualizationProps) {
@@ -71,6 +78,36 @@ export function CostExplorerVisualization({
   if (mode === "breakdown") {
     if (breakdownData.length === 0) {
       return <EmptyChart height={height} message="No grouped cost rows match this scope." />;
+    }
+    if (breakdownChartType === "donut") {
+      const breakdownTotal = breakdownData.reduce((sum, item) => sum + item.cost, 0);
+      return (
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(170px,0.7fr)]" style={{ minHeight: height }}>
+          <div className="relative" style={{ height }} role="img" aria-label="Cost breakdown donut chart">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={breakdownData} dataKey="cost" nameKey="fullLabel" cx="50%" cy="50%" innerRadius="54%" outerRadius="80%" paddingAngle={2} stroke="hsl(var(--card))" strokeWidth={2}>
+                  {breakdownData.map((item, index) => <Cell key={item.fullLabel} fill={BREAKDOWN_COLORS[index % BREAKDOWN_COLORS.length]} />)}
+                </Pie>
+                <Tooltip formatter={tooltipFormatter} contentStyle={{ borderRadius: 8, borderColor: "hsl(var(--border))", background: "hsl(var(--popover))" }} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[11px] text-muted-foreground">Top groups</span>
+              <strong className="max-w-[120px] truncate text-base tabular-nums">{formatCostMoney(breakdownTotal, currency)}</strong>
+            </div>
+          </div>
+          <div className="flex max-h-[288px] flex-col justify-center gap-2 overflow-y-auto py-3">
+            {breakdownData.map((item, index) => (
+              <div key={item.fullLabel} className="flex items-center gap-2 text-xs">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: BREAKDOWN_COLORS[index % BREAKDOWN_COLORS.length] }} />
+                <span className="min-w-0 flex-1 truncate text-muted-foreground" title={item.fullLabel}>{item.fullLabel}</span>
+                <span className="shrink-0 font-medium tabular-nums">{formatCostMoney(item.cost, currency)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
     }
     return (
       <div style={{ height }} role="img" aria-label="Cost breakdown bar chart">
