@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { ComplianceAssessment, ComplianceControl } from "@/types";
 import { SocBadge, SocButton, SocPanel, SocProgress, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
 import { cn } from "@/lib/utils";
+import posthog from "@/lib/posthog";
 
 function severityTone(severity?: string) {
   if (severity === "critical") return "red" as const;
@@ -110,6 +111,7 @@ export default function Compliance() {
     }
     runAssessment(selectedFrameworkId, {
       onSuccess: (result) => {
+        posthog.capture("compliance_assessment_started", { framework_id: selectedFrameworkId });
         if ("jobId" in result && result.jobId) {
           setAssessmentJobId(result.jobId);
           setNotifiedAssessmentJobStatus(null);
