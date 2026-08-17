@@ -15,8 +15,9 @@ import { CloudProviderSetup } from "@/components/providers/CloudProviderSetup";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useDisconnectProvider, useProviders, useProviderStatus, useSyncProvider } from "@/hooks/use-providers";
+import { useDisconnectProvider, useProviderDiagnostics, useProviders, useProviderStatus, useSyncProvider } from "@/hooks/use-providers";
 import { useResources } from "@/hooks/use-resources";
+import { usePermission } from "@/hooks/use-permission";
 import { SocBadge, SocButton, SocPanel, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
 import { cn } from "@/lib/utils";
 import posthog from "@/lib/posthog";
@@ -59,14 +60,14 @@ const providerRequirements: Record<string, string[]> = {
     "Save the stack RoleArn output for the activation step",
   ],
   gcp: [
-    "Service account key JSON",
-    "Project ID for the target project",
-    "Viewer access for inventory, monitoring, security, and billing data",
+    "GCP project ID and numeric project number",
+    "Permission to deploy the generated Workload Identity Federation resources",
+    "Optional SCC and BigQuery billing access if those capabilities are enabled",
   ],
   azure: [
-    "App registration client ID and secret",
-    "Tenant ID and subscription ID",
-    "Reader access on the target subscription",
+    "Customer tenant ID and target subscription ID",
+    "Permission to deploy the generated Azure Lighthouse delegation",
+    "Reader, Security Reader, and optional Cost Management Reader delegation",
   ],
   kubernetes: [
     "Kubeconfig with read-only cluster access",
@@ -87,14 +88,17 @@ function compactTime(value?: string | null) {
 }
 
 function providerTone(status?: string, connected?: boolean) {
-  if (status === "error") return "red" as const;
-  if (status === "partial") return "orange" as const;
+  if (status === "error" || status === "permission_denied" || status === "failed") return "red" as const;
+  if (status === "partial" || status === "revoked" || status === "stale" || status === "not_configured" || status === "rate_limited") return "orange" as const;
+  if (status === "pending_setup" || status === "validating" || status === "syncing" || status === "draft") return "blue" as const;
   if (connected) return "green" as const;
   return "slate" as const;
 }
 
 export default function CloudProviders() {
   const { toast } = useToast();
+  const { hasPermission } = usePermission();
+  const canManageProviders = hasPermission("manage_providers");
   const [selectedProviderId, setSelectedProviderId] = useState("aws");
   const [connectOpen, setConnectOpen] = useState(false);
   const { data: providers = [], isLoading: providersLoading, isError: providersError, error: providersErrorValue } = useProviders();
@@ -113,10 +117,13 @@ export default function CloudProviders() {
         ? providerName.includes("kubernetes") || providerName.includes("k8s")
         : providerName === catalogItem.id;
     }).length;
+    const lifecycleState = provider?.lifecycleState;
+    const effectiveStatus = lifecycleState ?? status?.status ?? (provider?.isConnected ? "connected" : "disconnected");
     const connected = Boolean(
       provider?.isConnected
-      || status?.status === "connected"
-      || status?.status === "partial"
+      || effectiveStatus === "connected"
+      || effectiveStatus === "syncing"
+      || effectiveStatus === "partial"
       || (catalogItem.id === "kubernetes" && resourceCount > 0),
     );
 
@@ -124,9 +131,13 @@ export default function CloudProviders() {
       ...catalogItem,
       connected,
       resourceCount,
-      status: status?.status ?? (connected ? "connected" : "disconnected"),
+      status: effectiveStatus,
       message: status?.message,
       lastSynced: provider?.lastSynced ?? status?.lastSynced,
+      connectionId: provider?.connectionId,
+      cloudScopeId: provider?.cloudScopeId,
+      authMethod: provider?.authMethod,
+      lastJobId: provider?.lastJobId,
     };
   }), [providerStatus, providers, resources]);
 
@@ -135,14 +146,20 @@ export default function CloudProviders() {
   const disconnectedProviders = providerRows.filter((provider) => !provider.connected);
   const totalResources = resourcePage?.totalItems ?? resources.length;
   const isLoading = providersLoading || statusLoading || resourcesLoading;
+  const { data: diagnostics = [], isLoading: diagnosticsLoading } = useProviderDiagnostics(
+    selectedProvider?.id ?? "",
+    selectedProvider?.connectionId,
+  );
 
   const handleAddProvider = (providerId = selectedProviderId) => {
+    if (!canManageProviders) return;
     setSelectedProviderId(providerId);
     setConnectOpen(true);
   };
 
-  const handleSync = (providerId: string) => {
-    syncProvider.mutate(providerId, {
+  const handleSync = (providerId: string, connectionId?: string) => {
+    if (!canManageProviders) return;
+    syncProvider.mutate(connectionId ? { provider: providerId, connectionId } : providerId, {
       onSuccess: () => {
         posthog.capture("provider_sync_started", { provider: providerId });
         toast({ title: "Provider sync started", description: `${providerId.toUpperCase()} inventory refresh is running.` });
@@ -151,8 +168,9 @@ export default function CloudProviders() {
     });
   };
 
-  const handleDisconnect = (providerId: string) => {
-    disconnectProvider.mutate(providerId, {
+  const handleDisconnect = (providerId: string, connectionId?: string) => {
+    if (!canManageProviders) return;
+    disconnectProvider.mutate(connectionId ? { provider: providerId, connectionId } : providerId, {
       onSuccess: () => {
         posthog.capture("provider_disconnected", { provider: providerId });
         toast({ title: "Provider disconnected", description: `${providerId.toUpperCase()} was disconnected.` });
@@ -172,10 +190,12 @@ export default function CloudProviders() {
               Set up least-privilege provider identities, review sync health, and confirm which cloud inventories are feeding InfraAudit.
             </p>
           </div>
-          <Button onClick={() => handleAddProvider()} className="gap-2 self-start lg:self-center">
-            <Plus className="h-4 w-4" />
-            Add Provider
-          </Button>
+          {canManageProviders && (
+            <Button onClick={() => handleAddProvider()} className="gap-2 self-start lg:self-center">
+              <Plus className="h-4 w-4" />
+              Add Provider
+            </Button>
+          )}
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
@@ -218,37 +238,39 @@ export default function CloudProviders() {
               </div>
               <h3 className="mt-4 text-base font-semibold text-foreground">{provider.label}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{provider.resourceCount} resources</p>
-              <div className="mt-4 flex gap-2">
-                <Button
-                  type="button"
-                  variant={provider.connected ? "outline" : "default"}
-                  size="sm"
-                  className="gap-2"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleAddProvider(provider.id);
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                  {provider.connected ? "Update" : "Connect"}
-                </Button>
-                {provider.connected && provider.id !== "kubernetes" && (
+              {canManageProviders && (
+                <div className="mt-4 flex gap-2">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant={provider.connected ? "outline" : "default"}
                     size="sm"
                     className="gap-2"
-                    disabled={syncProvider.isPending}
                     onClick={(event) => {
                       event.stopPropagation();
-                      handleSync(provider.id);
+                      handleAddProvider(provider.id);
                     }}
                   >
-                    <RefreshCw className="h-4 w-4" />
-                    Sync
+                    <Plus className="h-4 w-4" />
+                    {provider.connected ? "Update" : "Connect"}
                   </Button>
-                )}
-              </div>
+                  {provider.connected && provider.id !== "kubernetes" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      disabled={syncProvider.isPending}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleSync(provider.id, provider.connectionId);
+                      }}
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Sync
+                    </Button>
+                  )}
+                </div>
+              )}
             </button>
           ))}
         </div>
@@ -289,23 +311,29 @@ export default function CloudProviders() {
                     <strong className="text-foreground">{provider.resourceCount}</strong> resources
                   </span>
                   <span className="flex gap-2 md:justify-end" onClick={(event) => event.stopPropagation()}>
-                    <SocButton
-                      variant="ghost"
-                      className="h-9 px-3"
-                      disabled={!provider.connected || provider.id === "kubernetes" || syncProvider.isPending}
-                      onClick={() => handleSync(provider.id)}
-                    >
-                      {syncProvider.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      Sync
-                    </SocButton>
-                    <SocButton
-                      variant="danger"
-                      className="h-9 px-3"
-                      disabled={!provider.connected || provider.id === "kubernetes" || disconnectProvider.isPending}
-                      onClick={() => handleDisconnect(provider.id)}
-                    >
-                      {disconnectProvider.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
-                    </SocButton>
+                    {canManageProviders ? (
+                      <>
+                        <SocButton
+                          variant="ghost"
+                          className="h-9 px-3"
+                          disabled={!provider.connected || provider.id === "kubernetes" || syncProvider.isPending}
+                          onClick={() => handleSync(provider.id, provider.connectionId)}
+                        >
+                          {syncProvider.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                          Sync
+                        </SocButton>
+                        <SocButton
+                          variant="danger"
+                          className="h-9 px-3"
+                          disabled={!provider.connected || provider.id === "kubernetes" || disconnectProvider.isPending}
+                          onClick={() => handleDisconnect(provider.id, provider.connectionId)}
+                        >
+                          {disconnectProvider.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
+                        </SocButton>
+                      </>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">View only</span>
+                    )}
                   </span>
                 </button>
               ))}
@@ -334,10 +362,28 @@ export default function CloudProviders() {
                     <span className="text-muted-foreground">Provider ID</span>
                     <span className="font-mono text-foreground">{selectedProvider?.id}</span>
                   </div>
+                  {selectedProvider?.cloudScopeId && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted-foreground">Cloud scope</span>
+                      <span className="max-w-[210px] break-all text-right font-mono text-foreground">{selectedProvider.cloudScopeId}</span>
+                    </div>
+                  )}
+                  {selectedProvider?.authMethod && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted-foreground">Authentication</span>
+                      <span className="text-right font-mono text-foreground">{selectedProvider.authMethod.replaceAll("_", " ")}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between gap-4">
                     <span className="text-muted-foreground">Status</span>
                     <SocBadge tone={providerTone(selectedProvider?.status, selectedProvider?.connected)}>{selectedProvider?.status}</SocBadge>
                   </div>
+                  {selectedProvider?.lastJobId && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-muted-foreground">Last logical job</span>
+                      <span className="font-mono text-foreground">{selectedProvider.lastJobId}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between gap-4">
                     <span className="text-muted-foreground">API message</span>
                     <span className="max-w-[210px] text-right text-foreground">{selectedProvider?.message || "No status message"}</span>
@@ -345,14 +391,39 @@ export default function CloudProviders() {
                 </div>
               </div>
 
+              {selectedProvider?.connectionId && (
+                <div>
+                  <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Source diagnostics</p>
+                  <div className="space-y-2">
+                    {diagnosticsLoading ? (
+                      <div className="flex items-center gap-2 rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Loading diagnostics…
+                      </div>
+                    ) : diagnostics.length === 0 ? (
+                      <div className="rounded-md border border-border bg-background p-3 text-sm text-muted-foreground">No source checks have completed yet.</div>
+                    ) : diagnostics.slice(0, 8).map((diagnostic) => (
+                      <div key={`${diagnostic.operationId}-${diagnostic.source}`} className="rounded-md border border-border bg-background p-3 text-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="font-medium capitalize text-foreground">{diagnostic.source.replaceAll("_", " ")}</span>
+                          <SocBadge tone={providerTone(diagnostic.outcome, diagnostic.outcome.startsWith("success_"))}>{diagnostic.outcome}</SocBadge>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                          {diagnostic.guidance || `${diagnostic.fetchedCount} records fetched; ${diagnostic.normalizedCount} normalized.`}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="rounded-md border border-border bg-background p-4 text-sm leading-6 text-muted-foreground">
-                Use a dedicated read-only identity for each cloud account. AWS uses a cross-account role and does not require long-lived access keys.
+                New connections use short-lived or delegated access: AWS cross-account roles, GCP Workload Identity Federation, and Azure Lighthouse. No long-lived customer secret is collected.
               </div>
             </div>
           </SocPanel>
         </div>
 
-        <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
+        <Dialog open={canManageProviders && connectOpen} onOpenChange={setConnectOpen}>
           <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Set up or update {selectedProvider?.label || "provider"}</DialogTitle>
