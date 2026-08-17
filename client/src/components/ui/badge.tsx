@@ -32,7 +32,8 @@ export interface BadgeProps
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   const severity = variant === "destructive" ? "danger" : variant === "success" ? "success" : variant === "secondary" ? "secondary" : undefined
-  return <Tag severity={severity} rounded value={props.children as React.ReactNode} className={cn(badgeVariants({ variant }), className)} {...(props as any)} />
+  const { children, ...tagProps } = props
+  return <Tag severity={severity} rounded value={children as React.ReactNode} className={cn(badgeVariants({ variant }), className)} {...(tagProps as any)} />
 }
 
 export { Badge, badgeVariants }

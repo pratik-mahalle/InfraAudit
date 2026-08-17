@@ -1,5 +1,4 @@
 import * as React from "react"
-import { Card as PrimeCard } from "primereact/card"
 
 import { cn } from "@/lib/utils"
 
@@ -7,10 +6,10 @@ const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <PrimeCard
-    ref={ref as any}
+  <div
+    ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "p-card p-component rounded-lg border bg-card text-card-foreground shadow-sm",
       className
     )}
     {...props}

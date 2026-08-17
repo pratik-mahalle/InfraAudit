@@ -28,26 +28,12 @@ export function ResourceUtilization({
         <span className="text-xs text-gray-600 dark:text-slate-400">Live data from connected providers</span>
       </CardHeader>
       <CardContent>
-        <div className="aspect-w-16 aspect-h-9 mb-6 rounded-lg flex items-center justify-center overflow-hidden bg-gray-100 dark:bg-slate-800">
+        <div className="mb-6 flex min-h-24 items-center justify-center rounded-lg border border-dashed bg-muted/30 px-4 py-6 text-center">
           {isLoading ? (
             <Skeleton className="w-full h-full bg-gray-200 dark:bg-slate-700" />
           ) : (
             <div className="flex flex-col items-center justify-center text-gray-500 dark:text-slate-400">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-16 w-16 mb-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1}
-                  d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
-                />
-              </svg>
-              <span className="text-sm">Resource utilization visualization</span>
+              <span className="text-sm">Utilization charts are summarized below from the live inventory.</span>
             </div>
           )}
         </div>
