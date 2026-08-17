@@ -18,6 +18,7 @@ import { JobScheduler } from "@/components/automation/JobScheduler";
 import { JobEditor } from "@/components/automation/JobEditor";
 import { useToast } from "@/hooks/use-toast";
 import { ScheduledJob } from "@/types";
+import posthog from "@/lib/posthog";
 
 export default function Automation() {
     const { toast } = useToast();
@@ -37,14 +38,20 @@ export default function Automation() {
 
     const handleCreateJob = (job: any) => {
         createJob(job, {
-            onSuccess: () => toast({ title: "Job Scheduled", description: `${job.name} has been created.` }),
+            onSuccess: () => {
+                posthog.capture("automation_job_created");
+                toast({ title: "Job Scheduled", description: `${job.name} has been created.` });
+            },
             onError: () => toast({ title: "Error", description: "Failed to create job.", variant: "destructive" })
         });
     };
 
     const handleRunJob = (id: string) => {
         triggerJob(id, {
-            onSuccess: () => toast({ title: "Job Triggered", description: "Job execution started." }),
+            onSuccess: () => {
+                posthog.capture("automation_job_run");
+                toast({ title: "Job Triggered", description: "Job execution started." });
+            },
             onError: () => toast({ title: "Error", description: "Failed to run job.", variant: "destructive" })
         });
     };
@@ -66,7 +73,10 @@ export default function Automation() {
 
     const handleApprove = (id: string) => {
         approveRemediation(id, {
-            onSuccess: () => toast({ title: "Action Approved", description: "Remediation action is being executed." }),
+            onSuccess: () => {
+                posthog.capture("remediation_approved");
+                toast({ title: "Action Approved", description: "Remediation action is being executed." });
+            },
             onError: () => toast({ title: "Error", description: "Failed to approve action.", variant: "destructive" })
         });
     };

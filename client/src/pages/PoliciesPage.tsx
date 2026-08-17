@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { SocBadge, SocButton, SocPanel, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
 import { cn } from "@/lib/utils";
+import posthog from "@/lib/posthog";
 
 const categories = ["security", "compliance", "cost", "custom"];
 const severities = ["critical", "high", "medium", "low"];
@@ -90,6 +91,7 @@ export default function PoliciesPage() {
       { name, description, rego_code: regoCode, category, severity },
       {
         onSuccess: (policy: any) => {
+          posthog.capture("policy_created", { category, severity });
           toast({ title: "Policy created", description: "The policy is ready for evaluation." });
           setCreateOpen(false);
           setSelectedPolicyId(policy.id);
@@ -121,6 +123,7 @@ export default function PoliciesPage() {
       { name: tmpl.name, description: tmpl.description, rego_code: templateRego(tmpl), category: tmpl.category, severity: tmpl.severity },
       {
         onSuccess: (policy: any) => {
+          posthog.capture("policy_created", { category: tmpl.category, severity: tmpl.severity, source: "template" });
           setSelectedPolicyId(policy.id);
           toast({ title: "Template enabled", description: tmpl.name });
         },
@@ -152,7 +155,10 @@ export default function PoliciesPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <SocButton variant="ghost" onClick={() => evaluateMutation.mutate(undefined, {
-            onSuccess: (data: any) => toast({ title: "Evaluation complete", description: `${data.newViolations ?? data.new_violations ?? 0} new violations found.` }),
+            onSuccess: (data: any) => {
+              posthog.capture("policies_evaluated", { new_violations: data.newViolations ?? data.new_violations ?? 0 });
+              toast({ title: "Evaluation complete", description: `${data.newViolations ?? data.new_violations ?? 0} new violations found.` });
+            },
             onError: (err: Error) => toast({ title: "Evaluation failed", description: err.message, variant: "destructive" }),
           })} disabled={evaluateMutation.isPending}>
             {evaluateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
@@ -229,7 +235,9 @@ export default function PoliciesPage() {
                 </div>
                 <pre className="max-h-[430px] overflow-auto rounded border border-border bg-muted/40 p-4 text-sm text-foreground">{policyRego(selectedPolicy) || "No policy source available."}</pre>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <SocButton onClick={() => evaluateMutation.mutate()} disabled={evaluateMutation.isPending}><Play className="h-4 w-4" /> Evaluate</SocButton>
+                  <SocButton onClick={() => evaluateMutation.mutate(undefined, {
+                    onSuccess: (data: any) => posthog.capture("policies_evaluated", { new_violations: data.newViolations ?? data.new_violations ?? 0, scope: "selected_policy" }),
+                  })} disabled={evaluateMutation.isPending}><Play className="h-4 w-4" /> Evaluate</SocButton>
                   <SocButton variant="ghost">Save version</SocButton>
                   <SocButton variant="danger" onClick={() => deleteMutation.mutate(selectedPolicy.id)} disabled={deleteMutation.isPending}>Delete</SocButton>
                 </div>

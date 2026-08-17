@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { AlertCircle, CheckCircle2, UploadCloud, FileText, Info } from 'lucide-react';
+import posthog from '@/lib/posthog';
 
 enum BillingFileType {
   AWS_COST_EXPLORER = "AWS_COST_EXPLORER",
@@ -93,6 +94,7 @@ export default function BillingImport() {
       }
     },
     onSuccess: () => {
+      posthog.capture('billing_csv_uploaded', { provider, file_type: fileType });
       toast({
         title: 'File Uploaded Successfully',
         description: 'Your billing data has been processed and is now available for cost analysis.',

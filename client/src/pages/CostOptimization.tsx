@@ -67,6 +67,7 @@ import {
   useCostOptimizationAnalysisStatus,
 } from "@/hooks/use-costs";
 import { ChartTimeframe, CostOptimization as CostOptimizationRecord, CostOptimizationFilters, CostSyncSummary } from "@/types";
+import posthog from "@/lib/posthog";
 
 export default function CostOptimization() {
   const [trendTimeframe, setTrendTimeframe] = useState<ChartTimeframe>("30d");
@@ -110,6 +111,7 @@ export default function CostOptimization() {
   const handleDetectAnomalies = () => {
     detectAnomalies(undefined, {
       onSuccess: (result) => {
+        posthog.capture("cost_anomaly_scan_completed", { anomalies_detected: result.detected });
         toast({
           title: "Anomaly scan complete",
           description: result.detected > 0
@@ -156,6 +158,7 @@ export default function CostOptimization() {
   const handleGenerateOptimizations = () => {
     generateOptimizations("aws", {
       onSuccess: (result) => {
+        posthog.capture("cost_optimizations_generated", { provider: "aws", generated_count: result.generated, run_status: result.run?.status });
         toast({
           title: "Recommendation analysis complete",
           description: result.run?.status === "partial"
@@ -179,6 +182,7 @@ export default function CostOptimization() {
   const handleSync = () => {
     syncCosts(undefined, {
       onSuccess: (result) => {
+        posthog.capture("cost_sync_completed", { status: result.status, records_stored: result.recordsStored });
         setLastSync(result);
         const failed = result.status === "failed" || result.status === "partial";
         const diagnosticMessage = result.results
@@ -279,6 +283,7 @@ export default function CostOptimization() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
+      posthog.capture("cost_report_exported", { has_optimizations: optimizations.length > 0, has_anomalies: filteredAnomalies.length > 0 });
       toast({
         title: "Report exported",
         description: "Cost optimization report has been downloaded as CSV.",

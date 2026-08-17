@@ -19,6 +19,7 @@ import { useDisconnectProvider, useProviders, useProviderStatus, useSyncProvider
 import { useResources } from "@/hooks/use-resources";
 import { SocBadge, SocButton, SocPanel, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
 import { cn } from "@/lib/utils";
+import posthog from "@/lib/posthog";
 
 const providerCatalog = [
   {
@@ -142,14 +143,20 @@ export default function CloudProviders() {
 
   const handleSync = (providerId: string) => {
     syncProvider.mutate(providerId, {
-      onSuccess: () => toast({ title: "Provider sync started", description: `${providerId.toUpperCase()} inventory refresh is running.` }),
+      onSuccess: () => {
+        posthog.capture("provider_sync_started", { provider: providerId });
+        toast({ title: "Provider sync started", description: `${providerId.toUpperCase()} inventory refresh is running.` });
+      },
       onError: (error: Error) => toast({ title: "Sync failed", description: error.message, variant: "destructive" }),
     });
   };
 
   const handleDisconnect = (providerId: string) => {
     disconnectProvider.mutate(providerId, {
-      onSuccess: () => toast({ title: "Provider disconnected", description: `${providerId.toUpperCase()} was disconnected.` }),
+      onSuccess: () => {
+        posthog.capture("provider_disconnected", { provider: providerId });
+        toast({ title: "Provider disconnected", description: `${providerId.toUpperCase()} was disconnected.` });
+      },
       onError: (error: Error) => toast({ title: "Disconnect failed", description: error.message, variant: "destructive" }),
     });
   };
