@@ -5,6 +5,7 @@ import { User } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { unwrapResponse } from "@/lib/queryClient";
 import { isPersonalEmail, BUSINESS_EMAIL_ERROR } from "@/lib/utils";
+import posthog from "@/lib/posthog";
 
 type AuthContextType = {
   user: User | null;
@@ -64,6 +65,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // fresh data when getSession() and onAuthStateChange() race.
   const profileRequestId = useRef(0);
   const initializedRef = useRef(false);
+  const identifiedUserIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      if (identifiedUserIdRef.current) {
+        posthog.reset();
+        identifiedUserIdRef.current = null;
+      }
+      return;
+    }
+
+    const distinctId = String(user.id);
+    if (identifiedUserIdRef.current === distinctId) return;
+
+    if (identifiedUserIdRef.current) {
+      posthog.reset();
+    }
+
+    posthog.identify(distinctId, {
+      email: user.email,
+      name: user.fullName,
+      role: user.role,
+      plan: user.planType,
+      organization_id: user.organizationId,
+    });
+    identifiedUserIdRef.current = distinctId;
+  }, [user]);
 
   // Fetch profile from Go backend using Supabase JWT
   const loadProfile = useCallback(async (sess: Session | null) => {
@@ -190,6 +218,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw new Error(error.message);
+    posthog.reset();
+    identifiedUserIdRef.current = null;
     setUser(null);
     setSession(null);
     // Also clear Go backend cookies
