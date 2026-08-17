@@ -483,27 +483,132 @@ export interface Provider {
   provider: string;
   isConnected: boolean;
   lastSynced?: string;
-  status?: 'connected' | 'disconnected' | 'partial' | 'error';
+  connectionId?: string;
+  cloudScopeId?: string;
+  authMethod?: ProviderAuthMethod;
+  lifecycleState?: ProviderConnectionState;
+  setupExpiresAt?: string;
+  lastJobId?: number;
+  status?: ProviderConnectionState | 'disconnected';
   message?: string;
 }
 
 export interface ProviderSyncStatus extends Provider {
   resourceCount: number;
-  status: 'connected' | 'disconnected' | 'partial' | 'error';
+  status: ProviderConnectionState | 'disconnected';
   message?: string;
 }
 
 export interface ProviderCredentials {
   roleArn?: string;
   region?: string;
-  projectId?: string;
-  credentials?: string;
-  billingDataset?: string;
-  tenantId?: string;
-  clientId?: string;
-  clientSecret?: string;
-  subscriptionId?: string;
-  location?: string;
+}
+
+export type ProviderAuthMethod =
+  | 'gcp_wif'
+  | 'azure_lighthouse'
+  | 'legacy_gcp_key'
+  | 'legacy_azure_secret';
+
+export type ProviderConnectionState =
+  | 'draft'
+  | 'pending_setup'
+  | 'validating'
+  | 'connected'
+  | 'syncing'
+  | 'partial'
+  | 'error'
+  | 'revoked';
+
+export type ProviderSourceOutcome =
+  | 'success_with_data'
+  | 'success_empty'
+  | 'partial'
+  | 'permission_denied'
+  | 'rate_limited'
+  | 'not_configured'
+  | 'stale'
+  | 'failed'
+  | 'cancelled';
+
+export interface ProviderConnection {
+  id: string;
+  organizationId: number;
+  provider: 'gcp' | 'azure';
+  cloudScopeId: string;
+  displayName: string;
+  authMethod: ProviderAuthMethod;
+  lifecycleState: ProviderConnectionState;
+  createdByProfileId: number;
+  updatedByProfileId: number;
+  pendingSetupId?: string;
+  setupExpiresAt?: string;
+  capabilityStatus?: Record<string, ProviderSourceOutcome>;
+  lastJobId?: number;
+  lastValidatedAt?: string;
+  lastSyncedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProviderSourceDiagnostic {
+  connectionId: string;
+  jobId?: number;
+  operationId: string;
+  source: string;
+  capability: string;
+  required: boolean;
+  outcome: ProviderSourceOutcome;
+  attemptedAt: string;
+  completedAt: string;
+  durationMs: number;
+  fetchedCount: number;
+  normalizedCount: number;
+  reconciledCount: number;
+  freshUntil?: string;
+  safeErrorCode?: string;
+  guidance?: string;
+}
+
+export interface ProviderSetupRequest {
+  cloudScopeId: string;
+  displayName?: string;
+  idempotencyKey?: string;
+  gcpProjectNumber?: string;
+  gcpBillingDataset?: string;
+  azureTenantId?: string;
+  optionalSecurity?: boolean;
+  optionalCost?: boolean;
+}
+
+export interface ProviderSetupArtifact {
+  version: string;
+  filename: string;
+  mediaType: string;
+  terraform: string;
+  providerNative: string;
+  deploymentSteps: string[];
+  removalInstructions: string[];
+  outputs: Record<string, string>;
+}
+
+export interface ProviderSetupResult {
+  connection: ProviderConnection;
+  artifact: ProviderSetupArtifact;
+  reused: boolean;
+}
+
+export interface ProviderValidationResult {
+  connection: ProviderConnection;
+  diagnostics: ProviderSourceDiagnostic[];
+}
+
+export interface ProviderSyncJob {
+  connectionId: string;
+  jobId: number;
+  jobKind: string;
+  queue: string;
+  duplicate: boolean;
 }
 
 export interface DownloadedFile {
@@ -528,6 +633,18 @@ type ProviderWire = {
   resourceCount?: number;
   status?: ProviderSyncStatus['status'];
   message?: string;
+  connection_id?: string;
+  connectionId?: string;
+  cloud_scope_id?: string;
+  cloudScopeId?: string;
+  auth_method?: ProviderAuthMethod;
+  authMethod?: ProviderAuthMethod;
+  lifecycle_state?: ProviderConnectionState;
+  lifecycleState?: ProviderConnectionState;
+  setup_expires_at?: string;
+  setupExpiresAt?: string;
+  last_job_id?: number;
+  lastJobId?: number;
 };
 
 const normalizeProvider = (provider: ProviderWire): Provider => ({
@@ -536,6 +653,12 @@ const normalizeProvider = (provider: ProviderWire): Provider => ({
   lastSynced: provider.last_synced ?? provider.lastSynced,
   status: provider.status,
   message: provider.message,
+  connectionId: provider.connection_id ?? provider.connectionId,
+  cloudScopeId: provider.cloud_scope_id ?? provider.cloudScopeId,
+  authMethod: provider.auth_method ?? provider.authMethod,
+  lifecycleState: provider.lifecycle_state ?? provider.lifecycleState,
+  setupExpiresAt: provider.setup_expires_at ?? provider.setupExpiresAt,
+  lastJobId: provider.last_job_id ?? provider.lastJobId,
 });
 
 export interface Recommendation {
@@ -879,16 +1002,55 @@ export const api = {
         body: {
           aws_role_arn: credentials.roleArn,
           aws_region: credentials.region,
-          gcp_project_id: credentials.projectId,
-          gcp_service_account_json: credentials.credentials,
-          gcp_billing_dataset: credentials.billingDataset,
-          azure_tenant_id: credentials.tenantId,
-          azure_client_id: credentials.clientId,
-          azure_client_secret: credentials.clientSecret,
-          azure_subscription_id: credentials.subscriptionId,
-          azure_location: credentials.location,
         },
       }),
+
+    setup: (provider: 'gcp' | 'azure', input: ProviderSetupRequest) =>
+      request<ProviderSetupResult>(`/api/v1/providers/${provider}/setup`, {
+        method: 'POST',
+        body: {
+          cloud_scope_id: input.cloudScopeId,
+          display_name: input.displayName,
+          idempotency_key: input.idempotencyKey,
+          gcp_project_number: input.gcpProjectNumber,
+          gcp_billing_dataset: input.gcpBillingDataset,
+          azure_tenant_id: input.azureTenantId,
+          optional_security: input.optionalSecurity,
+          optional_cost: input.optionalCost,
+        },
+      }),
+
+    getConnection: (provider: string, connectionId: string) =>
+      request<ProviderConnection>(`/api/v1/providers/${provider}/connections/${encodeURIComponent(connectionId)}`),
+
+    validateConnection: (provider: string, connectionId: string) =>
+      request<ProviderValidationResult>(`/api/v1/providers/${provider}/connections/${encodeURIComponent(connectionId)}/validate`, { method: 'POST' }),
+
+    syncConnection: (provider: string, connectionId: string, idempotencyKey?: string) =>
+      request<ProviderSyncJob>(`/api/v1/providers/${provider}/connections/${encodeURIComponent(connectionId)}/sync`, {
+        method: 'POST', body: { idempotency_key: idempotencyKey },
+      }),
+
+    getDiagnostics: (provider: string, connectionId: string) =>
+      request<ProviderSourceDiagnostic[]>(`/api/v1/providers/${provider}/connections/${encodeURIComponent(connectionId)}/diagnostics`),
+
+    migrate: (provider: 'gcp' | 'azure', connectionId: string, input: ProviderSetupRequest) =>
+      request<ProviderSetupResult>(`/api/v1/providers/${provider}/connections/${encodeURIComponent(connectionId)}/migrate`, {
+        method: 'POST',
+        body: {
+          cloud_scope_id: input.cloudScopeId,
+          display_name: input.displayName,
+          idempotency_key: input.idempotencyKey,
+          gcp_project_number: input.gcpProjectNumber,
+          gcp_billing_dataset: input.gcpBillingDataset,
+          azure_tenant_id: input.azureTenantId,
+          optional_security: input.optionalSecurity,
+          optional_cost: input.optionalCost,
+        },
+      }),
+
+    deleteConnection: (provider: string, connectionId: string) =>
+      request(`/api/v1/providers/${provider}/connections/${encodeURIComponent(connectionId)}`, { method: 'DELETE' }),
 
     sync: (provider: string) =>
       request(`/api/v1/providers/${provider}/sync`, { method: 'POST' }),

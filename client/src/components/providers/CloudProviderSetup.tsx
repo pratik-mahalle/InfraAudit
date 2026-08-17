@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { CloudProvider } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { api } from '@/lib/api';
+import { api, type Provider } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -34,30 +34,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { SiAmazon, SiGooglecloud } from 'react-icons/si';
-
-const gcpServiceAccountKeySchema = z.string()
-  .min(100, "Service account key JSON is required")
-  .superRefine((value, context) => {
-    try {
-      const key = JSON.parse(value) as Record<string, unknown>;
-      if (
-        key.type !== 'service_account'
-        || typeof key.project_id !== 'string'
-        || typeof key.client_email !== 'string'
-        || typeof key.private_key !== 'string'
-      ) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Use a complete GCP service account key JSON file",
-        });
-      }
-    } catch {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Service account key must be valid JSON",
-      });
-    }
-  });
+import { FederatedProviderSetup } from '@/components/providers/FederatedProviderSetup';
 
 const awsRoleFormSchema = z.object({
   roleArn: z.string().trim().regex(
@@ -70,43 +47,6 @@ const awsRoleFormSchema = z.object({
   ),
 });
 
-// GCP Form Schema
-const gcpFormSchema = z.object({
-  serviceAccountKey: gcpServiceAccountKeySchema,
-  projectId: z.string().trim().refine(
-    (value) => !value || /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(value),
-    "Enter a valid GCP project ID",
-  ).optional(),
-  billingDataset: z.string().trim().refine(
-    (value) => !value || /^[a-z][a-z0-9-]{4,28}[a-z0-9]\.[A-Za-z0-9_]+\.[A-Za-z0-9_$]+$/.test(value),
-    "Use the format project.dataset.table",
-  ).optional(),
-  name: z.string().optional()
-});
-
-// Azure Form Schema
-const azureFormSchema = z.object({
-  clientId: z.string().min(10, "Client ID is required"),
-  clientSecret: z.string().min(10, "Client secret is required"),
-  tenantId: z.string().min(10, "Tenant ID is required"),
-  subscriptionId: z.string().min(10, "Subscription ID is required"),
-  location: z.string().trim().optional(),
-  name: z.string().optional()
-});
-
-function projectIDFromServiceAccount(serviceAccountKey: string): string {
-  const key = JSON.parse(serviceAccountKey) as Record<string, unknown>;
-  return typeof key.project_id === 'string' ? key.project_id.trim() : '';
-}
-
-// Provider item interface — matches Go DTO ProviderDTO after camelCase conversion
-interface CloudProviderItem {
-  provider: string;       // "aws" | "gcp" | "azure" (lowercase from backend)
-  isConnected: boolean;
-  lastSynced?: string;
-  status?: 'connected' | 'disconnected' | 'partial' | 'error';
-  message?: string;
-}
 
 // Kubernetes cluster type — matches KubernetesIntegration component
 interface K8sCluster {
@@ -151,7 +91,7 @@ export function CloudProviderSetup({
     data: providers = [], 
     isLoading: isLoadingProviders, 
     error: providersError 
-  } = useQuery<CloudProviderItem[]>({
+  } = useQuery<Provider[]>({
     queryKey: ['providers'],
     queryFn: () => api.providers.list(),
   });
@@ -165,27 +105,6 @@ export function CloudProviderSetup({
     },
   });
 
-  const gcpForm = useForm<z.infer<typeof gcpFormSchema>>({
-    resolver: zodResolver(gcpFormSchema),
-    defaultValues: {
-      serviceAccountKey: '',
-      projectId: '',
-      billingDataset: '',
-      name: 'GCP Account'
-    }
-  });
-
-  const azureForm = useForm<z.infer<typeof azureFormSchema>>({
-    resolver: zodResolver(azureFormSchema),
-    defaultValues: {
-      clientId: '',
-      clientSecret: '',
-      tenantId: '',
-      subscriptionId: '',
-      location: '',
-      name: 'Azure Account'
-    }
-  });
 
   const awsRoleTemplateMutation = useMutation({
     mutationFn: () => api.providers.downloadAWSRoleTemplate(),
@@ -233,57 +152,6 @@ export function CloudProviderSetup({
     },
   });
 
-  // GCP connection mutation — transform camelCase form fields to Go backend snake_case DTO
-  const gcpConnectionMutation = useMutation({
-    mutationFn: (data: z.infer<typeof gcpFormSchema>) => api.providers.connect('gcp', {
-      projectId: data.projectId || projectIDFromServiceAccount(data.serviceAccountKey),
-      credentials: data.serviceAccountKey,
-      billingDataset: data.billingDataset || undefined,
-    }),
-    onSuccess: () => {
-      toast({
-        title: "GCP connected successfully",
-        description: "Your Google Cloud account has been connected and resources are being synced.",
-        variant: "default",
-      });
-      gcpForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['providers'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to connect GCP account",
-        description: error.message || "Please check your credentials and try again.",
-        variant: "destructive",
-      });
-    }
-  });
-
-  // Azure connection mutation — transform camelCase form fields to Go backend snake_case DTO
-  const azureConnectionMutation = useMutation({
-    mutationFn: (data: z.infer<typeof azureFormSchema>) => api.providers.connect('azure', {
-      tenantId: data.tenantId,
-      clientId: data.clientId,
-      clientSecret: data.clientSecret,
-      subscriptionId: data.subscriptionId,
-      location: data.location || undefined,
-    }),
-    onSuccess: () => {
-      toast({
-        title: "Azure connected successfully",
-        description: "Your Microsoft Azure account has been connected and resources are being synced.",
-        variant: "default",
-      });
-      azureForm.reset();
-      queryClient.invalidateQueries({ queryKey: ['providers'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to connect Azure account",
-        description: error.message || "Please check your credentials and try again.",
-        variant: "destructive",
-      });
-    }
-  });
 
   // Remove provider mutation — backend expects lowercase provider name in URL
   const removeProviderMutation = useMutation({
@@ -419,17 +287,10 @@ export function CloudProviderSetup({
     }
   };
 
-  const onSubmitGCP = (data: z.infer<typeof gcpFormSchema>) => {
-    gcpConnectionMutation.mutate(data);
-  };
-
   const onSubmitAWSRole = (data: z.infer<typeof awsRoleFormSchema>) => {
     awsRoleConnectionMutation.mutate(data);
   };
 
-  const onSubmitAzure = (data: z.infer<typeof azureFormSchema>) => {
-    azureConnectionMutation.mutate(data);
-  };
 
   const handleRemoveProvider = (provider: CloudProvider) => {
     if (confirm(`Are you sure you want to disconnect ${getProviderName(provider)}?`)) {
@@ -467,8 +328,6 @@ export function CloudProviderSetup({
   const isAwsConnected = providers.some(p => p.provider === 'aws' && p.isConnected);
   const isGcpConnected = providers.some(p => p.provider === 'gcp' && p.isConnected);
   const isAzureConnected = providers.some(p => p.provider === 'azure' && p.isConnected);
-  const gcpSubmitLabel = isGcpConnected && allowConnectedProviderUpdate ? 'Update GCP Account' : 'Connect GCP Account';
-  const azureSubmitLabel = isAzureConnected && allowConnectedProviderUpdate ? 'Update Azure Account' : 'Connect Azure Account';
 
   return (
     <div className="space-y-6">
@@ -590,7 +449,7 @@ export function CloudProviderSetup({
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800">Security Notice</AlertTitle>
             <AlertDescription className="text-amber-700">
-              AWS setup uses a cross-account role and never asks for access keys. Secrets required by other providers are encrypted before storage.
+              Every new cloud connection uses a delegated or federated identity. InfraAudit never asks for an AWS access key, GCP service-account key, or Azure client secret.
             </AlertDescription>
           </Alert>
         </div>
@@ -739,277 +598,18 @@ export function CloudProviderSetup({
               </Form>
             </TabsContent>
 
-            {/* GCP Form */}
             <TabsContent value="gcp">
-              {isGcpConnected && !allowConnectedProviderUpdate ? (
-                <Alert>
-                  <Check className="h-4 w-4" />
-                  <AlertTitle>GCP Already Connected</AlertTitle>
-                  <AlertDescription>
-                    You have already connected a Google Cloud Platform account. If you need to change credentials, please disconnect the existing account first.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  <div className="mb-4">
-                    <a
-                      href="https://github.com/pratik-mahalle/infra-backend/blob/main/docs/gcp-inventory-permissions.md"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-                    >
-                      <Download size={16} />
-                      View GCP IAM Setup
-                    </a>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Create a dedicated service account and grant only the documented viewer roles.
-                    </p>
-                  </div>
-                  <Form {...gcpForm}>
-                    <form onSubmit={gcpForm.handleSubmit(onSubmitGCP)} className="space-y-4">
-                    <FormField
-                      control={gcpForm.control}
-                      name="serviceAccountKey"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Service Account Key (JSON)</FormLabel>
-                          <FormControl>
-                            <textarea
-                              placeholder='Paste your GCP service account key JSON here'
-                              className="min-h-[120px] font-mono text-xs w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                              rows={8}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Paste your GCP service account key JSON content
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={gcpForm.control}
-                      name="projectId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Project ID (Optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="my-gcp-project-id" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Enter your GCP Project ID if not included in the service account key
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={gcpForm.control}
-                      name="billingDataset"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Billing Export Table (Optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="billing-project.dataset.gcp_billing_export_v1_XXXXXX" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Fully qualified BigQuery billing export table used for GCP cost synchronization
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={gcpForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Account Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="My GCP Account" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Give this GCP account a friendly name
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="space-y-2">
-                      <Button 
-                        type="submit" 
-                        className="flex items-center w-full"
-                        disabled={gcpConnectionMutation.isPending}
-                      >
-                        {gcpConnectionMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <CloudCog className="h-4 w-4 mr-2" />
-                        )}
-                        {gcpConnectionMutation.isPending ? 'Validating Credentials...' : gcpSubmitLabel}
-                      </Button>
-                      {gcpConnectionMutation.isError && (
-                        <div className="text-sm text-red-500 flex items-center">
-                          <AlertTriangle className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span>Connection failed. Please check your service account key and permissions.</span>
-                        </div>
-                      )}
-                    </div>
-                    </form>
-                  </Form>
-                </>
-              )}
+              <FederatedProviderSetup
+                provider="gcp"
+                existing={providers.find((provider) => provider.provider === 'gcp')}
+              />
             </TabsContent>
 
-            {/* Azure Form */}
             <TabsContent value="azure">
-              {isAzureConnected && !allowConnectedProviderUpdate ? (
-                <Alert>
-                  <Check className="h-4 w-4" />
-                  <AlertTitle>Azure Already Connected</AlertTitle>
-                  <AlertDescription>
-                    You have already connected a Microsoft Azure account. If you need to change credentials, please disconnect the existing account first.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  <div className="mb-4">
-                    <a
-                      href="https://github.com/pratik-mahalle/infra-backend/blob/main/docs/azure-inventory-permissions.md"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-                    >
-                      <Download size={16} />
-                      View Azure RBAC Setup
-                    </a>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Register a dedicated application and assign read-only roles at subscription scope.
-                    </p>
-                  </div>
-                  <Form {...azureForm}>
-                    <form onSubmit={azureForm.handleSubmit(onSubmitAzure)} className="space-y-4">
-                    <FormField
-                      control={azureForm.control}
-                      name="clientId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Client ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Azure Client ID" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Enter your Azure Service Principal Client ID
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={azureForm.control}
-                      name="clientSecret"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Client Secret</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="Azure Client Secret" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Enter your Azure Service Principal Client Secret
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={azureForm.control}
-                      name="tenantId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tenant ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Azure Tenant ID" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Enter your Azure Tenant ID
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={azureForm.control}
-                      name="subscriptionId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Subscription ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Azure Subscription ID" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Enter your Azure Subscription ID
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={azureForm.control}
-                      name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Default Location (Optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="eastus" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Used only when an Azure resource does not report its own location
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={azureForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Account Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="My Azure Account" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Give this Azure account a friendly name
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="space-y-2">
-                      <Button 
-                        type="submit" 
-                        className="flex items-center w-full"
-                        disabled={azureConnectionMutation.isPending}
-                      >
-                        {azureConnectionMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <CloudCog className="h-4 w-4 mr-2" />
-                        )}
-                        {azureConnectionMutation.isPending ? 'Validating Credentials...' : azureSubmitLabel}
-                      </Button>
-                      {azureConnectionMutation.isError && (
-                        <div className="text-sm text-red-500 flex items-center">
-                          <AlertTriangle className="h-3 w-3 mr-1 flex-shrink-0" />
-                          <span>Connection failed. Please check your service principal credentials and permissions.</span>
-                        </div>
-                      )}
-                    </div>
-                    </form>
-                  </Form>
-                </>
-              )}
+              <FederatedProviderSetup
+                provider="azure"
+                existing={providers.find((provider) => provider.provider === 'azure')}
+              />
             </TabsContent>
             {/* Kubernetes Tab Content */}
             <TabsContent value="kubernetes">

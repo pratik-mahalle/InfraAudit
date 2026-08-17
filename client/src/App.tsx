@@ -164,7 +164,7 @@ function Router() {
             <ProtectedRoute path="/profile">
               <WithTrialCheck><Profile /></WithTrialCheck>
             </ProtectedRoute>
-            <ProtectedRoute path="/cloud-providers" permission="manage_providers">
+            <ProtectedRoute path="/cloud-providers">
               <WithTrialCheck><CloudProviders /></WithTrialCheck>
             </ProtectedRoute>
             <ProtectedRoute path="/kubernetes" permission="manage_providers">

@@ -97,7 +97,7 @@ const navGroups: NavGroup[] = [
     {
         label: "Infrastructure",
         items: [
-            { label: "Cloud Providers", href: "/cloud-providers", icon: Cloud, permission: "manage_providers" },
+            { label: "Cloud Providers", href: "/cloud-providers", icon: Cloud },
             { label: "Kubernetes", href: "/kubernetes", icon: Cpu, permission: "manage_providers" },
             { label: "IaC Management", href: "/iac", icon: FileCode },
             { label: "Architecture", href: "/architecture-playground", icon: Blocks },
