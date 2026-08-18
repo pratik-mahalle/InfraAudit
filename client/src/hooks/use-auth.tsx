@@ -18,7 +18,7 @@ type AuthContextType = {
     email: string,
     password: string,
     metadata?: { username?: string; fullName?: string }
-  ) => Promise<void>;
+  ) => Promise<{ confirmEmail: boolean }>;
   signInWithOAuth: (provider: "google" | "github") => Promise<void>;
   signOut: () => Promise<void>;
   completeSignup: (orgName: string, fullName?: string) => Promise<void>;
@@ -156,9 +156,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: string,
       password: string,
       metadata?: { username?: string; fullName?: string }
-    ) => {
+    ): Promise<{ confirmEmail: boolean }> => {
       if (isPersonalEmail(email)) throw new Error(BUSINESS_EMAIL_ERROR);
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -169,10 +169,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
       if (error) throw new Error(error.message);
+
+      // When Supabase email confirmation is enabled, no session is returned
+      // until the user clicks the confirmation link in their email.
+      if (!data.session) {
+        return { confirmEmail: true };
+      }
+
       toast({
         title: "Registration successful",
         description: "Account created!",
       });
+      return { confirmEmail: false };
     },
     [toast]
   );
@@ -192,7 +200,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const completeSignup = useCallback(
     async (orgName: string, fullName?: string) => {
-      const token = session?.access_token;
+      // Fetch current session directly from Supabase to avoid stale React state.
+      // After signUp(), onAuthStateChange fires setSession() but the React state
+      // update hasn't been processed yet when this runs in the same async flow.
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      const token = currentSession?.access_token;
       if (!token) throw new Error("Not authenticated");
       const res = await fetch(`${API_BASE}/api/auth/signup`, {
         method: "POST",
@@ -210,9 +222,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       // Reload profile after successful signup
       setNeedsSignup(false);
-      await loadProfile(session);
+      await loadProfile(currentSession);
     },
-    [session, loadProfile]
+    [loadProfile]
   );
 
   const signOut = useCallback(async () => {

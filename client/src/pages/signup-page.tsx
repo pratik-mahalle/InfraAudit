@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { Redirect, Link, useSearch } from "wouter";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Mail } from "lucide-react";
 import { InfraAuditLogo } from "@/components/ui/InfraAuditLogo";
 import { isPersonalEmail, BUSINESS_EMAIL_ERROR } from "@/lib/utils";
 
@@ -37,6 +37,7 @@ export default function SignupPage() {
     });
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
 
     // User already has a profile + org — go to dashboard
     if (user && !needsSignup) {
@@ -115,6 +116,39 @@ export default function SignupPage() {
         );
     }
 
+    // Email confirmation required — tell the user to check their inbox
+    if (emailConfirmationSent) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 p-8">
+                <div className="w-full max-w-sm text-center">
+                    <Link href="/">
+                        <div className="flex items-center justify-center mb-8 cursor-pointer">
+                            <InfraAuditLogo height={28} variant="light" />
+                        </div>
+                    </Link>
+
+                    <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <Mail className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                    </div>
+
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                        Check your email
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                        We sent a confirmation link to <strong>{formData.email}</strong>.
+                        Click the link to verify your email, then sign in to finish setting up your account.
+                    </p>
+
+                    <Link href="/auth">
+                        <Button variant="outline" className="w-full h-11">
+                            Go to Sign In
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
         setError("");
@@ -140,10 +174,18 @@ export default function SignupPage() {
         setIsLoading(true);
         try {
             // 1. Create Supabase auth account
-            await signUpWithEmail(formData.email, formData.password, {
+            const { confirmEmail } = await signUpWithEmail(formData.email, formData.password, {
                 username: formData.username,
                 fullName: formData.fullName,
             });
+
+            // If email confirmation is required, show a message instead of
+            // proceeding — the user will complete signup after confirming.
+            if (confirmEmail) {
+                setEmailConfirmationSent(true);
+                return;
+            }
+
             // 2. Create profile + org on backend
             await completeSignup(formData.orgName, formData.fullName);
             window.location.href = "/dashboard";
