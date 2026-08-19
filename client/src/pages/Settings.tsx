@@ -265,10 +265,15 @@ export default function Settings() {
     toast({ title: "Account settings saved", description: "Your changes have been applied." });
   };
 
-  const handleDisconnectProvider = async (providerName: string) => {
+  const handleDisconnectProvider = async (providerName: string, connectionId?: string) => {
     try {
-      await api.providers.disconnect(providerName.toLowerCase());
+      if (connectionId) {
+        await api.providers.deleteConnection(providerName.toLowerCase(), connectionId);
+      } else {
+        await api.providers.disconnect(providerName.toLowerCase());
+      }
       queryClient.invalidateQueries({ queryKey: ["providers"] });
+      queryClient.invalidateQueries({ queryKey: ["providers", "connections", "aws"] });
       toast({ title: "Provider disconnected", description: `${providerName} has been disconnected.` });
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to disconnect provider.", variant: "destructive" });
@@ -534,16 +539,16 @@ export default function Settings() {
                     <div className="p-4 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading providers...</div>
                   ) : cloudProviders && cloudProviders.length > 0 ? (
                     cloudProviders.map((p: any) => (
-                      <div key={p.id || p.provider} className="grid grid-cols-4 p-4 items-center">
+                      <div key={p.connectionId || p.id || p.provider} className="grid grid-cols-4 p-4 items-center">
                         <div className="font-medium">{(p.provider || p.name || "Unknown").toUpperCase()}</div>
-                        <div className="text-sm text-muted-foreground">{p.name || p.provider}</div>
+                        <div className="text-sm text-muted-foreground">{p.displayName || p.cloudScopeId || p.name || p.provider}</div>
                         <div>
-                          <Badge variant={p.status === "connected" ? "secondary" : "destructive"} className="capitalize">
-                            {p.status}
+                          <Badge variant={p.status === "connected" || p.isConnected ? "secondary" : "destructive"} className="capitalize">
+                            {p.lifecycleState || p.status || "unknown"}
                           </Badge>
                         </div>
                         <div className="text-right space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleDisconnectProvider(p.provider)}>Disconnect</Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDisconnectProvider(p.provider, p.connectionId)}>Disconnect</Button>
                         </div>
                       </div>
                     ))

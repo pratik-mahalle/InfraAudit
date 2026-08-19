@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type Provider, type ProviderCredentials, type ProviderSetupRequest, type ProviderSyncStatus } from '@/lib/api';
+import { api, type Provider, type ProviderConnection, type ProviderCredentials, type ProviderSetupRequest, type ProviderSyncStatus } from '@/lib/api';
 import { useAuth } from '@/hooks/use-auth';
 
 const providerAffectedQueryKeys = [
@@ -94,10 +94,29 @@ export function useProviderDiagnostics(provider: string, connectionId?: string) 
   });
 }
 
+export function useProviderConnections(provider: string) {
+  return useQuery<ProviderConnection[]>({
+    queryKey: ['providers', 'connections', provider],
+    queryFn: () => api.providers.listConnections(provider),
+  });
+}
+
+export function useSetupAWS() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { roleArn: string; region: string; displayName?: string; cloudScopeId?: string }) =>
+      api.providers.setupAWS(input),
+    onSuccess: () => {
+      invalidateProviderConsumers(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['providers', 'connections', 'aws'] });
+    },
+  });
+}
+
 export function useSetupProvider() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ provider, input }: { provider: 'gcp' | 'azure'; input: ProviderSetupRequest }) =>
+    mutationFn: ({ provider, input }: { provider: 'aws' | 'gcp' | 'azure'; input: ProviderSetupRequest }) =>
       api.providers.setup(provider, input),
     onSuccess: () => invalidateProviderConsumers(queryClient),
   });
@@ -106,7 +125,7 @@ export function useSetupProvider() {
 export function useMigrateProvider() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ provider, connectionId, input }: { provider: 'gcp' | 'azure'; connectionId: string; input: ProviderSetupRequest }) =>
+    mutationFn: ({ provider, connectionId, input }: { provider: 'aws' | 'gcp' | 'azure'; connectionId: string; input: ProviderSetupRequest }) =>
       api.providers.migrate(provider, connectionId, input),
     onSuccess: () => invalidateProviderConsumers(queryClient),
   });
