@@ -17,6 +17,7 @@ import { RemediationQueue } from "@/components/automation/RemediationQueue";
 import { JobScheduler } from "@/components/automation/JobScheduler";
 import { JobEditor } from "@/components/automation/JobEditor";
 import { useToast } from "@/hooks/use-toast";
+import { ConfirmDialog, useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ScheduledJob } from "@/types";
 import posthog from "@/lib/posthog";
 
@@ -31,6 +32,7 @@ export default function Automation() {
     const { mutate: triggerJob } = useTriggerJob();
 
     const [editingJob, setEditingJob] = useState<ScheduledJob | null>(null);
+    const { confirm, dialogProps } = useConfirmDialog();
 
     // Remediation Data
     const { data: pendingApprovals, isLoading: isLoadingApprovals } = usePendingApprovals();
@@ -57,11 +59,16 @@ export default function Automation() {
     };
 
     const handleDeleteJob = (id: string) => {
-        if (confirm("Are you sure you want to delete this job?")) {
-            deleteJob(id, {
-                onSuccess: () => toast({ title: "Job Deleted", description: "Scheduled job removed." })
-            });
-        }
+        confirm({
+            title: "Delete Job",
+            description: "Are you sure you want to delete this scheduled job? This action cannot be undone.",
+            confirmLabel: "Delete",
+            onConfirm: () => {
+                deleteJob(id, {
+                    onSuccess: () => toast({ title: "Job Deleted", description: "Scheduled job removed." })
+                });
+            },
+        });
     };
 
     const handleUpdateJob = (id: string, jobUpdates: Partial<ScheduledJob>) => {
@@ -139,6 +146,7 @@ export default function Automation() {
                 onOpenChange={(open) => !open && setEditingJob(null)}
                 onSave={handleUpdateJob}
             />
+            <ConfirmDialog {...dialogProps} />
         </DashboardLayout>
     );
 }

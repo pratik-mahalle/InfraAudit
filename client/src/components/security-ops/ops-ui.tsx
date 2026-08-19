@@ -1,22 +1,31 @@
 import React from "react";
 import { LucideIcon, Search } from "lucide-react";
-import { Dropdown } from "primereact/dropdown";
-import { InputText } from "primereact/inputtext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-type Tone = "red" | "orange" | "amber" | "blue" | "emerald" | "slate" | "violet";
+export type Tone = "red" | "orange" | "amber" | "yellow" | "blue" | "emerald" | "green" | "slate" | "violet" | "cyan";
 
 const toneClasses: Record<Tone, string> = {
   red: "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300",
   orange: "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300",
   amber: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  yellow: "border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300",
   blue: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
   emerald: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  green: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
   slate: "border-slate-500/30 bg-slate-500/10 text-slate-700 dark:text-slate-300",
   violet: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  cyan: "border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
 };
 
 export const severityTone: Record<string, Tone> = {
@@ -123,15 +132,26 @@ export function FilterToolbar({
     <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row">
       <div className="relative min-w-0 flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <InputText
+        <Input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder={searchPlaceholder}
-          className="w-full pl-9"
+          className="pl-9"
         />
       </div>
       {filters.map((filter) => (
-        <Dropdown key={filter.placeholder} value={filter.value} onChange={(event) => filter.onChange(event.value)} options={filter.options} placeholder={filter.placeholder} className={cn("w-full sm:w-[150px]", filter.widthClassName)} />
+        <Select key={filter.placeholder} value={filter.value} onValueChange={filter.onChange}>
+          <SelectTrigger className={cn("w-full sm:w-[150px]", filter.widthClassName)} aria-label={filter.placeholder}>
+            <SelectValue placeholder={filter.placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {filter.options.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       ))}
     </div>
   );
@@ -192,3 +212,5 @@ export function compactDate(value?: string | Date | null) {
   if (Number.isNaN(date.getTime())) return "Unknown";
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
+
+export { toneClasses };

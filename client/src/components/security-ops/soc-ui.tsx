@@ -1,18 +1,7 @@
 import React, { ReactNode } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { cn } from "@/lib/utils";
-
-type Tone = "red" | "orange" | "yellow" | "blue" | "green" | "slate" | "cyan";
-
-const toneClasses: Record<Tone, string> = {
-  red: "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300",
-  orange: "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300",
-  yellow: "border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300",
-  blue: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
-  green: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  slate: "border-border bg-muted text-muted-foreground",
-  cyan: "border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
-};
+import { type Tone, toneClasses } from "@/components/security-ops/ops-ui";
 
 export function SocBadge({
   children,
@@ -84,9 +73,10 @@ export function SocButton({
 
 export function SocProgress({ value, tone = "blue" }: { value: number; tone?: Tone }) {
   const color = tone === "red" ? "bg-red-500" : tone === "orange" ? "bg-orange-500" : tone === "yellow" ? "bg-yellow-400" : tone === "green" ? "bg-green-500" : "bg-blue-500";
+  const clamped = Math.max(0, Math.min(100, value));
   return (
-    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-      <div className={cn("h-full rounded-full", color)} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} />
+    <div className="h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={clamped} aria-valuemin={0} aria-valuemax={100}>
+      <div className={cn("h-full rounded-full", color)} style={{ width: `${clamped}%` }} />
     </div>
   );
 }

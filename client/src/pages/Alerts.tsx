@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
   AlertCircle,
@@ -62,6 +62,17 @@ export default function Alerts() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("open");
+  const [expandedLanes, setExpandedLanes] = useState<Set<string>>(new Set());
+  const LANE_PAGE_SIZE = 8;
+
+  const toggleLaneExpansion = useCallback((label: string) => {
+    setExpandedLanes((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }, []);
 
   const { data: alertsResponse, isLoading } = useAlerts();
   const { data: alertSummary } = useAlertSummary();
@@ -205,7 +216,24 @@ export default function Alerts() {
               </div>
             )}
             {isLoading ? (
-              <EmptyPanel icon={Bell} title="Loading alerts" description="Fetching current alert state from InfraAudit." />
+              <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="rounded-lg border bg-muted/20 p-3">
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                      <div className="h-5 w-8 rounded bg-muted animate-pulse" />
+                    </div>
+                    <div className="space-y-2">
+                      {Array.from({ length: 3 }).map((_, j) => (
+                        <div key={j} className="rounded-md border bg-card p-3">
+                          <div className="h-3.5 w-3/4 rounded bg-muted animate-pulse mb-2" />
+                          <div className="h-2.5 w-1/2 rounded bg-muted animate-pulse" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : filteredAlerts.length === 0 ? (
               <EmptyPanel icon={CheckCircle2} title="No alerts in this view" description="Change filters or run a scan to surface new alert activity." />
             ) : (
@@ -217,7 +245,7 @@ export default function Alerts() {
                       <ToneBadge value={lane.items.length} tone={lane.tone} />
                     </div>
                     <div className="space-y-2">
-                      {lane.items.slice(0, 8).map((alert) => (
+                      {(expandedLanes.has(lane.label) ? lane.items : lane.items.slice(0, LANE_PAGE_SIZE)).map((alert) => (
                         <button
                           key={alert.id}
                           type="button"
@@ -245,8 +273,16 @@ export default function Alerts() {
                         </button>
                       ))}
                     </div>
-                    {lane.items.length > 8 && (
-                      <p className="mt-3 text-xs text-muted-foreground">+{lane.items.length - 8} more in this lane.</p>
+                    {lane.items.length > LANE_PAGE_SIZE && (
+                      <button
+                        type="button"
+                        className="mt-3 text-xs font-medium text-primary hover:underline"
+                        onClick={() => toggleLaneExpansion(lane.label)}
+                      >
+                        {expandedLanes.has(lane.label)
+                          ? "Show less"
+                          : `Show all ${lane.items.length} alerts`}
+                      </button>
                     )}
                   </section>
                 ))}

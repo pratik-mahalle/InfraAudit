@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationPreferences } from "@/components/settings/NotificationPreferences";
 import { WebhookManager } from "@/components/settings/WebhookManager";
 import { AIEngineSettings } from "@/components/settings/AIEngineSettings";
+import { ConfirmDialog, useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { apiRequest, queryClient, unwrapResponse } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
 import api from "@/lib/api";
@@ -77,6 +78,7 @@ export default function Settings() {
   // Copied key tracking
   const [copiedKeyId, setCopiedKeyId] = useState<number | null>(null);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
+  const { confirm, dialogProps } = useConfirmDialog();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -265,19 +267,26 @@ export default function Settings() {
     toast({ title: "Account settings saved", description: "Your changes have been applied." });
   };
 
-  const handleDisconnectProvider = async (providerName: string, connectionId?: string) => {
-    try {
-      if (connectionId) {
-        await api.providers.deleteConnection(providerName.toLowerCase(), connectionId);
-      } else {
-        await api.providers.disconnect(providerName.toLowerCase());
-      }
-      queryClient.invalidateQueries({ queryKey: ["providers"] });
-      queryClient.invalidateQueries({ queryKey: ["providers", "connections", "aws"] });
-      toast({ title: "Provider disconnected", description: `${providerName} has been disconnected.` });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to disconnect provider.", variant: "destructive" });
-    }
+  const handleDisconnectProvider = (providerName: string, connectionId?: string) => {
+    confirm({
+      title: "Disconnect Provider",
+      description: `Are you sure you want to disconnect ${providerName.toUpperCase()}? Resources from this provider will no longer be monitored.`,
+      confirmLabel: "Disconnect",
+      onConfirm: async () => {
+        try {
+          if (connectionId) {
+            await api.providers.deleteConnection(providerName.toLowerCase(), connectionId);
+          } else {
+            await api.providers.disconnect(providerName.toLowerCase());
+          }
+          queryClient.invalidateQueries({ queryKey: ["providers"] });
+          queryClient.invalidateQueries({ queryKey: ["providers", "connections", "aws"] });
+          toast({ title: "Provider disconnected", description: `${providerName} has been disconnected.` });
+        } catch (error: any) {
+          toast({ title: "Error", description: error.message || "Failed to disconnect provider.", variant: "destructive" });
+        }
+      },
+    });
   };
 
   const copyToClipboard = (text: string, keyId: number) => {
@@ -306,7 +315,7 @@ export default function Settings() {
 
         {/* ==================== Profile Settings ==================== */}
         <TabsContent value="profile" className="space-y-6">
-          <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
+          <Card className="rounded-2xl shadow bg-card">
             <CardHeader>
               <CardTitle>Profile Settings</CardTitle>
               <CardDescription>Manage your identity and organization information</CardDescription>
@@ -345,7 +354,7 @@ export default function Settings() {
 
         {/* ==================== Account Settings ==================== */}
         <TabsContent value="account" className="space-y-6">
-          <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
+          <Card className="rounded-2xl shadow bg-card">
             <CardHeader>
               <CardTitle>Account Settings</CardTitle>
               <CardDescription>Preferences for locale, time and theme</CardDescription>
@@ -436,7 +445,7 @@ export default function Settings() {
 
         {/* ==================== Webhooks Settings ==================== */}
         <TabsContent value="webhooks" className="space-y-6">
-          <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
+          <Card className="rounded-2xl shadow bg-card">
             <CardHeader>
               <CardTitle>Webhooks</CardTitle>
               <CardDescription>Configure webhook endpoints to receive event payloads.</CardDescription>
@@ -454,7 +463,7 @@ export default function Settings() {
 
         {/* ==================== Security Settings ==================== */}
         <TabsContent value="security" className="space-y-6">
-          <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
+          <Card className="rounded-2xl shadow bg-card">
             <CardHeader>
               <CardTitle>Security Settings</CardTitle>
               <CardDescription>Protect your account and API usage</CardDescription>
@@ -514,7 +523,7 @@ export default function Settings() {
                               </div>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm" className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950" onClick={() => revokeKeyMutation.mutate(k.id)} disabled={revokeKeyMutation.isPending}>
+                          <Button variant="outline" size="sm" className="shrink-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950" onClick={() => confirm({ title: "Revoke API Key", description: `Are you sure you want to revoke "${k.name}"? Any integrations using this key will stop working immediately.`, confirmLabel: "Revoke", onConfirm: () => revokeKeyMutation.mutate(k.id) })} disabled={revokeKeyMutation.isPending}>
                             Revoke
                           </Button>
                         </div>
@@ -529,7 +538,7 @@ export default function Settings() {
 
         {/* ==================== Cloud & Integrations ==================== */}
         <TabsContent value="cloud" className="space-y-6">
-          <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
+          <Card className="rounded-2xl shadow bg-card">
             <CardHeader><CardTitle>Cloud & Integrations</CardTitle><CardDescription>Connect providers and developer tools</CardDescription></CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-3">
@@ -597,7 +606,7 @@ export default function Settings() {
 
         {/* ==================== Team & Access ==================== */}
         <TabsContent value="team" className="space-y-6">
-          <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
+          <Card className="rounded-2xl shadow bg-card">
             <CardHeader><CardTitle>Team & Access</CardTitle><CardDescription>Manage members and permissions</CardDescription></CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -605,7 +614,7 @@ export default function Settings() {
                 {isOwner && (
                   <div className="space-y-2 md:col-span-2"><Label>Invite Team Member</Label>
                     <div className="flex gap-2">
-                      <Input placeholder="user@company.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+                      <Input type="email" placeholder="user@company.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
                       <Select value={inviteRole} onValueChange={setInviteRole}>
                         <SelectTrigger className="w-36"><SelectValue placeholder="Role" /></SelectTrigger>
                         <SelectContent>
@@ -657,7 +666,7 @@ export default function Settings() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => removeMemberMutation.mutate(m.id)}
+                            onClick={() => confirm({ title: "Remove Team Member", description: `Are you sure you want to remove ${m.name || m.email} from the team? They will lose access immediately.`, confirmLabel: "Remove", onConfirm: () => removeMemberMutation.mutate(m.id) })}
                             disabled={removeMemberMutation.isPending}
                           >
                             Remove
@@ -674,6 +683,7 @@ export default function Settings() {
           {isOwner && <UserApprovals />}
         </TabsContent>
       </Tabs>
+      <ConfirmDialog {...dialogProps} />
     </DashboardLayout>
   );
 }
@@ -720,7 +730,7 @@ function UserApprovals() {
   const approvedUsers = users?.filter(u => u.approved) || [];
 
   return (
-    <Card className="rounded-2xl shadow bg-white dark:bg-gray-900">
+    <Card className="rounded-2xl shadow bg-card">
       <CardHeader>
         <CardTitle>User Approvals</CardTitle>
         <CardDescription>Approve or revoke access for users who have signed up</CardDescription>
