@@ -539,11 +539,17 @@ export default function CostOptimization() {
                 </TableHeader>
                 <TableBody>
                   {anomaliesQuery.isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={canScan ? 9 : 8} className="h-24 text-center">
-                        Loading cost anomalies...
-                      </TableCell>
-                    </TableRow>
+                    <>
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <TableRow key={i}>
+                          {Array.from({ length: canScan ? 9 : 8 }).map((_, j) => (
+                            <TableCell key={j}>
+                              <div className="h-3 w-full rounded bg-muted animate-pulse" />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </>
                   ) : anomaliesQuery.isError ? (
                     <TableRow>
                       <TableCell colSpan={canScan ? 9 : 8} className="h-24 text-center">

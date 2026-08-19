@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import {
   Card,
@@ -39,19 +39,24 @@ import {
   Server,
 } from "lucide-react";
 import { DetailRow, EmptyPanel, ToneBadge } from "@/components/security-ops/ops-ui";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 export default function ResourceUtilizationPage() {
   const [resourceType, setResourceType] = useState("all");
   const [provider, setProvider] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedResourceKey, setSelectedResourceKey] = useState<string | null>(null);
+  const [resourcePage, setResourcePage] = useState(1);
+  const RESOURCE_PAGE_SIZE = 50;
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const refreshMetrics = useRefreshResourceMetrics();
 
   // Fetch resources from Go backend (paginated response)
-  const { data: resourcesResponse, isLoading: isLoadingResources, isError: isResourcesError, error: resourcesError } = useResources({ page: 1, pageSize: 100 });
+  const { data: resourcesResponse, isLoading: isLoadingResources, isError: isResourcesError, error: resourcesError } = useResources({ page: resourcePage, pageSize: RESOURCE_PAGE_SIZE });
   const resources = resourcesResponse?.data ?? [];
+  const totalResourcePages = resourcesResponse?.totalPages ?? 1;
+  const totalResourceItems = resourcesResponse?.totalItems ?? resources.length;
 
   // Fetch recommendations for the optimization section
   const { data: recommendationsResponse } = useQuery<any>({
@@ -296,6 +301,7 @@ export default function ResourceUtilizationPage() {
             ) : filteredResources.length === 0 ? (
               <EmptyPanel icon={Search} title="No resources found" description="Change filters or refresh metrics to update inventory." />
             ) : (
+              <div>
               <div className="grid gap-3 md:grid-cols-2">
                 {filteredResources.map((resource) => {
                   const key = resourceKey(resource);
@@ -325,6 +331,15 @@ export default function ResourceUtilizationPage() {
                     </button>
                   );
                 })}
+              </div>
+              <PaginationControls
+                page={resourcePage}
+                totalPages={totalResourcePages}
+                onPageChange={setResourcePage}
+                totalItems={totalResourceItems}
+                pageSize={RESOURCE_PAGE_SIZE}
+                className="mt-4"
+              />
               </div>
             )}
 

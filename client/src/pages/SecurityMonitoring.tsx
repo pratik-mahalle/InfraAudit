@@ -240,40 +240,64 @@ function SignalFilters({
   );
 }
 
+const SIGNAL_PAGE_SIZE = 20;
+
 function SignalTable({ items, selectedId, onSelect, emptyTitle = "No matching signals", emptyDescription = "Adjust filters or run a scan to populate this view." }: { items: SignalItem[]; selectedId?: string | null; onSelect: (item: SignalItem) => void; emptyTitle?: string; emptyDescription?: string }) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(items.length / SIGNAL_PAGE_SIZE));
+  const clampedPage = Math.min(page, totalPages);
+  const pageItems = items.slice((clampedPage - 1) * SIGNAL_PAGE_SIZE, clampedPage * SIGNAL_PAGE_SIZE);
+
+  // Reset page when items change significantly
+  useEffect(() => { setPage(1); }, [items.length]);
+
   if (items.length === 0) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />;
   }
 
   return (
-    <div className="overflow-auto rounded-lg border border-border bg-card">
-      <table className="w-full min-w-[860px] text-left">
-        <thead className="border-b border-border text-xs text-muted-foreground">
-          <tr>
-            <th className="px-4 py-3 font-medium">Signal</th>
-            <th className="px-4 py-3 font-medium">Severity</th>
-            <th className="px-4 py-3 font-medium">Status</th>
-            <th className="px-4 py-3 font-medium">Resource</th>
-            <th className="px-4 py-3 font-medium">Source</th>
-            <th className="px-4 py-3 font-medium text-right">Last Seen</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {items.map((item) => (
-            <tr key={item.id} onClick={() => onSelect(item)} className={cn("cursor-pointer hover:bg-muted/50", selectedId === item.id && "bg-primary/10")}>
-              <td className="px-4 py-3">
-                <p className="font-medium text-foreground">{item.title}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{item.displayId} · {item.type}</p>
-              </td>
-              <td className="px-4 py-3"><SocBadge tone={severityTone(item.severity)}>{item.severity}</SocBadge></td>
-              <td className="px-4 py-3"><SocBadge tone={statusTone(item.status)}>{formatLabel(item.status)}</SocBadge></td>
-              <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{item.resourceName}</td>
-              <td className="px-4 py-3 text-sm text-muted-foreground">{formatLabel(item.source)}</td>
-              <td className="px-4 py-3 text-right font-mono text-sm text-muted-foreground">{item.time ? formatTimeAgo(item.time) : "unknown"}</td>
+    <div>
+      <div className="overflow-auto rounded-lg border border-border bg-card">
+        <table className="w-full min-w-[860px] text-left">
+          <thead className="border-b border-border text-xs text-muted-foreground">
+            <tr>
+              <th className="px-4 py-3 font-medium">Signal</th>
+              <th className="px-4 py-3 font-medium">Severity</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Resource</th>
+              <th className="px-4 py-3 font-medium">Source</th>
+              <th className="px-4 py-3 font-medium text-right">Last Seen</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {pageItems.map((item) => (
+              <tr key={item.id} onClick={() => onSelect(item)} className={cn("cursor-pointer hover:bg-muted/50", selectedId === item.id && "bg-primary/10")}>
+                <td className="px-4 py-3">
+                  <p className="font-medium text-foreground">{item.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{item.displayId} · {item.type}</p>
+                </td>
+                <td className="px-4 py-3"><SocBadge tone={severityTone(item.severity)}>{item.severity}</SocBadge></td>
+                <td className="px-4 py-3"><SocBadge tone={statusTone(item.status)}>{formatLabel(item.status)}</SocBadge></td>
+                <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{item.resourceName}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">{formatLabel(item.source)}</td>
+                <td className="px-4 py-3 text-right font-mono text-sm text-muted-foreground">{item.time ? formatTimeAgo(item.time) : "unknown"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {totalPages > 1 && (
+        <div className="mt-3 flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            {(clampedPage - 1) * SIGNAL_PAGE_SIZE + 1}–{Math.min(clampedPage * SIGNAL_PAGE_SIZE, items.length)} of {items.length}
+          </p>
+          <div className="flex items-center gap-1">
+            <button type="button" disabled={clampedPage <= 1} onClick={() => setPage(clampedPage - 1)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm disabled:opacity-50 hover:bg-muted" aria-label="Previous page">‹</button>
+            <span className="px-2 text-xs text-muted-foreground">Page {clampedPage} of {totalPages}</span>
+            <button type="button" disabled={clampedPage >= totalPages} onClick={() => setPage(clampedPage + 1)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border text-sm disabled:opacity-50 hover:bg-muted" aria-label="Next page">›</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1191,7 +1215,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
       <div>
         <SocPanel eyebrow="Investigation Queue" title="Open signals sorted by severity" actions={loading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <SocBadge tone="slate">{filteredSignals.length} shown</SocBadge>}>
           {hasLoadError && <div className="border-b border-border p-4 text-sm text-red-700 dark:text-red-300">Some security data could not be loaded.</div>}
-          <SignalTable items={filteredSignals.slice(0, 12)} selectedId={selectedItem?.id} onSelect={openSignalDetail} />
+          <SignalTable items={filteredSignals} selectedId={selectedItem?.id} onSelect={openSignalDetail} />
         </SocPanel>
       </div>
 

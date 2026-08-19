@@ -22,6 +22,7 @@ import { DashboardCustomizer } from "@/components/dashboard/DashboardCustomizer"
 import { cloneDashboardWidgets, dashboardWidgetsForTemplate, widgetLabel, type DashboardTemplate } from "@/components/dashboard/dashboard-config";
 import { useCreateDashboard, useDashboards, useDeleteDashboard, useUpdateDashboard } from "@/hooks/use-dashboards";
 import { usePermission } from "@/hooks/use-permission";
+import { ConfirmDialog, useConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { CustomDashboard, DashboardWidget } from "@/types";
 
 const EMPTY_DASHBOARDS: CustomDashboard[] = [];
@@ -72,7 +73,7 @@ function Spark({ data, w = 84, h = 30, color = "var(--ia-ink-faint)" }: {
   const path = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
   const area = path + ` L${w} ${h} L0 ${h} Z`;
   return (
-    <svg className="ia-spark" width={w} height={h}>
+    <svg className="ia-spark" width={w} height={h} role="img" aria-label={`Trend: ${data[data.length - 1]}`}>
       <defs><linearGradient id={`sg${w}${h}`} x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stopColor={color} stopOpacity="0.18" />
         <stop offset="100%" stopColor={color} stopOpacity="0" />
@@ -90,8 +91,8 @@ function Gauge({ value, max = 100, tone = "warn", size = 58 }: {
 }) {
   const r = (size - 8) / 2, c = 2 * Math.PI * r, pct = Math.min(value / max, 1);
   return (
-    <div className="ia-gauge" style={{ width: size, height: size }}>
-      <svg width={size} height={size}>
+    <div className="ia-gauge" style={{ width: size, height: size }} role="meter" aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} aria-label={`${value} of ${max}`}>
+      <svg width={size} height={size} aria-hidden="true">
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--ia-surface-3)" strokeWidth="6" />
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={toneColor(tone)} strokeWidth="6"
           strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - pct)}
@@ -228,7 +229,7 @@ function DriftFeedCard({ drifts, onPick, onViewAll }: {
             No drifts detected
           </div>
         ) : drifts.slice(0, 6).map((d) => (
-          <div className="ia-feed-item" key={d.id} onClick={() => onPick(d)}>
+          <div className="ia-feed-item" key={d.id} role="button" tabIndex={0} onClick={() => onPick(d)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPick(d); } }}>
             <SevPill sev={d.severity} />
             <div style={{ minWidth: 0 }}>
               <div className="ia-feed-title">{d.driftType || (d as any).title || "Drift detected"}</div>
@@ -361,8 +362,8 @@ function SavingsCard({ recommendations }: { recommendations: Recommendation[] })
           <div style={{ padding: "28px 12px", textAlign: "center", color: "var(--ia-ink-faint)", fontSize: 13 }}>
             No supported savings recommendations are available yet.
           </div>
-        ) : items.map((s, i) => (
-          <div className="ia-save-row" key={i}>
+        ) : items.map((s) => (
+          <div className="ia-save-row" key={s.name}>
             <div className="ia-save-ic"><s.icon size={16} /></div>
             <div>
               <div className="ia-save-name">{s.name}</div>
@@ -435,7 +436,7 @@ function DriftTable({ drifts, selId, onPick }: {
         <table className="ia-tbl">
           <thead>
             <tr>
-              <th onClick={() => setSort("sev")} style={{ width: 90 }}>Severity</th>
+              <th onClick={() => setSort("sev")} style={{ width: 90, cursor: "pointer" }} role="columnheader" aria-sort="none">Severity</th>
               <th>Resource</th>
               <th style={{ width: 130 }}>Drift</th>
               <th style={{ width: 88 }}>Cloud</th>
@@ -446,7 +447,7 @@ function DriftTable({ drifts, selId, onPick }: {
           </thead>
           <tbody>
             {sorted.map(d => (
-              <tr key={d.id} className={selId === d.id ? "ia-sel" : ""} onClick={() => onPick(d)}>
+              <tr key={d.id} className={selId === d.id ? "ia-sel" : ""} onClick={() => onPick(d)} style={{ cursor: "pointer" }} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") onPick(d); }}>
                 <td><SevPill sev={d.severity} /></td>
                 <td>
                   <div className="ia-res-name">{(d as any).resource || `drift-${d.id}`}</div>
@@ -665,6 +666,7 @@ export default function Dashboard() {
   const [sel, setSel] = useState<SecurityDrift | null>(null);
   const { toast } = useToast();
   const { hasPermission } = usePermission();
+  const { confirm, dialogProps: confirmDialogProps } = useConfirmDialog();
   const canManageDashboards = hasPermission("manage_settings");
   const dashboardsQuery = useDashboards();
   const createDashboard = useCreateDashboard();
@@ -742,14 +744,21 @@ export default function Dashboard() {
   };
 
   const removeDashboard = () => {
-    if (!activeDashboard || !window.confirm(`Delete “${activeDashboard.name}”? Billing and security evidence will not be deleted.`)) return;
-    deleteDashboard.mutate(activeDashboard.id, {
-      onSuccess: () => {
-        setEditingDashboard(false);
-        setActiveDashboardId("builtin");
-        toast({ title: "Dashboard deleted", description: "Only the saved layout was removed; source evidence is unchanged.", variant: "warning" });
+    if (!activeDashboard) return;
+    confirm({
+      title: "Delete Dashboard",
+      description: `Delete "${activeDashboard.name}"? Billing and security evidence will not be deleted.`,
+      confirmLabel: "Delete",
+      onConfirm: () => {
+        deleteDashboard.mutate(activeDashboard.id, {
+          onSuccess: () => {
+            setEditingDashboard(false);
+            setActiveDashboardId("builtin");
+            toast({ title: "Dashboard deleted", description: "Only the saved layout was removed; source evidence is unchanged.", variant: "warning" });
+          },
+          onError: (error) => toast({ title: "Dashboard could not be deleted", description: error instanceof Error ? error.message : "Try again.", variant: "destructive" }),
+        });
       },
-      onError: (error) => toast({ title: "Dashboard could not be deleted", description: error instanceof Error ? error.message : "Try again.", variant: "destructive" }),
     });
   };
 
@@ -947,8 +956,34 @@ export default function Dashboard() {
   if (isLoadingProviders || isLoadingK8s) {
     return (
       <DashboardLayout>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-          <Loader2 size={28} style={{ animation: "spin 1s linear infinite", color: "var(--ia-brand)" }} />
+        <div className="infra-dash" style={{ maxWidth: 1280, margin: "0 auto" }}>
+          {/* KPI skeleton row */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginBottom: 24 }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="ia-card ia-card-pad" style={{ minHeight: 100 }}>
+                <div className="h-3 w-20 rounded bg-muted animate-pulse mb-3" />
+                <div className="h-7 w-16 rounded bg-muted animate-pulse mb-2" />
+                <div className="h-2.5 w-28 rounded bg-muted animate-pulse" />
+              </div>
+            ))}
+          </div>
+          {/* Chart + table skeleton row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="ia-card ia-card-pad" style={{ minHeight: 240 }}>
+              <div className="h-4 w-32 rounded bg-muted animate-pulse mb-4" />
+              <div className="h-40 w-full rounded bg-muted animate-pulse" />
+            </div>
+            <div className="ia-card ia-card-pad" style={{ minHeight: 240 }}>
+              <div className="h-4 w-28 rounded bg-muted animate-pulse mb-4" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 mb-3">
+                  <div className="h-3 w-3 rounded-full bg-muted animate-pulse" />
+                  <div className="h-3 flex-1 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-12 rounded bg-muted animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -1098,6 +1133,7 @@ export default function Dashboard() {
       </div>
 
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <ConfirmDialog {...confirmDialogProps} />
     </DashboardLayout>
   );
 }
