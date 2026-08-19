@@ -25,7 +25,7 @@ const GitHubIcon = () => (
 );
 
 export default function AuthPage() {
-  const { user, signInWithEmail, signInWithOAuth } = useAuth();
+  const { user, needsSignup, signInWithEmail, signInWithOAuth } = useAuth();
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,6 +34,9 @@ export default function AuthPage() {
 
   if (user) {
     return <Redirect to="/dashboard" />;
+  }
+  if (needsSignup) {
+    return <Redirect to="/signup" />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

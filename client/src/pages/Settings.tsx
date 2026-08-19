@@ -673,15 +673,15 @@ export default function Settings() {
   );
 }
 
-type PendingUser = { id: number; email: string; full_name?: string; role: string; approved: boolean; created_at: string };
+type PendingUser = { id: number; email: string; fullName?: string; role: string; approved: boolean; orgName?: string; createdAt: string };
 
 function UserApprovals() {
   const { toast } = useToast();
   const { data: users, isLoading, refetch } = useQuery<PendingUser[]>({
     queryKey: ["/api/v1/admin/users"],
     select: (data: any) => {
-      const unwrapped = data?.data || data;
-      return Array.isArray(unwrapped) ? unwrapped : [];
+      const users = data?.users ?? data?.data?.users ?? data;
+      return Array.isArray(users) ? users : [];
     },
   });
 
@@ -734,8 +734,8 @@ function UserApprovals() {
                   {pendingUsers.map(u => (
                     <div key={u.id} className="flex items-center justify-between p-3">
                       <div>
-                        <p className="text-sm font-medium">{u.full_name || u.email}</p>
-                        <p className="text-xs text-muted-foreground">{u.email} &middot; Signed up {new Date(u.created_at).toLocaleDateString()}</p>
+                        <p className="text-sm font-medium">{u.fullName || u.email}</p>
+                        <p className="text-xs text-muted-foreground">{u.email}{u.orgName ? ` · ${u.orgName}` : ""}{u.createdAt ? ` · Signed up ${new Date(u.createdAt).toLocaleDateString()}` : ""}</p>
                       </div>
                       <Button size="sm" onClick={() => approveMutation.mutate(u.id)} disabled={approveMutation.isPending}>
                         Approve
@@ -752,8 +752,8 @@ function UserApprovals() {
                   {approvedUsers.map(u => (
                     <div key={u.id} className="flex items-center justify-between p-3">
                       <div>
-                        <p className="text-sm font-medium">{u.full_name || u.email}</p>
-                        <p className="text-xs text-muted-foreground">{u.email} &middot; {u.role}</p>
+                        <p className="text-sm font-medium">{u.fullName || u.email}</p>
+                        <p className="text-xs text-muted-foreground">{u.email}{u.orgName ? ` · ${u.orgName}` : ""} · {u.role}</p>
                       </div>
                       <Button variant="outline" size="sm" onClick={() => rejectMutation.mutate(u.id)} disabled={rejectMutation.isPending}>
                         Revoke
