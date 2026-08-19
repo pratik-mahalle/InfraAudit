@@ -264,6 +264,7 @@ export interface ResourceParams {
   type?: string;
   region?: string;
   status?: string;
+  cloudAccountId?: string;
   page?: number;
   pageSize?: number;
 }
@@ -454,6 +455,8 @@ export interface Resource {
   tags?: Record<string, string>;
   cost?: number;
   configuration?: string;
+  connectionId?: string;
+  cloudAccountId?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -505,8 +508,10 @@ export interface ProviderCredentials {
 }
 
 export type ProviderAuthMethod =
+  | 'aws_sts_role'
   | 'gcp_wif'
   | 'azure_lighthouse'
+  | 'legacy_aws_role'
   | 'legacy_gcp_key'
   | 'legacy_azure_secret';
 
@@ -534,7 +539,7 @@ export type ProviderSourceOutcome =
 export interface ProviderConnection {
   id: string;
   organizationId: number;
-  provider: 'gcp' | 'azure';
+  provider: 'aws' | 'gcp' | 'azure';
   cloudScopeId: string;
   displayName: string;
   authMethod: ProviderAuthMethod;
@@ -574,6 +579,8 @@ export interface ProviderSetupRequest {
   cloudScopeId: string;
   displayName?: string;
   idempotencyKey?: string;
+  awsRoleArn?: string;
+  awsRegion?: string;
   gcpProjectNumber?: string;
   gcpBillingDataset?: string;
   azureTenantId?: string;
@@ -932,6 +939,7 @@ export const api = {
       if (params?.type) searchParams.set('type', params.type);
       if (params?.region) searchParams.set('region', params.region);
       if (params?.status) searchParams.set('status', params.status);
+      if (params?.cloudAccountId) searchParams.set('cloud_account_id', params.cloudAccountId);
       if (params?.page) searchParams.set('page', params.page.toString());
       if (params?.pageSize) searchParams.set('page_size', params.pageSize.toString());
 
@@ -1005,13 +1013,29 @@ export const api = {
         },
       }),
 
-    setup: (provider: 'gcp' | 'azure', input: ProviderSetupRequest) =>
+    setupAWS: (input: { roleArn: string; region: string; displayName?: string; cloudScopeId?: string }) =>
+      request<ProviderSetupResult>('/api/v1/providers/aws/setup', {
+        method: 'POST',
+        body: {
+          aws_role_arn: input.roleArn,
+          aws_region: input.region,
+          display_name: input.displayName,
+          cloud_scope_id: input.cloudScopeId,
+        },
+      }),
+
+    listConnections: (provider: string) =>
+      request<ProviderConnection[]>(`/api/v1/providers/${provider}/connections`),
+
+    setup: (provider: 'aws' | 'gcp' | 'azure', input: ProviderSetupRequest) =>
       request<ProviderSetupResult>(`/api/v1/providers/${provider}/setup`, {
         method: 'POST',
         body: {
           cloud_scope_id: input.cloudScopeId,
           display_name: input.displayName,
           idempotency_key: input.idempotencyKey,
+          aws_role_arn: input.awsRoleArn,
+          aws_region: input.awsRegion,
           gcp_project_number: input.gcpProjectNumber,
           gcp_billing_dataset: input.gcpBillingDataset,
           azure_tenant_id: input.azureTenantId,
@@ -1034,13 +1058,15 @@ export const api = {
     getDiagnostics: (provider: string, connectionId: string) =>
       request<ProviderSourceDiagnostic[]>(`/api/v1/providers/${provider}/connections/${encodeURIComponent(connectionId)}/diagnostics`),
 
-    migrate: (provider: 'gcp' | 'azure', connectionId: string, input: ProviderSetupRequest) =>
+    migrate: (provider: 'aws' | 'gcp' | 'azure', connectionId: string, input: ProviderSetupRequest) =>
       request<ProviderSetupResult>(`/api/v1/providers/${provider}/connections/${encodeURIComponent(connectionId)}/migrate`, {
         method: 'POST',
         body: {
           cloud_scope_id: input.cloudScopeId,
           display_name: input.displayName,
           idempotency_key: input.idempotencyKey,
+          aws_role_arn: input.awsRoleArn,
+          aws_region: input.awsRegion,
           gcp_project_number: input.gcpProjectNumber,
           gcp_billing_dataset: input.gcpBillingDataset,
           azure_tenant_id: input.azureTenantId,

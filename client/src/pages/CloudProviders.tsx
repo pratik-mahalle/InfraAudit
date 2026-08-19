@@ -15,7 +15,7 @@ import { CloudProviderSetup } from "@/components/providers/CloudProviderSetup";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useDisconnectProvider, useProviderDiagnostics, useProviders, useProviderStatus, useSyncProvider } from "@/hooks/use-providers";
+import { useDisconnectProvider, useProviderConnections, useProviderDiagnostics, useProviders, useProviderStatus, useSyncProvider } from "@/hooks/use-providers";
 import { useResources } from "@/hooks/use-resources";
 import { usePermission } from "@/hooks/use-permission";
 import { SocBadge, SocButton, SocPanel, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
@@ -104,50 +104,104 @@ export default function CloudProviders() {
   const { data: providers = [], isLoading: providersLoading, isError: providersError, error: providersErrorValue } = useProviders();
   const { data: providerStatus = [], isLoading: statusLoading } = useProviderStatus();
   const { data: resourcePage, isLoading: resourcesLoading } = useResources({ page: 1, pageSize: 100 });
+  const { data: awsConnections = [] } = useProviderConnections('aws');
   const syncProvider = useSyncProvider();
   const disconnectProvider = useDisconnectProvider();
   const resources = resourcePage?.data ?? [];
 
-  const providerRows = useMemo(() => providerCatalog.map((catalogItem) => {
-    const provider = providers.find((candidate) => candidate.provider.toLowerCase() === catalogItem.id);
-    const status = providerStatus.find((candidate) => candidate.provider.toLowerCase() === catalogItem.id);
-    const resourceCount = status?.resourceCount ?? resources.filter((resource) => {
-      const providerName = resourceProvider(resource);
-      return catalogItem.id === "kubernetes"
-        ? providerName.includes("kubernetes") || providerName.includes("k8s")
-        : providerName === catalogItem.id;
-    }).length;
-    const lifecycleState = provider?.lifecycleState;
-    const effectiveStatus = lifecycleState ?? status?.status ?? (provider?.isConnected ? "connected" : "disconnected");
-    const connected = Boolean(
-      provider?.isConnected
-      || effectiveStatus === "connected"
-      || effectiveStatus === "syncing"
-      || effectiveStatus === "partial"
-      || (catalogItem.id === "kubernetes" && resourceCount > 0),
-    );
+  const providerRows = useMemo(() => {
+    const rows: Array<{
+      id: string;
+      label: string;
+      short: string;
+      Icon: typeof Cloud;
+      tone: "orange" | "blue" | "cyan";
+      connected: boolean;
+      resourceCount: number;
+      status: string;
+      message?: string;
+      lastSynced?: string;
+      connectionId?: string;
+      cloudScopeId?: string;
+      authMethod?: string;
+      lastJobId?: number;
+      isAggregate?: boolean;
+    }> = [];
 
-    return {
-      ...catalogItem,
-      connected,
-      resourceCount,
-      status: effectiveStatus,
-      message: status?.message,
-      lastSynced: provider?.lastSynced ?? status?.lastSynced,
-      connectionId: provider?.connectionId,
-      cloudScopeId: provider?.cloudScopeId,
-      authMethod: provider?.authMethod,
-      lastJobId: provider?.lastJobId,
-    };
-  }), [providerStatus, providers, resources]);
+    for (const catalogItem of providerCatalog) {
+      if (catalogItem.id === "aws" && awsConnections.length > 0) {
+        // For AWS with multi-account, show one row per connection
+        for (const conn of awsConnections) {
+          const connStatus = providerStatus.find(
+            (s) => s.provider.toLowerCase() === "aws" && s.connectionId === conn.id
+          );
+          const rc = connStatus?.resourceCount ?? 0;
+          const effectiveStatus = conn.lifecycleState ?? connStatus?.status ?? "disconnected";
+          const connected = effectiveStatus === "connected" || effectiveStatus === "syncing" || effectiveStatus === "partial";
+
+          rows.push({
+            ...catalogItem,
+            id: `aws-${conn.id}`,
+            label: conn.displayName || `AWS ${conn.cloudScopeId}`,
+            short: conn.cloudScopeId || "AWS",
+            connected,
+            resourceCount: rc,
+            status: effectiveStatus,
+            message: connStatus?.message,
+            lastSynced: conn.lastSyncedAt ?? connStatus?.lastSynced,
+            connectionId: conn.id,
+            cloudScopeId: conn.cloudScopeId,
+            authMethod: conn.authMethod,
+            lastJobId: conn.lastJobId,
+          });
+        }
+      } else {
+        // Non-AWS providers (GCP, Azure, K8s) and AWS with no connections
+        const provider = providers.find((candidate) => candidate.provider.toLowerCase() === catalogItem.id);
+        const status = providerStatus.find((candidate) => candidate.provider.toLowerCase() === catalogItem.id);
+        const resourceCount = status?.resourceCount ?? resources.filter((resource) => {
+          const providerName = resourceProvider(resource);
+          return catalogItem.id === "kubernetes"
+            ? providerName.includes("kubernetes") || providerName.includes("k8s")
+            : providerName === catalogItem.id;
+        }).length;
+        const lifecycleState = provider?.lifecycleState;
+        const effectiveStatus = lifecycleState ?? status?.status ?? (provider?.isConnected ? "connected" : "disconnected");
+        const connected = Boolean(
+          provider?.isConnected
+          || effectiveStatus === "connected"
+          || effectiveStatus === "syncing"
+          || effectiveStatus === "partial"
+          || (catalogItem.id === "kubernetes" && resourceCount > 0),
+        );
+
+        rows.push({
+          ...catalogItem,
+          connected,
+          resourceCount,
+          status: effectiveStatus,
+          message: status?.message,
+          lastSynced: provider?.lastSynced ?? status?.lastSynced,
+          connectionId: provider?.connectionId,
+          cloudScopeId: provider?.cloudScopeId,
+          authMethod: provider?.authMethod,
+          lastJobId: provider?.lastJobId,
+        });
+      }
+    }
+    return rows;
+  }, [providerStatus, providers, resources, awsConnections]);
 
   const selectedProvider = providerRows.find((provider) => provider.id === selectedProviderId) ?? providerRows[0];
   const connectedProviders = providerRows.filter((provider) => provider.connected);
   const disconnectedProviders = providerRows.filter((provider) => !provider.connected);
   const totalResources = resourcePage?.totalItems ?? resources.length;
   const isLoading = providersLoading || statusLoading || resourcesLoading;
+  /** Resolve a row id (e.g. "aws-conn123") back to the base provider tab id */
+  const baseProviderId = (id: string) => (id.startsWith("aws-") ? "aws" : id);
+
   const { data: diagnostics = [], isLoading: diagnosticsLoading } = useProviderDiagnostics(
-    selectedProvider?.id ?? "",
+    baseProviderId(selectedProvider?.id ?? ""),
     selectedProvider?.connectionId,
   );
 
@@ -159,10 +213,11 @@ export default function CloudProviders() {
 
   const handleSync = (providerId: string, connectionId?: string) => {
     if (!canManageProviders) return;
-    syncProvider.mutate(connectionId ? { provider: providerId, connectionId } : providerId, {
+    const base = baseProviderId(providerId);
+    syncProvider.mutate(connectionId ? { provider: base, connectionId } : base, {
       onSuccess: () => {
-        posthog.capture("provider_sync_started", { provider: providerId });
-        toast({ title: "Provider sync started", description: `${providerId.toUpperCase()} inventory refresh is running.` });
+        posthog.capture("provider_sync_started", { provider: base });
+        toast({ title: "Provider sync started", description: `${base.toUpperCase()} inventory refresh is running.` });
       },
       onError: (error: Error) => toast({ title: "Sync failed", description: error.message, variant: "destructive" }),
     });
@@ -170,10 +225,11 @@ export default function CloudProviders() {
 
   const handleDisconnect = (providerId: string, connectionId?: string) => {
     if (!canManageProviders) return;
-    disconnectProvider.mutate(connectionId ? { provider: providerId, connectionId } : providerId, {
+    const base = baseProviderId(providerId);
+    disconnectProvider.mutate(connectionId ? { provider: base, connectionId } : base, {
       onSuccess: () => {
-        posthog.capture("provider_disconnected", { provider: providerId });
-        toast({ title: "Provider disconnected", description: `${providerId.toUpperCase()} was disconnected.` });
+        posthog.capture("provider_disconnected", { provider: base });
+        toast({ title: "Provider disconnected", description: `${base.toUpperCase()} was disconnected.` });
       },
       onError: (error: Error) => toast({ title: "Disconnect failed", description: error.message, variant: "destructive" }),
     });
@@ -426,7 +482,7 @@ export default function CloudProviders() {
         <Dialog open={canManageProviders && connectOpen} onOpenChange={setConnectOpen}>
           <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Set up or update {selectedProvider?.label || "provider"}</DialogTitle>
+              <DialogTitle>Set up or update {selectedProvider?.id.startsWith("aws-") ? "Amazon Web Services" : (selectedProvider?.label || "provider")}</DialogTitle>
               <DialogDescription>
                 Choose the provider tab and follow its least-privilege onboarding flow.
               </DialogDescription>
@@ -435,7 +491,7 @@ export default function CloudProviders() {
               <div>
                 <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted-foreground">Setup checklist</p>
                 <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  {(providerRequirements[selectedProviderId] ?? []).map((item) => (
+                  {(providerRequirements[baseProviderId(selectedProviderId)] ?? []).map((item) => (
                     <li key={item} className="flex gap-2">
                       <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                       <span>{item}</span>
@@ -461,7 +517,7 @@ export default function CloudProviders() {
                 </div>
               </div>
             </div>
-            <CloudProviderSetup showHeader={false} showConnectedProviders={false} initialTab={selectedProviderId} allowConnectedProviderUpdate />
+            <CloudProviderSetup showHeader={false} showConnectedProviders={false} initialTab={baseProviderId(selectedProviderId)} allowConnectedProviderUpdate />
           </DialogContent>
         </Dialog>
       </div>
