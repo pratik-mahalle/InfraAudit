@@ -141,14 +141,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithEmail = useCallback(
     async (email: string, password: string) => {
       if (isPersonalEmail(email)) throw new Error(BUSINESS_EMAIL_ERROR);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw new Error(error.message);
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
-      });
+      // Directly set session and load profile instead of relying on
+      // onAuthStateChange, which may not fire if the user already has
+      // a Supabase session from a prior sign-in attempt.
+      setSession(data.session);
+      await loadProfile(data.session);
     },
-    [toast]
+    [loadProfile]
   );
 
   const signUpWithEmail = useCallback(
