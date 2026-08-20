@@ -105,6 +105,10 @@ export default function CloudProviders() {
   const { data: providerStatus = [], isLoading: statusLoading } = useProviderStatus();
   const { data: resourcePage, isLoading: resourcesLoading } = useResources({ page: 1, pageSize: 100 });
   const { data: awsConnections = [] } = useProviderConnections('aws');
+  const activeAwsConnections = useMemo(
+    () => awsConnections.filter((connection) => connection.lifecycleState !== 'revoked'),
+    [awsConnections],
+  );
   const syncProvider = useSyncProvider();
   const disconnectProvider = useDisconnectProvider();
   const resources = resourcePage?.data ?? [];
@@ -129,9 +133,9 @@ export default function CloudProviders() {
     }> = [];
 
     for (const catalogItem of providerCatalog) {
-      if (catalogItem.id === "aws" && awsConnections.length > 0) {
+      if (catalogItem.id === "aws" && activeAwsConnections.length > 0) {
         // For AWS with multi-account, show one row per connection
-        for (const conn of awsConnections) {
+        for (const conn of activeAwsConnections) {
           const connStatus = providerStatus.find(
             (s) => s.provider.toLowerCase() === "aws" && s.connectionId === conn.id
           );
@@ -190,7 +194,7 @@ export default function CloudProviders() {
       }
     }
     return rows;
-  }, [providerStatus, providers, resources, awsConnections]);
+  }, [providerStatus, providers, resources, activeAwsConnections]);
 
   const selectedProvider = providerRows.find((provider) => provider.id === selectedProviderId) ?? providerRows[0];
   const connectedProviders = providerRows.filter((provider) => provider.connected);

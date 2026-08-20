@@ -104,11 +104,14 @@ export function useProviderConnections(provider: string) {
 export function useSetupAWS() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { roleArn: string; region: string; displayName?: string; cloudScopeId?: string }) =>
-      api.providers.setupAWS(input),
+    mutationFn: async (input: { roleArn: string; region: string; displayName?: string; cloudScopeId?: string }) => {
+      const setup = await api.providers.setupAWS(input);
+      return api.providers.validateConnection('aws', setup.connection.id);
+    },
     onSuccess: () => {
       invalidateProviderConsumers(queryClient);
       queryClient.invalidateQueries({ queryKey: ['providers', 'connections', 'aws'] });
+      queryClient.invalidateQueries({ queryKey: ['providers', 'diagnostics'] });
     },
   });
 }

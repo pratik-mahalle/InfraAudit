@@ -1,7 +1,7 @@
-import { Toast } from "primereact/toast";
-import React, { useEffect, useRef, useState } from "react";
+import { Toast, type ToastMessage } from "primereact/toast";
+import React, { useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
-import { subscribeToasts, type ToastOptions } from "@/hooks/use-toast";
+import { subscribeToasts } from "@/hooks/use-toast";
 
 function toastSeverity(variant?: string) {
   switch (variant) {
@@ -16,55 +16,77 @@ function toastSeverity(variant?: string) {
 export function Toaster() {
   useTheme();
   const toastRef = useRef<Toast>(null);
-  const [messages, setMessages] = useState<Record<string, ToastOptions>>({});
+  const activeMessages = useRef(new Map<string, ToastMessage>());
 
   useEffect(() => subscribeToasts((event) => {
-    setMessages((current) => {
-      if (event.type === "dismiss") {
-        if (!event.id) return {};
-        const next = { ...current }; delete next[event.id]; return next;
+    if (event.type === "dismiss") {
+      if (!event.id) {
+        activeMessages.current.clear();
+        toastRef.current?.clear();
+        return;
       }
-      return { ...current, [event.id!]: event.options! };
-    });
+
+      const activeMessage = activeMessages.current.get(event.id);
+      if (activeMessage) {
+        toastRef.current?.remove(activeMessage);
+        activeMessages.current.delete(event.id);
+      }
+      return;
+    }
+
+    if (!event.id || !event.options) return;
+
+    const previousMessage = activeMessages.current.get(event.id);
+    if (previousMessage) {
+      toastRef.current?.remove(previousMessage);
+    }
+
+    const message = event.options;
+    const severity = toastSeverity(message.variant);
+    const summary = message.title || (message.variant === "destructive" ? "Something went wrong" : "Notification");
+    const life = message.duration ?? (message.variant === "destructive" ? 6000 : 3000);
+    const toastMessage: ToastMessage = {
+      id: event.id,
+      severity,
+      summary,
+      detail: message.description,
+      life,
+      closable: true,
+      ...(message.action ? {
+        content: (
+          <div className="flex w-full flex-col gap-2">
+            <div>
+              <div className="text-sm font-medium">{summary}</div>
+              {message.description && <div className="mt-0.5 text-xs opacity-80">{message.description}</div>}
+            </div>
+            <button
+              type="button"
+              className="self-start rounded-md border border-current/20 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-white/10"
+              onClick={() => {
+                message.action!.onClick();
+                const activeMessage = activeMessages.current.get(event.id!);
+                if (activeMessage) toastRef.current?.remove(activeMessage);
+                activeMessages.current.delete(event.id!);
+              }}
+            >
+              {message.action.label}
+            </button>
+          </div>
+        ),
+      } : {}),
+    };
+
+    activeMessages.current.set(event.id, toastMessage);
+    toastRef.current?.show(toastMessage);
   }), []);
 
-  useEffect(() => {
-    toastRef.current?.clear();
-    Object.entries(messages).forEach(([id, message]) => {
-      const severity = toastSeverity(message.variant);
-      const summary = message.title || (message.variant === "destructive" ? "Something went wrong" : "Notification");
-      const life = message.duration ?? (message.variant === "destructive" ? 6000 : 3000);
-
-      toastRef.current?.show({
-        id,
-        severity,
-        summary,
-        detail: message.description,
-        life,
-        closable: true,
-        ...(message.action ? {
-          content: (
-            <div className="flex flex-col gap-2 w-full">
-              <div>
-                <div className="font-medium text-sm">{summary}</div>
-                {message.description && <div className="text-xs opacity-80 mt-0.5">{message.description}</div>}
-              </div>
-              <button
-                type="button"
-                className="self-start rounded-md border border-current/20 px-2.5 py-1 text-xs font-medium hover:bg-white/10 transition-colors"
-                onClick={() => {
-                  message.action!.onClick();
-                  toastRef.current?.clear();
-                }}
-              >
-                {message.action.label}
-              </button>
-            </div>
-          ),
-        } : {}),
-      });
-    });
-  }, [messages]);
-
-  return <Toast ref={toastRef} position="bottom-right" />;
+  return (
+    <Toast
+      ref={toastRef}
+      position="bottom-right"
+      onRemove={(message) => {
+        if (message.id) activeMessages.current.delete(message.id);
+      }}
+    />
+  );
 }

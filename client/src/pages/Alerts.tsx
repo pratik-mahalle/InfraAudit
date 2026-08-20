@@ -122,7 +122,7 @@ export default function Alerts() {
 
   const openAlertContext = (alert: Alert) => {
     const resource = resources.find((item) => item.id === alert.resourceId);
-    const identifier = resource?.resourceId ?? resource?.id;
+    const identifier = resource?.id ?? resource?.resourceId;
     if (identifier) {
       navigate(`/resources/${encodeURIComponent(String(identifier))}`);
       return;
