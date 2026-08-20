@@ -315,10 +315,20 @@ export function CloudProviderSetup({
       displayName: data.displayName?.trim() || undefined,
       cloudScopeId: accountId,
     }, {
-      onSuccess: () => {
+      onSuccess: (result) => {
+        if (result.connection.lifecycleState === 'error') {
+          const requiredFailure = result.diagnostics.find((diagnostic) => diagnostic.required && diagnostic.guidance);
+          toast({
+            title: 'Could not activate AWS role',
+            description: requiredFailure?.guidance || 'Confirm the role trust policy and read-only permissions, then try again.',
+            variant: 'destructive',
+          });
+          return;
+        }
         toast({
           title: 'AWS account connected',
           description: 'InfraAudit validated a short-lived STS session and started the first inventory sync.',
+          variant: 'success',
         });
         awsRoleForm.reset();
         queryClient.invalidateQueries({ queryKey: ['providers'] });
@@ -368,7 +378,8 @@ export function CloudProviderSetup({
   };
 
   // Find if providers already connected (backend uses lowercase: "aws", "gcp", "azure")
-  const awsConnectionCount = awsConnections.filter(c => c.lifecycleState === 'connected' || c.lifecycleState === 'syncing' || c.lifecycleState === 'partial').length;
+  const activeAwsConnections = awsConnections.filter(c => c.lifecycleState !== 'revoked');
+  const awsConnectionCount = activeAwsConnections.filter(c => c.lifecycleState === 'connected' || c.lifecycleState === 'syncing' || c.lifecycleState === 'partial').length;
   const isAwsConnected = awsConnectionCount > 0;
   const isGcpConnected = providers.some(p => p.provider === 'gcp' && p.isConnected);
   const isAzureConnected = providers.some(p => p.provider === 'azure' && p.isConnected);
@@ -529,11 +540,11 @@ export function CloudProviderSetup({
             {/* AWS role onboarding */}
             <TabsContent value="aws" className="space-y-4">
               {/* Existing AWS connections list */}
-              {awsConnections.length > 0 && (
+              {activeAwsConnections.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium mb-3">Connected AWS Accounts ({awsConnections.length})</h4>
+                  <h4 className="text-sm font-medium mb-3">AWS Accounts ({activeAwsConnections.length})</h4>
                   <div className="border rounded-md overflow-hidden">
-                    {awsConnections.map((conn) => (
+                    {activeAwsConnections.map((conn) => (
                       <div key={conn.id} className="p-4 border-b last:border-0 flex justify-between items-center">
                         <div className="flex items-center space-x-3">
                           <SiAmazon className="h-6 w-6 text-orange-500" />

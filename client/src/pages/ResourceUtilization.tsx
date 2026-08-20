@@ -122,7 +122,7 @@ export default function ResourceUtilizationPage() {
 
     return matchesType && matchesProvider && matchesSearch;
   });
-  const resourceKey = (resource: any) => String(resource.resourceId ?? resource.id ?? resource.name);
+  const resourceKey = (resource: any) => String(resource.id ?? `${resource.connectionId ?? resource.cloudAccountId ?? resource.provider}:${resource.resourceId ?? resource.name}`);
   const selectedResource = filteredResources.find((resource) => resourceKey(resource) === selectedResourceKey) ?? filteredResources[0] ?? null;
   const regionCounts = resources.reduce<Record<string, number>>((counts, resource) => {
     counts[resource.region || "unknown"] = (counts[resource.region || "unknown"] ?? 0) + 1;
@@ -368,7 +368,7 @@ export default function ResourceUtilizationPage() {
                       <DetailRow label="Updated">{selectedResource.updatedAt ? new Date(selectedResource.updatedAt).toLocaleString() : "Unknown"}</DetailRow>
                     </dl>
                     <div className="grid gap-2">
-                      <Button className="gap-2" onClick={() => navigate(`/resources/${encodeURIComponent(selectedResource.resourceId ?? String(selectedResource.id))}`)}>
+                      <Button className="gap-2" onClick={() => navigate(`/resources/${encodeURIComponent(String(selectedResource.id ?? selectedResource.resourceId))}`)}>
                         <ExternalLink className="h-4 w-4" />
                         Open Full Resource
                       </Button>

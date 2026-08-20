@@ -212,7 +212,7 @@ export default function ResourceDetailPage() {
                 <div className="flex items-start gap-3"><Shield className="mt-0.5 h-4 w-4 text-muted-foreground" /><div><div className="font-medium">Security evaluation</div><div className="text-muted-foreground">Drift and policy findings are tracked separately and linked to this cloud identifier.</div></div></div>
               </CardContent>
             </Card>
-            <AiAnalysisPanel resourceId={resourceId} resourceName={resource.name} resourceType={resource.type} />
+            <AiAnalysisPanel resourceId={resource.resourceId ?? resourceId} resourceName={resource.name} resourceType={resource.type} />
           </div>
         </div>
       </div>
