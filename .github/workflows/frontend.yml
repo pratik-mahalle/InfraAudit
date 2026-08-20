@@ -1,7 +1,8 @@
 name: Frontend (manual break-glass fallback)
 
-# Automatic pull-request validation and main deployments run in Jenkins. Keep
-# this workflow dispatch-only as an explicitly invoked break-glass path.
+# Automatic pull-request validation and main deployments are migrating to
+# Jenkins. CodeBuild remains active during the cutover; keep this workflow
+# dispatch-only as an explicitly invoked break-glass path.
 on:
   workflow_dispatch:
 
