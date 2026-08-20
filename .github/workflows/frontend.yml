@@ -1,8 +1,8 @@
-name: Frontend (manual fallback)
+name: Frontend (manual break-glass fallback)
 
-# Automatic pull-request validation and main deployments run in AWS CodeBuild.
-# Keep this workflow dispatch-only as an emergency fallback while GitHub-hosted
-# runner capacity is unavailable.
+# Automatic pull-request validation and main deployments are migrating to
+# Jenkins. CodeBuild remains active during the cutover; keep this workflow
+# dispatch-only as an explicitly invoked break-glass path.
 on:
   workflow_dispatch:
 
@@ -15,7 +15,7 @@ env:
   ECR_REPOSITORY: infraudit-production-frontend
   ECS_CLUSTER: infraudit-production
   ECS_SERVICE: frontend
-  APPLICATION_HEALTH_URL: http://infraudit-production-571152482.us-east-1.elb.amazonaws.com/
+  APPLICATION_HEALTH_URL: https://infraudit.com/
 
 jobs:
   validate:
@@ -104,3 +104,19 @@ jobs:
           curl --fail --show-error --silent --location
           --retry 10 --retry-delay 5 --retry-all-errors
           "$APPLICATION_HEALTH_URL" --output /dev/null
+
+      - name: Reconcile Terraform production alias
+        run: |
+          image_manifest="$(aws ecr batch-get-image \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-ids "imageTag=$GITHUB_SHA" \
+            --region "$AWS_REGION" \
+            --query 'images[0].imageManifest' \
+            --output text)"
+          test -n "$image_manifest"
+          test "$image_manifest" != "None"
+          aws ecr put-image \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-tag production \
+            --image-manifest "$image_manifest" \
+            --region "$AWS_REGION" >/dev/null
