@@ -15,7 +15,7 @@ import { CloudProviderSetup } from "@/components/providers/CloudProviderSetup";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useDisconnectProvider, useProviderConnections, useProviderDiagnostics, useProviders, useProviderStatus, useSyncProvider } from "@/hooks/use-providers";
+import { useDisconnectProvider, useProviderConnections, useProviderDiagnostics, useProviders, useProviderStatus, useSyncProvider, useValidateProviderConnection } from "@/hooks/use-providers";
 import { useResources } from "@/hooks/use-resources";
 import { usePermission } from "@/hooks/use-permission";
 import { SocBadge, SocButton, SocPanel, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
@@ -95,6 +95,14 @@ function providerTone(status?: string, connected?: boolean) {
   return "slate" as const;
 }
 
+function needsProviderValidation(status?: string) {
+  return status === "draft" || status === "pending_setup" || status === "validating" || status === "error";
+}
+
+function canSyncProvider(status?: string) {
+  return status === "connected" || status === "partial";
+}
+
 export default function CloudProviders() {
   const { toast } = useToast();
   const { hasPermission } = usePermission();
@@ -111,6 +119,7 @@ export default function CloudProviders() {
   );
   const syncProvider = useSyncProvider();
   const disconnectProvider = useDisconnectProvider();
+  const validateProvider = useValidateProviderConnection();
   const resources = resourcePage?.data ?? [];
 
   const providerRows = useMemo(() => {
@@ -239,6 +248,50 @@ export default function CloudProviders() {
     });
   };
 
+  const handleValidate = (providerId: string, connectionId?: string) => {
+    if (!canManageProviders || !connectionId) return;
+    const base = baseProviderId(providerId);
+    validateProvider.mutate({ provider: base, connectionId }, {
+      onSuccess: (result) => {
+        if (result.connection.lifecycleState === "error") {
+          const requiredFailure = result.diagnostics.find((diagnostic) => diagnostic.required && diagnostic.guidance);
+          toast({
+            title: "Could not activate AWS role",
+            description: requiredFailure?.guidance || "Confirm the role trust policy and read-only permissions, then retry validation.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (result.connection.lifecycleState === "partial") {
+          toast({
+            title: "AWS account connected with warnings",
+            description: "Core identity validation succeeded, but one or more optional sources need attention.",
+          });
+          return;
+        }
+        if (result.connection.lifecycleState !== "connected" && result.connection.lifecycleState !== "syncing") {
+          toast({
+            title: "AWS validation did not complete",
+            description: "The setup is still saved. Retry validation after the backend deployment stabilizes.",
+            variant: "destructive",
+          });
+          return;
+        }
+        posthog.capture("provider_validation_retried", { provider: base });
+        toast({
+          title: "AWS role validated",
+          description: "The account is connected and its first inventory sync has started.",
+          variant: "success",
+        });
+      },
+      onError: (error: Error) => toast({
+        title: "Validation retry failed",
+        description: error.message || "The setup remains saved; try again shortly.",
+        variant: "destructive",
+      }),
+    });
+  };
+
   return (
     <SocWorkspace section="Infrastructure / Providers" title="Cloud Providers">
       <div className="space-y-5">
@@ -300,20 +353,38 @@ export default function CloudProviders() {
               <p className="mt-1 text-sm text-muted-foreground">{provider.resourceCount} resources</p>
               {canManageProviders && (
                 <div className="mt-4 flex gap-2">
-                  <Button
-                    type="button"
-                    variant={provider.connected ? "outline" : "default"}
-                    size="sm"
-                    className="gap-2"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleAddProvider(provider.id);
-                    }}
-                  >
-                    <Plus className="h-4 w-4" />
-                    {provider.connected ? "Update" : "Connect"}
-                  </Button>
-                  {provider.connected && provider.id !== "kubernetes" && (
+                  {baseProviderId(provider.id) === "aws" && provider.connectionId && needsProviderValidation(provider.status) ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="gap-2"
+                      disabled={provider.status === "validating" || (validateProvider.isPending && validateProvider.variables?.connectionId === provider.connectionId)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleValidate(provider.id, provider.connectionId);
+                      }}
+                    >
+                      {provider.status === "validating" || (validateProvider.isPending && validateProvider.variables?.connectionId === provider.connectionId)
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <CheckCircle2 className="h-4 w-4" />}
+                      {provider.status === "validating" ? "Validating" : "Retry validation"}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant={provider.connected ? "outline" : "default"}
+                      size="sm"
+                      className="gap-2"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleAddProvider(provider.id);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                      {provider.connected ? "Update" : "Connect"}
+                    </Button>
+                  )}
+                  {canSyncProvider(provider.status) && provider.id !== "kubernetes" && (
                     <Button
                       type="button"
                       variant="outline"
@@ -373,19 +444,33 @@ export default function CloudProviders() {
                   <span className="flex gap-2 md:justify-end" onClick={(event) => event.stopPropagation()}>
                     {canManageProviders ? (
                       <>
-                        <SocButton
-                          variant="ghost"
-                          className="h-9 px-3"
-                          disabled={!provider.connected || provider.id === "kubernetes" || syncProvider.isPending}
-                          onClick={() => handleSync(provider.id, provider.connectionId)}
-                        >
-                          {syncProvider.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                          Sync
-                        </SocButton>
+                        {baseProviderId(provider.id) === "aws" && provider.connectionId && needsProviderValidation(provider.status) ? (
+                          <SocButton
+                            variant="ghost"
+                            className="h-9 px-3"
+                            disabled={provider.status === "validating" || (validateProvider.isPending && validateProvider.variables?.connectionId === provider.connectionId)}
+                            onClick={() => handleValidate(provider.id, provider.connectionId)}
+                          >
+                            {provider.status === "validating" || (validateProvider.isPending && validateProvider.variables?.connectionId === provider.connectionId)
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : <CheckCircle2 className="h-4 w-4" />}
+                            {provider.status === "validating" ? "Validating" : "Validate"}
+                          </SocButton>
+                        ) : (
+                          <SocButton
+                            variant="ghost"
+                            className="h-9 px-3"
+                            disabled={!canSyncProvider(provider.status) || provider.id === "kubernetes" || syncProvider.isPending}
+                            onClick={() => handleSync(provider.id, provider.connectionId)}
+                          >
+                            {syncProvider.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                            Sync
+                          </SocButton>
+                        )}
                         <SocButton
                           variant="danger"
                           className="h-9 px-3"
-                          disabled={!provider.connected || provider.id === "kubernetes" || disconnectProvider.isPending}
+                          disabled={provider.id === "kubernetes" || disconnectProvider.isPending || (!provider.connected && !provider.connectionId)}
                           onClick={() => handleDisconnect(provider.id, provider.connectionId)}
                         >
                           {disconnectProvider.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unplug className="h-4 w-4" />}
@@ -405,7 +490,13 @@ export default function CloudProviders() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-mono text-xs text-muted-foreground">{selectedProvider?.short}</p>
-                  <h3 className="mt-1 text-lg font-semibold text-foreground">{selectedProvider?.connected ? "Connected" : "Not connected"}</h3>
+                  <h3 className="mt-1 text-lg font-semibold text-foreground">
+                    {selectedProvider?.connected
+                      ? "Connected"
+                      : needsProviderValidation(selectedProvider?.status)
+                        ? "Setup incomplete"
+                        : "Not connected"}
+                  </h3>
                 </div>
                 {selectedProvider?.connected ? <CheckCircle2 className="h-5 w-5 text-emerald-600" /> : <Unplug className="h-5 w-5 text-muted-foreground" />}
               </div>
@@ -450,6 +541,31 @@ export default function CloudProviders() {
                   </div>
                 </div>
               </div>
+
+              {selectedProvider?.connectionId
+                && baseProviderId(selectedProvider.id) === "aws"
+                && needsProviderValidation(selectedProvider.status) && (
+                <div className="rounded-md border border-blue-500/30 bg-blue-500/10 p-4">
+                  <p className="text-sm font-medium text-foreground">AWS setup is saved, but identity validation has not completed.</p>
+                  <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                    Retry the existing connection. You do not need to submit the role details again.
+                  </p>
+                  {canManageProviders && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="mt-3 gap-2"
+                      disabled={selectedProvider.status === "validating" || (validateProvider.isPending && validateProvider.variables?.connectionId === selectedProvider.connectionId)}
+                      onClick={() => handleValidate(selectedProvider.id, selectedProvider.connectionId)}
+                    >
+                      {selectedProvider.status === "validating" || (validateProvider.isPending && validateProvider.variables?.connectionId === selectedProvider.connectionId)
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <CheckCircle2 className="h-4 w-4" />}
+                      {selectedProvider.status === "validating" ? "Validating" : "Retry validation"}
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {selectedProvider?.connectionId && (
                 <div>

@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { CloudProvider } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { api, type Provider, type ProviderConnection } from '@/lib/api';
-import { useProviderConnections, useSetupAWS } from '@/hooks/use-providers';
+import { api, type Provider, type ProviderConnection, type ProviderValidationResult } from '@/lib/api';
+import { useProviderConnections, useSetupAWS, useValidateProviderConnection } from '@/hooks/use-providers';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -53,6 +53,17 @@ const awsRoleFormSchema = z.object({
 function extractAccountId(roleArn: string): string | undefined {
   const match = roleArn.match(/:(\d{12}):/);
   return match?.[1];
+}
+
+function needsAWSValidation(connection: ProviderConnection): boolean {
+  return connection.lifecycleState === 'draft'
+    || connection.lifecycleState === 'pending_setup'
+    || connection.lifecycleState === 'validating'
+    || connection.lifecycleState === 'error';
+}
+
+function canSyncAWSConnection(connection: ProviderConnection): boolean {
+  return connection.lifecycleState === 'connected' || connection.lifecycleState === 'partial';
 }
 
 
@@ -107,6 +118,7 @@ export function CloudProviderSetup({
   // Fetch existing AWS connections for multi-account display
   const { data: awsConnections = [], isLoading: isLoadingAwsConnections } = useProviderConnections('aws');
   const setupAWSMutation = useSetupAWS();
+  const validateConnectionMutation = useValidateProviderConnection();
 
   // Form handlers for provider connection inputs.
   const awsRoleForm = useForm<z.infer<typeof awsRoleFormSchema>>({
@@ -307,6 +319,39 @@ export function CloudProviderSetup({
     }
   };
 
+  const showAWSValidationResult = (result: ProviderValidationResult): boolean => {
+    if (result.connection.lifecycleState === 'error') {
+      const requiredFailure = result.diagnostics.find((diagnostic) => diagnostic.required && diagnostic.guidance);
+      toast({
+        title: 'Could not activate AWS role',
+        description: requiredFailure?.guidance || 'Confirm the role trust policy and read-only permissions, then try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    if (result.connection.lifecycleState === 'partial') {
+      toast({
+        title: 'AWS account connected with warnings',
+        description: 'Core identity validation succeeded, but one or more optional sources need attention.',
+      });
+      return true;
+    }
+    if (result.connection.lifecycleState !== 'connected' && result.connection.lifecycleState !== 'syncing') {
+      toast({
+        title: 'AWS validation did not complete',
+        description: 'The setup was saved. Retry validation when the backend deployment is stable.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    toast({
+      title: 'AWS account connected',
+      description: 'InfraAudit validated a short-lived STS session and started the first inventory sync.',
+      variant: 'success',
+    });
+    return true;
+  };
+
   const onSubmitAWSRole = (data: z.infer<typeof awsRoleFormSchema>) => {
     const accountId = extractAccountId(data.roleArn);
     setupAWSMutation.mutate({
@@ -316,20 +361,7 @@ export function CloudProviderSetup({
       cloudScopeId: accountId,
     }, {
       onSuccess: (result) => {
-        if (result.connection.lifecycleState === 'error') {
-          const requiredFailure = result.diagnostics.find((diagnostic) => diagnostic.required && diagnostic.guidance);
-          toast({
-            title: 'Could not activate AWS role',
-            description: requiredFailure?.guidance || 'Confirm the role trust policy and read-only permissions, then try again.',
-            variant: 'destructive',
-          });
-          return;
-        }
-        toast({
-          title: 'AWS account connected',
-          description: 'InfraAudit validated a short-lived STS session and started the first inventory sync.',
-          variant: 'success',
-        });
+        if (!showAWSValidationResult(result)) return;
         awsRoleForm.reset();
         queryClient.invalidateQueries({ queryKey: ['providers'] });
         queryClient.invalidateQueries({ queryKey: ['providers', 'connections', 'aws'] });
@@ -338,6 +370,19 @@ export function CloudProviderSetup({
         toast({
           title: 'Could not activate AWS role',
           description: error.message || 'Confirm the stack RoleArn and trust policy, then try again.',
+          variant: 'destructive',
+        });
+      },
+    });
+  };
+
+  const handleValidateAWSConnection = (connection: ProviderConnection) => {
+    validateConnectionMutation.mutate({ provider: 'aws', connectionId: connection.id }, {
+      onSuccess: showAWSValidationResult,
+      onError: (error: Error) => {
+        toast({
+          title: 'Could not validate AWS role',
+          description: error.message || 'Confirm the role trust policy and try again.',
           variant: 'destructive',
         });
       },
@@ -544,62 +589,86 @@ export function CloudProviderSetup({
                 <div>
                   <h4 className="text-sm font-medium mb-3">AWS Accounts ({activeAwsConnections.length})</h4>
                   <div className="border rounded-md overflow-hidden">
-                    {activeAwsConnections.map((conn) => (
-                      <div key={conn.id} className="p-4 border-b last:border-0 flex justify-between items-center">
-                        <div className="flex items-center space-x-3">
-                          <SiAmazon className="h-6 w-6 text-orange-500" />
-                          <div>
-                            <div className="font-medium">{conn.displayName || `AWS ${conn.cloudScopeId}`}</div>
-                            <div className="text-xs text-muted-foreground flex gap-2 mt-1">
-                              <span className="font-mono">{conn.cloudScopeId}</span>
-                              <span className={
-                                conn.lifecycleState === 'connected' ? 'text-green-600' :
-                                conn.lifecycleState === 'error' ? 'text-red-600' :
-                                conn.lifecycleState === 'syncing' ? 'text-blue-600' :
-                                'text-amber-600'
-                              }>
-                                {conn.lifecycleState}
-                              </span>
-                              {conn.lastSyncedAt && (
-                                <span>Synced: {new Date(conn.lastSyncedAt).toLocaleString()}</span>
-                              )}
+                    {activeAwsConnections.map((conn) => {
+                      const validationPending = needsAWSValidation(conn);
+                      const validatingThisConnection = validateConnectionMutation.isPending
+                        && validateConnectionMutation.variables?.connectionId === conn.id;
+                      const syncingThisConnection = syncConnectionMutation.isPending
+                        && syncConnectionMutation.variables?.connectionId === conn.id;
+
+                      return (
+                        <div key={conn.id} className="p-4 border-b last:border-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-center space-x-3">
+                            <SiAmazon className="h-6 w-6 text-orange-500" />
+                            <div>
+                              <div className="font-medium">{conn.displayName || `AWS ${conn.cloudScopeId}`}</div>
+                              <div className="text-xs text-muted-foreground flex gap-2 mt-1">
+                                <span className="font-mono">{conn.cloudScopeId}</span>
+                                <span className={
+                                  conn.lifecycleState === 'connected' ? 'text-green-600' :
+                                  conn.lifecycleState === 'error' ? 'text-red-600' :
+                                  conn.lifecycleState === 'syncing' ? 'text-blue-600' :
+                                  'text-amber-600'
+                                }>
+                                  {conn.lifecycleState}
+                                </span>
+                                {conn.lastSyncedAt && (
+                                  <span>Synced: {new Date(conn.lastSyncedAt).toLocaleString()}</span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={syncConnectionMutation.isPending && syncConnectionMutation.variables?.connectionId === conn.id}
-                            onClick={() => syncConnectionMutation.mutate({ provider: 'aws', connectionId: conn.id })}
-                          >
-                            {syncConnectionMutation.isPending && syncConnectionMutation.variables?.connectionId === conn.id ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          <div className="flex gap-2">
+                            {validationPending ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={validatingThisConnection || conn.lifecycleState === 'validating'}
+                                onClick={() => handleValidateAWSConnection(conn)}
+                              >
+                                {validatingThisConnection || conn.lifecycleState === 'validating' ? (
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                ) : (
+                                  <Check className="h-4 w-4 mr-1" />
+                                )}
+                                {validatingThisConnection || conn.lifecycleState === 'validating' ? 'Validating' : 'Retry validation'}
+                              </Button>
                             ) : (
-                              <RefreshCw className="h-4 w-4 mr-1" />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={!canSyncAWSConnection(conn) || syncingThisConnection}
+                                onClick={() => syncConnectionMutation.mutate({ provider: 'aws', connectionId: conn.id })}
+                              >
+                                {syncingThisConnection || conn.lifecycleState === 'syncing' ? (
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-4 w-4 mr-1" />
+                                )}
+                                {conn.lifecycleState === 'syncing' ? 'Syncing' : 'Sync'}
+                              </Button>
                             )}
-                            Sync
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={deleteConnectionMutation.isPending && deleteConnectionMutation.variables?.connectionId === conn.id}
-                            onClick={() => {
-                              if (confirm(`Disconnect AWS account "${conn.displayName || conn.cloudScopeId}"?`)) {
-                                deleteConnectionMutation.mutate({ provider: 'aws', connectionId: conn.id });
-                              }
-                            }}
-                          >
-                            {deleteConnectionMutation.isPending && deleteConnectionMutation.variables?.connectionId === conn.id ? (
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4 mr-1" />
-                            )}
-                            Disconnect
-                          </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={deleteConnectionMutation.isPending && deleteConnectionMutation.variables?.connectionId === conn.id}
+                              onClick={() => {
+                                if (confirm(`Disconnect AWS account "${conn.displayName || conn.cloudScopeId}"?`)) {
+                                  deleteConnectionMutation.mutate({ provider: 'aws', connectionId: conn.id });
+                                }
+                              }}
+                            >
+                              {deleteConnectionMutation.isPending && deleteConnectionMutation.variables?.connectionId === conn.id ? (
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 mr-1" />
+                              )}
+                              Disconnect
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

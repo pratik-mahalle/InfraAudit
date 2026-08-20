@@ -95,9 +95,14 @@ export function useProviderDiagnostics(provider: string, connectionId?: string) 
 }
 
 export function useProviderConnections(provider: string) {
+  const { user } = useAuth();
   return useQuery<ProviderConnection[]>({
-    queryKey: ['providers', 'connections', provider],
+    queryKey: ['providers', 'connections', provider, user?.organizationId],
     queryFn: () => api.providers.listConnections(provider),
+    enabled: Boolean(user?.organizationId),
+    refetchInterval: (query) => query.state.data?.some((connection) =>
+      connection.lifecycleState === 'validating' || connection.lifecycleState === 'syncing'
+    ) ? 5_000 : false,
   });
 }
 
@@ -108,7 +113,7 @@ export function useSetupAWS() {
       const setup = await api.providers.setupAWS(input);
       return api.providers.validateConnection('aws', setup.connection.id);
     },
-    onSuccess: () => {
+    onSettled: () => {
       invalidateProviderConsumers(queryClient);
       queryClient.invalidateQueries({ queryKey: ['providers', 'connections', 'aws'] });
       queryClient.invalidateQueries({ queryKey: ['providers', 'diagnostics'] });
@@ -140,11 +145,14 @@ export function useValidateProviderConnection() {
     mutationFn: ({ provider, connectionId }: { provider: string; connectionId: string }) =>
       api.providers.validateConnection(provider, connectionId),
     onSuccess: (result) => {
-      invalidateProviderConsumers(queryClient);
       queryClient.setQueryData(
         ['providers', 'connection', result.connection.organizationId, result.connection.provider, result.connection.id],
         result.connection,
       );
+    },
+    onSettled: (_result, _error, variables) => {
+      invalidateProviderConsumers(queryClient);
+      queryClient.invalidateQueries({ queryKey: ['providers', 'connections', variables.provider] });
       queryClient.invalidateQueries({ queryKey: ['providers', 'diagnostics'] });
     },
   });
