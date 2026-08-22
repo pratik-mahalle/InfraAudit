@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type Vulnerability, type VulnerabilityScan, type VulnerabilityScanDetail, type PaginatedResponse } from '@/lib/api';
+import { api, type Vulnerability, type VulnerabilityScan, type VulnerabilityScanDetail, type VulnerabilityScanRequest, type PaginatedResponse } from '@/lib/api';
 
 export function useVulnerabilities() {
   return useQuery<PaginatedResponse<Vulnerability>>({
@@ -50,10 +50,12 @@ export function useTriggerVulnerabilityScan() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: () => api.vulnerabilities.scan(),
+    mutationFn: (input: VulnerabilityScanRequest = {}) => api.vulnerabilities.scan(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vulnerabilities'] });
       queryClient.invalidateQueries({ queryKey: ['vulnerability-scans'] });
+      queryClient.invalidateQueries({ queryKey: ['findings'] });
+      queryClient.invalidateQueries({ queryKey: ['findings', 'summary'] });
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
     },
   });
