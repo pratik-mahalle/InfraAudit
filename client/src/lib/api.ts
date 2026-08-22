@@ -336,6 +336,14 @@ export interface VulnerabilityScanResponse {
   duplicate?: boolean;
 }
 
+export type VulnerabilityScanType = 'trivy' | 'nvd';
+
+export interface VulnerabilityScanRequest {
+  scanType?: VulnerabilityScanType;
+  resourceId?: string;
+  target?: string;
+}
+
 export interface ComplianceAssessmentRunResponse {
   message?: string;
   jobId?: number;
@@ -1127,7 +1135,14 @@ export const api = {
 
     getTop: () => request<Vulnerability[]>('/api/v1/vulnerabilities/top'),
 
-    scan: () => request<VulnerabilityScanResponse>('/api/v1/vulnerabilities/scan', { method: 'POST' }),
+    scan: (input: VulnerabilityScanRequest = {}) => request<VulnerabilityScanResponse>('/api/v1/vulnerabilities/scan', {
+      method: 'POST',
+      body: {
+        scan_type: input.scanType,
+        resource_id: input.resourceId,
+        target: input.target,
+      },
+    }),
 
     listScans: (page = 1, pageSize = 10) => request<PaginatedResponse<VulnerabilityScan>>('/api/v1/vulnerabilities/scans', { params: { page, page_size: pageSize } }),
 

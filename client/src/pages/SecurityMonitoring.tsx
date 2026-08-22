@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import {
@@ -16,7 +16,9 @@ import {
   Search,
   Shield,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAcknowledgeAlert, useAlerts, useResolveAlert } from "@/hooks/use-alerts";
@@ -28,13 +30,14 @@ import { useProviders } from "@/hooks/use-providers";
 import { useResources } from "@/hooks/use-resources";
 import { useTriggerVulnerabilityScan, useVulnerabilities, useVulnerabilityScan, useVulnerabilityScans } from "@/hooks/use-vulnerabilities";
 import { cn, formatTimeAgo } from "@/lib/utils";
-import type { Alert, Drift, DriftScan, DriftScanDetail, Finding, FindingStatus, QueueJobStatus, Vulnerability, VulnerabilityScan, VulnerabilityScanDetail } from "@/lib/api";
+import type { Alert, Drift, DriftScan, DriftScanDetail, Finding, FindingStatus, QueueJobStatus, Vulnerability, VulnerabilityScan, VulnerabilityScanDetail, VulnerabilityScanRequest } from "@/lib/api";
 import type { ComplianceAssessment, FrameworkCompliance } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { SocBadge, SocButton, SocPanel, SocProgress, SocStat, SocWorkspace } from "@/components/security-ops/soc-ui";
 
 type SecurityView = "overview" | "findings" | "vulnerabilities" | "compliance" | "alerts" | "drifts";
 type SignalType = "Finding" | "Alert" | "Drift" | "Vulnerability";
+type VulnerabilityScanMode = "posture" | "trivy" | "nvd";
 
 type SignalItem = {
   id: string;
@@ -66,6 +69,125 @@ const viewOptions: Array<{ id: SecurityView; label: string; icon: React.ElementT
 
 const severities = ["all", "critical", "high", "medium", "low", "info"];
 const statuses = ["all", "open", "detected", "acknowledged", "accepted", "resolved", "fixed", "patched", "ignored"];
+
+const vulnerabilityScanModes: Record<VulnerabilityScanMode, { label: string; description: string }> = {
+  posture: {
+    label: "Cloud posture",
+    description: "Evaluate the current cloud inventory with InfraAudit's configuration and exposure rules.",
+  },
+  trivy: {
+    label: "Container image (Trivy)",
+    description: "Run Trivy against one container image to discover operating-system and application package vulnerabilities.",
+  },
+  nvd: {
+    label: "CVE lookup (NVD)",
+    description: "Fetch and persist authoritative details for one known CVE. This enriches a CVE; it does not discover installed packages.",
+  },
+};
+
+function vulnerabilityScanTypeLabel(scanType: string) {
+  if (scanType === "general") return "Cloud posture";
+  if (scanType === "trivy") return "Trivy image";
+  if (scanType === "nvd") return "NVD CVE lookup";
+  return formatLabel(scanType);
+}
+
+function VulnerabilityScanDialog({
+  open,
+  onOpenChange,
+  postureAvailable,
+  pending,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  postureAvailable: boolean;
+  pending: boolean;
+  onSubmit: (request: VulnerabilityScanRequest, mode: VulnerabilityScanMode) => void;
+}) {
+  const [mode, setMode] = useState<VulnerabilityScanMode>(postureAvailable ? "posture" : "trivy");
+  const [target, setTarget] = useState("");
+  const submittingRef = useRef(false);
+  const normalizedTarget = target.trim();
+  const validCVE = /^CVE-\d{4}-\d{4,}$/i.test(normalizedTarget);
+  const targetInvalid = mode === "trivy" ? normalizedTarget.length === 0 : mode === "nvd" ? !validCVE : false;
+
+  useEffect(() => {
+    if (!open) {
+      submittingRef.current = false;
+      return;
+    }
+    if (!pending) submittingRef.current = false;
+  }, [open, pending]);
+
+  useEffect(() => {
+    if (!open) return;
+    setMode(postureAvailable ? "posture" : "trivy");
+    setTarget("");
+  }, [open, postureAvailable]);
+
+  const submit = () => {
+    if (pending || submittingRef.current || targetInvalid || (mode === "posture" && !postureAvailable)) return;
+    submittingRef.current = true;
+    if (mode === "posture") {
+      onSubmit({}, mode);
+      return;
+    }
+
+    const scanTarget = mode === "nvd" ? normalizedTarget.toUpperCase() : normalizedTarget;
+    onSubmit({ scanType: mode, target: scanTarget, resourceId: scanTarget }, mode);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Start security scan</DialogTitle>
+          <DialogDescription>Choose a source so the execution report accurately shows what was scanned.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="vulnerability-scan-mode">Scan source</Label>
+            <Select value={mode} disabled={pending} onValueChange={(value: VulnerabilityScanMode) => { setMode(value); setTarget(""); }}>
+              <SelectTrigger id="vulnerability-scan-mode"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="posture" disabled={!postureAvailable}>{postureAvailable ? "Cloud posture" : "Cloud posture — connect a provider first"}</SelectItem>
+                <SelectItem value="trivy">Container image (Trivy)</SelectItem>
+                <SelectItem value="nvd">CVE lookup (NVD)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm leading-5 text-muted-foreground">{vulnerabilityScanModes[mode].description}</p>
+          </div>
+
+          {mode !== "posture" && (
+            <div className="space-y-2">
+              <Label htmlFor="vulnerability-scan-target">{mode === "trivy" ? "Container image" : "CVE ID"}</Label>
+              <Input
+                id="vulnerability-scan-target"
+                value={target}
+                onChange={(event) => setTarget(event.target.value)}
+                onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); submit(); } }}
+                placeholder={mode === "trivy" ? "nginx:1.27 or registry.example.com/team/app:tag" : "CVE-2025-12345"}
+                autoComplete="off"
+                disabled={pending}
+              />
+              {mode === "nvd" && normalizedTarget && !validCVE && <p className="text-sm text-red-600 dark:text-red-300">Enter a CVE ID such as CVE-2025-12345.</p>}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <SocButton variant="ghost" onClick={() => onOpenChange(false)} disabled={pending}>Cancel</SocButton>
+          <SocButton onClick={submit} disabled={pending || targetInvalid || (mode === "posture" && !postureAvailable)}>
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+            {mode === "posture" ? "Queue posture scan" : mode === "trivy" ? "Queue Trivy scan" : "Queue NVD lookup"}
+          </SocButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function viewFromQuery(view?: string): SecurityView {
   switch (view) {
@@ -498,7 +620,7 @@ function ScanHistoryTable({ scans, onOpen }: { scans: VulnerabilityScan[]; onOpe
             <tr key={scan.id} className="hover:bg-muted/50">
               <td className="px-4 py-3">
                 <p className="font-mono text-sm font-medium text-foreground">SCAN-{scan.id}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatLabel(scan.scanType)} · {scan.resourceId || "all resources"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{vulnerabilityScanTypeLabel(scan.scanType)} · {scan.resourceId || "all resources"}</p>
               </td>
               <td className="px-4 py-3"><SocBadge tone={scan.status === "completed" ? "green" : scan.status === "failed" ? "red" : scan.status === "running" ? "blue" : "slate"}>{scan.status}</SocBadge></td>
               <td className="px-4 py-3">
@@ -536,7 +658,7 @@ function VulnerabilityScanDrawer({ detail, open, onOpenChange, loading, error }:
             {detail && <span className="font-mono text-xs text-muted-foreground">SCAN-{detail.id}</span>}
           </div>
           <SheetTitle className="mt-3 text-xl">Vulnerability scan report</SheetTitle>
-          <SheetDescription>{detail ? `${formatLabel(detail.scanType)} · ${detail.resourceId || "all resources"}` : "Loading execution report"}</SheetDescription>
+          <SheetDescription>{detail ? `${vulnerabilityScanTypeLabel(detail.scanType)} · ${detail.resourceId || "all resources"}` : "Loading execution report"}</SheetDescription>
         </SheetHeader>
         {error ? (
           <div className="p-6"><EmptyState title="Could not load scan report" description={error instanceof Error ? error.message : "The scan report request failed."} /></div>
@@ -741,6 +863,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
   const [severity, setSeverity] = useState("all");
   const [status, setStatus] = useState("all");
   const [provider, setProvider] = useState("all");
+  const [vulnerabilityScanDialogOpen, setVulnerabilityScanDialogOpen] = useState(false);
   const [vulnerabilityJobId, setVulnerabilityJobId] = useState<number | null>(null);
   const [driftJobId, setDriftJobId] = useState<number | null>(null);
   const [selectedScanId, setSelectedScanId] = useState<number | null>(null);
@@ -1014,13 +1137,15 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     });
   };
 
-  const runVulnerabilityScan = () => {
-    triggerVulnerabilityScan.mutate(undefined, {
+  const runVulnerabilityScan = (request: VulnerabilityScanRequest, mode: VulnerabilityScanMode) => {
+    triggerVulnerabilityScan.mutate(request, {
       onSuccess: (result) => {
         setVulnerabilityJobId(result.jobId ?? null);
+        setVulnerabilityScanDialogOpen(false);
+        const scanLabel = vulnerabilityScanModes[mode].label;
         toast({
-          title: result.jobId ? "Vulnerability scan queued" : "Vulnerability scan started",
-          description: result.jobId ? `Job #${result.jobId} is running on the ${result.queue ?? "scan"} queue.` : "InfraAudit is checking vulnerable packages and resources.",
+          title: result.jobId ? `${scanLabel} scan queued` : `${scanLabel} scan started`,
+          description: result.jobId ? `Job #${result.jobId} is running on the ${result.queue ?? "scan"} queue.` : vulnerabilityScanModes[mode].description,
         });
       },
       onError: (error: Error) => toast({ title: "Could not start vulnerability scan", description: error.message, variant: "destructive" }),
@@ -1096,7 +1221,7 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
 
   const renderScanStatus = () => (
     <div className="grid gap-3 md:grid-cols-2">
-      <ScanJobCard label="Vulnerability scan" jobId={vulnerabilityJobId} job={vulnerabilityJob} isFetching={vulnerabilityJobFetching} error={vulnerabilityJobError} />
+      <ScanJobCard label="Security scan" jobId={vulnerabilityJobId} job={vulnerabilityJob} isFetching={vulnerabilityJobFetching} error={vulnerabilityJobError} />
       <ScanJobCard label="Drift scan" jobId={driftJobId} job={driftJob} isFetching={driftJobFetching} error={driftJobError} />
     </div>
   );
@@ -1178,9 +1303,9 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <SocButton onClick={runVulnerabilityScan} disabled={triggerVulnerabilityScan.isPending || connectedProviders.length === 0}>
+              <SocButton onClick={() => setVulnerabilityScanDialogOpen(true)} disabled={triggerVulnerabilityScan.isPending}>
                 {triggerVulnerabilityScan.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
-                Run Vulnerability Scan
+                Start Security Scan
               </SocButton>
               <SocButton variant="ghost" onClick={runDriftScan} disabled={triggerDriftDetection.isPending || connectedProviders.length === 0}>
                 {triggerDriftDetection.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitCompareArrows className="h-4 w-4" />}
@@ -1262,9 +1387,9 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          <SocButton onClick={runVulnerabilityScan} disabled={triggerVulnerabilityScan.isPending || connectedProviders.length === 0}>
+          <SocButton onClick={() => setVulnerabilityScanDialogOpen(true)} disabled={triggerVulnerabilityScan.isPending}>
             {triggerVulnerabilityScan.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bug className="h-4 w-4" />}
-            Run Vulnerability Scan
+            Start Security Scan
           </SocButton>
         </div>
         {renderScanStatus()}
@@ -1358,6 +1483,13 @@ export default function SecurityMonitoring({ defaultTab = "risk" }: { defaultTab
           isPending={actionPending}
         />
         <VulnerabilityScanDrawer detail={selectedScan} open={scanDetailOpen} onOpenChange={setScanDetailOpen} loading={selectedScanLoading} error={selectedScanError} />
+        <VulnerabilityScanDialog
+          open={vulnerabilityScanDialogOpen}
+          onOpenChange={setVulnerabilityScanDialogOpen}
+          postureAvailable={connectedProviders.length > 0}
+          pending={triggerVulnerabilityScan.isPending}
+          onSubmit={runVulnerabilityScan}
+        />
         <DriftScanDrawer detail={selectedDriftScan} open={driftScanDetailOpen} onOpenChange={setDriftScanDetailOpen} loading={selectedDriftScanLoading} error={selectedDriftScanError} />
       </div>
     </SocWorkspace>
